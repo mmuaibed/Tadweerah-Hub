@@ -217,6 +217,83 @@ const translations: Record<string, Record<Language, string>> = {
     ar: "الرابط الذي فتحته لا يحتوي على معرّف عرض صالح.",
     en: "The link you followed does not contain a valid listing ID.",
   },
+
+  // M4.5 — F1: close warning with pending count
+  "listing.close.confirm.pendingOffers": {
+    ar: "سيتم رفض {count} عرض معلّق تلقائياً عند الإغلاق.",
+    en: "{count} pending offer(s) will be automatically rejected.",
+  },
+  "listing.close.confirm.noPending": {
+    ar: "لا توجد عروض معلّقة. يمكنك إغلاق الإعلان بأمان.",
+    en: "No pending offers. The listing can be closed safely.",
+  },
+
+  // M4.5 — F2: buyer status badge (already have offer.status.*)
+
+  // M4.5 — F3: rejection reason dialog
+  "offer.reject.reason.label": { ar: "سبب الرفض", en: "Rejection Reason" },
+  "offer.reject.reason.required": { ar: "يجب اختيار سبب الرفض", en: "Rejection reason is required" },
+  "offer.reject.reason.detail.label": { ar: "تفاصيل إضافية (اختياري للسبب الآخر)", en: "Additional detail (optional for 'other')" },
+  "offer.reject.reason.price_too_low": { ar: "السعر منخفض جداً", en: "Price too low" },
+  "offer.reject.reason.quantity_mismatch": { ar: "الكمية غير مناسبة", en: "Quantity mismatch" },
+  "offer.reject.reason.not_interested": { ar: "غير مهتم", en: "Not interested" },
+  "offer.reject.reason.other": { ar: "أخرى", en: "Other" },
+  // Machine-generated reason codes (shown to buyer on rejection)
+  "offer.reject.reason.listing_closed": { ar: "تم إغلاق الإعلان", en: "Listing was closed" },
+  "offer.reject.reason.offer_accepted": { ar: "تم قبول عرض آخر", en: "Another offer was accepted" },
+  "offer.mine.rejectionReason": { ar: "سبب الرفض", en: "Reason" },
+
+  // M4.5 — F4: accept with lower price reason
+  "offer.accept.reason.label": { ar: "سبب قبول عرض أقل", en: "Reason for accepting lower offer" },
+  "offer.accept.reason.placeholder": {
+    ar: "مثال: علاقات تجارية، شروط توصيل أفضل...",
+    en: "e.g. Long-term relationship, better delivery terms...",
+  },
+  "offer.accept.reason.required": {
+    ar: "يجب ذكر سبب قبول عرض أقل من الأعلى الحالي",
+    en: "A reason is required when accepting an offer lower than the current highest",
+  },
+  "offer.accept.lowerThanHighest": {
+    ar: "تنبيه: هذا العرض أقل من أعلى عرض حالي. يجب ذكر السبب.",
+    en: "Note: This offer is lower than the current highest. A reason is required.",
+  },
+
+  // M4.5 — F6: rank display
+  "offer.rank.label": { ar: "ترتيبك", en: "Your Rank" },
+  "offer.rank.of": { ar: "من", en: "of" },
+  "offer.rank.top": { ar: "الأعلى سعراً", en: "Top offer" },
+
+  // M4.5 — F7: my listings tabs
+  "myListings.tab.active": { ar: "النشطة", en: "Active" },
+  "myListings.tab.closed": { ar: "المغلقة", en: "Closed" },
+  "myListings.viewOffers": { ar: "عرض العروض", en: "View Offers" },
+  "myListings.offersCount": { ar: "عروض", en: "offers" },
+
+  // M4.5 — F14: quantity disclaimer
+  "offer.quantityDisclaimer": { ar: "* الكمية تقديرية", en: "* Quantity is approximate" },
+
+  // M4.5 — M2: My Participations
+  "participations.title": { ar: "مشاركاتي", en: "My Participations" },
+  "participations.subtitle": {
+    ar: "عروض الأسعار التي قدّمتها على إعلانات النفايات",
+    en: "Price offers you've submitted on waste listings",
+  },
+  "participations.empty.title": { ar: "لا توجد مشاركات بعد", en: "No participations yet" },
+  "participations.empty.desc": {
+    ar: "ابدأ بتصفح السوق وتقديم أول عرض سعر لك.",
+    en: "Start by browsing the marketplace and submitting your first offer.",
+  },
+  "participations.goToMarketplace": { ar: "اذهب إلى السوق", en: "Go to Marketplace" },
+  "participations.tab.all": { ar: "الكل", en: "All" },
+  "participations.tab.pending": { ar: "المعلقة", en: "Pending" },
+  "participations.tab.accepted": { ar: "المقبولة", en: "Accepted" },
+  "participations.tab.rejected": { ar: "المرفوضة", en: "Rejected" },
+  "participations.winner.label": { ar: "تهانينا! فزت بهذه الصفقة", en: "Congratulations! You won this deal" },
+  "participations.rejected.reason": { ar: "السبب:", en: "Reason:" },
+  "participations.listing.closedAt": { ar: "أُغلق في", en: "Closed on" },
+  "participations.listing.acceptedTotal": { ar: "الإجمالي المقبول", en: "Accepted total" },
+  "participations.offer.submitted": { ar: "عرضك", en: "Your offer" },
+  "participations.listingRef": { ar: "رقم الإعلان", en: "Listing ref" },
 };
 
 export const I18nProvider: React.FC<{

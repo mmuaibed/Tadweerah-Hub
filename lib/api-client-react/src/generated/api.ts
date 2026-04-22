@@ -17,14 +17,19 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  AcceptOfferBody,
   Company,
   CreateCompanyBody,
   CreateWasteListingBody,
   HealthStatus,
   ListMarketplaceListingsParams,
+  ListMyListingsParams,
+  ListMyOffersParams,
   ListingOffer,
   MeResponse,
+  MyOffer,
   OffersSummary,
+  RejectOfferBody,
   SubmitOfferBody,
   WasteListing,
 } from "./api.schemas";
@@ -451,41 +456,57 @@ export const useCreateWasteListing = <
 /**
  * @summary Listings owned by the current producer company
  */
-export const getListMyListingsUrl = () => {
-  return `/api/listings/mine`;
+export const getListMyListingsUrl = (params?: ListMyListingsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/listings/mine?${stringifiedParams}`
+    : `/api/listings/mine`;
 };
 
 export const listMyListings = async (
+  params?: ListMyListingsParams,
   options?: RequestInit,
 ): Promise<WasteListing[]> => {
-  return customFetch<WasteListing[]>(getListMyListingsUrl(), {
+  return customFetch<WasteListing[]>(getListMyListingsUrl(params), {
     ...options,
     method: "GET",
   });
 };
 
-export const getListMyListingsQueryKey = () => {
-  return [`/api/listings/mine`] as const;
+export const getListMyListingsQueryKey = (params?: ListMyListingsParams) => {
+  return [`/api/listings/mine`, ...(params ? [params] : [])] as const;
 };
 
 export const getListMyListingsQueryOptions = <
   TData = Awaited<ReturnType<typeof listMyListings>>,
   TError = ErrorType<void>,
->(options?: {
-  query?: UseQueryOptions<
-    Awaited<ReturnType<typeof listMyListings>>,
-    TError,
-    TData
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}) => {
+>(
+  params?: ListMyListingsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listMyListings>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
   const { query: queryOptions, request: requestOptions } = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getListMyListingsQueryKey();
+  const queryKey = queryOptions?.queryKey ?? getListMyListingsQueryKey(params);
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof listMyListings>>> = ({
     signal,
-  }) => listMyListings({ signal, ...requestOptions });
+  }) => listMyListings(params, { signal, ...requestOptions });
 
   return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
     Awaited<ReturnType<typeof listMyListings>>,
@@ -506,15 +527,18 @@ export type ListMyListingsQueryError = ErrorType<void>;
 export function useListMyListings<
   TData = Awaited<ReturnType<typeof listMyListings>>,
   TError = ErrorType<void>,
->(options?: {
-  query?: UseQueryOptions<
-    Awaited<ReturnType<typeof listMyListings>>,
-    TError,
-    TData
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getListMyListingsQueryOptions(options);
+>(
+  params?: ListMyListingsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listMyListings>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListMyListingsQueryOptions(params, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;
@@ -1054,7 +1078,103 @@ export function useGetOffersSummary<
 }
 
 /**
- * @summary Accept an offer (listing owner / producer only). Atomically: marks offer accepted, rejects all others, closes the listing.
+ * @summary List all offers submitted by the current buyer, with listing details. Ordered by offer.updated_at DESC (most recently changed first).
+
+ */
+export const getListMyOffersUrl = (params?: ListMyOffersParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/offers/mine?${stringifiedParams}`
+    : `/api/offers/mine`;
+};
+
+export const listMyOffers = async (
+  params?: ListMyOffersParams,
+  options?: RequestInit,
+): Promise<MyOffer[]> => {
+  return customFetch<MyOffer[]>(getListMyOffersUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListMyOffersQueryKey = (params?: ListMyOffersParams) => {
+  return [`/api/offers/mine`, ...(params ? [params] : [])] as const;
+};
+
+export const getListMyOffersQueryOptions = <
+  TData = Awaited<ReturnType<typeof listMyOffers>>,
+  TError = ErrorType<void>,
+>(
+  params?: ListMyOffersParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listMyOffers>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListMyOffersQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listMyOffers>>> = ({
+    signal,
+  }) => listMyOffers(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listMyOffers>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListMyOffersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listMyOffers>>
+>;
+export type ListMyOffersQueryError = ErrorType<void>;
+
+/**
+ * @summary List all offers submitted by the current buyer, with listing details. Ordered by offer.updated_at DESC (most recently changed first).
+
+ */
+
+export function useListMyOffers<
+  TData = Awaited<ReturnType<typeof listMyOffers>>,
+  TError = ErrorType<void>,
+>(
+  params?: ListMyOffersParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listMyOffers>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListMyOffersQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Accept an offer (listing owner / producer only). Atomically: marks offer accepted, rejects all others, closes the listing. If accepted offer price < current highest pending, acceptance_reason is required.
 
  */
 export const getAcceptOfferUrl = (offerId: string) => {
@@ -1063,11 +1183,14 @@ export const getAcceptOfferUrl = (offerId: string) => {
 
 export const acceptOffer = async (
   offerId: string,
+  acceptOfferBody?: AcceptOfferBody,
   options?: RequestInit,
 ): Promise<ListingOffer> => {
   return customFetch<ListingOffer>(getAcceptOfferUrl(offerId), {
     ...options,
     method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(acceptOfferBody),
   });
 };
 
@@ -1078,14 +1201,14 @@ export const getAcceptOfferMutationOptions = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof acceptOffer>>,
     TError,
-    { offerId: string },
+    { offerId: string; data: BodyType<AcceptOfferBody> },
     TContext
   >;
   request?: SecondParameter<typeof customFetch>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof acceptOffer>>,
   TError,
-  { offerId: string },
+  { offerId: string; data: BodyType<AcceptOfferBody> },
   TContext
 > => {
   const mutationKey = ["acceptOffer"];
@@ -1099,11 +1222,11 @@ export const getAcceptOfferMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof acceptOffer>>,
-    { offerId: string }
+    { offerId: string; data: BodyType<AcceptOfferBody> }
   > = (props) => {
-    const { offerId } = props ?? {};
+    const { offerId, data } = props ?? {};
 
-    return acceptOffer(offerId, requestOptions);
+    return acceptOffer(offerId, data, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -1112,11 +1235,11 @@ export const getAcceptOfferMutationOptions = <
 export type AcceptOfferMutationResult = NonNullable<
   Awaited<ReturnType<typeof acceptOffer>>
 >;
-
+export type AcceptOfferMutationBody = BodyType<AcceptOfferBody>;
 export type AcceptOfferMutationError = ErrorType<void>;
 
 /**
- * @summary Accept an offer (listing owner / producer only). Atomically: marks offer accepted, rejects all others, closes the listing.
+ * @summary Accept an offer (listing owner / producer only). Atomically: marks offer accepted, rejects all others, closes the listing. If accepted offer price < current highest pending, acceptance_reason is required.
 
  */
 export const useAcceptOffer = <
@@ -1126,21 +1249,21 @@ export const useAcceptOffer = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof acceptOffer>>,
     TError,
-    { offerId: string },
+    { offerId: string; data: BodyType<AcceptOfferBody> },
     TContext
   >;
   request?: SecondParameter<typeof customFetch>;
 }): UseMutationResult<
   Awaited<ReturnType<typeof acceptOffer>>,
   TError,
-  { offerId: string },
+  { offerId: string; data: BodyType<AcceptOfferBody> },
   TContext
 > => {
   return useMutation(getAcceptOfferMutationOptions(options));
 };
 
 /**
- * @summary Reject a single pending offer (listing owner / producer only)
+ * @summary Reject a single pending offer (listing owner / producer only). rejection_reason is required.
  */
 export const getRejectOfferUrl = (offerId: string) => {
   return `/api/offers/${offerId}/reject`;
@@ -1148,11 +1271,14 @@ export const getRejectOfferUrl = (offerId: string) => {
 
 export const rejectOffer = async (
   offerId: string,
+  rejectOfferBody: RejectOfferBody,
   options?: RequestInit,
 ): Promise<ListingOffer> => {
   return customFetch<ListingOffer>(getRejectOfferUrl(offerId), {
     ...options,
     method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(rejectOfferBody),
   });
 };
 
@@ -1163,14 +1289,14 @@ export const getRejectOfferMutationOptions = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof rejectOffer>>,
     TError,
-    { offerId: string },
+    { offerId: string; data: BodyType<RejectOfferBody> },
     TContext
   >;
   request?: SecondParameter<typeof customFetch>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof rejectOffer>>,
   TError,
-  { offerId: string },
+  { offerId: string; data: BodyType<RejectOfferBody> },
   TContext
 > => {
   const mutationKey = ["rejectOffer"];
@@ -1184,11 +1310,11 @@ export const getRejectOfferMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof rejectOffer>>,
-    { offerId: string }
+    { offerId: string; data: BodyType<RejectOfferBody> }
   > = (props) => {
-    const { offerId } = props ?? {};
+    const { offerId, data } = props ?? {};
 
-    return rejectOffer(offerId, requestOptions);
+    return rejectOffer(offerId, data, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -1197,11 +1323,11 @@ export const getRejectOfferMutationOptions = <
 export type RejectOfferMutationResult = NonNullable<
   Awaited<ReturnType<typeof rejectOffer>>
 >;
-
+export type RejectOfferMutationBody = BodyType<RejectOfferBody>;
 export type RejectOfferMutationError = ErrorType<void>;
 
 /**
- * @summary Reject a single pending offer (listing owner / producer only)
+ * @summary Reject a single pending offer (listing owner / producer only). rejection_reason is required.
  */
 export const useRejectOffer = <
   TError = ErrorType<void>,
@@ -1210,14 +1336,14 @@ export const useRejectOffer = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof rejectOffer>>,
     TError,
-    { offerId: string },
+    { offerId: string; data: BodyType<RejectOfferBody> },
     TContext
   >;
   request?: SecondParameter<typeof customFetch>;
 }): UseMutationResult<
   Awaited<ReturnType<typeof rejectOffer>>,
   TError,
-  { offerId: string },
+  { offerId: string; data: BodyType<RejectOfferBody> },
   TContext
 > => {
   return useMutation(getRejectOfferMutationOptions(options));

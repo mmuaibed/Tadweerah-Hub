@@ -48,7 +48,8 @@ A Saudi B2B MVP connecting waste producers, recycling buyers, and transport carr
 - M1 Auth & Company Onboarding — DONE
 - M2 Waste Listings (producer create/list/close + buyer marketplace) — DONE & UAT-approved
 - M3 Listing detail page + clickable cards + confirm-close — DONE & UAT-approved
-- M4 Offers / Bidding — DONE (pending UAT)
+- M4 Offers / Bidding — DONE & UAT-approved
+- M4.5 Bug-fix & polish sprint — COMPLETE (Phase 1 backend + Phase 2 frontend; Phase 3 email TBD)
 - M5 Transport bids (carrier)
 - M6 Trip lifecycle / proof of delivery
 - M7 Notifications
@@ -60,8 +61,37 @@ A Saudi B2B MVP connecting waste producers, recycling buyers, and transport carr
 4. Decide & document the rule: can a closed listing be reopened? (current behaviour: no — `close` is one-way).
 5. Image upload for listings — postponed until core flow stabilises.
 
+### M4.5 — implemented (Phases 1+2)
+**Backend (Phase 1)**
+- F1 auto-reject on close: `POST /listings/:id/close` rejects all pending offers with `rejection_reason='listing_closed'`
+- F3 mandatory rejection reason: `POST /offers/:id/reject` requires `rejection_reason` field
+- F4 lower-offer acceptance reason: `POST /offers/:id/accept` requires `acceptance_reason` when offer < current highest pending
+- F6 rank calculation: `/listings/:id/offers` (buyer view) returns `rank` + `total_offers`
+- F8 ordering: `/listings/mine` ordered active-first, then offer_count DESC, then created_at DESC
+- F9 status filter: `/listings/mine?status=open|closed`
+- F10 ILIKE city search: `/listings?city=` uses case-insensitive partial match
+- F11 duplicate rejection prevention: buyers with rejected offers cannot re-submit
+- M2 `/offers/mine`: returns buyer's all offers with listing context, rank, and listing_accepted_total
+- M3 offer aggregates: `offer_count` + `highest_offer_total` on listing responses
+
+**DB additions (M4.5)**
+- `listing_offers.rejection_reason` (text, nullable) — set on reject/auto-reject; visible to affected buyer only
+- `listing_offers.acceptance_reason` (text, nullable) — set on accept when lower than highest; INTERNAL only
+
+**Frontend (Phase 2)**
+- F1 close warning: confirm dialog shows pending offer count
+- F2 buyer status badge: rejection_reason displayed to buyer (translated from code)
+- F3 RejectOfferDialog: radio group (price_too_low / quantity_mismatch / not_interested / other)
+- F4 AcceptOfferDialog: conditional acceptance_reason textarea when accepting lower offer
+- F6 RankBadge: medal + rank/total display; hidden when total_offers ≤ 1
+- F7 my-listings tabs: Active / Closed tab filter
+- F12/F13 CTAs: offer count badge + View Offers button on my-listing cards
+- F14 quantity disclaimer: "* الكمية تقديرية" on all estimated total displays
+- M2 /participations page: My Participations with tab filter + winner/rejection reason display
+- Dashboard buyer card for Participations
+
 ### M2 — known technical limitations (non-blocking)
-- City filter is exact-match, case-sensitive.
+- City filter updated to ILIKE partial-match (was exact-match — now fixed).
 - No DB indexes on `waste_listings.company_id` / `status` (acceptable at MVP volume).
 - `quantity numeric(12,3)` overflows above ~10⁹ — surfaces as generic 500.
 - M8 Payments / wallet
@@ -95,11 +125,12 @@ Arabic default + English toggle, RTL/LTR via `<html dir>`. Tiny custom i18n hook
 - `GET /listings/:waste_listing_id/offers` (producer/owner → all with identities; buyer → own offer only)
 - `GET /listings/:waste_listing_id/offers/summary` (any company) → `{ count, highest_price }` — anonymous
 - `POST /offers/:offer_id/accept` (owner producer) → atomic: accept + reject others + close listing (SELECT FOR UPDATE)
-- `POST /offers/:offer_id/reject` (owner producer) → reject single pending offer
+- `POST /offers/:offer_id/reject` (owner producer) → reject single pending offer; requires `rejection_reason`
+- `GET /offers/mine` (buyer only) → all buyer's offers with listing context, rank, listing_accepted_total
 
 **M4 DB additions**
-- `listing_offers` table: `id, waste_listing_id FK, buyer_company_id FK, price_per_unit, message, status(pending/accepted/rejected), created_at, updated_at, resolved_at` — UNIQUE(waste_listing_id, buyer_company_id)
-- `waste_listings.closed_at` (timestamptz, nullable) — set on acceptance
+- `listing_offers` table: `id, waste_listing_id FK, buyer_company_id FK, price_per_unit, message, status(pending/accepted/rejected), created_at, updated_at, resolved_at, rejection_reason, acceptance_reason` — UNIQUE(waste_listing_id, buyer_company_id)
+- `waste_listings.closed_at` (timestamptz, nullable) — set on acceptance or manual close
 
 ### Frontend routes (cumulative)
 - `/` — landing (signed-in → /dashboard)
@@ -110,6 +141,7 @@ Arabic default + English toggle, RTL/LTR via `<html dir>`. Tiny custom i18n hook
 - `/listings/mine` — producer only: own listings + close (with confirm)
 - `/listings/:waste_listing_id` — all roles: detail page, role-gated actions
 - `/marketplace` — buyer only: browse open listings with material+city filters
+- `/participations` — buyer only: My Participations (all submitted offers, with rank/status/reasons)
 
 ### Shared UI components
 - `AppLayout` — header + content wrapper (mandatory for every page)

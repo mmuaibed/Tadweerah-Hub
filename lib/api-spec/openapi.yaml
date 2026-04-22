@@ -126,6 +126,11 @@ paths:
       operationId: listMyListings
       tags: [listings]
       summary: Listings owned by the current producer company
+      parameters:
+        - in: query
+          name: status
+          schema:
+            $ref: "#/components/schemas/WasteListingStatus"
       responses:
         "200":
           description: OK
@@ -305,6 +310,32 @@ paths:
         "401":
           description: Unauthorized
 
+  /offers/mine:
+    get:
+      operationId: listMyOffers
+      tags: [offers]
+      summary: >
+        List all offers submitted by the current buyer, with listing details.
+        Ordered by offer.updated_at DESC (most recently changed first).
+      parameters:
+        - in: query
+          name: status
+          schema:
+            $ref: "#/components/schemas/OfferStatus"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MyOffer"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Buyer access required
+
   /offers/{offer_id}/accept:
     post:
       operationId: acceptOffer
@@ -312,12 +343,19 @@ paths:
       summary: >
         Accept an offer (listing owner / producer only).
         Atomically: marks offer accepted, rejects all others, closes the listing.
+        If accepted offer price < current highest pending, acceptance_reason is required.
       parameters:
         - in: path
           name: offer_id
           required: true
           schema:
             type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AcceptOfferBody"
       responses:
         "200":
           description: Offer accepted and listing closed
@@ -338,13 +376,19 @@ paths:
     post:
       operationId: rejectOffer
       tags: [offers]
-      summary: Reject a single pending offer (listing owner / producer only)
+      summary: Reject a single pending offer (listing owner / producer only). rejection_reason is required.
       parameters:
         - in: path
           name: offer_id
           required: true
           schema:
             type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RejectOfferBody"
       responses:
         "200":
           description: OK
@@ -464,6 +508,12 @@ components:
         closed_at:
           type: string
           format: date-time
+        offer_count:
+          type: integer
+          description: Total number of offers on this listing (included for producer my-listings and marketplace M3)
+        highest_offer_total:
+          type: number
+          description: Highest offer as a total (price_per_unit × quantity). Null if no offers.
       required:
         [id, company_id, company_name, material, quantity, unit, city, status, created_at]
     OfferStatus:
@@ -486,6 +536,15 @@ components:
           type: string
         status:
           $ref: "#/components/schemas/OfferStatus"
+        rejection_reason:
+          type: string
+          description: Reason provided by producer when rejecting. Visible to the affected buyer only.
+        rank:
+          type: integer
+          description: Buyer rank among all offers (1 = highest). Only included in buyer-facing responses.
+        total_offers:
+          type: integer
+          description: Total number of offers on this listing. Included alongside rank.
         created_at:
           type: string
           format: date-time
@@ -496,6 +555,7 @@ components:
           type: string
           format: date-time
       required: [id, waste_listing_id, buyer_company_id, buyer_company_name, price_per_unit, status, created_at, updated_at]
+
     SubmitOfferBody:
       type: object
       properties:
@@ -506,6 +566,33 @@ components:
           type: string
           maxLength: 500
       required: [price_per_unit]
+
+    RejectOfferBody:
+      type: object
+      description: Required body when rejecting an offer. rejection_reason must be one of the predefined options.
+      properties:
+        rejection_reason:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Short reason code or label for the rejection
+        rejection_reason_detail:
+          type: string
+          maxLength: 300
+          description: Optional free-text detail when rejection_reason is 'other'
+      required: [rejection_reason]
+
+    AcceptOfferBody:
+      type: object
+      description: >
+        Optional body when accepting an offer.
+        acceptance_reason is REQUIRED (enforced by business logic) when the accepted offer
+        price is lower than the current highest pending offer on the same listing.
+      properties:
+        acceptance_reason:
+          type: string
+          maxLength: 300
+
     OffersSummary:
       type: object
       properties:
@@ -514,6 +601,67 @@ components:
         highest_price:
           type: number
       required: [count]
+
+    MyOffer:
+      type: object
+      description: >
+        A buyer's offer enriched with listing context. Used for the My Participations page.
+      properties:
+        id:
+          type: string
+        waste_listing_id:
+          type: string
+        listing_ref:
+          type: string
+          description: Human-readable reference e.g. "#LIST-ABCD12"
+        listing_material:
+          $ref: "#/components/schemas/WasteMaterial"
+        listing_quantity:
+          type: number
+        listing_unit:
+          $ref: "#/components/schemas/WasteUnit"
+        listing_city:
+          type: string
+        listing_status:
+          $ref: "#/components/schemas/WasteListingStatus"
+        listing_company_name:
+          type: string
+          description: Producer's company name
+        listing_closed_at:
+          type: string
+          format: date-time
+        price_per_unit:
+          type: number
+        message:
+          type: string
+        status:
+          $ref: "#/components/schemas/OfferStatus"
+        rejection_reason:
+          type: string
+          description: Visible to this buyer only when their offer was rejected
+        rank:
+          type: integer
+          description: Buyer's current rank (1 = highest). Only meaningful when status = pending
+        total_offers:
+          type: integer
+        listing_accepted_total:
+          type: number
+          description: >
+            Total value of the accepted offer (accepted_price_per_unit × listing_quantity).
+            Included for rejected buyers when the listing is closed, so they can see the final price.
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        resolved_at:
+          type: string
+          format: date-time
+      required:
+        [ id, waste_listing_id, listing_ref, listing_material, listing_quantity, listing_unit,
+          listing_city, listing_status, listing_company_name, price_per_unit, status,
+          created_at, updated_at ]
 
     CreateWasteListingBody:
       type: object

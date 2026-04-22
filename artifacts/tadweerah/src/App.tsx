@@ -21,6 +21,7 @@ import { ListingNewPage } from "@/pages/listing-new";
 import { MyListingsPage } from "@/pages/my-listings";
 import { MarketplacePage } from "@/pages/marketplace";
 import { ListingDetailPage } from "@/pages/listing-detail";
+import { ParticipationsPage } from "@/pages/participations";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -130,6 +131,14 @@ function ListingDetailRoute() {
   return (
     <SignedInRoleRoute allow={["producer", "buyer", "carrier"]}>
       <ListingDetailPage />
+    </SignedInRoleRoute>
+  );
+}
+
+function ParticipationsRoute() {
+  return (
+    <SignedInRoleRoute allow={["buyer"]}>
+      <ParticipationsPage />
     </SignedInRoleRoute>
   );
 }
@@ -261,6 +270,7 @@ function ClerkProviderWithRoutes() {
             <Route path="/listings/mine" component={MyListingsRoute} />
             <Route path="/listings/:waste_listing_id" component={ListingDetailRoute} />
             <Route path="/marketplace" component={MarketplaceRoute} />
+            <Route path="/participations" component={ParticipationsRoute} />
             <Route component={NotFound} />
           </Switch>
           <Toaster />

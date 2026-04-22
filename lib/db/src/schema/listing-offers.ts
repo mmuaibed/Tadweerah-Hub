@@ -29,6 +29,10 @@ export const listingOffersTable = pgTable(
     price_per_unit: numeric("price_per_unit", { precision: 12, scale: 3 }).notNull(),
     message: text("message"),
     status: offerStatusEnum("status").notNull().default("pending"),
+    /** Required when producer manually rejects an offer (F3). Visible to the affected buyer only. */
+    rejection_reason: text("rejection_reason"),
+    /** Required when producer accepts an offer lower than the current highest (F4). Internal only. */
+    acceptance_reason: text("acceptance_reason"),
     created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updated_at: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
     resolved_at: timestamp("resolved_at", { withTimezone: true }),

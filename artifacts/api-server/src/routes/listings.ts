@@ -1,9 +1,10 @@
 import { Router, type IRouter } from "express";
-import { and, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, sql } from "drizzle-orm";
 import {
   db,
   companiesTable,
   wasteListingsTable,
+  listingOffersTable,
   type WasteListing,
 } from "@workspace/db";
 import { CreateWasteListingBody } from "@workspace/api-zod";
@@ -28,9 +29,15 @@ const ALLOWED_MATERIALS = [
   "other",
 ] as const;
 
+const ALLOWED_STATUSES = ["open", "closed"] as const;
+
 const router: IRouter = Router();
 
-type Row = WasteListing & { company_name: string };
+type Row = WasteListing & {
+  company_name: string;
+  offer_count?: number;
+  highest_offer_total?: number | null;
+};
 
 function serialize(row: Row) {
   return {
@@ -46,6 +53,9 @@ function serialize(row: Row) {
     status: row.status,
     created_at: row.created_at.toISOString(),
     closed_at: row.closed_at?.toISOString() ?? undefined,
+    offer_count: row.offer_count ?? undefined,
+    highest_offer_total:
+      row.highest_offer_total != null ? Number(row.highest_offer_total) : undefined,
   };
 }
 
@@ -64,9 +74,22 @@ const baseSelect = {
   company_name: companiesTable.name,
 } as const;
 
+/** Aggregate subquery: offer_count and highest_offer_total per listing */
+const offerAgg = db
+  .select({
+    waste_listing_id: listingOffersTable.waste_listing_id,
+    offer_count: sql<number>`cast(count(*) as int)`.as("offer_count"),
+    max_price_per_unit:
+      sql<string>`max(${listingOffersTable.price_per_unit})`.as("max_price_per_unit"),
+  })
+  .from(listingOffersTable)
+  .groupBy(listingOffersTable.waste_listing_id)
+  .as("offer_agg");
+
 /**
  * GET /listings — public marketplace (buyers only).
  * Producers and carriers should not browse the buyer marketplace.
+ * F10: city filter is case-insensitive (ILIKE).
  */
 router.get(
   "/listings",
@@ -85,23 +108,40 @@ router.get(
       conditions.push(eq(wasteListingsTable.material, material));
     }
     if (city) {
-      conditions.push(eq(wasteListingsTable.city, city));
+      conditions.push(ilike(wasteListingsTable.city, `%${city}%`));
     }
 
     const rows = await db
-      .select(baseSelect)
+      .select({
+        ...baseSelect,
+        offer_count: offerAgg.offer_count,
+        max_price_per_unit: offerAgg.max_price_per_unit,
+      })
       .from(wasteListingsTable)
       .innerJoin(companiesTable, eq(companiesTable.id, wasteListingsTable.company_id))
+      .leftJoin(offerAgg, eq(offerAgg.waste_listing_id, wasteListingsTable.id))
       .where(and(...conditions))
       .orderBy(desc(wasteListingsTable.created_at))
       .limit(200);
 
-    res.json(rows.map(serialize));
+    res.json(
+      rows.map((r) => {
+        const qty = Number(r.quantity);
+        const maxPpu = r.max_price_per_unit != null ? Number(r.max_price_per_unit) : null;
+        return serialize({
+          ...r,
+          offer_count: r.offer_count ?? 0,
+          highest_offer_total: maxPpu != null ? maxPpu * qty : null,
+        });
+      }),
+    );
   },
 );
 
 /**
  * GET /listings/mine — current producer's own listings.
+ * F8 ordering: active (open) first, then by offer_count DESC, then created_at DESC.
+ * F9: optional ?status=open|closed filter.
  */
 router.get(
   "/listings/mine",
@@ -109,14 +149,43 @@ router.get(
   requireCompany(["producer"]),
   async (req, res) => {
     const { company } = req as AuthedCompanyRequest;
+    const status = assertEnum(req.query.status, ALLOWED_STATUSES, "status");
+
+    const conditions = [eq(wasteListingsTable.company_id, company.id)];
+    if (status) {
+      conditions.push(eq(wasteListingsTable.status, status));
+    }
+
     const rows = await db
-      .select(baseSelect)
+      .select({
+        ...baseSelect,
+        offer_count: offerAgg.offer_count,
+        max_price_per_unit: offerAgg.max_price_per_unit,
+      })
       .from(wasteListingsTable)
       .innerJoin(companiesTable, eq(companiesTable.id, wasteListingsTable.company_id))
-      .where(eq(wasteListingsTable.company_id, company.id))
-      .orderBy(desc(wasteListingsTable.created_at));
+      .leftJoin(offerAgg, eq(offerAgg.waste_listing_id, wasteListingsTable.id))
+      .where(and(...conditions))
+      .orderBy(
+        // F8: active first, then most offers, then newest
+        asc(
+          sql`CASE WHEN ${wasteListingsTable.status} = 'open' THEN 0 ELSE 1 END`,
+        ),
+        desc(sql`COALESCE(${offerAgg.offer_count}, 0)`),
+        desc(wasteListingsTable.created_at),
+      );
 
-    res.json(rows.map(serialize));
+    res.json(
+      rows.map((r) => {
+        const qty = Number(r.quantity);
+        const maxPpu = r.max_price_per_unit != null ? Number(r.max_price_per_unit) : null;
+        return serialize({
+          ...r,
+          offer_count: r.offer_count ?? 0,
+          highest_offer_total: maxPpu != null ? maxPpu * qty : null,
+        });
+      }),
+    );
   },
 );
 
@@ -185,6 +254,8 @@ router.get(
 
 /**
  * POST /listings/:waste_listing_id/close — owner producer closes a listing.
+ * F1: All pending offers are automatically rejected with resolved_at = now.
+ * Returns the updated listing.
  */
 router.post(
   "/listings/:waste_listing_id/close",
@@ -206,14 +277,43 @@ router.post(
     if (existing.company_id !== company.id) {
       throw new HttpError(403, "Forbidden", "Not the owner of this listing");
     }
+    if (existing.status !== "open") {
+      throw new HttpError(409, "ListingClosed", "Listing is already closed");
+    }
+
+    const now = new Date();
+
+    // F1: Auto-reject all pending offers when listing is manually closed
+    await db.transaction(async (tx) => {
+      await tx
+        .update(listingOffersTable)
+        .set({
+          status: "rejected",
+          resolved_at: now,
+          updated_at: now,
+          rejection_reason: "listing_closed",
+        })
+        .where(
+          and(
+            eq(listingOffersTable.waste_listing_id, id),
+            eq(listingOffersTable.status, "pending"),
+          ),
+        );
+
+      await tx
+        .update(wasteListingsTable)
+        .set({ status: "closed", closed_at: now })
+        .where(eq(wasteListingsTable.id, id));
+    });
 
     const [updated] = await db
-      .update(wasteListingsTable)
-      .set({ status: "closed" })
+      .select(baseSelect)
+      .from(wasteListingsTable)
+      .innerJoin(companiesTable, eq(companiesTable.id, wasteListingsTable.company_id))
       .where(eq(wasteListingsTable.id, id))
-      .returning();
+      .limit(1);
 
-    res.json(serialize({ ...updated, company_name: company.name }));
+    res.json(serialize(updated!));
   },
 );
 

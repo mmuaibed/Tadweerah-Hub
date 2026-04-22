@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { useGetMe } from "@workspace/api-client-react";
 import type { CompanyType } from "@workspace/api-client-react";
-import { Recycle, ShoppingBag, Truck, Loader2, ArrowLeft, ArrowRight } from "lucide-react";
+import { Recycle, ShoppingBag, Truck, TrendingUp, Loader2, ArrowLeft, ArrowRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AppLayout } from "@/components/app-layout";
@@ -33,6 +33,7 @@ const ROLE_CARDS: Record<CompanyType, RoleCard[]> = {
   ],
   buyer: [
     { titleKey: "marketplace.title", descKey: "marketplace.subtitle", icon: ShoppingBag, href: "/marketplace" },
+    { titleKey: "participations.title", descKey: "participations.subtitle", icon: TrendingUp, href: "/participations" },
   ],
   carrier: [
     { titleKey: "dashboard.role.carrier", descKey: "dashboard.comingsoon", icon: Truck },

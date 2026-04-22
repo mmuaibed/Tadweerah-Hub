@@ -1,18 +1,23 @@
 import { Router, type IRouter } from "express";
-import { and, eq, max, ne, sql } from "drizzle-orm";
+import { and, desc, eq, gt, max, ne, sql } from "drizzle-orm";
 import {
   db,
   companiesTable,
   listingOffersTable,
   wasteListingsTable,
 } from "@workspace/db";
-import { SubmitOfferBody } from "@workspace/api-zod";
+import {
+  SubmitOfferBody,
+  RejectOfferBody,
+  AcceptOfferBody,
+} from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
 import {
   requireCompany,
   type AuthedCompanyRequest,
 } from "../middlewares/requireCompany";
 import { HttpError, assertUuid } from "../middlewares/errorHandler";
+import { listingRef } from "../lib/listing-ref";
 
 const router: IRouter = Router();
 
@@ -24,9 +29,13 @@ type OfferRow = {
   price_per_unit: string;
   message: string | null;
   status: "pending" | "accepted" | "rejected";
+  rejection_reason: string | null;
+  acceptance_reason: string | null;
   created_at: Date;
   updated_at: Date;
   resolved_at: Date | null;
+  rank?: number;
+  total_offers?: number;
 };
 
 function serializeOffer(row: OfferRow) {
@@ -38,9 +47,12 @@ function serializeOffer(row: OfferRow) {
     price_per_unit: Number(row.price_per_unit),
     message: row.message ?? undefined,
     status: row.status,
+    rejection_reason: row.rejection_reason ?? undefined,
     created_at: row.created_at.toISOString(),
     updated_at: row.updated_at.toISOString(),
     resolved_at: row.resolved_at?.toISOString() ?? undefined,
+    rank: row.rank,
+    total_offers: row.total_offers,
   };
 }
 
@@ -53,10 +65,153 @@ const offerSelect = {
   price_per_unit: listingOffersTable.price_per_unit,
   message: listingOffersTable.message,
   status: listingOffersTable.status,
+  rejection_reason: listingOffersTable.rejection_reason,
+  acceptance_reason: listingOffersTable.acceptance_reason,
   created_at: listingOffersTable.created_at,
   updated_at: listingOffersTable.updated_at,
   resolved_at: listingOffersTable.resolved_at,
 } as const;
+
+/**
+ * GET /offers/mine
+ * M2: Returns all offers submitted by the current buyer, enriched with listing context.
+ * Ordered: pending first, then by updated_at DESC.
+ * Optional ?status=pending|accepted|rejected filter.
+ */
+router.get(
+  "/offers/mine",
+  requireAuth,
+  requireCompany(["buyer"]),
+  async (req, res) => {
+    const { company } = req as AuthedCompanyRequest;
+    const statusFilter =
+      typeof req.query.status === "string" &&
+      ["pending", "accepted", "rejected"].includes(req.query.status)
+        ? (req.query.status as "pending" | "accepted" | "rejected")
+        : undefined;
+
+    const conditions = [eq(listingOffersTable.buyer_company_id, company.id)];
+    if (statusFilter) {
+      conditions.push(eq(listingOffersTable.status, statusFilter));
+    }
+
+    const rows = await db
+      .select({
+        offer_id: listingOffersTable.id,
+        waste_listing_id: listingOffersTable.waste_listing_id,
+        price_per_unit: listingOffersTable.price_per_unit,
+        message: listingOffersTable.message,
+        offer_status: listingOffersTable.status,
+        rejection_reason: listingOffersTable.rejection_reason,
+        offer_created_at: listingOffersTable.created_at,
+        offer_updated_at: listingOffersTable.updated_at,
+        offer_resolved_at: listingOffersTable.resolved_at,
+        listing_material: wasteListingsTable.material,
+        listing_quantity: wasteListingsTable.quantity,
+        listing_unit: wasteListingsTable.unit,
+        listing_city: wasteListingsTable.city,
+        listing_status: wasteListingsTable.status,
+        listing_closed_at: wasteListingsTable.closed_at,
+        listing_company_name: companiesTable.name,
+      })
+      .from(listingOffersTable)
+      .innerJoin(
+        wasteListingsTable,
+        eq(wasteListingsTable.id, listingOffersTable.waste_listing_id),
+      )
+      .innerJoin(
+        companiesTable,
+        eq(companiesTable.id, wasteListingsTable.company_id),
+      )
+      .where(and(...conditions))
+      .orderBy(
+        // Pending first, then by most recent activity
+        sql`CASE WHEN ${listingOffersTable.status} = 'pending' THEN 0 ELSE 1 END ASC`,
+        desc(listingOffersTable.updated_at),
+      );
+
+    // For each offer, compute rank + total_offers + listing_accepted_total
+    const results = await Promise.all(
+      rows.map(async (row) => {
+        const listingId = row.waste_listing_id;
+        const ppu = Number(row.price_per_unit);
+        const qty = Number(row.listing_quantity);
+
+        // Rank: count of offers with higher price on this listing + 1
+        const [rankRow] = await db
+          .select({
+            above: sql<number>`cast(count(*) as int)`,
+            total: sql<number>`cast(count(*) over () as int)`,
+          })
+          .from(listingOffersTable)
+          .where(eq(listingOffersTable.waste_listing_id, listingId));
+
+        const [rankData] = await db
+          .select({
+            above: sql<number>`cast(count(*) as int)`.as("above"),
+          })
+          .from(listingOffersTable)
+          .where(
+            and(
+              eq(listingOffersTable.waste_listing_id, listingId),
+              gt(listingOffersTable.price_per_unit, String(ppu)),
+            ),
+          );
+
+        const [totalData] = await db
+          .select({ total: sql<number>`cast(count(*) as int)`.as("total") })
+          .from(listingOffersTable)
+          .where(eq(listingOffersTable.waste_listing_id, listingId));
+
+        const rank = (rankData?.above ?? 0) + 1;
+        const total_offers = totalData?.total ?? 1;
+
+        // For rejected buyers when listing is closed, find the accepted offer total
+        let listing_accepted_total: number | undefined;
+        if (row.offer_status === "rejected" && row.listing_status === "closed") {
+          const [accepted] = await db
+            .select({ price_per_unit: listingOffersTable.price_per_unit })
+            .from(listingOffersTable)
+            .where(
+              and(
+                eq(listingOffersTable.waste_listing_id, listingId),
+                eq(listingOffersTable.status, "accepted"),
+              ),
+            )
+            .limit(1);
+          if (accepted) {
+            listing_accepted_total = Number(accepted.price_per_unit) * qty;
+          }
+        }
+
+        return {
+          id: row.offer_id,
+          waste_listing_id: listingId,
+          listing_ref: listingRef(listingId),
+          listing_material: row.listing_material,
+          listing_quantity: qty,
+          listing_unit: row.listing_unit,
+          listing_city: row.listing_city,
+          listing_status: row.listing_status,
+          listing_company_name: row.listing_company_name,
+          listing_closed_at: row.listing_closed_at?.toISOString() ?? undefined,
+          price_per_unit: ppu,
+          message: row.message ?? undefined,
+          status: row.offer_status,
+          rejection_reason: row.rejection_reason ?? undefined,
+          rank: row.offer_status === "pending" ? rank : undefined,
+          total_offers: row.offer_status === "pending" ? total_offers : undefined,
+          listing_accepted_total,
+          created_at: row.offer_created_at.toISOString(),
+          updated_at: row.offer_updated_at.toISOString(),
+          resolved_at: row.offer_resolved_at?.toISOString() ?? undefined,
+        };
+      }),
+    );
+
+    res.json(results);
+  },
+);
 
 /**
  * GET /listings/:waste_listing_id/offers/summary
@@ -92,7 +247,7 @@ router.get(
 /**
  * GET /listings/:waste_listing_id/offers
  * Producer (owner) sees all offers with buyer company names.
- * Buyer sees only their own offer.
+ * Buyer sees only their own offer (with rank + total_offers).
  * Carrier / other roles → 403.
  */
 router.get(
@@ -137,7 +292,7 @@ router.get(
       return res.json(rows.map(serializeOffer));
     }
 
-    // Buyer: return only their own offer
+    // Buyer: return only their own offer, with rank + total_offers
     const rows = await db
       .select(offerSelect)
       .from(listingOffersTable)
@@ -153,7 +308,35 @@ router.get(
       )
       .limit(1);
 
-    return res.json(rows.map(serializeOffer));
+    if (rows.length === 0) {
+      return res.json([]);
+    }
+
+    const myOffer = rows[0];
+    const myPpu = Number(myOffer.price_per_unit);
+
+    // F6: Compute rank (offers with higher price + 1) and total
+    const [rankData] = await db
+      .select({ above: sql<number>`cast(count(*) as int)`.as("above") })
+      .from(listingOffersTable)
+      .where(
+        and(
+          eq(listingOffersTable.waste_listing_id, listingId),
+          gt(listingOffersTable.price_per_unit, String(myPpu)),
+        ),
+      );
+
+    const [totalData] = await db
+      .select({ total: sql<number>`cast(count(*) as int)`.as("total") })
+      .from(listingOffersTable)
+      .where(eq(listingOffersTable.waste_listing_id, listingId));
+
+    const rank = (rankData?.above ?? 0) + 1;
+    const total_offers = totalData?.total ?? 1;
+
+    return res.json([
+      serializeOffer({ ...myOffer, rank, total_offers }),
+    ]);
   },
 );
 
@@ -215,7 +398,7 @@ router.post(
 
     // Check for duplicate
     const [existing] = await db
-      .select({ id: listingOffersTable.id })
+      .select({ id: listingOffersTable.id, status: listingOffersTable.status })
       .from(listingOffersTable)
       .where(
         and(
@@ -226,6 +409,13 @@ router.post(
       .limit(1);
 
     if (existing) {
+      if (existing.status === "rejected") {
+        throw new HttpError(
+          409,
+          "OfferRejected",
+          "Your previous offer was rejected. You cannot re-submit an offer on this listing.",
+        );
+      }
       throw new HttpError(
         409,
         "OfferExists",
@@ -328,6 +518,13 @@ router.put(
         "No existing offer found. Submit a new offer first.",
       );
     }
+    if (myOffer.status === "rejected") {
+      throw new HttpError(
+        409,
+        "OfferRejected",
+        "Your previous offer was rejected. You cannot re-submit an offer on this listing.",
+      );
+    }
     if (myOffer.status !== "pending") {
       throw new HttpError(
         409,
@@ -337,7 +534,6 @@ router.put(
     }
 
     // New price must exceed the current highest offer on the listing
-    // This implicitly covers "must exceed own price" since own price ≤ max
     const [summary] = await db
       .select({ highest: max(listingOffersTable.price_per_unit) })
       .from(listingOffersTable)
@@ -371,9 +567,10 @@ router.put(
  * Atomically:
  *  1. Lock the listing row (SELECT FOR UPDATE)
  *  2. Verify listing is open + offer is pending
- *  3. Accept the offer
- *  4. Reject all other offers on the same listing
- *  5. Close the listing
+ *  3. F4: If accepting an offer lower than current highest pending, require acceptance_reason
+ *  4. Accept the offer
+ *  5. Reject all other pending offers (with rejection_reason = 'offer_accepted')
+ *  6. Close the listing
  */
 router.post(
   "/offers/:offer_id/accept",
@@ -382,6 +579,12 @@ router.post(
   async (req, res) => {
     const offerId = assertUuid(req.params.offer_id, "offer_id");
     const { company } = req as AuthedCompanyRequest;
+
+    // Parse optional body
+    const bodyParsed = AcceptOfferBody.safeParse(req.body ?? {});
+    const acceptance_reason = bodyParsed.success
+      ? (bodyParsed.data.acceptance_reason ?? null)
+      : null;
 
     const [offer] = await db
       .select()
@@ -426,18 +629,53 @@ router.post(
         );
       }
 
+      // F4: Check if accepting a lower offer than the current highest other pending offer
+      const [highestOther] = await tx
+        .select({ max_price: max(listingOffersTable.price_per_unit) })
+        .from(listingOffersTable)
+        .where(
+          and(
+            eq(listingOffersTable.waste_listing_id, offer.waste_listing_id),
+            ne(listingOffersTable.id, offerId),
+            eq(listingOffersTable.status, "pending"),
+          ),
+        );
+
+      const otherMax =
+        highestOther?.max_price != null ? Number(highestOther.max_price) : null;
+      const isLowerThanHighest =
+        otherMax !== null && Number(offer.price_per_unit) < otherMax;
+
+      if (isLowerThanHighest && !acceptance_reason?.trim()) {
+        throw new HttpError(
+          400,
+          "AcceptanceReasonRequired",
+          "You are accepting an offer lower than the current highest offer. A reason is required.",
+        );
+      }
+
       const now = new Date();
 
       // 1. Accept this offer
       await tx
         .update(listingOffersTable)
-        .set({ status: "accepted", resolved_at: now, updated_at: now })
+        .set({
+          status: "accepted",
+          resolved_at: now,
+          updated_at: now,
+          acceptance_reason: acceptance_reason?.trim() ?? null,
+        })
         .where(eq(listingOffersTable.id, offerId));
 
       // 2. Reject all other pending offers on this listing
       await tx
         .update(listingOffersTable)
-        .set({ status: "rejected", resolved_at: now, updated_at: now })
+        .set({
+          status: "rejected",
+          resolved_at: now,
+          updated_at: now,
+          rejection_reason: "offer_accepted",
+        })
         .where(
           and(
             eq(listingOffersTable.waste_listing_id, offer.waste_listing_id),
@@ -470,7 +708,8 @@ router.post(
 
 /**
  * POST /offers/:offer_id/reject
- * Producer rejects a single pending offer on their listing.
+ * F3: Producer rejects a single pending offer on their listing.
+ * rejection_reason is REQUIRED.
  */
 router.post(
   "/offers/:offer_id/reject",
@@ -479,6 +718,17 @@ router.post(
   async (req, res) => {
     const offerId = assertUuid(req.params.offer_id, "offer_id");
     const { company } = req as AuthedCompanyRequest;
+
+    const parsed = RejectOfferBody.safeParse(req.body);
+    if (!parsed.success) {
+      throw new HttpError(
+        400,
+        "ValidationError",
+        "rejection_reason is required",
+        parsed.error.issues,
+      );
+    }
+    const { rejection_reason, rejection_reason_detail } = parsed.data;
 
     const [offer] = await db
       .select()
@@ -514,10 +764,20 @@ router.post(
       );
     }
 
+    // Build full reason string: if detail provided (for "other"), combine them
+    const fullReason = rejection_reason_detail?.trim()
+      ? `${rejection_reason}: ${rejection_reason_detail.trim()}`
+      : rejection_reason;
+
     const now = new Date();
     await db
       .update(listingOffersTable)
-      .set({ status: "rejected", resolved_at: now, updated_at: now })
+      .set({
+        status: "rejected",
+        resolved_at: now,
+        updated_at: now,
+        rejection_reason: fullReason,
+      })
       .where(eq(listingOffersTable.id, offerId));
 
     const [result] = await db

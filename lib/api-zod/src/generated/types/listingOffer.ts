@@ -15,6 +15,12 @@ export interface ListingOffer {
   price_per_unit: number;
   message?: string;
   status: OfferStatus;
+  /** Reason provided by producer when rejecting. Visible to the affected buyer only. */
+  rejection_reason?: string;
+  /** Buyer rank among all offers (1 = highest). Only included in buyer-facing responses. */
+  rank?: number;
+  /** Total number of offers on this listing. Included alongside rank. */
+  total_offers?: number;
   created_at: Date;
   updated_at: Date;
   resolved_at?: Date;

@@ -97,6 +97,10 @@ export interface WasteListing {
   status: WasteListingStatus;
   created_at: string;
   closed_at?: string;
+  /** Total number of offers on this listing (included for producer my-listings and marketplace M3) */
+  offer_count?: number;
+  /** Highest offer as a total (price_per_unit × quantity). Null if no offers. */
+  highest_offer_total?: number;
 }
 
 export type OfferStatus = (typeof OfferStatus)[keyof typeof OfferStatus];
@@ -115,6 +119,12 @@ export interface ListingOffer {
   price_per_unit: number;
   message?: string;
   status: OfferStatus;
+  /** Reason provided by producer when rejecting. Visible to the affected buyer only. */
+  rejection_reason?: string;
+  /** Buyer rank among all offers (1 = highest). Only included in buyer-facing responses. */
+  rank?: number;
+  /** Total number of offers on this listing. Included alongside rank. */
+  total_offers?: number;
   created_at: string;
   updated_at: string;
   resolved_at?: string;
@@ -127,9 +137,68 @@ export interface SubmitOfferBody {
   message?: string;
 }
 
+/**
+ * Required body when rejecting an offer. rejection_reason must be one of the predefined options.
+ */
+export interface RejectOfferBody {
+  /**
+   * Short reason code or label for the rejection
+   * @minLength 1
+   * @maxLength 200
+   */
+  rejection_reason: string;
+  /**
+   * Optional free-text detail when rejection_reason is 'other'
+   * @maxLength 300
+   */
+  rejection_reason_detail?: string;
+}
+
+/**
+ * Optional body when accepting an offer. acceptance_reason is REQUIRED (enforced by business logic) when the accepted offer price is lower than the current highest pending offer on the same listing.
+
+ */
+export interface AcceptOfferBody {
+  /** @maxLength 300 */
+  acceptance_reason?: string;
+}
+
 export interface OffersSummary {
   count: number;
   highest_price?: number;
+}
+
+/**
+ * A buyer's offer enriched with listing context. Used for the My Participations page.
+
+ */
+export interface MyOffer {
+  id: string;
+  waste_listing_id: string;
+  /** Human-readable reference e.g. "#LIST-ABCD12" */
+  listing_ref: string;
+  listing_material: WasteMaterial;
+  listing_quantity: number;
+  listing_unit: WasteUnit;
+  listing_city: string;
+  listing_status: WasteListingStatus;
+  /** Producer's company name */
+  listing_company_name: string;
+  listing_closed_at?: string;
+  price_per_unit: number;
+  message?: string;
+  status: OfferStatus;
+  /** Visible to this buyer only when their offer was rejected */
+  rejection_reason?: string;
+  /** Buyer's current rank (1 = highest). Only meaningful when status = pending */
+  rank?: number;
+  total_offers?: number;
+  /** Total value of the accepted offer (accepted_price_per_unit × listing_quantity). Included for rejected buyers when the listing is closed, so they can see the final price.
+   */
+  listing_accepted_total?: number;
+  created_at: string;
+  updated_at: string;
+  resolved_at?: string;
 }
 
 export interface CreateWasteListingBody {
@@ -151,4 +220,12 @@ export interface CreateWasteListingBody {
 export type ListMarketplaceListingsParams = {
   material?: WasteMaterial;
   city?: string;
+};
+
+export type ListMyListingsParams = {
+  status?: WasteListingStatus;
+};
+
+export type ListMyOffersParams = {
+  status?: OfferStatus;
 };

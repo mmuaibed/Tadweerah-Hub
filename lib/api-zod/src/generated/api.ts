@@ -117,6 +117,18 @@ export const ListMarketplaceListingsResponseItem = zod.object({
   status: zod.enum(["open", "closed"]),
   created_at: zod.coerce.date(),
   closed_at: zod.coerce.date().optional(),
+  offer_count: zod
+    .number()
+    .optional()
+    .describe(
+      "Total number of offers on this listing (included for producer my-listings and marketplace M3)",
+    ),
+  highest_offer_total: zod
+    .number()
+    .optional()
+    .describe(
+      "Highest offer as a total (price_per_unit × quantity). Null if no offers.",
+    ),
 });
 export const ListMarketplaceListingsResponse = zod.array(
   ListMarketplaceListingsResponseItem,
@@ -160,6 +172,10 @@ export const CreateWasteListingBody = zod.object({
 /**
  * @summary Listings owned by the current producer company
  */
+export const ListMyListingsQueryParams = zod.object({
+  status: zod.enum(["open", "closed"]).optional(),
+});
+
 export const ListMyListingsResponseItem = zod.object({
   id: zod.string(),
   company_id: zod.string(),
@@ -181,6 +197,18 @@ export const ListMyListingsResponseItem = zod.object({
   status: zod.enum(["open", "closed"]),
   created_at: zod.coerce.date(),
   closed_at: zod.coerce.date().optional(),
+  offer_count: zod
+    .number()
+    .optional()
+    .describe(
+      "Total number of offers on this listing (included for producer my-listings and marketplace M3)",
+    ),
+  highest_offer_total: zod
+    .number()
+    .optional()
+    .describe(
+      "Highest offer as a total (price_per_unit × quantity). Null if no offers.",
+    ),
 });
 export const ListMyListingsResponse = zod.array(ListMyListingsResponseItem);
 
@@ -212,6 +240,18 @@ export const GetWasteListingResponse = zod.object({
   status: zod.enum(["open", "closed"]),
   created_at: zod.coerce.date(),
   closed_at: zod.coerce.date().optional(),
+  offer_count: zod
+    .number()
+    .optional()
+    .describe(
+      "Total number of offers on this listing (included for producer my-listings and marketplace M3)",
+    ),
+  highest_offer_total: zod
+    .number()
+    .optional()
+    .describe(
+      "Highest offer as a total (price_per_unit × quantity). Null if no offers.",
+    ),
 });
 
 /**
@@ -242,6 +282,18 @@ export const CloseWasteListingResponse = zod.object({
   status: zod.enum(["open", "closed"]),
   created_at: zod.coerce.date(),
   closed_at: zod.coerce.date().optional(),
+  offer_count: zod
+    .number()
+    .optional()
+    .describe(
+      "Total number of offers on this listing (included for producer my-listings and marketplace M3)",
+    ),
+  highest_offer_total: zod
+    .number()
+    .optional()
+    .describe(
+      "Highest offer as a total (price_per_unit × quantity). Null if no offers.",
+    ),
 });
 
 /**
@@ -260,6 +312,24 @@ export const GetListingOffersResponseItem = zod.object({
   price_per_unit: zod.number(),
   message: zod.string().optional(),
   status: zod.enum(["pending", "accepted", "rejected"]),
+  rejection_reason: zod
+    .string()
+    .optional()
+    .describe(
+      "Reason provided by producer when rejecting. Visible to the affected buyer only.",
+    ),
+  rank: zod
+    .number()
+    .optional()
+    .describe(
+      "Buyer rank among all offers (1 = highest). Only included in buyer-facing responses.",
+    ),
+  total_offers: zod
+    .number()
+    .optional()
+    .describe(
+      "Total number of offers on this listing. Included alongside rank.",
+    ),
   created_at: zod.coerce.date(),
   updated_at: zod.coerce.date(),
   resolved_at: zod.coerce.date().optional(),
@@ -307,6 +377,24 @@ export const ImproveOfferResponse = zod.object({
   price_per_unit: zod.number(),
   message: zod.string().optional(),
   status: zod.enum(["pending", "accepted", "rejected"]),
+  rejection_reason: zod
+    .string()
+    .optional()
+    .describe(
+      "Reason provided by producer when rejecting. Visible to the affected buyer only.",
+    ),
+  rank: zod
+    .number()
+    .optional()
+    .describe(
+      "Buyer rank among all offers (1 = highest). Only included in buyer-facing responses.",
+    ),
+  total_offers: zod
+    .number()
+    .optional()
+    .describe(
+      "Total number of offers on this listing. Included alongside rank.",
+    ),
   created_at: zod.coerce.date(),
   updated_at: zod.coerce.date(),
   resolved_at: zod.coerce.date().optional(),
@@ -326,12 +414,84 @@ export const GetOffersSummaryResponse = zod.object({
 });
 
 /**
- * @summary Accept an offer (listing owner / producer only). Atomically: marks offer accepted, rejects all others, closes the listing.
+ * @summary List all offers submitted by the current buyer, with listing details. Ordered by offer.updated_at DESC (most recently changed first).
+
+ */
+export const ListMyOffersQueryParams = zod.object({
+  status: zod.enum(["pending", "accepted", "rejected"]).optional(),
+});
+
+export const ListMyOffersResponseItem = zod
+  .object({
+    id: zod.string(),
+    waste_listing_id: zod.string(),
+    listing_ref: zod
+      .string()
+      .describe('Human-readable reference e.g. \"#LIST-ABCD12\"'),
+    listing_material: zod.enum([
+      "paper",
+      "plastic",
+      "metal",
+      "glass",
+      "electronics",
+      "organic",
+      "other",
+    ]),
+    listing_quantity: zod.number(),
+    listing_unit: zod.enum(["kg", "ton"]),
+    listing_city: zod.string(),
+    listing_status: zod.enum(["open", "closed"]),
+    listing_company_name: zod.string().describe("Producer's company name"),
+    listing_closed_at: zod.coerce.date().optional(),
+    price_per_unit: zod.number(),
+    message: zod.string().optional(),
+    status: zod.enum(["pending", "accepted", "rejected"]),
+    rejection_reason: zod
+      .string()
+      .optional()
+      .describe("Visible to this buyer only when their offer was rejected"),
+    rank: zod
+      .number()
+      .optional()
+      .describe(
+        "Buyer's current rank (1 = highest). Only meaningful when status = pending",
+      ),
+    total_offers: zod.number().optional(),
+    listing_accepted_total: zod
+      .number()
+      .optional()
+      .describe(
+        "Total value of the accepted offer (accepted_price_per_unit × listing_quantity). Included for rejected buyers when the listing is closed, so they can see the final price.\n",
+      ),
+    created_at: zod.coerce.date(),
+    updated_at: zod.coerce.date(),
+    resolved_at: zod.coerce.date().optional(),
+  })
+  .describe(
+    "A buyer's offer enriched with listing context. Used for the My Participations page.\n",
+  );
+export const ListMyOffersResponse = zod.array(ListMyOffersResponseItem);
+
+/**
+ * @summary Accept an offer (listing owner / producer only). Atomically: marks offer accepted, rejects all others, closes the listing. If accepted offer price < current highest pending, acceptance_reason is required.
 
  */
 export const AcceptOfferParams = zod.object({
   offer_id: zod.coerce.string(),
 });
+
+export const acceptOfferBodyAcceptanceReasonMax = 300;
+
+export const AcceptOfferBody = zod
+  .object({
+    acceptance_reason: zod
+      .string()
+      .max(acceptOfferBodyAcceptanceReasonMax)
+      .optional(),
+  })
+  .describe(
+    "Optional body when accepting an offer. acceptance_reason is REQUIRED (enforced by business logic) when the accepted offer price is lower than the current highest pending offer on the same listing.\n",
+  );
 
 export const AcceptOfferResponse = zod.object({
   id: zod.string(),
@@ -341,17 +501,56 @@ export const AcceptOfferResponse = zod.object({
   price_per_unit: zod.number(),
   message: zod.string().optional(),
   status: zod.enum(["pending", "accepted", "rejected"]),
+  rejection_reason: zod
+    .string()
+    .optional()
+    .describe(
+      "Reason provided by producer when rejecting. Visible to the affected buyer only.",
+    ),
+  rank: zod
+    .number()
+    .optional()
+    .describe(
+      "Buyer rank among all offers (1 = highest). Only included in buyer-facing responses.",
+    ),
+  total_offers: zod
+    .number()
+    .optional()
+    .describe(
+      "Total number of offers on this listing. Included alongside rank.",
+    ),
   created_at: zod.coerce.date(),
   updated_at: zod.coerce.date(),
   resolved_at: zod.coerce.date().optional(),
 });
 
 /**
- * @summary Reject a single pending offer (listing owner / producer only)
+ * @summary Reject a single pending offer (listing owner / producer only). rejection_reason is required.
  */
 export const RejectOfferParams = zod.object({
   offer_id: zod.coerce.string(),
 });
+
+export const rejectOfferBodyRejectionReasonMax = 200;
+
+export const rejectOfferBodyRejectionReasonDetailMax = 300;
+
+export const RejectOfferBody = zod
+  .object({
+    rejection_reason: zod
+      .string()
+      .min(1)
+      .max(rejectOfferBodyRejectionReasonMax)
+      .describe("Short reason code or label for the rejection"),
+    rejection_reason_detail: zod
+      .string()
+      .max(rejectOfferBodyRejectionReasonDetailMax)
+      .optional()
+      .describe("Optional free-text detail when rejection_reason is 'other'"),
+  })
+  .describe(
+    "Required body when rejecting an offer. rejection_reason must be one of the predefined options.",
+  );
 
 export const RejectOfferResponse = zod.object({
   id: zod.string(),
@@ -361,6 +560,24 @@ export const RejectOfferResponse = zod.object({
   price_per_unit: zod.number(),
   message: zod.string().optional(),
   status: zod.enum(["pending", "accepted", "rejected"]),
+  rejection_reason: zod
+    .string()
+    .optional()
+    .describe(
+      "Reason provided by producer when rejecting. Visible to the affected buyer only.",
+    ),
+  rank: zod
+    .number()
+    .optional()
+    .describe(
+      "Buyer rank among all offers (1 = highest). Only included in buyer-facing responses.",
+    ),
+  total_offers: zod
+    .number()
+    .optional()
+    .describe(
+      "Total number of offers on this listing. Included alongside rank.",
+    ),
   created_at: zod.coerce.date(),
   updated_at: zod.coerce.date(),
   resolved_at: zod.coerce.date().optional(),

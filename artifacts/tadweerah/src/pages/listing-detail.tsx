@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -32,10 +32,19 @@ import {
   ChevronDown,
   ChevronUp,
   BadgeCheck,
+  Medal,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { AppLayout } from "@/components/app-layout";
 import { EmptyState } from "@/components/empty-state";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -44,6 +53,27 @@ import { listingRef } from "@/lib/listing-ref";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const REJECTION_REASON_CODES = [
+  "price_too_low",
+  "quantity_mismatch",
+  "not_interested",
+  "other",
+] as const;
+
+/** Translate a machine rejection_reason code to a human label. Falls back to raw value. */
+function translateRejectionReason(code: string | undefined, t: (k: string) => string): string {
+  if (!code) return "";
+  // Strip any detail suffix (e.g. "other: some detail")
+  const base = code.split(":")[0]?.trim() ?? code;
+  const key = `offer.reject.reason.${base}`;
+  const translated = t(key);
+  // If not translated (key returned as-is), use raw
+  if (translated === key) return code;
+  // If detail was present, append it
+  const detail = code.includes(":") ? code.slice(code.indexOf(":") + 1).trim() : null;
+  return detail ? `${translated}: ${detail}` : translated;
+}
 
 function DetailRow({
   icon,
@@ -74,11 +104,7 @@ function offerStatusVariant(status: ListingOffer["status"]) {
 }
 
 /** Compact summary bar: offer count + highest price */
-function OfferSummaryBar({
-  wasteListingId,
-}: {
-  wasteListingId: string;
-}) {
+function OfferSummaryBar({ wasteListingId }: { wasteListingId: string }) {
   const { t } = useT();
   const { data: summary } = useGetOffersSummary(wasteListingId);
 
@@ -101,6 +127,253 @@ function OfferSummaryBar({
         </span>
       )}
     </div>
+  );
+}
+
+/** F6: Rank badge — only shown when total_offers > 1 */
+function RankBadge({
+  rank,
+  total_offers,
+}: {
+  rank: number;
+  total_offers: number;
+}) {
+  const { t } = useT();
+  if (total_offers <= 1) return null;
+  const isTop = rank === 1;
+
+  return (
+    <div
+      className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium ${
+        isTop
+          ? "bg-amber-50 text-amber-700 border border-amber-200"
+          : "bg-muted text-muted-foreground border border-border"
+      }`}
+    >
+      <Medal className="h-3 w-3" />
+      {isTop ? (
+        <span>{t("offer.rank.top")}</span>
+      ) : (
+        <span>
+          {t("offer.rank.label")}: {rank} {t("offer.rank.of")} {total_offers}
+        </span>
+      )}
+    </div>
+  );
+}
+
+/** F3: Rejection reason dialog for producer */
+function RejectOfferDialog({
+  open,
+  offer,
+  onOpenChange,
+  onConfirm,
+  isPending,
+}: {
+  open: boolean;
+  offer: ListingOffer | null;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: (reason: string, detail?: string) => void;
+  isPending: boolean;
+}) {
+  const { t } = useT();
+  const [reason, setReason] = useState<string>("");
+  const [detail, setDetail] = useState<string>("");
+  const [error, setError] = useState<string | null>(null);
+
+  // Reset when dialog opens
+  useEffect(() => {
+    if (open) {
+      setReason("");
+      setDetail("");
+      setError(null);
+    }
+  }, [open]);
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!reason.trim()) {
+      setError(t("offer.reject.reason.required"));
+      return;
+    }
+    onConfirm(reason, detail.trim() || undefined);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!isPending) onOpenChange(o); }}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{t("offer.reject.confirm.title")}</DialogTitle>
+          {offer && (
+            <DialogDescription>
+              {offer.buyer_company_name} —{" "}
+              {offer.price_per_unit.toLocaleString()} {t("listing.sar")}
+            </DialogDescription>
+          )}
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-foreground">
+              {t("offer.reject.reason.label")} *
+            </label>
+            <div className="grid grid-cols-1 gap-2">
+              {REJECTION_REASON_CODES.map((code) => (
+                <label
+                  key={code}
+                  className={`flex cursor-pointer items-center gap-2.5 rounded-lg border px-3 py-2.5 text-sm transition-colors ${
+                    reason === code
+                      ? "border-primary bg-primary/5 text-primary"
+                      : "border-border hover:bg-muted/40"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="rejection_reason"
+                    value={code}
+                    checked={reason === code}
+                    onChange={() => { setReason(code); setError(null); }}
+                    className="accent-primary"
+                  />
+                  {t(`offer.reject.reason.${code}`)}
+                </label>
+              ))}
+            </div>
+            {error && <p className="text-xs text-destructive">{error}</p>}
+          </div>
+
+          {reason === "other" && (
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">
+                {t("offer.reject.reason.detail.label")}
+              </label>
+              <textarea
+                rows={2}
+                maxLength={300}
+                value={detail}
+                onChange={(e) => setDetail(e.target.value)}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+          )}
+
+          <DialogFooter className="gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={isPending}
+            >
+              {t("action.cancel")}
+            </Button>
+            <Button
+              type="submit"
+              variant="destructive"
+              disabled={isPending}
+            >
+              {isPending && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
+              {isPending ? t("offer.rejecting") : t("offer.reject.confirm.action")}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** F4: Accept offer dialog — with optional lower-price reason */
+function AcceptOfferDialog({
+  open,
+  offer,
+  isLowerThanHighest,
+  onOpenChange,
+  onConfirm,
+  isPending,
+}: {
+  open: boolean;
+  offer: ListingOffer | null;
+  isLowerThanHighest: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: (acceptanceReason?: string) => void;
+  isPending: boolean;
+}) {
+  const { t } = useT();
+  const [reason, setReason] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      setReason("");
+      setError(null);
+    }
+  }, [open]);
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (isLowerThanHighest && !reason.trim()) {
+      setError(t("offer.accept.reason.required"));
+      return;
+    }
+    onConfirm(reason.trim() || undefined);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!isPending) onOpenChange(o); }}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{t("offer.accept.confirm.title")}</DialogTitle>
+          {offer && (
+            <DialogDescription className="space-y-1">
+              <span className="block">
+                {offer.buyer_company_name} —{" "}
+                {offer.price_per_unit.toLocaleString()} {t("listing.sar")}
+              </span>
+              <span className="block text-xs">{t("offer.accept.confirm.desc")}</span>
+            </DialogDescription>
+          )}
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+          {isLowerThanHighest && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-700">
+              {t("offer.accept.lowerThanHighest")}
+            </div>
+          )}
+
+          {isLowerThanHighest && (
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-foreground">
+                {t("offer.accept.reason.label")} *
+              </label>
+              <textarea
+                rows={3}
+                maxLength={300}
+                value={reason}
+                onChange={(e) => { setReason(e.target.value); setError(null); }}
+                placeholder={t("offer.accept.reason.placeholder")}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+              {error && <p className="text-xs text-destructive">{error}</p>}
+            </div>
+          )}
+
+          <DialogFooter className="gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={isPending}
+            >
+              {t("action.cancel")}
+            </Button>
+            <Button type="submit" disabled={isPending}>
+              {isPending && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
+              {isPending ? t("offer.accepting") : t("offer.accept.confirm.action")}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -141,19 +414,14 @@ function BuyerOfferSection({
     submitOffer(
       { wasteListingId, data: { price_per_unit: val, message: message.trim() || undefined } },
       {
-        onSuccess: () => {
-          setPrice("");
-          setMessage("");
-          onSuccess();
-        },
+        onSuccess: () => { setPrice(""); setMessage(""); onSuccess(); },
         onError: (err: unknown) => {
-          const msg =
-            (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
-          if (msg?.includes("PriceTooLow") || msg?.includes("higher")) {
-            setFormError(t("offer.error.tooLow"));
-          } else {
-            setFormError(t("offer.error.generic"));
-          }
+          const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+          setFormError(
+            msg?.includes("PriceTooLow") || msg?.includes("higher")
+              ? t("offer.error.tooLow")
+              : t("offer.error.generic"),
+          );
         },
       },
     );
@@ -168,20 +436,14 @@ function BuyerOfferSection({
     improveOffer(
       { wasteListingId, data: { price_per_unit: val, message: newMessage.trim() || undefined } },
       {
-        onSuccess: () => {
-          setShowImproveForm(false);
-          setNewPrice("");
-          setNewMessage("");
-          onSuccess();
-        },
+        onSuccess: () => { setShowImproveForm(false); setNewPrice(""); setNewMessage(""); onSuccess(); },
         onError: (err: unknown) => {
-          const msg =
-            (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
-          if (msg?.includes("PriceTooLow") || msg?.includes("higher")) {
-            setFormError(t("offer.error.tooLow"));
-          } else {
-            setFormError(t("offer.error.generic"));
-          }
+          const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+          setFormError(
+            msg?.includes("PriceTooLow") || msg?.includes("higher")
+              ? t("offer.error.tooLow")
+              : t("offer.error.generic"),
+          );
         },
       },
     );
@@ -198,7 +460,7 @@ function BuyerOfferSection({
   // Accepted offer
   if (myOffer?.status === "accepted") {
     return (
-      <div className="rounded-xl border border-green-200 bg-green-50 p-5 space-y-2 dark:border-green-800 dark:bg-green-950">
+      <div className="rounded-xl border border-green-200 bg-green-50 p-5 space-y-3 dark:border-green-800 dark:bg-green-950">
         <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
           <CheckCircle2 className="h-5 w-5" />
           <span className="font-semibold">{t("offer.mine.accepted")}</span>
@@ -209,18 +471,21 @@ function BuyerOfferSection({
         </div>
         <div className="text-xs text-muted-foreground">
           {t("offer.mine.total")}:{" "}
-          <span className="font-medium">
+          <span className="font-medium text-foreground">
             {(myOffer.price_per_unit * listingQuantity).toLocaleString()} {t("listing.sar")}
           </span>
+          {" "}
+          <span className="text-muted-foreground/60">{t("offer.quantityDisclaimer")}</span>
         </div>
       </div>
     );
   }
 
-  // Rejected offer
+  // Rejected offer — F2: show rejection reason
   if (myOffer?.status === "rejected") {
+    const reasonText = translateRejectionReason(myOffer.rejection_reason, t);
     return (
-      <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-5 space-y-1">
+      <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-5 space-y-2">
         <div className="flex items-center gap-2 text-destructive">
           <XCircle className="h-5 w-5" />
           <span className="font-semibold">{t("offer.mine.rejected")}</span>
@@ -228,6 +493,12 @@ function BuyerOfferSection({
         <div className="text-sm text-muted-foreground">
           {myOffer.price_per_unit.toLocaleString()} {t("listing.sar")}
         </div>
+        {reasonText && (
+          <div className="text-xs text-muted-foreground">
+            <span className="font-medium">{t("offer.mine.rejectionReason")}:</span>{" "}
+            {reasonText}
+          </div>
+        )}
       </div>
     );
   }
@@ -235,15 +506,23 @@ function BuyerOfferSection({
   // Existing pending offer
   if (myOffer?.status === "pending") {
     const estimatedTotal = myOffer.price_per_unit * listingQuantity;
+    const rank = (myOffer as unknown as { rank?: number }).rank;
+    const totalOffers = (myOffer as unknown as { total_offers?: number }).total_offers;
+
     return (
       <div className="space-y-4">
-        {/* Current offer card */}
         <div className="rounded-xl border border-border bg-card p-5 space-y-3">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <span className="text-sm font-medium text-muted-foreground">
               {t("offer.mine.title")}
             </span>
-            <Badge variant="secondary">{t("offer.status.pending")}</Badge>
+            <div className="flex items-center gap-2">
+              {/* F6: rank badge */}
+              {rank != null && totalOffers != null && (
+                <RankBadge rank={rank} total_offers={totalOffers} />
+              )}
+              <Badge variant="secondary">{t("offer.status.pending")}</Badge>
+            </div>
           </div>
           <div className="flex items-end gap-1">
             <span className="text-2xl font-bold text-foreground">
@@ -258,10 +537,10 @@ function BuyerOfferSection({
             <span className="font-semibold text-foreground">
               {estimatedTotal.toLocaleString()} {t("listing.sar")}
             </span>
+            {" "}
+            <span className="text-muted-foreground/60">{t("offer.quantityDisclaimer")}</span>
           </div>
-          <p className="text-xs text-muted-foreground">
-            {t("offer.mine.pending")}
-          </p>
+          <p className="text-xs text-muted-foreground">{t("offer.mine.pending")}</p>
           {myOffer.message && (
             <p className="text-sm text-foreground italic">{myOffer.message}</p>
           )}
@@ -279,11 +558,7 @@ function BuyerOfferSection({
                 <TrendingUp className="h-4 w-4 text-primary" />
                 {t("offer.form.improve")}
               </span>
-              {showImproveForm ? (
-                <ChevronUp className="h-4 w-4" />
-              ) : (
-                <ChevronDown className="h-4 w-4" />
-              )}
+              {showImproveForm ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </button>
             {showImproveForm && (
               <form onSubmit={handleImprove} className="px-5 pb-5 pt-2 space-y-3 border-t border-border">
@@ -320,9 +595,7 @@ function BuyerOfferSection({
                     className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
-                {formError && (
-                  <p className="text-xs text-destructive">{formError}</p>
-                )}
+                {formError && <p className="text-xs text-destructive">{formError}</p>}
                 <Button type="submit" className="w-full" disabled={isImproving}>
                   {isImproving && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
                   {isImproving ? t("offer.form.improving") : t("offer.form.improve")}
@@ -335,10 +608,8 @@ function BuyerOfferSection({
     );
   }
 
-  // No offer yet — show submit form
-  if (!isOpen) {
-    return null;
-  }
+  // No offer yet
+  if (!isOpen) return null;
 
   return (
     <div className="rounded-xl border border-border bg-card p-5 space-y-4">
@@ -369,9 +640,7 @@ function BuyerOfferSection({
             value={price}
             onChange={(e) => setPrice(e.target.value)}
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-            placeholder={
-              highestPrice > 0 ? `> ${highestPrice.toLocaleString()}` : "0.000"
-            }
+            placeholder={highestPrice > 0 ? `> ${highestPrice.toLocaleString()}` : "0.000"}
           />
           {price && parseFloat(price) > 0 && (
             <p className="text-xs text-muted-foreground">
@@ -379,6 +648,8 @@ function BuyerOfferSection({
               <span className="font-semibold">
                 {(parseFloat(price) * listingQuantity).toLocaleString()} {t("listing.sar")}
               </span>
+              {" "}
+              <span className="text-muted-foreground/60">{t("offer.quantityDisclaimer")}</span>
             </p>
           )}
         </div>
@@ -394,9 +665,7 @@ function BuyerOfferSection({
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary"
           />
         </div>
-        {formError && (
-          <p className="text-xs text-destructive">{formError}</p>
-        )}
+        {formError && <p className="text-xs text-destructive">{formError}</p>}
         <Button type="submit" className="w-full" disabled={isSubmitting}>
           {isSubmitting && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
           {isSubmitting ? t("offer.form.submitting") : t("offer.form.submit")}
@@ -411,6 +680,7 @@ function ProducerOfferRow({
   offer,
   listingQuantity,
   listingIsOpen,
+  highestPendingPrice,
   onAccept,
   onReject,
   isAccepting,
@@ -419,6 +689,7 @@ function ProducerOfferRow({
   offer: ListingOffer;
   listingQuantity: number;
   listingIsOpen: boolean;
+  highestPendingPrice: number;
   onAccept: (offer: ListingOffer) => void;
   onReject: (offer: ListingOffer) => void;
   isAccepting: boolean;
@@ -454,6 +725,8 @@ function ProducerOfferRow({
         <span className="font-semibold text-foreground">
           {estimatedTotal.toLocaleString()} {t("listing.sar")}
         </span>
+        {" "}
+        <span className="text-muted-foreground/60">{t("offer.quantityDisclaimer")}</span>
       </div>
 
       {offer.message && (
@@ -468,11 +741,7 @@ function ProducerOfferRow({
             onClick={() => onAccept(offer)}
             disabled={isAccepting || isRejecting}
           >
-            {isAccepting ? (
-              <Loader2 className="me-1.5 h-3 w-3 animate-spin" />
-            ) : (
-              <BadgeCheck className="me-1.5 h-3 w-3" />
-            )}
+            {isAccepting ? <Loader2 className="me-1.5 h-3 w-3 animate-spin" /> : <BadgeCheck className="me-1.5 h-3 w-3" />}
             {isAccepting ? t("offer.accepting") : t("offer.accept")}
           </Button>
           <Button
@@ -482,11 +751,7 @@ function ProducerOfferRow({
             onClick={() => onReject(offer)}
             disabled={isAccepting || isRejecting}
           >
-            {isRejecting ? (
-              <Loader2 className="me-1.5 h-3 w-3 animate-spin" />
-            ) : (
-              <XCircle className="me-1.5 h-3 w-3" />
-            )}
+            {isRejecting ? <Loader2 className="me-1.5 h-3 w-3 animate-spin" /> : <XCircle className="me-1.5 h-3 w-3" />}
             {isRejecting ? t("offer.rejecting") : t("offer.reject")}
           </Button>
         </div>
@@ -501,11 +766,13 @@ function ProducerOffersPanel({
   listingQuantity,
   listingIsOpen,
   onAfterAction,
+  onPendingCountChange,
 }: {
   wasteListingId: string;
   listingQuantity: number;
   listingIsOpen: boolean;
   onAfterAction: () => void;
+  onPendingCountChange: (count: number) => void;
 }) {
   const { t } = useT();
   const queryClient = useQueryClient();
@@ -516,35 +783,50 @@ function ProducerOffersPanel({
   const [acceptTarget, setAcceptTarget] = useState<ListingOffer | null>(null);
   const [rejectTarget, setRejectTarget] = useState<ListingOffer | null>(null);
 
+  // Notify parent of pending count for close-dialog warning
+  const prevCountRef = useRef<number>(-1);
+  useEffect(() => {
+    const pending = (offers as ListingOffer[]).filter((o) => o.status === "pending").length;
+    if (pending !== prevCountRef.current) {
+      prevCountRef.current = pending;
+      onPendingCountChange(pending);
+    }
+  }, [offers, onPendingCountChange]);
+
+  // F4: compute whether the acceptTarget is lower than the highest other pending offer
+  const highestPendingPrice = (offers as ListingOffer[])
+    .filter((o) => o.status === "pending")
+    .reduce((max, o) => Math.max(max, o.price_per_unit), 0);
+
+  const acceptIsLower =
+    acceptTarget != null &&
+    (offers as ListingOffer[]).some(
+      (o) => o.status === "pending" && o.id !== acceptTarget.id && o.price_per_unit > acceptTarget.price_per_unit,
+    );
+
   function invalidateOffers() {
     queryClient.invalidateQueries({ queryKey: getGetListingOffersQueryKey(wasteListingId) });
     queryClient.invalidateQueries({ queryKey: getGetOffersSummaryQueryKey(wasteListingId) });
   }
 
-  function handleAcceptConfirm() {
+  function handleAcceptConfirm(acceptanceReason?: string) {
     if (!acceptTarget) return;
     acceptOffer(
-      { offerId: acceptTarget.id },
+      { offerId: acceptTarget.id, data: acceptanceReason ? { acceptance_reason: acceptanceReason } : {} },
       {
-        onSuccess: () => {
-          setAcceptTarget(null);
-          invalidateOffers();
-          onAfterAction();
-        },
+        onSuccess: () => { setAcceptTarget(null); invalidateOffers(); onAfterAction(); },
         onError: () => setAcceptTarget(null),
       },
     );
   }
 
-  function handleRejectConfirm() {
+  function handleRejectConfirm(reason: string, detail?: string) {
     if (!rejectTarget) return;
+    const fullReason = detail ? `${reason}: ${detail}` : reason;
     rejectOffer(
-      { offerId: rejectTarget.id },
+      { offerId: rejectTarget.id, data: { rejection_reason: fullReason } },
       {
-        onSuccess: () => {
-          setRejectTarget(null);
-          invalidateOffers();
-        },
+        onSuccess: () => { setRejectTarget(null); invalidateOffers(); },
         onError: () => setRejectTarget(null),
       },
     );
@@ -552,25 +834,23 @@ function ProducerOffersPanel({
 
   return (
     <>
-      <ConfirmDialog
-        open={!!acceptTarget}
-        onOpenChange={(open) => { if (!open) setAcceptTarget(null); }}
-        title={t("offer.accept.confirm.title")}
-        description={t("offer.accept.confirm.desc")}
-        confirmLabel={t("offer.accept.confirm.action")}
-        onConfirm={handleAcceptConfirm}
-        isPending={isAccepting}
-        destructive={false}
-      />
-      <ConfirmDialog
+      {/* F3: Reject dialog with reason select */}
+      <RejectOfferDialog
         open={!!rejectTarget}
+        offer={rejectTarget}
         onOpenChange={(open) => { if (!open) setRejectTarget(null); }}
-        title={t("offer.reject.confirm.title")}
-        description={t("offer.reject.confirm.desc")}
-        confirmLabel={t("offer.reject.confirm.action")}
         onConfirm={handleRejectConfirm}
         isPending={isRejecting}
-        destructive
+      />
+
+      {/* F4: Accept dialog with conditional reason */}
+      <AcceptOfferDialog
+        open={!!acceptTarget}
+        offer={acceptTarget}
+        isLowerThanHighest={acceptIsLower}
+        onOpenChange={(open) => { if (!open) setAcceptTarget(null); }}
+        onConfirm={handleAcceptConfirm}
+        isPending={isAccepting}
       />
 
       <div className="rounded-xl border border-border bg-card overflow-hidden">
@@ -600,6 +880,7 @@ function ProducerOffersPanel({
                 offer={offer}
                 listingQuantity={listingQuantity}
                 listingIsOpen={listingIsOpen}
+                highestPendingPrice={highestPendingPrice}
                 onAccept={(o) => setAcceptTarget(o)}
                 onReject={(o) => setRejectTarget(o)}
                 isAccepting={isAccepting && acceptTarget?.id === offer.id}
@@ -622,6 +903,7 @@ export function ListingDetailPage() {
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [closeError, setCloseError] = useState<string | null>(null);
+  const [pendingOfferCount, setPendingOfferCount] = useState(0);
 
   const isValidId = UUID_RE.test(wasteListingId);
 
@@ -667,9 +949,7 @@ export function ListingDetailPage() {
         onSuccess: (updated) => {
           setConfirmOpen(false);
           invalidateListing();
-          if (updated.status === "closed") {
-            navigate("/listings/mine");
-          }
+          if (updated.status === "closed") navigate("/listings/mine");
         },
         onError: () => {
           setConfirmOpen(false);
@@ -682,11 +962,7 @@ export function ListingDetailPage() {
   const backButton = (
     <Link to={backPath}>
       <Button variant="ghost" size="sm" className="gap-1 px-2">
-        {lang === "ar" ? (
-          <ArrowRight className="h-4 w-4" />
-        ) : (
-          <ArrowLeft className="h-4 w-4" />
-        )}
+        {lang === "ar" ? <ArrowRight className="h-4 w-4" /> : <ArrowLeft className="h-4 w-4" />}
         {t("action.back")}
       </Button>
     </Link>
@@ -695,11 +971,7 @@ export function ListingDetailPage() {
   if (!isValidId) {
     return (
       <AppLayout showSignOut title={t("listing.invalidId.title")} actions={backButton}>
-        <EmptyState
-          icon={Recycle}
-          title={t("listing.invalidId.title")}
-          description={t("listing.invalidId.desc")}
-        />
+        <EmptyState icon={Recycle} title={t("listing.invalidId.title")} description={t("listing.invalidId.desc")} />
       </AppLayout>
     );
   }
@@ -717,11 +989,7 @@ export function ListingDetailPage() {
   if (isError || !listing) {
     return (
       <AppLayout showSignOut title={t("listing.notFound.title")} actions={backButton}>
-        <EmptyState
-          icon={Recycle}
-          title={t("listing.notFound.title")}
-          description={t("listing.notFound.desc")}
-        />
+        <EmptyState icon={Recycle} title={t("listing.notFound.title")} description={t("listing.notFound.desc")} />
       </AppLayout>
     );
   }
@@ -730,19 +998,21 @@ export function ListingDetailPage() {
   const materialLabel = t(`material.${listing.material}`);
   const quantity = Number(listing.quantity);
 
+  // F1: Build close dialog description with pending count
+  const closeDialogDesc = isOwner && pendingOfferCount > 0
+    ? `${t("listing.close.confirm.pendingOffers").replace("{count}", String(pendingOfferCount))} ${t("listing.close.confirm.desc")}`
+    : pendingOfferCount === 0 && isOwner
+      ? `${t("listing.close.confirm.noPending")} ${t("listing.close.confirm.desc")}`
+      : t("listing.close.confirm.desc");
+
   return (
-    <AppLayout
-      showSignOut
-      title={materialLabel}
-      subtitle={ref}
-      actions={backButton}
-    >
-      {/* Close listing confirm */}
+    <AppLayout showSignOut title={materialLabel} subtitle={ref} actions={backButton}>
+      {/* F1: Close listing confirm with pending count */}
       <ConfirmDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
         title={t("listing.close.confirm.title")}
-        description={t("listing.close.confirm.desc")}
+        description={closeDialogDesc}
         confirmLabel={t("listing.close.confirm.action")}
         onConfirm={handleConfirmClose}
         isPending={isClosing}
@@ -767,10 +1037,7 @@ export function ListingDetailPage() {
               <span className="text-xs text-muted-foreground">{ref}</span>
             </div>
           </div>
-          <Badge
-            variant={isOpen ? "secondary" : "outline"}
-            className="text-sm"
-          >
+          <Badge variant={isOpen ? "secondary" : "outline"} className="text-sm">
             {t(`status.${listing.status}`)}
           </Badge>
         </div>
@@ -782,11 +1049,7 @@ export function ListingDetailPage() {
             label={t("listing.quantity")}
             value={`${listing.quantity} ${t(`unit.${listing.unit}`)}`}
           />
-          <DetailRow
-            icon={<MapPin className="h-4 w-4" />}
-            label={t("listing.city")}
-            value={listing.city}
-          />
+          <DetailRow icon={<MapPin className="h-4 w-4" />} label={t("listing.city")} value={listing.city} />
           {listing.price_hint != null && (
             <DetailRow
               icon={<Tag className="h-4 w-4" />}
@@ -794,36 +1057,22 @@ export function ListingDetailPage() {
               value={`${listing.price_hint} ${t("listing.sar")}`}
             />
           )}
-          <DetailRow
-            icon={<Building2 className="h-4 w-4" />}
-            label={t("listing.detail.publishedBy")}
-            value={listing.company_name}
-          />
-          <DetailRow
-            icon={<Calendar className="h-4 w-4" />}
-            label={t("listing.publishedOn")}
-            value={dateStr}
-          />
+          <DetailRow icon={<Building2 className="h-4 w-4" />} label={t("listing.detail.publishedBy")} value={listing.company_name} />
+          <DetailRow icon={<Calendar className="h-4 w-4" />} label={t("listing.publishedOn")} value={dateStr} />
         </div>
 
         {/* Description */}
         {listing.description && (
           <div className="rounded-xl border border-border bg-card p-5 space-y-2">
-            <p className="text-xs font-medium text-muted-foreground">
-              {t("listing.detail.description")}
-            </p>
-            <p className="text-sm text-foreground leading-relaxed">
-              {listing.description}
-            </p>
+            <p className="text-xs font-medium text-muted-foreground">{t("listing.detail.description")}</p>
+            <p className="text-sm text-foreground leading-relaxed">{listing.description}</p>
           </div>
         )}
 
         <Separator />
 
-        {/* Offers summary bar — visible to all company roles */}
-        {me?.company && (
-          <OfferSummaryBar wasteListingId={wasteListingId} />
-        )}
+        {/* Offers summary bar */}
+        {me?.company && <OfferSummaryBar wasteListingId={wasteListingId} />}
 
         {/* Producer: close button + incoming offers */}
         {role === "producer" && isOwner && (
@@ -844,6 +1093,7 @@ export function ListingDetailPage() {
               listingQuantity={quantity}
               listingIsOpen={!!isOpen}
               onAfterAction={invalidateListing}
+              onPendingCountChange={setPendingOfferCount}
             />
           </div>
         )}
@@ -856,12 +1106,8 @@ export function ListingDetailPage() {
               listingQuantity={quantity}
               isOpen={!!isOpen}
               onSuccess={() => {
-                queryClient.invalidateQueries({
-                  queryKey: getGetListingOffersQueryKey(wasteListingId),
-                });
-                queryClient.invalidateQueries({
-                  queryKey: getGetOffersSummaryQueryKey(wasteListingId),
-                });
+                queryClient.invalidateQueries({ queryKey: getGetListingOffersQueryKey(wasteListingId) });
+                queryClient.invalidateQueries({ queryKey: getGetOffersSummaryQueryKey(wasteListingId) });
               }}
             />
           </div>

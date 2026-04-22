@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./acceptOfferBody";
 export * from "./company";
 export * from "./companyType";
 export * from "./createCompanyBody";
@@ -13,9 +14,13 @@ export * from "./createWasteListingBody";
 export * from "./healthStatus";
 export * from "./listingOffer";
 export * from "./listMarketplaceListingsParams";
+export * from "./listMyListingsParams";
+export * from "./listMyOffersParams";
 export * from "./meResponse";
+export * from "./myOffer";
 export * from "./offersSummary";
 export * from "./offerStatus";
+export * from "./rejectOfferBody";
 export * from "./submitOfferBody";
 export * from "./wasteListing";
 export * from "./wasteListingStatus";

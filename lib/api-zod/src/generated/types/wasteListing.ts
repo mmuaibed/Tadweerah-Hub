@@ -22,4 +22,8 @@ export interface WasteListing {
   status: WasteListingStatus;
   created_at: Date;
   closed_at?: Date;
+  /** Total number of offers on this listing (included for producer my-listings and marketplace M3) */
+  offer_count?: number;
+  /** Highest offer as a total (price_per_unit × quantity). Null if no offers. */
+  highest_offer_total?: number;
 }
