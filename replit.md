@@ -89,6 +89,11 @@ A Saudi B2B MVP connecting waste producers, recycling buyers, and transport carr
 - `visibility = "private"` enforcement depends on a future `listing_invitations` table (not yet built). Do NOT surface private-listing creation in UI until enforcement exists.
 - `GET /listings` (marketplace feed) permanently filters `WHERE visibility = 'public'` — private listings can never leak into the public feed.
 - Access control for private listings is listing-level intent + invitations layer (NOT an `allowed_buyer_ids` column — wrong pattern).
+- `acceptance_reason` currently checks highest *pending* offer at time of acceptance — gameable by pre-rejecting higher offers first. Next structural pass must change the check to highest *historical* (MAX across all offers including rejected).
+- `accepted_below_highest_historical` boolean flag approved for next structural pass (same pattern as `pricing_model` and `visibility`) — passive, no flow change, strengthens audit trail.
+- T&C must state: producer bears full responsibility for offer selection; platform is infrastructure, not a commercial arbiter, and bears no liability for the selection decision.
+- Rejection reason code standardization → M-Compliance milestone.
+- Full audit narrative/report linking rejections to acceptance event → M-Compliance milestone.
 
 **Frontend (Phase 2)**
 - F1 close warning: confirm dialog shows pending offer count
