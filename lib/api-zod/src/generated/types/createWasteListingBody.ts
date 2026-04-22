@@ -5,6 +5,7 @@
  * Tadweerah API
  * OpenAPI spec version: 0.1.0
  */
+import type { PricingModel } from "./pricingModel";
 import type { WasteMaterial } from "./wasteMaterial";
 import type { WasteUnit } from "./wasteUnit";
 
@@ -22,4 +23,8 @@ export interface CreateWasteListingBody {
   description?: string;
   /** @minimum 0 */
   price_hint?: number;
+  /** Governs settlement mechanics. Immutable once published.
+Defaults to "fixed" if not supplied. Must not be updated after creation.
+ */
+  pricing_model?: PricingModel;
 }

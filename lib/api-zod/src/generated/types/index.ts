@@ -20,6 +20,7 @@ export * from "./meResponse";
 export * from "./myOffer";
 export * from "./offersSummary";
 export * from "./offerStatus";
+export * from "./pricingModel";
 export * from "./rejectOfferBody";
 export * from "./submitOfferBody";
 export * from "./wasteListing";

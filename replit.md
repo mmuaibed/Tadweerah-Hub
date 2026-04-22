@@ -77,6 +77,13 @@ A Saudi B2B MVP connecting waste producers, recycling buyers, and transport carr
 **DB additions (M4.5)**
 - `listing_offers.rejection_reason` (text, nullable) — set on reject/auto-reject; visible to affected buyer only
 - `listing_offers.acceptance_reason` (text, nullable) — set on accept when lower than highest; INTERNAL only
+- `waste_listings.pricing_model` (enum: fixed|by_weight, default fixed, NOT NULL) — passive structural column; IMMUTABLE once published
+
+**Governance decisions (locked)**
+- `pricing_model` is immutable once a listing is published. Producers must close + re-list to change model.
+- `accepted` offer status = "commercial intent confirmed, listing closed to bidding" — NOT a final settled invoice amount.
+- `estimated_total` = UI-only derived value (price_per_unit × quantity); never persisted. Safe for by-weight settlement reuse.
+- All estimated total UI copy must use "تقديري / estimated" semantics — never "final price" or "السعر النهائي".
 
 **Frontend (Phase 2)**
 - F1 close warning: confirm dialog shows pending offer count

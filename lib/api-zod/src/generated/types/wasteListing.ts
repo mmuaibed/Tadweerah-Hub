@@ -5,6 +5,7 @@
  * Tadweerah API
  * OpenAPI spec version: 0.1.0
  */
+import type { PricingModel } from "./pricingModel";
 import type { WasteListingStatus } from "./wasteListingStatus";
 import type { WasteMaterial } from "./wasteMaterial";
 import type { WasteUnit } from "./wasteUnit";
@@ -20,6 +21,9 @@ export interface WasteListing {
   description?: string;
   price_hint?: number;
   status: WasteListingStatus;
+  /** Immutable once published. Defaults to "fixed" for the current MVP.
+   */
+  pricing_model?: PricingModel;
   created_at: Date;
   closed_at?: Date;
   /** Total number of offers on this listing (included for producer my-listings and marketplace M3) */

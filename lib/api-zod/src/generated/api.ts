@@ -115,6 +115,12 @@ export const ListMarketplaceListingsResponseItem = zod.object({
   description: zod.string().optional(),
   price_hint: zod.number().optional(),
   status: zod.enum(["open", "closed"]),
+  pricing_model: zod
+    .enum(["fixed", "by_weight"])
+    .optional()
+    .describe(
+      'Immutable once published. Defaults to \"fixed\" for the current MVP.\n',
+    ),
   created_at: zod.coerce.date(),
   closed_at: zod.coerce.date().optional(),
   offer_count: zod
@@ -167,6 +173,12 @@ export const CreateWasteListingBody = zod.object({
     .max(createWasteListingBodyDescriptionMax)
     .optional(),
   price_hint: zod.number().min(createWasteListingBodyPriceHintMin).optional(),
+  pricing_model: zod
+    .enum(["fixed", "by_weight"])
+    .optional()
+    .describe(
+      'Governs settlement mechanics. Immutable once published.\nDefaults to \"fixed\" if not supplied. Must not be updated after creation.\n',
+    ),
 });
 
 /**
@@ -195,6 +207,12 @@ export const ListMyListingsResponseItem = zod.object({
   description: zod.string().optional(),
   price_hint: zod.number().optional(),
   status: zod.enum(["open", "closed"]),
+  pricing_model: zod
+    .enum(["fixed", "by_weight"])
+    .optional()
+    .describe(
+      'Immutable once published. Defaults to \"fixed\" for the current MVP.\n',
+    ),
   created_at: zod.coerce.date(),
   closed_at: zod.coerce.date().optional(),
   offer_count: zod
@@ -238,6 +256,12 @@ export const GetWasteListingResponse = zod.object({
   description: zod.string().optional(),
   price_hint: zod.number().optional(),
   status: zod.enum(["open", "closed"]),
+  pricing_model: zod
+    .enum(["fixed", "by_weight"])
+    .optional()
+    .describe(
+      'Immutable once published. Defaults to \"fixed\" for the current MVP.\n',
+    ),
   created_at: zod.coerce.date(),
   closed_at: zod.coerce.date().optional(),
   offer_count: zod
@@ -280,6 +304,12 @@ export const CloseWasteListingResponse = zod.object({
   description: zod.string().optional(),
   price_hint: zod.number().optional(),
   status: zod.enum(["open", "closed"]),
+  pricing_model: zod
+    .enum(["fixed", "by_weight"])
+    .optional()
+    .describe(
+      'Immutable once published. Defaults to \"fixed\" for the current MVP.\n',
+    ),
   created_at: zod.coerce.date(),
   closed_at: zod.coerce.date().optional(),
   offer_count: zod

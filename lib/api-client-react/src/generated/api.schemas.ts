@@ -84,6 +84,20 @@ export const WasteListingStatus = {
   closed: "closed",
 } as const;
 
+/**
+ * Governs how price_per_unit is interpreted and what settlement mechanics apply.
+Immutable once a listing is published — producers must close and re-list to change model.
+fixed: price_per_unit × quantity = agreed commercial amount (current MVP).
+by_weight: price_per_unit is a rate; final amount settled post-weighing (future).
+
+ */
+export type PricingModel = (typeof PricingModel)[keyof typeof PricingModel];
+
+export const PricingModel = {
+  fixed: "fixed",
+  by_weight: "by_weight",
+} as const;
+
 export interface WasteListing {
   id: string;
   company_id: string;
@@ -95,6 +109,9 @@ export interface WasteListing {
   description?: string;
   price_hint?: number;
   status: WasteListingStatus;
+  /** Immutable once published. Defaults to "fixed" for the current MVP.
+   */
+  pricing_model?: PricingModel;
   created_at: string;
   closed_at?: string;
   /** Total number of offers on this listing (included for producer my-listings and marketplace M3) */
@@ -215,6 +232,10 @@ export interface CreateWasteListingBody {
   description?: string;
   /** @minimum 0 */
   price_hint?: number;
+  /** Governs settlement mechanics. Immutable once published.
+Defaults to "fixed" if not supplied. Must not be updated after creation.
+ */
+  pricing_model?: PricingModel;
 }
 
 export type ListMarketplaceListingsParams = {

@@ -51,6 +51,7 @@ function serialize(row: Row) {
     description: row.description ?? undefined,
     price_hint: row.price_hint != null ? Number(row.price_hint) : undefined,
     status: row.status,
+    pricing_model: row.pricing_model,
     created_at: row.created_at.toISOString(),
     closed_at: row.closed_at?.toISOString() ?? undefined,
     offer_count: row.offer_count ?? undefined,
@@ -69,6 +70,7 @@ const baseSelect = {
   description: wasteListingsTable.description,
   price_hint: wasteListingsTable.price_hint,
   status: wasteListingsTable.status,
+  pricing_model: wasteListingsTable.pricing_model,
   created_at: wasteListingsTable.created_at,
   closed_at: wasteListingsTable.closed_at,
   company_name: companiesTable.name,
@@ -219,6 +221,8 @@ router.post(
         city: data.city,
         description: data.description ?? null,
         price_hint: data.price_hint != null ? String(data.price_hint) : null,
+        // pricing_model is immutable once set; defaults to "fixed" at DB level
+        pricing_model: data.pricing_model ?? "fixed",
       })
       .returning();
 
