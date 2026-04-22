@@ -1,0 +1,52 @@
+We want to raise one additional future scenario for architectural review only (no scope change for M4.5).
+
+Use case:
+A producer (e.g. recycling company) may want to create a listing targeted to a specific buyer (or a limited set of buyers), instead of the public marketplace.
+
+In that case:
+- the listing is not public
+- only the intended buyer(s) can view or submit offers
+- the same pricing and offer logic applies
+
+Context (why this matters):
+This is important for enterprise adoption.
+
+Some companies (especially recycling companies) may use the platform not only as an open marketplace, but also as an operational system to manage transactions with their existing clients under long-term contracts.
+
+This enables:
+- private deal execution within the same platform
+- better compliance and traceability for regulators
+- stronger adoption by large companies
+- potential additional revenue model for the platform
+
+We do NOT want to implement this now.
+
+However, we want your input on future compatibility:
+
+1) Does the current model assume all listings are public in a way that would make private / restricted listings difficult later?
+
+2) Would it be beneficial to introduce a lightweight structural field now such as:
+   visibility = public | private
+   (default = public)
+
+3) For future design, should access control be handled at:
+   - listing level (e.g. allowed buyer companies), or
+   - via a separate relationships / invites layer?
+
+4) Based on your experience, is there any minimal structural preparation now
+that would significantly reduce future complexity?
+
+Important:
+If you believe a small, safe, pre-emptive adjustment now would prevent larger rework later,
+we are open to it — as long as:
+- it does not change current flows or UX
+- it remains a simple, isolated structural addition
+- and we agree on it before execution
+
+Constraints:
+- No implementation required unless agreed
+- No change to current M4.5 scope
+- UAT should proceed as planned
+
+Goal:
+Lock the architecture direction early while keeping execution clean and focused.
