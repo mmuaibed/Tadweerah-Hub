@@ -1,0 +1,82 @@
+M4 proposal is strong, but before approval I want a deeper revision from a product, governance, fairness, operational, and commercial perspective.
+
+Please revise M4 by explicitly addressing the following points:
+
+1. Offer model
+- Do NOT assume one-time-only offer submission by default.
+- Evaluate whether buyers should be allowed to improve their offer on the same listing.
+- My preferred direction:
+  a buyer may submit a new offer only if it is higher than:
+  - their previous offer
+  - and the current highest offer on the listing
+- Please assess this and confirm whether it is still MVP-safe.
+
+2. Highest offer visibility
+- Evaluate whether buyers should see the current highest offer amount on the listing detail page.
+- This should be amount-only, without revealing who submitted it.
+- Explain the product/fairness tradeoff.
+
+3. Identity visibility and fairness
+- During active competition, buyers must not see competitor identities.
+- Evaluate whether producers should see buyer company identities before acceptance, or whether identities should remain hidden until an offer is accepted.
+- I want the fairest and most governance-friendly model.
+
+4. Acceptance flow
+- Re-evaluate the current proposal that accepting an offer does NOT close the listing automatically.
+- My preferred direction is:
+  when a producer accepts an offer:
+  - accepted offer = accepted
+  - all other offers = rejected
+  - listing = closed automatically
+- Please assess whether this is the cleanest MVP state model.
+
+5. Price model
+- Clarify whether offers are per-unit or total-price.
+- Recommend the best model for Tadweerah.
+- I want the UI to clearly show both:
+  - offer price per unit
+  - estimated total value based on listing quantity
+
+6. Access control and eligibility
+- Confirm that only approved buyer companies can submit offers
+- Confirm that users cannot submit offers on their own listings
+- Confirm that closed listings cannot receive new offers
+
+7. Auditability and governance
+- I want M4 to preserve a minimal audit trail:
+  - who submitted
+  - when
+  - who accepted/rejected
+  - when listing was closed
+- Explain the minimum data needed to keep this operationally and regulatorily credible.
+
+8. Race-condition / transactional safety
+- Explain how acceptance will be handled safely so that:
+  - two offers cannot be accepted
+  - listing closure and offer rejection happen atomically
+- I want the MVP-safe approach here.
+
+9. Commercial readiness
+- Re-evaluate M4 from the perspective of:
+  - user trust
+  - willingness to engage
+  - fairness perception
+  - conversion into real transactions
+- If you see any low-risk, high-value addition that would materially improve the commercial strength of M4, recommend it.
+
+10. Future compatibility
+- Ensure M4 is designed so that the following can be added later without rewriting:
+  - listing images
+  - transport request after accepted offer
+  - admin visibility / audit review
+
+Please return:
+A. A revised M4 scope
+B. Any rule changes you recommend
+C. A final recommendation on the 3 core decisions:
+   - repeated offer improvement
+   - highest-offer visibility
+   - auto-close on acceptance
+
+Do not implement yet.
+I want the revised M4 proposal first.
