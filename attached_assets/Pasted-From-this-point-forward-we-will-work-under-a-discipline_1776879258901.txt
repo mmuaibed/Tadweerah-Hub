@@ -1,0 +1,228 @@
+From this point forward, we will work under a disciplined, high-leverage execution framework for the Tadweerah MVP.
+
+Objective:
+Build an impressive, commercially credible MVP that users (producers, buyers, carriers, and regulators) can trust and are willing to use — and eventually pay for — from day one, while minimizing unnecessary rework and using credits intelligently.
+
+Important clarification:
+Our goal is not full production-scale perfection.
+Our goal is a strong MVP that feels real, credible, and high-value, while remaining simple, extensible, and efficient to evolve later.
+
+North Star:
+Every module should move the product closer to a state where:
+- listings are trustworthy
+- decisions are easy
+- interactions feel professional
+- the system feels like a real market, not a prototype
+- the visible value to users is strong from the beginning
+
+Core principle:
+Build with discipline, but do not suppress high-value improvements.
+Use your strengths for speed, structure, technical execution, and smart product enhancement — while keeping risk controlled and direction coherent.
+
+Execution Framework
+
+1) Definition Lock (before coding)
+Before implementing any module, provide a concise proposal including:
+- Exact scope (what is included)
+- Explicit exclusions (what is not included)
+- UI/UX outline (MVP-focused, no overdesign)
+- Business logic
+- Access control
+- Acceptance criteria
+- Complexity classification: Simple / Medium / Complex
+
+Do NOT start coding until I approve.
+
+2) Controlled autonomy
+Decision model:
+- Simple → implement after approval
+- Medium → implement after approval + explain key choices
+- Complex → do NOT implement; explain:
+  - why it is complex
+  - risks
+  - a simpler MVP-safe alternative
+
+If uncertain → treat as Complex and ask.
+
+3) High-value enhancement rule
+Do not expand scope randomly.
+
+However, if you identify an improvement that:
+- clearly improves UX, clarity, trust, conversion, or decision-making
+- has low or moderate cost
+- has low architectural risk
+- does not create major rework later
+- aligns with the final product direction
+- does not materially delay the current milestone
+
+Then:
+A) If low-risk and clearly beneficial → implement directly and report as:
+   “High-value enhancement implemented”
+B) If valuable but not obviously safe → pause and present:
+   benefit, cost, risk, tradeoff, and recommendation
+
+No uncontrolled scope drift — but yes to smart, high-leverage improvements.
+
+4) Customer-decision / revenue-impact features (priority class)
+Treat the following as strategically important, not optional:
+
+Features that significantly influence:
+- user trust
+- decision-making
+- engagement
+- willingness to pay
+- perceived professionalism and market credibility
+
+Examples:
+- listing images / material photos
+- strong listing presentation
+- trust indicators (company clarity, data completeness)
+- clear value communication
+- anything that increases buyer confidence
+
+Rule:
+If such a feature has strong impact and acceptable risk:
+- recommend it strongly
+- implement it if safe
+- or ask for approval if uncertain
+
+Important:
+Images for listings are NOT a “nice to have” by default.
+They are a decision-driving feature and should be evaluated seriously whenever feasible.
+
+5) Build for the final intended direction
+Avoid temporary solutions that force future rework.
+Prefer structures that support future modules (offers, transport, compliance, payments) without requiring rewrites later.
+
+But:
+Prefer extensibility, not over-preparation.
+Do not build future systems early unless they create immediate and meaningful value now.
+
+6) Design for change (critical)
+Build in a way that allows easy future modification:
+- keep components modular
+- separate display logic from business logic
+- avoid tight coupling between features
+- avoid hardcoding values or flows that are likely to change
+- keep extension points obvious and documented
+
+Goal:
+Future changes should require small extensions, not rewrites.
+
+7) Preserve approved work
+Previously approved modules should remain stable.
+Do not rework or redesign approved modules unless:
+- there is a bug
+- there is a clear product-value improvement
+- the change prevents future rework
+- or the current implementation conflicts with the project charter
+
+If revisiting prior work, explain why first.
+
+8) Design and consistency rules
+Always follow:
+- Tadweerah logo
+- primary/secondary colors from logo
+- Tajawal font
+- Arabic default + English support
+- consistent layout, spacing, components
+
+Do not redesign approved patterns unless necessary.
+Avoid visual experimentation unless it clearly improves product value.
+
+9) Architecture discipline
+- Keep architecture simple (MVP-appropriate)
+- No microservices
+- No unnecessary packages
+- No premature abstractions
+- No schema changes unless justified
+
+Prefer:
+clarity, stability, maintainability, low-risk extensibility
+
+10) Credit efficiency rules
+- Avoid repeated rebuilds
+- Avoid vague implementation attempts
+- Avoid planning loops
+- Avoid rewriting approved modules
+- Prefer one clean implementation pass per module
+- Batch fixes into a single pass whenever possible
+
+But:
+Do not optimize credits so aggressively that we miss high-value opportunities.
+If a small-to-moderate credit cost yields a meaningfully better product outcome, prefer the better product outcome and explain why.
+
+11) Commercial readiness check
+For each module, ask:
+“Does this increase the chance that a real user would trust, use, engage with, or pay for this product?”
+
+If not, improve it within safe boundaries.
+
+Also ask:
+“Is the value visible to the user?”
+Prefer visible product value over hidden sophistication unless the hidden work is required for stability or future extensibility.
+
+12) Mandatory handoff before approval
+Before marking any module complete, provide:
+
+A. Build summary
+- what was implemented
+
+B. Technical QA
+- what was tested technically
+- endpoint checks
+- access control checks
+- validation/error handling checks
+
+C. Business scenario testing
+- realistic user flows tested
+
+D. Known limitations
+- what is not tested
+- what is intentionally postponed
+- any current limitations
+
+E. Enhancements
+- any high-value enhancement added beyond the minimum scope
+- why it was worth doing
+
+F. Extension notes
+- what future module(s) this work is preparing for
+- what can be added later without rewriting the current module
+
+G. Recommendation
+- Ready for UAT
+or
+- Needs fixes before UAT
+
+13) Approval gate
+No next module until:
+- build complete
+- QA delivered
+- UAT done
+- explicit approval given
+
+14) Risk boundary
+Your goal is not to prove that you can build everything.
+Your goal is to build the right thing, with the right level of quality, at the right time.
+
+Use ambition intelligently:
+- be bold on low-risk, high-value improvements
+- be conservative on high-risk or hard-to-reverse decisions
+- avoid changes that create hidden complexity or timeline drift
+
+When in doubt:
+- preserve product direction
+- avoid hidden complexity
+- ask before introducing structural risk
+
+Working style:
+Be proactive, structured, ambitious, and efficient.
+Optimize for:
+- speed with control
+- quality without overengineering
+- strong visible product value
+- minimal rework
+- maximum impact per iteration
+
+Please confirm you will follow this workflow for all upcoming Tadweerah modules.
