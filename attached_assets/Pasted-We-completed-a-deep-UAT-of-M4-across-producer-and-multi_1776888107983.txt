@@ -1,0 +1,183 @@
+We completed a deep UAT of M4 across producer and multiple buyer accounts.
+
+Conclusion:
+The core bidding / offer engine is working technically, but we found several important product, UX, operational, and governance gaps that should be addressed before moving forward.
+
+Please review the following points one by one.
+
+For each point, I want:
+1. whether you agree or disagree
+2. your reasoning
+3. whether the proposed solution is the best MVP solution
+4. if you have a better alternative, explain it clearly
+
+Also:
+After reviewing these points, please perform your own critical review of M4 and tell us if there are any additional important gaps we may have missed.
+
+Do NOT implement yet.
+First, give us your structured response and proposed M4.5 adjustment plan.
+
+-----------------------------------
+1) Pricing model
+Issue:
+The system currently uses price per unit, but real users think in total deal value.
+This is creating confusion and unnecessary complexity.
+
+Impact:
+High — this affects usability, trust, and conversion.
+
+Proposed solution:
+Change buyer offer input from “price per unit” to “total offer value (SAR)”.
+If needed, the system may calculate unit price internally, but the user-facing model should be total offer value.
+
+Please evaluate whether you agree.
+
+-----------------------------------
+2) Highest-offer visibility and buyer status clarity
+Issue:
+Buyers do not clearly understand:
+- what the current highest offer is
+- whether they are the highest bidder
+- whether they have been outbid
+
+Impact:
+High — weakens the competitive loop and causes decision confusion.
+
+Proposed solution:
+In listing detail, clearly show:
+- current highest offer
+- buyer status:
+  a) “You are currently the highest bidder”
+  b) “You have been outbid”
+For marketplace cards, also show lightweight competition signals.
+
+Please evaluate whether you agree.
+
+-----------------------------------
+3) Marketplace card signals
+Issue:
+The marketplace card does not make the bidding state visible enough.
+
+Impact:
+Medium to high — reduces engagement and urgency.
+
+Proposed solution:
+For open listings, show on the card:
+- highest current offer
+- number of offers
+For closed listings, show:
+- closed / sold state
+- final accepted offer if appropriate, or at least clear closure status
+
+Please evaluate whether you agree.
+
+-----------------------------------
+4) No buyer-facing history / participation page
+Issue:
+After a listing is closed, buyers lose visibility and cannot easily see what happened to their offers.
+
+Impact:
+Critical — breaks the buyer journey after the most important moment.
+
+Proposed solution:
+Add a buyer-facing page such as:
+- “My Offers”
+or
+- “My Participations”
+This page should show:
+- listings the buyer participated in
+- current status:
+  pending / accepted / rejected / closed
+
+Please evaluate whether you agree.
+
+-----------------------------------
+5) No post-decision experience after acceptance/rejection
+Issue:
+Winning and losing buyers do not get a clear end-state experience.
+The listing disappears from the normal marketplace, but there is no clear result communication.
+
+Impact:
+Critical — this damages trust and operational clarity.
+
+Proposed solution:
+After producer decision:
+- winning buyer sees a clear accepted state
+- rejected buyers see a clear rejected state
+- both should remain able to access the historical result from their buyer-side area
+
+Please evaluate whether you agree.
+
+-----------------------------------
+6) Rejection without reason
+Issue:
+The producer can reject an offer without giving a reason.
+
+Impact:
+High from a governance / fairness / operational standpoint.
+
+Proposed solution:
+Require a rejection reason when rejecting an offer manually.
+At MVP level, even a short required text or selected reason is enough.
+
+Please evaluate whether you agree.
+
+-----------------------------------
+7) Notifications
+Issue:
+Users are not informed when:
+- a higher offer appears
+- their offer is rejected
+- their offer is accepted
+
+Impact:
+High — users must keep checking manually, which weakens engagement.
+
+Proposed solution:
+For MVP, we likely need a lightweight notification layer.
+Possible directions:
+- in-app status visibility first
+- email notifications for key events
+Please recommend the best MVP-safe notification strategy.
+
+-----------------------------------
+8) Competition timing / bid closing logic
+Issue:
+The current flow creates competitive bidding, but there is no visible timing logic or clear user expectation around when bidding ends.
+
+Impact:
+Medium to high — weakens urgency and may create ambiguity.
+
+Proposed solution:
+Please evaluate the best MVP approach:
+Option A:
+Keep producer-controlled acceptance without fixed countdown
+Option B:
+Introduce a visible deadline / closing time per listing
+We want your recommendation on which is better for MVP and why.
+
+-----------------------------------
+9) Acceptance of lower offer than the highest one
+Issue:
+The producer may reject the highest offer and accept a lower one.
+This may be commercially valid, but it creates fairness and governance questions.
+
+Impact:
+High from a trust and governance perspective.
+
+Proposed solution:
+If a lower offer is accepted while a higher offer exists or existed, require a reason from the producer.
+Please evaluate whether this should be part of MVP.
+
+-----------------------------------
+10) Additional expert review
+Please review the current M4 from your own perspective and tell us:
+- are there any important technical, UX, operational, governance, or commercial gaps we have not mentioned?
+- what should be included in M4.5 before we move to the next module?
+
+Expected output from you:
+A. Point-by-point response to the 9 issues above
+B. Your own additional observations, if any
+C. A structured M4.5 proposal
+D. Complexity classification for each proposed M4.5 change
+E. Your recommendation on what must be fixed now vs what can be postponed
