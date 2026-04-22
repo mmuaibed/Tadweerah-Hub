@@ -1,0 +1,124 @@
+This is a strong final review, and we are almost ready to execute.
+
+Before implementation, we want to lock a few additional UX and operational requirements to avoid later rework and ensure the product remains simple, scalable, and professional as activity grows.
+
+-----------------------------------
+Additional final requirements
+
+1) Active vs inactive classification
+We want a clear classification of records into:
+- Active
+- Inactive
+
+This should be reflected wherever relevant, especially in:
+- Marketplace
+- My Listings
+- My Participations
+
+Examples:
+- Active = open listings, pending participations, items requiring attention
+- Inactive = closed listings, accepted/rejected outcomes, completed items
+
+This is important for clarity and future scalability.
+
+-----------------------------------
+2) Default ordering
+Please define and implement sensible default ordering rules:
+
+Marketplace:
+- open listings only
+- most relevant / recent / active-first presentation
+
+My Listings (producer):
+- active listings first
+- then inactive/closed
+- within active: listings with offers should be easier to notice
+
+My Participations (buyer):
+- active participations first
+- then accepted/rejected/closed
+- within active: items requiring attention should float higher
+
+Please confirm the exact ordering logic you recommend.
+
+-----------------------------------
+3) Search and filtering readiness
+We want the UI to remain usable when listings and participations grow.
+
+Please review and include MVP-safe support for:
+- simple search
+- status filtering
+- existing city/material filtering where relevant
+- simple sorting when useful
+
+At minimum, ensure the structure supports this cleanly without future page rewrites.
+
+-----------------------------------
+4) Card information density
+Cards should remain simple, but must be decision-oriented.
+
+Please review whether the following should appear prominently on cards where relevant:
+- listing reference ID
+- status
+- highest offer
+- offer count
+- “needs attention” / buyer status indicator
+- last updated signal where helpful
+
+We want users to understand what matters before opening every detail page.
+
+-----------------------------------
+5) Empty states / no-result states
+Please ensure the experience is clear when:
+- there are no matching marketplace results
+- there are no active listings
+- there are no buyer participations yet
+
+We want empty states to be intentional and helpful, not generic.
+
+-----------------------------------
+6) Last-updated / freshness signal
+Please review whether “last updated” should affect sorting or visibility in:
+- My Listings
+- My Participations
+
+This can help users notice the most important recent changes.
+
+-----------------------------------
+7) Clear action per state
+Please ensure each state has a clear next action where appropriate, for example:
+- View details
+- Review offers
+- Improve my offer
+- View result
+
+We want strong usability without visual clutter.
+
+-----------------------------------
+Previously confirmed decisions (still active)
+
+1) Total-based buyer input, with calculated unit price shown secondarily
+2) Manual close dialog must warn if pending offers will be auto-rejected
+3) Rejection reason is visible only to the affected buyer
+4) Accepting a lower-than-highest offer requires a mandatory internal reason
+5) Hide rank if the buyer is the only participant
+6) Rejected buyer trying to improve again must see a clear policy message
+7) All visible prices should be consistent and total-first in the UI
+
+-----------------------------------
+Final request before coding
+
+Please do one final review of the full M4.5 scope including:
+- these additional UX/operational requirements
+- whether they should be implemented now or only structurally prepared now
+- whether any of them create real scope risk
+- and whether you still believe the implementation plan minimizes future rework
+
+Then return:
+
+A. final alignment confirmation
+B. any adjustments you recommend
+C. what should be implemented now vs prepared for now
+D. final execution-ready M4.5 scope
+
+Do not start implementation until we confirm this final lock.
