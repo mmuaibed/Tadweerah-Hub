@@ -11,25 +11,32 @@ import { Button } from "@/components/ui/button";
 import { AppLayout } from "@/components/app-layout";
 import { EmptyState } from "@/components/empty-state";
 import { ListingCard } from "@/components/listing-card";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { useT } from "@/i18n";
 
 export function MyListingsPage() {
   const { t } = useT();
   const queryClient = useQueryClient();
   const { data, isLoading, isError } = useListMyListings();
-  const { mutate: closeListing, isPending: isClosing, variables: closingVars } =
-    useCloseWasteListing();
+  const { mutate: closeListing, isPending: isClosing } = useCloseWasteListing();
+
+  const [confirmId, setConfirmId] = useState<string | null>(null);
   const [closeError, setCloseError] = useState<string | null>(null);
 
-  const handleClose = (waste_listing_id: string) => {
+  const handleConfirmClose = () => {
+    if (!confirmId) return;
     setCloseError(null);
     closeListing(
-      { wasteListingId: waste_listing_id },
+      { wasteListingId: confirmId },
       {
         onSuccess: () => {
+          setConfirmId(null);
           queryClient.invalidateQueries({ queryKey: getListMyListingsQueryKey() });
         },
-        onError: () => setCloseError(t("myListings.closeError")),
+        onError: () => {
+          setConfirmId(null);
+          setCloseError(t("myListings.closeError"));
+        },
       },
     );
   };
@@ -48,6 +55,17 @@ export function MyListingsPage() {
         </Link>
       }
     >
+      <ConfirmDialog
+        open={confirmId !== null}
+        onOpenChange={(open) => { if (!open) setConfirmId(null); }}
+        title={t("listing.close.confirm.title")}
+        description={t("listing.close.confirm.desc")}
+        confirmLabel={t("listing.close.confirm.action")}
+        onConfirm={handleConfirmClose}
+        isPending={isClosing}
+        destructive
+      />
+
       {closeError && (
         <div className="mb-6 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
           {closeError}
@@ -86,32 +104,28 @@ export function MyListingsPage() {
 
       {!isLoading && !isError && data && data.length > 0 && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {data.map((listing) => {
-            const closingThis =
-              isClosing && closingVars?.wasteListingId === listing.id;
-            return (
-              <ListingCard
-                key={listing.id}
-                listing={listing}
-                showCompany={false}
-                footer={
-                  listing.status === "open" ? (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="w-full gap-2"
-                      disabled={closingThis}
-                      onClick={() => handleClose(listing.id)}
-                    >
-                      {closingThis && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                      {closingThis ? t("myListings.closing") : t("myListings.close")}
-                    </Button>
-                  ) : null
-                }
-              />
-            );
-          })}
+          {data.map((listing) => (
+            <ListingCard
+              key={listing.id}
+              listing={listing}
+              showCompany={false}
+              href={`/listings/${listing.id}`}
+              footer={
+                listing.status === "open" ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full gap-2 border-destructive/40 text-destructive hover:bg-destructive/10"
+                    disabled={isClosing && confirmId === listing.id}
+                    onClick={() => setConfirmId(listing.id)}
+                  >
+                    {t("myListings.close")}
+                  </Button>
+                ) : null
+              }
+            />
+          ))}
         </div>
       )}
     </AppLayout>

@@ -135,6 +135,34 @@ const translations: Record<string, Record<Language, string>> = {
   // Generic errors
   "error.generic": { ar: "حدث خطأ. حاول مرة أخرى لاحقاً.", en: "Something went wrong. Please try again later." },
   "error.loading": { ar: "تعذر تحميل البيانات.", en: "Could not load data." },
+
+  // M3 — listing detail
+  "listing.viewDetail": { ar: "عرض التفاصيل", en: "View Details" },
+  "listing.ref": { ar: "رقم الإشارة", en: "Reference" },
+  "listing.detail.title": { ar: "تفاصيل العرض", en: "Listing Details" },
+  "listing.detail.subtitle": { ar: "كل تفاصيل العرض المنشور", en: "Full details of this listing" },
+  "listing.detail.publishedBy": { ar: "نشرها", en: "Published by" },
+  "listing.detail.description": { ar: "الوصف", en: "Description" },
+
+  "listing.close.confirm.title": { ar: "تأكيد إغلاق العرض", en: "Confirm Closing" },
+  "listing.close.confirm.desc": {
+    ar: "هذا الإجراء نهائي ولا يمكن التراجع عنه. لن يظهر العرض في السوق بعد الإغلاق.",
+    en: "This action is permanent and cannot be undone. The listing will no longer appear in the marketplace.",
+  },
+  "listing.close.confirm.action": { ar: "إغلاق العرض نهائياً", en: "Close Listing Permanently" },
+
+  "listing.offer.cta": { ar: "تقديم عرض (قريباً)", en: "Submit Offer (Coming Soon)" },
+
+  "listing.notFound.title": { ar: "العرض غير موجود", en: "Listing Not Found" },
+  "listing.notFound.desc": {
+    ar: "قد يكون العرض محذوفاً أو المعرّف غير صحيح.",
+    en: "The listing may have been removed or the ID is invalid.",
+  },
+  "listing.invalidId.title": { ar: "معرّف العرض غير صالح", en: "Invalid Listing ID" },
+  "listing.invalidId.desc": {
+    ar: "الرابط الذي فتحته لا يحتوي على معرّف عرض صالح.",
+    en: "The link you followed does not contain a valid listing ID.",
+  },
 };
 
 export const I18nProvider: React.FC<{

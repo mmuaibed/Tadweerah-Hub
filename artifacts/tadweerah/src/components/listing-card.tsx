@@ -5,23 +5,36 @@ import {
   Calendar,
   Tag,
   Building2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
+import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useT } from "@/i18n";
+import { listingRef } from "@/lib/listing-ref";
 import type { WasteListing } from "@workspace/api-client-react";
 
 interface ListingCardProps {
   listing: WasteListing;
   /** Show the company name (marketplace) or hide it (my listings). */
   showCompany?: boolean;
+  /** Navigate to this href when "View Details" is clicked. */
+  href?: string;
   /** Footer slot — typically actions like "Close listing". */
   footer?: React.ReactNode;
 }
 
-export function ListingCard({ listing, showCompany = true, footer }: ListingCardProps) {
+export function ListingCard({
+  listing,
+  showCompany = true,
+  href,
+  footer,
+}: ListingCardProps) {
   const { t, lang } = useT();
   const isOpen = listing.status === "open";
+  const isRtl = lang === "ar";
 
   const dateStr = new Date(listing.created_at).toLocaleDateString(
     lang === "ar" ? "ar-SA" : "en-US",
@@ -36,9 +49,14 @@ export function ListingCard({ listing, showCompany = true, footer }: ListingCard
             <span className="flex h-9 w-9 items-center justify-center rounded-md bg-secondary/10 text-secondary">
               <Recycle className="h-4 w-4" />
             </span>
-            <h3 className="text-base font-semibold text-card-foreground">
-              {t(`material.${listing.material}`)}
-            </h3>
+            <div className="flex flex-col">
+              <h3 className="text-base font-semibold text-card-foreground">
+                {t(`material.${listing.material}`)}
+              </h3>
+              <span className="text-xs text-muted-foreground">
+                {listingRef(listing.id)}
+              </span>
+            </div>
           </div>
           <Badge variant={isOpen ? "secondary" : "outline"} className="shrink-0">
             {t(`status.${listing.status}`)}
@@ -82,7 +100,23 @@ export function ListingCard({ listing, showCompany = true, footer }: ListingCard
           </p>
         )}
 
-        {footer && <div className="mt-auto pt-2">{footer}</div>}
+        {(footer || href) && (
+          <div className="mt-auto flex flex-col gap-2 pt-2">
+            {footer}
+            {href && (
+              <Link to={href}>
+                <Button variant="ghost" size="sm" className="w-full gap-1">
+                  {t("listing.viewDetail")}
+                  {isRtl ? (
+                    <ChevronLeft className="h-3.5 w-3.5" />
+                  ) : (
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  )}
+                </Button>
+              </Link>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

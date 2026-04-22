@@ -47,7 +47,7 @@ A Saudi B2B MVP connecting waste producers, recycling buyers, and transport carr
 ### Module roadmap (build module-by-module, classify Simple/Medium/Complex first)
 - M1 Auth & Company Onboarding — DONE
 - M2 Waste Listings (producer create/list/close + buyer marketplace) — DONE & UAT-approved
-- M3 Listing detail page (next, foundation for M4 offers)
+- M3 Listing detail page + clickable cards + confirm-close — DONE, pending UAT
 - M4 Offers / Negotiation
 - M5 Transport bids (carrier)
 - M6 Trip lifecycle / proof of delivery
@@ -95,8 +95,16 @@ Arabic default + English toggle, RTL/LTR via `<html dir>`. Tiny custom i18n hook
 - `/onboarding/company` — company creation form (signed-in + no company)
 - `/dashboard` — role-based action cards (signed-in + has company)
 - `/listings/new` — producer only: new listing form
-- `/listings/mine` — producer only: own listings + close action
+- `/listings/mine` — producer only: own listings + close (with confirm)
+- `/listings/:waste_listing_id` — all roles: detail page, role-gated actions
 - `/marketplace` — buyer only: browse open listings with material+city filters
+
+### Shared UI components
+- `AppLayout` — header + content wrapper (mandatory for every page)
+- `EmptyState` — empty/error states
+- `ListingCard` — card with ref ID, status badge, optional "View Details" CTA (`href` prop)
+- `RoleRoute` — frontend role gate (mirrors backend requireCompany)
+- `ConfirmDialog` — AlertDialog wrapper for destructive confirms (irreversible actions)
 
 ### Access control pattern
 - **API**: `requireAuth` → `requireCompany([allowedTypes])` middleware chain.
