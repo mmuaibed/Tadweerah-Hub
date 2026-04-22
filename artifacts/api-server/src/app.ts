@@ -7,6 +7,7 @@ import {
   clerkProxyMiddleware,
 } from "./middlewares/clerkProxyMiddleware";
 import router from "./routes";
+import { errorHandler, notFoundHandler } from "./middlewares/errorHandler";
 import { logger } from "./lib/logger";
 
 const app: Express = express();
@@ -40,5 +41,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(clerkMiddleware());
 
 app.use("/api", router);
+
+app.use("/api", notFoundHandler);
+app.use(errorHandler);
 
 export default app;

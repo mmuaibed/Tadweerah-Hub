@@ -12,6 +12,21 @@ import {
   requireCompany,
   type AuthedCompanyRequest,
 } from "../middlewares/requireCompany";
+import {
+  HttpError,
+  assertEnum,
+  assertUuid,
+} from "../middlewares/errorHandler";
+
+const ALLOWED_MATERIALS = [
+  "paper",
+  "plastic",
+  "metal",
+  "glass",
+  "electronics",
+  "organic",
+  "other",
+] as const;
 
 const router: IRouter = Router();
 
@@ -56,12 +71,16 @@ router.get(
   requireAuth,
   requireCompany(["buyer"]),
   async (req, res) => {
-    const material = typeof req.query.material === "string" ? req.query.material : undefined;
+    const material = assertEnum(
+      req.query.material,
+      ALLOWED_MATERIALS,
+      "material",
+    );
     const city = typeof req.query.city === "string" ? req.query.city.trim() : undefined;
 
     const conditions = [eq(wasteListingsTable.status, "open")];
     if (material) {
-      conditions.push(eq(wasteListingsTable.material, material as WasteListing["material"]));
+      conditions.push(eq(wasteListingsTable.material, material));
     }
     if (city) {
       conditions.push(eq(wasteListingsTable.city, city));
@@ -109,8 +128,12 @@ router.post(
   async (req, res) => {
     const parsed = CreateWasteListingBody.safeParse(req.body);
     if (!parsed.success) {
-      res.status(400).json({ error: "ValidationError", details: parsed.error.issues });
-      return;
+      throw new HttpError(
+        400,
+        "ValidationError",
+        "Invalid listing data",
+        parsed.error.issues,
+      );
     }
     const { company } = req as AuthedCompanyRequest;
     const data = parsed.data;
@@ -143,7 +166,7 @@ router.get(
   requireAuth,
   requireCompany(),
   async (req, res) => {
-    const id = String(req.params.waste_listing_id);
+    const id = assertUuid(req.params.waste_listing_id, "waste_listing_id");
     const rows = await db
       .select(baseSelect)
       .from(wasteListingsTable)
@@ -152,8 +175,7 @@ router.get(
       .limit(1);
 
     if (!rows[0]) {
-      res.status(404).json({ error: "Listing not found" });
-      return;
+      throw new HttpError(404, "NotFound", "Listing not found");
     }
     res.json(serialize(rows[0]));
   },
@@ -167,7 +189,7 @@ router.post(
   requireAuth,
   requireCompany(["producer"]),
   async (req, res) => {
-    const id = String(req.params.waste_listing_id);
+    const id = assertUuid(req.params.waste_listing_id, "waste_listing_id");
     const { company } = req as AuthedCompanyRequest;
 
     const [existing] = await db
@@ -177,12 +199,10 @@ router.post(
       .limit(1);
 
     if (!existing) {
-      res.status(404).json({ error: "Listing not found" });
-      return;
+      throw new HttpError(404, "NotFound", "Listing not found");
     }
     if (existing.company_id !== company.id) {
-      res.status(403).json({ error: "Not the owner of this listing" });
-      return;
+      throw new HttpError(403, "Forbidden", "Not the owner of this listing");
     }
 
     const [updated] = await db
