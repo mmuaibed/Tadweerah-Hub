@@ -1,0 +1,47 @@
+We want to propose a governance + legal approach to handle the “accepting a lower offer” scenario, and get your assessment before any implementation.
+
+Objective:
+Allow producers the flexibility to choose a non-highest offer when justified, while protecting the platform from legal exposure and maintaining transparency.
+
+Proposed approach (policy + system support):
+
+1) Terms & Conditions (T&C)
+- Explicitly state that the producer is not obligated to accept the highest price.
+- The producer has the right to choose any offer based on commercial, operational, or compliance considerations (e.g., logistics capability, buyer reliability, contract alignment).
+- The decision is the responsibility of the producer as the owner of the goods.
+- The platform is not a party to the commercial decision and bears no liability for the producer’s selection.
+
+2) Internal accountability (producer side)
+- The decision to accept a lower offer must be made by an authorized user within the producer organization.
+- Any consequences of selecting a non-highest offer are treated as an internal decision within that organization.
+
+3) Platform-level transparency & audit (minimal system support)
+- All offers (including rejected ones) remain recorded.
+- Rejection reasons are stored per offer.
+- The accepted offer is clearly recorded.
+- In internal reporting (for the producer), highlight when the accepted offer is not the highest (e.g., “accepted below highest” flag).
+- The platform maintains an audit trail sufficient for review if needed.
+
+4) No immediate change to core flow (MVP)
+- No enforcement change required now.
+- No change to current acceptance logic for MVP.
+- This is a governance layer + light reporting/flagging.
+
+Questions for your architectural/product judgment:
+
+1) Do you consider this approach sufficient from a system + governance perspective for MVP?
+2) Do you see any gaps that could still expose the platform to risk (technical or legal) despite the T&C + audit trail?
+3) From a system design perspective, what is the minimal additional support you would recommend now (if any), without expanding scope?
+   Examples:
+   - a flag when accepted offer < highest historical
+   - linking acceptance decision with existing rejection reasons
+4) Would you recommend keeping this purely as policy for now, or adding a lightweight system signal (without enforcing new flows)?
+
+Constraints:
+- No expansion of current M4.5 scope
+- No complex enforcement now
+- UAT proceeds as planned
+
+Goal:
+Balance producer flexibility, platform protection, and auditability,
+while avoiding premature complexity.
