@@ -45,6 +45,7 @@ function serialize(row: Row) {
     price_hint: row.price_hint != null ? Number(row.price_hint) : undefined,
     status: row.status,
     created_at: row.created_at.toISOString(),
+    closed_at: row.closed_at?.toISOString() ?? undefined,
   };
 }
 
@@ -59,6 +60,7 @@ const baseSelect = {
   price_hint: wasteListingsTable.price_hint,
   status: wasteListingsTable.status,
   created_at: wasteListingsTable.created_at,
+  closed_at: wasteListingsTable.closed_at,
   company_name: companiesTable.name,
 } as const;
 

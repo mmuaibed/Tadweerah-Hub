@@ -5,7 +5,16 @@ import {
   useGetWasteListing,
   useCloseWasteListing,
   useGetMe,
+  useGetListingOffers,
+  useGetOffersSummary,
+  useSubmitOffer,
+  useImproveOffer,
+  useAcceptOffer,
+  useRejectOffer,
   getListMyListingsQueryKey,
+  getGetListingOffersQueryKey,
+  getGetOffersSummaryQueryKey,
+  type ListingOffer,
 } from "@workspace/api-client-react";
 import {
   Loader2,
@@ -17,7 +26,12 @@ import {
   Recycle,
   ArrowRight,
   ArrowLeft,
-  Lock,
+  TrendingUp,
+  CheckCircle2,
+  XCircle,
+  ChevronDown,
+  ChevronUp,
+  BadgeCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -50,6 +64,552 @@ function DetailRow({
         <span className="text-sm font-semibold text-foreground">{value}</span>
       </div>
     </div>
+  );
+}
+
+function offerStatusVariant(status: ListingOffer["status"]) {
+  if (status === "accepted") return "default";
+  if (status === "rejected") return "outline";
+  return "secondary";
+}
+
+/** Compact summary bar: offer count + highest price */
+function OfferSummaryBar({
+  wasteListingId,
+}: {
+  wasteListingId: string;
+}) {
+  const { t } = useT();
+  const { data: summary } = useGetOffersSummary(wasteListingId);
+
+  if (!summary) return null;
+
+  return (
+    <div className="flex items-center justify-between rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm">
+      <span className="font-medium text-foreground">
+        {summary.count > 0
+          ? `${summary.count} ${t("offer.summary.count")}`
+          : t("offer.summary.noOffers")}
+      </span>
+      {summary.highest_price != null && summary.count > 0 && (
+        <span className="text-muted-foreground">
+          {t("offer.summary.highest")}:{" "}
+          <span className="font-bold text-foreground">
+            {summary.highest_price.toLocaleString()}
+          </span>{" "}
+          {t("offer.summary.perUnit")}
+        </span>
+      )}
+    </div>
+  );
+}
+
+/** Buyer offer section: submit / improve / status */
+function BuyerOfferSection({
+  wasteListingId,
+  listingQuantity,
+  isOpen,
+  onSuccess,
+}: {
+  wasteListingId: string;
+  listingQuantity: number;
+  isOpen: boolean;
+  onSuccess: () => void;
+}) {
+  const { t } = useT();
+  const { data: offers = [], isLoading } = useGetListingOffers(wasteListingId);
+  const { data: summary } = useGetOffersSummary(wasteListingId);
+  const { mutate: submitOffer, isPending: isSubmitting } = useSubmitOffer();
+  const { mutate: improveOffer, isPending: isImproving } = useImproveOffer();
+
+  const [price, setPrice] = useState("");
+  const [message, setMessage] = useState("");
+  const [showImproveForm, setShowImproveForm] = useState(false);
+  const [newPrice, setNewPrice] = useState("");
+  const [newMessage, setNewMessage] = useState("");
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const myOffer = offers[0] as ListingOffer | undefined;
+  const highestPrice = summary?.highest_price ?? 0;
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setFormError(null);
+    const val = parseFloat(price);
+    if (!val || val <= 0) return;
+
+    submitOffer(
+      { wasteListingId, data: { price_per_unit: val, message: message.trim() || undefined } },
+      {
+        onSuccess: () => {
+          setPrice("");
+          setMessage("");
+          onSuccess();
+        },
+        onError: (err: unknown) => {
+          const msg =
+            (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+          if (msg?.includes("PriceTooLow") || msg?.includes("higher")) {
+            setFormError(t("offer.error.tooLow"));
+          } else {
+            setFormError(t("offer.error.generic"));
+          }
+        },
+      },
+    );
+  }
+
+  function handleImprove(e: React.FormEvent) {
+    e.preventDefault();
+    setFormError(null);
+    const val = parseFloat(newPrice);
+    if (!val || val <= 0) return;
+
+    improveOffer(
+      { wasteListingId, data: { price_per_unit: val, message: newMessage.trim() || undefined } },
+      {
+        onSuccess: () => {
+          setShowImproveForm(false);
+          setNewPrice("");
+          setNewMessage("");
+          onSuccess();
+        },
+        onError: (err: unknown) => {
+          const msg =
+            (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+          if (msg?.includes("PriceTooLow") || msg?.includes("higher")) {
+            setFormError(t("offer.error.tooLow"));
+          } else {
+            setFormError(t("offer.error.generic"));
+          }
+        },
+      },
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex h-16 items-center justify-center">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  // Accepted offer
+  if (myOffer?.status === "accepted") {
+    return (
+      <div className="rounded-xl border border-green-200 bg-green-50 p-5 space-y-2 dark:border-green-800 dark:bg-green-950">
+        <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
+          <CheckCircle2 className="h-5 w-5" />
+          <span className="font-semibold">{t("offer.mine.accepted")}</span>
+        </div>
+        <div className="text-sm text-muted-foreground">
+          {myOffer.price_per_unit.toLocaleString()} {t("listing.sar")} /{" "}
+          {t("offer.summary.perUnit").split("/")[1]}
+        </div>
+        <div className="text-xs text-muted-foreground">
+          {t("offer.mine.total")}:{" "}
+          <span className="font-medium">
+            {(myOffer.price_per_unit * listingQuantity).toLocaleString()} {t("listing.sar")}
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  // Rejected offer
+  if (myOffer?.status === "rejected") {
+    return (
+      <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-5 space-y-1">
+        <div className="flex items-center gap-2 text-destructive">
+          <XCircle className="h-5 w-5" />
+          <span className="font-semibold">{t("offer.mine.rejected")}</span>
+        </div>
+        <div className="text-sm text-muted-foreground">
+          {myOffer.price_per_unit.toLocaleString()} {t("listing.sar")}
+        </div>
+      </div>
+    );
+  }
+
+  // Existing pending offer
+  if (myOffer?.status === "pending") {
+    const estimatedTotal = myOffer.price_per_unit * listingQuantity;
+    return (
+      <div className="space-y-4">
+        {/* Current offer card */}
+        <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-muted-foreground">
+              {t("offer.mine.title")}
+            </span>
+            <Badge variant="secondary">{t("offer.status.pending")}</Badge>
+          </div>
+          <div className="flex items-end gap-1">
+            <span className="text-2xl font-bold text-foreground">
+              {myOffer.price_per_unit.toLocaleString()}
+            </span>
+            <span className="text-sm text-muted-foreground pb-0.5">
+              {t("listing.sar")} / {t("offer.summary.perUnit").split("/")[1]}
+            </span>
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {t("offer.mine.total")}:{" "}
+            <span className="font-semibold text-foreground">
+              {estimatedTotal.toLocaleString()} {t("listing.sar")}
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {t("offer.mine.pending")}
+          </p>
+          {myOffer.message && (
+            <p className="text-sm text-foreground italic">{myOffer.message}</p>
+          )}
+        </div>
+
+        {/* Improve offer */}
+        {isOpen && (
+          <div className="rounded-xl border border-border bg-card overflow-hidden">
+            <button
+              type="button"
+              onClick={() => { setShowImproveForm(!showImproveForm); setFormError(null); }}
+              className="w-full flex items-center justify-between px-5 py-3 text-sm font-medium text-foreground hover:bg-muted/40 transition-colors"
+            >
+              <span className="flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-primary" />
+                {t("offer.form.improve")}
+              </span>
+              {showImproveForm ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
+            </button>
+            {showImproveForm && (
+              <form onSubmit={handleImprove} className="px-5 pb-5 pt-2 space-y-3 border-t border-border">
+                <p className="text-xs text-muted-foreground">
+                  {t("offer.form.mustExceed")}:{" "}
+                  <span className="font-semibold">
+                    {highestPrice.toLocaleString()} {t("listing.sar")}
+                  </span>
+                </p>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-muted-foreground">
+                    {t("offer.form.newPrice")}
+                  </label>
+                  <input
+                    type="number"
+                    min="0.001"
+                    step="0.001"
+                    required
+                    value={newPrice}
+                    onChange={(e) => setNewPrice(e.target.value)}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    placeholder={`> ${highestPrice.toLocaleString()}`}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-muted-foreground">
+                    {t("offer.form.message")}
+                  </label>
+                  <textarea
+                    rows={2}
+                    maxLength={500}
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+                {formError && (
+                  <p className="text-xs text-destructive">{formError}</p>
+                )}
+                <Button type="submit" className="w-full" disabled={isImproving}>
+                  {isImproving && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
+                  {isImproving ? t("offer.form.improving") : t("offer.form.improve")}
+                </Button>
+              </form>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // No offer yet — show submit form
+  if (!isOpen) {
+    return null;
+  }
+
+  return (
+    <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+      <div className="flex items-center gap-2">
+        <TrendingUp className="h-4 w-4 text-primary" />
+        <span className="text-sm font-semibold text-foreground">
+          {t("listing.offer.cta")}
+        </span>
+      </div>
+      {highestPrice > 0 && (
+        <p className="text-xs text-muted-foreground">
+          {t("offer.form.mustExceed")}:{" "}
+          <span className="font-semibold">
+            {highestPrice.toLocaleString()} {t("listing.sar")}
+          </span>
+        </p>
+      )}
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">
+            {t("offer.form.price")}
+          </label>
+          <input
+            type="number"
+            min="0.001"
+            step="0.001"
+            required
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            placeholder={
+              highestPrice > 0 ? `> ${highestPrice.toLocaleString()}` : "0.000"
+            }
+          />
+          {price && parseFloat(price) > 0 && (
+            <p className="text-xs text-muted-foreground">
+              {t("offer.mine.total")}:{" "}
+              <span className="font-semibold">
+                {(parseFloat(price) * listingQuantity).toLocaleString()} {t("listing.sar")}
+              </span>
+            </p>
+          )}
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">
+            {t("offer.form.message")}
+          </label>
+          <textarea
+            rows={2}
+            maxLength={500}
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+        </div>
+        {formError && (
+          <p className="text-xs text-destructive">{formError}</p>
+        )}
+        <Button type="submit" className="w-full" disabled={isSubmitting}>
+          {isSubmitting && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
+          {isSubmitting ? t("offer.form.submitting") : t("offer.form.submit")}
+        </Button>
+      </form>
+    </div>
+  );
+}
+
+/** Single offer row in producer's list */
+function ProducerOfferRow({
+  offer,
+  listingQuantity,
+  listingIsOpen,
+  onAccept,
+  onReject,
+  isAccepting,
+  isRejecting,
+}: {
+  offer: ListingOffer;
+  listingQuantity: number;
+  listingIsOpen: boolean;
+  onAccept: (offer: ListingOffer) => void;
+  onReject: (offer: ListingOffer) => void;
+  isAccepting: boolean;
+  isRejecting: boolean;
+}) {
+  const { t } = useT();
+  const estimatedTotal = offer.price_per_unit * listingQuantity;
+
+  return (
+    <div className="py-4 space-y-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <span className="text-sm font-semibold text-foreground truncate">
+            {offer.buyer_company_name}
+          </span>
+        </div>
+        <Badge variant={offerStatusVariant(offer.status)} className="shrink-0 text-xs">
+          {t(`offer.status.${offer.status}`)}
+        </Badge>
+      </div>
+
+      <div className="flex items-baseline gap-1">
+        <span className="text-xl font-bold text-foreground">
+          {offer.price_per_unit.toLocaleString()}
+        </span>
+        <span className="text-xs text-muted-foreground">
+          {t("listing.sar")} / {t("offer.producer.pricePerUnit").split("/")[1].trim()}
+        </span>
+      </div>
+      <div className="text-xs text-muted-foreground">
+        {t("offer.producer.total")}:{" "}
+        <span className="font-semibold text-foreground">
+          {estimatedTotal.toLocaleString()} {t("listing.sar")}
+        </span>
+      </div>
+
+      {offer.message && (
+        <p className="text-sm text-muted-foreground italic">{offer.message}</p>
+      )}
+
+      {offer.status === "pending" && listingIsOpen && (
+        <div className="flex gap-2 pt-1">
+          <Button
+            size="sm"
+            className="flex-1"
+            onClick={() => onAccept(offer)}
+            disabled={isAccepting || isRejecting}
+          >
+            {isAccepting ? (
+              <Loader2 className="me-1.5 h-3 w-3 animate-spin" />
+            ) : (
+              <BadgeCheck className="me-1.5 h-3 w-3" />
+            )}
+            {isAccepting ? t("offer.accepting") : t("offer.accept")}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="flex-1 border-destructive/40 text-destructive hover:bg-destructive/10"
+            onClick={() => onReject(offer)}
+            disabled={isAccepting || isRejecting}
+          >
+            {isRejecting ? (
+              <Loader2 className="me-1.5 h-3 w-3 animate-spin" />
+            ) : (
+              <XCircle className="me-1.5 h-3 w-3" />
+            )}
+            {isRejecting ? t("offer.rejecting") : t("offer.reject")}
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Producer's incoming offers panel */
+function ProducerOffersPanel({
+  wasteListingId,
+  listingQuantity,
+  listingIsOpen,
+  onAfterAction,
+}: {
+  wasteListingId: string;
+  listingQuantity: number;
+  listingIsOpen: boolean;
+  onAfterAction: () => void;
+}) {
+  const { t } = useT();
+  const queryClient = useQueryClient();
+  const { data: offers = [], isLoading } = useGetListingOffers(wasteListingId);
+  const { mutate: acceptOffer, isPending: isAccepting } = useAcceptOffer();
+  const { mutate: rejectOffer, isPending: isRejecting } = useRejectOffer();
+
+  const [acceptTarget, setAcceptTarget] = useState<ListingOffer | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<ListingOffer | null>(null);
+
+  function invalidateOffers() {
+    queryClient.invalidateQueries({ queryKey: getGetListingOffersQueryKey(wasteListingId) });
+    queryClient.invalidateQueries({ queryKey: getGetOffersSummaryQueryKey(wasteListingId) });
+  }
+
+  function handleAcceptConfirm() {
+    if (!acceptTarget) return;
+    acceptOffer(
+      { offerId: acceptTarget.id },
+      {
+        onSuccess: () => {
+          setAcceptTarget(null);
+          invalidateOffers();
+          onAfterAction();
+        },
+        onError: () => setAcceptTarget(null),
+      },
+    );
+  }
+
+  function handleRejectConfirm() {
+    if (!rejectTarget) return;
+    rejectOffer(
+      { offerId: rejectTarget.id },
+      {
+        onSuccess: () => {
+          setRejectTarget(null);
+          invalidateOffers();
+        },
+        onError: () => setRejectTarget(null),
+      },
+    );
+  }
+
+  return (
+    <>
+      <ConfirmDialog
+        open={!!acceptTarget}
+        onOpenChange={(open) => { if (!open) setAcceptTarget(null); }}
+        title={t("offer.accept.confirm.title")}
+        description={t("offer.accept.confirm.desc")}
+        confirmLabel={t("offer.accept.confirm.action")}
+        onConfirm={handleAcceptConfirm}
+        isPending={isAccepting}
+        destructive={false}
+      />
+      <ConfirmDialog
+        open={!!rejectTarget}
+        onOpenChange={(open) => { if (!open) setRejectTarget(null); }}
+        title={t("offer.reject.confirm.title")}
+        description={t("offer.reject.confirm.desc")}
+        confirmLabel={t("offer.reject.confirm.action")}
+        onConfirm={handleRejectConfirm}
+        isPending={isRejecting}
+        destructive
+      />
+
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="px-5 py-3 border-b border-border bg-muted/30">
+          <span className="text-sm font-semibold text-foreground">
+            {t("offer.producer.title")}
+          </span>
+          {offers.length > 0 && (
+            <span className="ms-2 text-xs text-muted-foreground">
+              ({offers.length})
+            </span>
+          )}
+        </div>
+        {isLoading ? (
+          <div className="flex h-20 items-center justify-center">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : offers.length === 0 ? (
+          <p className="px-5 py-6 text-sm text-muted-foreground text-center">
+            {t("offer.producer.empty")}
+          </p>
+        ) : (
+          <div className="px-5 divide-y divide-border">
+            {(offers as ListingOffer[]).map((offer) => (
+              <ProducerOfferRow
+                key={offer.id}
+                offer={offer}
+                listingQuantity={listingQuantity}
+                listingIsOpen={listingIsOpen}
+                onAccept={(o) => setAcceptTarget(o)}
+                onReject={(o) => setRejectTarget(o)}
+                isAccepting={isAccepting && acceptTarget?.id === offer.id}
+                isRejecting={isRejecting && rejectTarget?.id === offer.id}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </>
   );
 }
 
@@ -94,15 +654,19 @@ export function ListingDetailPage() {
       )
     : "";
 
-  const handleConfirmClose = () => {
+  function invalidateListing() {
+    queryClient.invalidateQueries({ queryKey });
+    queryClient.invalidateQueries({ queryKey: getListMyListingsQueryKey() });
+  }
+
+  function handleConfirmClose() {
     setCloseError(null);
     closeListing(
       { wasteListingId },
       {
         onSuccess: (updated) => {
           setConfirmOpen(false);
-          queryClient.invalidateQueries({ queryKey });
-          queryClient.invalidateQueries({ queryKey: getListMyListingsQueryKey() });
+          invalidateListing();
           if (updated.status === "closed") {
             navigate("/listings/mine");
           }
@@ -113,7 +677,7 @@ export function ListingDetailPage() {
         },
       },
     );
-  };
+  }
 
   const backButton = (
     <Link to={backPath}>
@@ -164,6 +728,7 @@ export function ListingDetailPage() {
 
   const ref = listingRef(listing.id);
   const materialLabel = t(`material.${listing.material}`);
+  const quantity = Number(listing.quantity);
 
   return (
     <AppLayout
@@ -172,6 +737,7 @@ export function ListingDetailPage() {
       subtitle={ref}
       actions={backButton}
     >
+      {/* Close listing confirm */}
       <ConfirmDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
@@ -254,35 +820,52 @@ export function ListingDetailPage() {
 
         <Separator />
 
-        {/* Actions */}
-        <div className="pb-4">
-          {role === "producer" && isOwner && isOpen && (
-            <Button
-              variant="outline"
-              className="w-full border-destructive/40 text-destructive hover:bg-destructive/10"
-              onClick={() => setConfirmOpen(true)}
-              disabled={isClosing}
-            >
-              {isClosing && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
-              {t("myListings.close")}
-            </Button>
-          )}
+        {/* Offers summary bar — visible to all company roles */}
+        {me?.company && (
+          <OfferSummaryBar wasteListingId={wasteListingId} />
+        )}
 
-          {role === "buyer" && (
-            <div className="space-y-3">
+        {/* Producer: close button + incoming offers */}
+        {role === "producer" && isOwner && (
+          <div className="space-y-4 pb-4">
+            {isOpen && (
               <Button
-                disabled
-                className="w-full gap-2 cursor-not-allowed opacity-70"
+                variant="outline"
+                className="w-full border-destructive/40 text-destructive hover:bg-destructive/10"
+                onClick={() => setConfirmOpen(true)}
+                disabled={isClosing}
               >
-                <Lock className="h-4 w-4" />
-                {t("listing.offer.cta")}
+                {isClosing && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
+                {t("myListings.close")}
               </Button>
-              <p className="text-center text-xs text-muted-foreground leading-relaxed px-2">
-                {t("listing.offer.hint")}
-              </p>
-            </div>
-          )}
-        </div>
+            )}
+            <ProducerOffersPanel
+              wasteListingId={wasteListingId}
+              listingQuantity={quantity}
+              listingIsOpen={!!isOpen}
+              onAfterAction={invalidateListing}
+            />
+          </div>
+        )}
+
+        {/* Buyer: submit / improve / status */}
+        {role === "buyer" && (
+          <div className="pb-4">
+            <BuyerOfferSection
+              wasteListingId={wasteListingId}
+              listingQuantity={quantity}
+              isOpen={!!isOpen}
+              onSuccess={() => {
+                queryClient.invalidateQueries({
+                  queryKey: getGetListingOffersQueryKey(wasteListingId),
+                });
+                queryClient.invalidateQueries({
+                  queryKey: getGetOffersSummaryQueryKey(wasteListingId),
+                });
+              }}
+            />
+          </div>
+        )}
       </div>
     </AppLayout>
   );

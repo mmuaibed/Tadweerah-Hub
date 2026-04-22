@@ -44,6 +44,7 @@ export const wasteListingsTable = pgTable("waste_listings", {
   created_at: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
+  closed_at: timestamp("closed_at", { withTimezone: true }),
 });
 
 export type WasteListing = typeof wasteListingsTable.$inferSelect;

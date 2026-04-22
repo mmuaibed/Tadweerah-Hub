@@ -157,6 +157,56 @@ const translations: Record<string, Record<Language, string>> = {
     en: "Soon you'll be able to compete with other buyers and send your best price directly to the producer.",
   },
 
+  // M4 — Offers / Bidding
+  "offer.summary.noOffers": { ar: "لا توجد عروض بعد", en: "No offers yet" },
+  "offer.summary.count": { ar: "عروض واردة", en: "offers received" },
+  "offer.summary.highest": { ar: "أعلى عرض", en: "Highest offer" },
+  "offer.summary.perUnit": { ar: "ر.س/وحدة", en: "SAR/unit" },
+
+  "offer.form.price": { ar: "سعرك لكل وحدة (ر.س)", en: "Your price per unit (SAR)" },
+  "offer.form.message": { ar: "ملاحظة للمنتج (اختياري)", en: "Note to producer (optional)" },
+  "offer.form.submit": { ar: "إرسال العرض", en: "Submit Offer" },
+  "offer.form.submitting": { ar: "جاري الإرسال...", en: "Submitting..." },
+  "offer.form.improve": { ar: "تحسين عرضي", en: "Improve My Offer" },
+  "offer.form.improving": { ar: "جاري التحسين...", en: "Improving..." },
+  "offer.form.newPrice": { ar: "السعر الجديد (ر.س/وحدة)", en: "New price (SAR/unit)" },
+  "offer.form.mustExceed": { ar: "يجب أن يتجاوز أعلى عرض حالي", en: "Must exceed the current highest offer" },
+
+  "offer.mine.title": { ar: "عرضي الحالي", en: "My Current Offer" },
+  "offer.mine.pending": { ar: "في انتظار رد المنتج", en: "Awaiting producer response" },
+  "offer.mine.accepted": { ar: "تهانينا! تم قبول عرضك", en: "Congratulations! Your offer was accepted" },
+  "offer.mine.rejected": { ar: "تم رفض عرضك", en: "Your offer was rejected" },
+  "offer.mine.total": { ar: "الإجمالي المقدَّر", en: "Estimated total" },
+  "offer.mine.improve.hint": { ar: "يمكنك تحسين عرضك بسعر أعلى من الأعلى الحالي", en: "You can improve your offer with a price higher than the current highest" },
+
+  "offer.status.pending": { ar: "معلّق", en: "Pending" },
+  "offer.status.accepted": { ar: "مقبول", en: "Accepted" },
+  "offer.status.rejected": { ar: "مرفوض", en: "Rejected" },
+
+  "offer.producer.title": { ar: "العروض الواردة", en: "Incoming Offers" },
+  "offer.producer.empty": { ar: "لا توجد عروض بعد. سيتواصل المشترون قريباً.", en: "No offers yet. Buyers will reach out soon." },
+  "offer.producer.company": { ar: "الشركة", en: "Company" },
+  "offer.producer.pricePerUnit": { ar: "السعر / وحدة", en: "Price / unit" },
+  "offer.producer.total": { ar: "الإجمالي المقدَّر", en: "Est. total" },
+
+  "offer.accept": { ar: "قبول", en: "Accept" },
+  "offer.reject": { ar: "رفض", en: "Reject" },
+  "offer.accepting": { ar: "جاري القبول...", en: "Accepting..." },
+  "offer.rejecting": { ar: "جاري الرفض...", en: "Rejecting..." },
+
+  "offer.accept.confirm.title": { ar: "تأكيد قبول العرض", en: "Confirm Offer Acceptance" },
+  "offer.accept.confirm.desc": {
+    ar: "قبول هذا العرض سيغلق الإعلان تلقائياً ويرفض جميع العروض الأخرى. هذا الإجراء نهائي.",
+    en: "Accepting this offer will automatically close the listing and reject all other offers. This action is final.",
+  },
+  "offer.accept.confirm.action": { ar: "قبول وإغلاق الإعلان", en: "Accept & Close Listing" },
+  "offer.reject.confirm.title": { ar: "تأكيد رفض العرض", en: "Confirm Offer Rejection" },
+  "offer.reject.confirm.desc": { ar: "هل تريد رفض هذا العرض؟", en: "Are you sure you want to reject this offer?" },
+  "offer.reject.confirm.action": { ar: "رفض العرض", en: "Reject Offer" },
+
+  "offer.error.tooLow": { ar: "يجب أن يكون سعرك أعلى من العرض الأعلى الحالي", en: "Your price must be higher than the current highest offer" },
+  "offer.error.generic": { ar: "تعذر إرسال العرض. حاول مرة أخرى.", en: "Could not submit the offer. Please try again." },
+
   "listing.notFound.title": { ar: "العرض غير موجود", en: "Listing Not Found" },
   "listing.notFound.desc": {
     ar: "قد يكون العرض محذوفاً أو المعرّف غير صحيح.",

@@ -96,6 +96,40 @@ export interface WasteListing {
   price_hint?: number;
   status: WasteListingStatus;
   created_at: string;
+  closed_at?: string;
+}
+
+export type OfferStatus = (typeof OfferStatus)[keyof typeof OfferStatus];
+
+export const OfferStatus = {
+  pending: "pending",
+  accepted: "accepted",
+  rejected: "rejected",
+} as const;
+
+export interface ListingOffer {
+  id: string;
+  waste_listing_id: string;
+  buyer_company_id: string;
+  buyer_company_name: string;
+  price_per_unit: number;
+  message?: string;
+  status: OfferStatus;
+  created_at: string;
+  updated_at: string;
+  resolved_at?: string;
+}
+
+export interface SubmitOfferBody {
+  /** @exclusiveMinimum 0 */
+  price_per_unit: number;
+  /** @maxLength 500 */
+  message?: string;
+}
+
+export interface OffersSummary {
+  count: number;
+  highest_price?: number;
 }
 
 export interface CreateWasteListingBody {

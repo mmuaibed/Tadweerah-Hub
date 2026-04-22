@@ -116,6 +116,7 @@ export const ListMarketplaceListingsResponseItem = zod.object({
   price_hint: zod.number().optional(),
   status: zod.enum(["open", "closed"]),
   created_at: zod.coerce.date(),
+  closed_at: zod.coerce.date().optional(),
 });
 export const ListMarketplaceListingsResponse = zod.array(
   ListMarketplaceListingsResponseItem,
@@ -179,6 +180,7 @@ export const ListMyListingsResponseItem = zod.object({
   price_hint: zod.number().optional(),
   status: zod.enum(["open", "closed"]),
   created_at: zod.coerce.date(),
+  closed_at: zod.coerce.date().optional(),
 });
 export const ListMyListingsResponse = zod.array(ListMyListingsResponseItem);
 
@@ -209,6 +211,7 @@ export const GetWasteListingResponse = zod.object({
   price_hint: zod.number().optional(),
   status: zod.enum(["open", "closed"]),
   created_at: zod.coerce.date(),
+  closed_at: zod.coerce.date().optional(),
 });
 
 /**
@@ -238,4 +241,127 @@ export const CloseWasteListingResponse = zod.object({
   price_hint: zod.number().optional(),
   status: zod.enum(["open", "closed"]),
   created_at: zod.coerce.date(),
+  closed_at: zod.coerce.date().optional(),
+});
+
+/**
+ * @summary Get offers for a listing. Producer (owner) sees all with buyer identity. Buyer sees only their own offer.
+
+ */
+export const GetListingOffersParams = zod.object({
+  waste_listing_id: zod.coerce.string(),
+});
+
+export const GetListingOffersResponseItem = zod.object({
+  id: zod.string(),
+  waste_listing_id: zod.string(),
+  buyer_company_id: zod.string(),
+  buyer_company_name: zod.string(),
+  price_per_unit: zod.number(),
+  message: zod.string().optional(),
+  status: zod.enum(["pending", "accepted", "rejected"]),
+  created_at: zod.coerce.date(),
+  updated_at: zod.coerce.date(),
+  resolved_at: zod.coerce.date().optional(),
+});
+export const GetListingOffersResponse = zod.array(GetListingOffersResponseItem);
+
+/**
+ * @summary Submit a first offer on an open listing (buyer only)
+ */
+export const SubmitOfferParams = zod.object({
+  waste_listing_id: zod.coerce.string(),
+});
+
+export const submitOfferBodyPricePerUnitExclusiveMin = 0;
+
+export const submitOfferBodyMessageMax = 500;
+
+export const SubmitOfferBody = zod.object({
+  price_per_unit: zod.number().gt(submitOfferBodyPricePerUnitExclusiveMin),
+  message: zod.string().max(submitOfferBodyMessageMax).optional(),
+});
+
+/**
+ * @summary Improve an existing pending offer. New price must exceed both the buyer's current price and the current highest offer.
+
+ */
+export const ImproveOfferParams = zod.object({
+  waste_listing_id: zod.coerce.string(),
+});
+
+export const improveOfferBodyPricePerUnitExclusiveMin = 0;
+
+export const improveOfferBodyMessageMax = 500;
+
+export const ImproveOfferBody = zod.object({
+  price_per_unit: zod.number().gt(improveOfferBodyPricePerUnitExclusiveMin),
+  message: zod.string().max(improveOfferBodyMessageMax).optional(),
+});
+
+export const ImproveOfferResponse = zod.object({
+  id: zod.string(),
+  waste_listing_id: zod.string(),
+  buyer_company_id: zod.string(),
+  buyer_company_name: zod.string(),
+  price_per_unit: zod.number(),
+  message: zod.string().optional(),
+  status: zod.enum(["pending", "accepted", "rejected"]),
+  created_at: zod.coerce.date(),
+  updated_at: zod.coerce.date(),
+  resolved_at: zod.coerce.date().optional(),
+});
+
+/**
+ * @summary Get offer count and highest price (amount only, no identity). Available to all authenticated company users.
+
+ */
+export const GetOffersSummaryParams = zod.object({
+  waste_listing_id: zod.coerce.string(),
+});
+
+export const GetOffersSummaryResponse = zod.object({
+  count: zod.number(),
+  highest_price: zod.number().optional(),
+});
+
+/**
+ * @summary Accept an offer (listing owner / producer only). Atomically: marks offer accepted, rejects all others, closes the listing.
+
+ */
+export const AcceptOfferParams = zod.object({
+  offer_id: zod.coerce.string(),
+});
+
+export const AcceptOfferResponse = zod.object({
+  id: zod.string(),
+  waste_listing_id: zod.string(),
+  buyer_company_id: zod.string(),
+  buyer_company_name: zod.string(),
+  price_per_unit: zod.number(),
+  message: zod.string().optional(),
+  status: zod.enum(["pending", "accepted", "rejected"]),
+  created_at: zod.coerce.date(),
+  updated_at: zod.coerce.date(),
+  resolved_at: zod.coerce.date().optional(),
+});
+
+/**
+ * @summary Reject a single pending offer (listing owner / producer only)
+ */
+export const RejectOfferParams = zod.object({
+  offer_id: zod.coerce.string(),
+});
+
+export const RejectOfferResponse = zod.object({
+  id: zod.string(),
+  waste_listing_id: zod.string(),
+  buyer_company_id: zod.string(),
+  buyer_company_name: zod.string(),
+  price_per_unit: zod.number(),
+  message: zod.string().optional(),
+  status: zod.enum(["pending", "accepted", "rejected"]),
+  created_at: zod.coerce.date(),
+  updated_at: zod.coerce.date(),
+  resolved_at: zod.coerce.date().optional(),
 });

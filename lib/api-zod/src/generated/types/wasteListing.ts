@@ -21,4 +21,5 @@ export interface WasteListing {
   price_hint?: number;
   status: WasteListingStatus;
   created_at: Date;
+  closed_at?: Date;
 }

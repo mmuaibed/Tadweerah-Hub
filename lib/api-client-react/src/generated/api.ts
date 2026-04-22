@@ -22,7 +22,10 @@ import type {
   CreateWasteListingBody,
   HealthStatus,
   ListMarketplaceListingsParams,
+  ListingOffer,
   MeResponse,
+  OffersSummary,
+  SubmitOfferBody,
   WasteListing,
 } from "./api.schemas";
 
@@ -690,4 +693,532 @@ export const useCloseWasteListing = <
   TContext
 > => {
   return useMutation(getCloseWasteListingMutationOptions(options));
+};
+
+/**
+ * @summary Get offers for a listing. Producer (owner) sees all with buyer identity. Buyer sees only their own offer.
+
+ */
+export const getGetListingOffersUrl = (wasteListingId: string) => {
+  return `/api/listings/${wasteListingId}/offers`;
+};
+
+export const getListingOffers = async (
+  wasteListingId: string,
+  options?: RequestInit,
+): Promise<ListingOffer[]> => {
+  return customFetch<ListingOffer[]>(getGetListingOffersUrl(wasteListingId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetListingOffersQueryKey = (wasteListingId: string) => {
+  return [`/api/listings/${wasteListingId}/offers`] as const;
+};
+
+export const getGetListingOffersQueryOptions = <
+  TData = Awaited<ReturnType<typeof getListingOffers>>,
+  TError = ErrorType<void>,
+>(
+  wasteListingId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getListingOffers>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetListingOffersQueryKey(wasteListingId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getListingOffers>>
+  > = ({ signal }) =>
+    getListingOffers(wasteListingId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!wasteListingId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getListingOffers>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetListingOffersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getListingOffers>>
+>;
+export type GetListingOffersQueryError = ErrorType<void>;
+
+/**
+ * @summary Get offers for a listing. Producer (owner) sees all with buyer identity. Buyer sees only their own offer.
+
+ */
+
+export function useGetListingOffers<
+  TData = Awaited<ReturnType<typeof getListingOffers>>,
+  TError = ErrorType<void>,
+>(
+  wasteListingId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getListingOffers>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetListingOffersQueryOptions(wasteListingId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Submit a first offer on an open listing (buyer only)
+ */
+export const getSubmitOfferUrl = (wasteListingId: string) => {
+  return `/api/listings/${wasteListingId}/offers`;
+};
+
+export const submitOffer = async (
+  wasteListingId: string,
+  submitOfferBody: SubmitOfferBody,
+  options?: RequestInit,
+): Promise<ListingOffer> => {
+  return customFetch<ListingOffer>(getSubmitOfferUrl(wasteListingId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(submitOfferBody),
+  });
+};
+
+export const getSubmitOfferMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof submitOffer>>,
+    TError,
+    { wasteListingId: string; data: BodyType<SubmitOfferBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof submitOffer>>,
+  TError,
+  { wasteListingId: string; data: BodyType<SubmitOfferBody> },
+  TContext
+> => {
+  const mutationKey = ["submitOffer"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof submitOffer>>,
+    { wasteListingId: string; data: BodyType<SubmitOfferBody> }
+  > = (props) => {
+    const { wasteListingId, data } = props ?? {};
+
+    return submitOffer(wasteListingId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SubmitOfferMutationResult = NonNullable<
+  Awaited<ReturnType<typeof submitOffer>>
+>;
+export type SubmitOfferMutationBody = BodyType<SubmitOfferBody>;
+export type SubmitOfferMutationError = ErrorType<void>;
+
+/**
+ * @summary Submit a first offer on an open listing (buyer only)
+ */
+export const useSubmitOffer = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof submitOffer>>,
+    TError,
+    { wasteListingId: string; data: BodyType<SubmitOfferBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof submitOffer>>,
+  TError,
+  { wasteListingId: string; data: BodyType<SubmitOfferBody> },
+  TContext
+> => {
+  return useMutation(getSubmitOfferMutationOptions(options));
+};
+
+/**
+ * @summary Improve an existing pending offer. New price must exceed both the buyer's current price and the current highest offer.
+
+ */
+export const getImproveOfferUrl = (wasteListingId: string) => {
+  return `/api/listings/${wasteListingId}/offers/mine`;
+};
+
+export const improveOffer = async (
+  wasteListingId: string,
+  submitOfferBody: SubmitOfferBody,
+  options?: RequestInit,
+): Promise<ListingOffer> => {
+  return customFetch<ListingOffer>(getImproveOfferUrl(wasteListingId), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(submitOfferBody),
+  });
+};
+
+export const getImproveOfferMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof improveOffer>>,
+    TError,
+    { wasteListingId: string; data: BodyType<SubmitOfferBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof improveOffer>>,
+  TError,
+  { wasteListingId: string; data: BodyType<SubmitOfferBody> },
+  TContext
+> => {
+  const mutationKey = ["improveOffer"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof improveOffer>>,
+    { wasteListingId: string; data: BodyType<SubmitOfferBody> }
+  > = (props) => {
+    const { wasteListingId, data } = props ?? {};
+
+    return improveOffer(wasteListingId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ImproveOfferMutationResult = NonNullable<
+  Awaited<ReturnType<typeof improveOffer>>
+>;
+export type ImproveOfferMutationBody = BodyType<SubmitOfferBody>;
+export type ImproveOfferMutationError = ErrorType<void>;
+
+/**
+ * @summary Improve an existing pending offer. New price must exceed both the buyer's current price and the current highest offer.
+
+ */
+export const useImproveOffer = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof improveOffer>>,
+    TError,
+    { wasteListingId: string; data: BodyType<SubmitOfferBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof improveOffer>>,
+  TError,
+  { wasteListingId: string; data: BodyType<SubmitOfferBody> },
+  TContext
+> => {
+  return useMutation(getImproveOfferMutationOptions(options));
+};
+
+/**
+ * @summary Get offer count and highest price (amount only, no identity). Available to all authenticated company users.
+
+ */
+export const getGetOffersSummaryUrl = (wasteListingId: string) => {
+  return `/api/listings/${wasteListingId}/offers/summary`;
+};
+
+export const getOffersSummary = async (
+  wasteListingId: string,
+  options?: RequestInit,
+): Promise<OffersSummary> => {
+  return customFetch<OffersSummary>(getGetOffersSummaryUrl(wasteListingId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetOffersSummaryQueryKey = (wasteListingId: string) => {
+  return [`/api/listings/${wasteListingId}/offers/summary`] as const;
+};
+
+export const getGetOffersSummaryQueryOptions = <
+  TData = Awaited<ReturnType<typeof getOffersSummary>>,
+  TError = ErrorType<void>,
+>(
+  wasteListingId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getOffersSummary>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetOffersSummaryQueryKey(wasteListingId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getOffersSummary>>
+  > = ({ signal }) =>
+    getOffersSummary(wasteListingId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!wasteListingId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getOffersSummary>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetOffersSummaryQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getOffersSummary>>
+>;
+export type GetOffersSummaryQueryError = ErrorType<void>;
+
+/**
+ * @summary Get offer count and highest price (amount only, no identity). Available to all authenticated company users.
+
+ */
+
+export function useGetOffersSummary<
+  TData = Awaited<ReturnType<typeof getOffersSummary>>,
+  TError = ErrorType<void>,
+>(
+  wasteListingId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getOffersSummary>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetOffersSummaryQueryOptions(wasteListingId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Accept an offer (listing owner / producer only). Atomically: marks offer accepted, rejects all others, closes the listing.
+
+ */
+export const getAcceptOfferUrl = (offerId: string) => {
+  return `/api/offers/${offerId}/accept`;
+};
+
+export const acceptOffer = async (
+  offerId: string,
+  options?: RequestInit,
+): Promise<ListingOffer> => {
+  return customFetch<ListingOffer>(getAcceptOfferUrl(offerId), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getAcceptOfferMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof acceptOffer>>,
+    TError,
+    { offerId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof acceptOffer>>,
+  TError,
+  { offerId: string },
+  TContext
+> => {
+  const mutationKey = ["acceptOffer"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof acceptOffer>>,
+    { offerId: string }
+  > = (props) => {
+    const { offerId } = props ?? {};
+
+    return acceptOffer(offerId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AcceptOfferMutationResult = NonNullable<
+  Awaited<ReturnType<typeof acceptOffer>>
+>;
+
+export type AcceptOfferMutationError = ErrorType<void>;
+
+/**
+ * @summary Accept an offer (listing owner / producer only). Atomically: marks offer accepted, rejects all others, closes the listing.
+
+ */
+export const useAcceptOffer = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof acceptOffer>>,
+    TError,
+    { offerId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof acceptOffer>>,
+  TError,
+  { offerId: string },
+  TContext
+> => {
+  return useMutation(getAcceptOfferMutationOptions(options));
+};
+
+/**
+ * @summary Reject a single pending offer (listing owner / producer only)
+ */
+export const getRejectOfferUrl = (offerId: string) => {
+  return `/api/offers/${offerId}/reject`;
+};
+
+export const rejectOffer = async (
+  offerId: string,
+  options?: RequestInit,
+): Promise<ListingOffer> => {
+  return customFetch<ListingOffer>(getRejectOfferUrl(offerId), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getRejectOfferMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof rejectOffer>>,
+    TError,
+    { offerId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof rejectOffer>>,
+  TError,
+  { offerId: string },
+  TContext
+> => {
+  const mutationKey = ["rejectOffer"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof rejectOffer>>,
+    { offerId: string }
+  > = (props) => {
+    const { offerId } = props ?? {};
+
+    return rejectOffer(offerId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RejectOfferMutationResult = NonNullable<
+  Awaited<ReturnType<typeof rejectOffer>>
+>;
+
+export type RejectOfferMutationError = ErrorType<void>;
+
+/**
+ * @summary Reject a single pending offer (listing owner / producer only)
+ */
+export const useRejectOffer = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof rejectOffer>>,
+    TError,
+    { offerId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof rejectOffer>>,
+  TError,
+  { offerId: string },
+  TContext
+> => {
+  return useMutation(getRejectOfferMutationOptions(options));
 };

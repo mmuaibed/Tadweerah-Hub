@@ -16,6 +16,8 @@ tags:
     description: Company management
   - name: listings
     description: Waste listings (M2)
+  - name: offers
+    description: Listing offers / bidding (M4)
 paths:
   /healthz:
     get:
@@ -186,6 +188,179 @@ paths:
         "404":
           description: Not found
 
+  /listings/{waste_listing_id}/offers:
+    get:
+      operationId: getListingOffers
+      tags: [offers]
+      summary: >
+        Get offers for a listing.
+        Producer (owner) sees all with buyer identity.
+        Buyer sees only their own offer.
+      parameters:
+        - in: path
+          name: waste_listing_id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ListingOffer"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+    post:
+      operationId: submitOffer
+      tags: [offers]
+      summary: Submit a first offer on an open listing (buyer only)
+      parameters:
+        - in: path
+          name: waste_listing_id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitOfferBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListingOffer"
+        "400":
+          description: Validation error or price too low
+        "401":
+          description: Unauthorized
+        "403":
+          description: Buyer access required
+        "409":
+          description: Offer already exists (use PUT to improve)
+
+  /listings/{waste_listing_id}/offers/mine:
+    put:
+      operationId: improveOffer
+      tags: [offers]
+      summary: >
+        Improve an existing pending offer.
+        New price must exceed both the buyer's current price and the current highest offer.
+      parameters:
+        - in: path
+          name: waste_listing_id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitOfferBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListingOffer"
+        "400":
+          description: Validation error or price not high enough
+        "401":
+          description: Unauthorized
+        "403":
+          description: Buyer access required
+        "404":
+          description: No existing offer to improve
+
+  /listings/{waste_listing_id}/offers/summary:
+    get:
+      operationId: getOffersSummary
+      tags: [offers]
+      summary: >
+        Get offer count and highest price (amount only, no identity).
+        Available to all authenticated company users.
+      parameters:
+        - in: path
+          name: waste_listing_id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OffersSummary"
+        "401":
+          description: Unauthorized
+
+  /offers/{offer_id}/accept:
+    post:
+      operationId: acceptOffer
+      tags: [offers]
+      summary: >
+        Accept an offer (listing owner / producer only).
+        Atomically: marks offer accepted, rejects all others, closes the listing.
+      parameters:
+        - in: path
+          name: offer_id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Offer accepted and listing closed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListingOffer"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Not the listing owner
+        "404":
+          description: Offer not found
+        "409":
+          description: Offer not in pending state or listing already closed
+
+  /offers/{offer_id}/reject:
+    post:
+      operationId: rejectOffer
+      tags: [offers]
+      summary: Reject a single pending offer (listing owner / producer only)
+      parameters:
+        - in: path
+          name: offer_id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListingOffer"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Not the listing owner
+        "404":
+          description: Offer not found
+        "409":
+          description: Offer not in pending state
+
 components:
   schemas:
     HealthStatus:
@@ -286,8 +461,60 @@ components:
         created_at:
           type: string
           format: date-time
+        closed_at:
+          type: string
+          format: date-time
       required:
         [id, company_id, company_name, material, quantity, unit, city, status, created_at]
+    OfferStatus:
+      type: string
+      enum: [pending, accepted, rejected]
+    ListingOffer:
+      type: object
+      properties:
+        id:
+          type: string
+        waste_listing_id:
+          type: string
+        buyer_company_id:
+          type: string
+        buyer_company_name:
+          type: string
+        price_per_unit:
+          type: number
+        message:
+          type: string
+        status:
+          $ref: "#/components/schemas/OfferStatus"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        resolved_at:
+          type: string
+          format: date-time
+      required: [id, waste_listing_id, buyer_company_id, buyer_company_name, price_per_unit, status, created_at, updated_at]
+    SubmitOfferBody:
+      type: object
+      properties:
+        price_per_unit:
+          type: number
+          exclusiveMinimum: 0
+        message:
+          type: string
+          maxLength: 500
+      required: [price_per_unit]
+    OffersSummary:
+      type: object
+      properties:
+        count:
+          type: integer
+        highest_price:
+          type: number
+      required: [count]
+
     CreateWasteListingBody:
       type: object
       properties:

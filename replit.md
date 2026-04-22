@@ -47,8 +47,8 @@ A Saudi B2B MVP connecting waste producers, recycling buyers, and transport carr
 ### Module roadmap (build module-by-module, classify Simple/Medium/Complex first)
 - M1 Auth & Company Onboarding — DONE
 - M2 Waste Listings (producer create/list/close + buyer marketplace) — DONE & UAT-approved
-- M3 Listing detail page + clickable cards + confirm-close — DONE, pending UAT
-- M4 Offers / Negotiation
+- M3 Listing detail page + clickable cards + confirm-close — DONE & UAT-approved
+- M4 Offers / Bidding — DONE (pending UAT)
 - M5 Transport bids (carrier)
 - M6 Trip lifecycle / proof of delivery
 - M7 Notifications
@@ -88,6 +88,18 @@ Arabic default + English toggle, RTL/LTR via `<html dir>`. Tiny custom i18n hook
 - `GET /listings/mine` (producer only) → own listings
 - `GET /listings/:waste_listing_id` (any company) → detail
 - `POST /listings/:waste_listing_id/close` (owner producer only) → set status=closed
+
+**M4 — offers** (all require auth + company; role-gated)
+- `POST /listings/:waste_listing_id/offers` (buyer only) → submit first offer; price must exceed current highest
+- `PUT /listings/:waste_listing_id/offers/mine` (buyer only) → improve pending offer; new price must exceed current highest
+- `GET /listings/:waste_listing_id/offers` (producer/owner → all with identities; buyer → own offer only)
+- `GET /listings/:waste_listing_id/offers/summary` (any company) → `{ count, highest_price }` — anonymous
+- `POST /offers/:offer_id/accept` (owner producer) → atomic: accept + reject others + close listing (SELECT FOR UPDATE)
+- `POST /offers/:offer_id/reject` (owner producer) → reject single pending offer
+
+**M4 DB additions**
+- `listing_offers` table: `id, waste_listing_id FK, buyer_company_id FK, price_per_unit, message, status(pending/accepted/rejected), created_at, updated_at, resolved_at` — UNIQUE(waste_listing_id, buyer_company_id)
+- `waste_listings.closed_at` (timestamptz, nullable) — set on acceptance
 
 ### Frontend routes (cumulative)
 - `/` — landing (signed-in → /dashboard)
