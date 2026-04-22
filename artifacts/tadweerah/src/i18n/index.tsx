@@ -151,7 +151,11 @@ const translations: Record<string, Record<Language, string>> = {
   },
   "listing.close.confirm.action": { ar: "إغلاق العرض نهائياً", en: "Close Listing Permanently" },
 
-  "listing.offer.cta": { ar: "تقديم عرض (قريباً)", en: "Submit Offer (Coming Soon)" },
+  "listing.offer.cta": { ar: "تقديم عرض سعر", en: "Submit a Price Offer" },
+  "listing.offer.hint": {
+    ar: "قريباً ستتمكن من المنافسة مع مشترين آخرين وإرسال أفضل سعر مباشرةً إلى المنتج.",
+    en: "Soon you'll be able to compete with other buyers and send your best price directly to the producer.",
+  },
 
   "listing.notFound.title": { ar: "العرض غير موجود", en: "Listing Not Found" },
   "listing.notFound.desc": {

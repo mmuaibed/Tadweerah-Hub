@@ -269,13 +269,18 @@ export function ListingDetailPage() {
           )}
 
           {role === "buyer" && (
-            <Button
-              disabled
-              className="w-full gap-2 opacity-60"
-            >
-              <Lock className="h-4 w-4" />
-              {t("listing.offer.cta")}
-            </Button>
+            <div className="space-y-3">
+              <Button
+                disabled
+                className="w-full gap-2 cursor-not-allowed opacity-70"
+              >
+                <Lock className="h-4 w-4" />
+                {t("listing.offer.cta")}
+              </Button>
+              <p className="text-center text-xs text-muted-foreground leading-relaxed px-2">
+                {t("listing.offer.hint")}
+              </p>
+            </div>
           )}
         </div>
       </div>
