@@ -1,0 +1,128 @@
+Your architectural assessment is strong, and we agree with the overall direction.
+
+Before proceeding, we want to align clearly on how we handle this class of decisions.
+
+We are currently building the core of the platform, and at this stage:
+- correctness of the foundation is more important than speed
+- we prefer to surface structural decisions early
+- and we want to minimize future rework, even if that means making small, controlled adjustments now
+
+At the same time:
+- we do NOT want to expand scope unnecessarily
+- we do NOT want premature features
+- and we want every structural change to remain simple, isolated, and well-justified
+
+This is an important part of our execution charter:
+when a decision affects the core data model or future system behavior, we prefer to discuss it now rather than pay for larger rework later.
+
+-----------------------------------
+Additional future scenario for architectural alignment
+
+We want to raise one important future use case:
+
+A producer (for example, a recycling company) may want to create a listing targeted to:
+- one specific buyer
+- or a limited set of buyers
+
+instead of publishing it to the full public marketplace.
+
+In that scenario:
+- the listing is not public
+- only the intended buyer(s) can view it
+- only the intended buyer(s) can submit offers
+- the same pricing and offer logic still applies
+
+-----------------------------------
+Why this matters
+
+This is not just a nice-to-have.
+
+It matters because some companies may use the platform not only as an open marketplace, but also as an operating system to manage transactions with existing clients under long-term commercial relationships.
+
+This can create major value for the platform because it supports:
+- enterprise adoption
+- operational execution inside the same system
+- stronger compliance and traceability for regulators
+- and a possible additional revenue stream for the platform
+
+So we want to make sure the architecture does not unintentionally assume that all listings are always public.
+
+-----------------------------------
+Current direction we are considering
+
+We agree that adding a passive structural field such as:
+
+visibility = public | private
+
+at the listing level appears to be a reasonable direction.
+
+From our side, we are comfortable with this idea if:
+- it is the correct long-term place for this concept
+- it remains a passive structural addition only
+- it creates no current UI or flow changes
+- and it helps us avoid future architectural rework
+
+But we do NOT want to treat this as a fixed instruction without your final judgment.
+
+-----------------------------------
+What we want from you
+
+Please give us your final architectural recommendation on the following:
+
+1) Do you fully agree that listing-level visibility is the correct long-term model?
+
+2) Is adding this field now the best way to reduce future complexity, or do you see a cleaner alternative?
+
+3) Is there any small structural preparation you would recommend now that would significantly reduce future rework, while still keeping scope unchanged?
+
+4) Would you recommend adding a visibility filter at the marketplace query level now,
+or is that better deferred until private listings are actually introduced?
+
+5) Do you see any hidden downside in adding visibility now as a passive field with default = public?
+
+-----------------------------------
+Important principle
+
+We want to make one thing very clear:
+
+Everything here is open for discussion if you believe there is a better architectural direction.
+
+If you think:
+- a different structure is better
+- a different placement is safer
+- or a different minimal preparation would produce a cleaner long-term design
+
+we want you to challenge our assumption and tell us.
+
+We are not trying to force a solution.
+We are trying to lock the best possible foundation with the least future pain.
+
+-----------------------------------
+Charter clarification (important)
+
+Please treat this as part of the core architecture principle in our charter:
+
+When a decision affects the core platform model, visibility rules, pricing interpretation, or future workflow flexibility,
+we prefer to make small, safe structural decisions early if they significantly reduce future rework.
+
+However:
+- no change should introduce new flows
+- no change should expand scope
+- no change should create UI complexity
+without explicit agreement
+
+-----------------------------------
+Scope control
+
+To be clear:
+- no implementation is required unless we explicitly agree
+- no UI changes
+- no invite flow yet
+- no private-listing behavior yet
+- UAT should still proceed as planned
+
+-----------------------------------
+Goal
+
+Lock the best possible platform foundation now,
+while keeping execution focused, simple, and aligned with the charter.
