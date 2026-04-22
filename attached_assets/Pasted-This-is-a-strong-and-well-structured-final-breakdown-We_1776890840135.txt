@@ -1,0 +1,75 @@
+This is a strong and well-structured final breakdown.
+
+We are very close to execution. Before proceeding, we want to confirm a few final clarifications to ensure full consistency and avoid any later rework.
+
+-----------------------------------
+1) Active vs Inactive (final clarification)
+
+Your definition is correct at system level:
+- open + pending = active
+- closed + accepted/rejected = inactive
+
+However, we need to distinguish:
+
+- “Active globally” (listing state)
+vs
+- “Active for the user”
+
+Example:
+If a buyer’s offer is rejected, but the listing is still open,
+this should be considered INACTIVE for that buyer.
+
+Please confirm this distinction is reflected in the UI logic.
+
+-----------------------------------
+2) “Needs attention” definition
+
+Please explicitly define and implement:
+
+For buyers:
+- outbid → needs attention
+- pending but not highest → needs attention
+
+For producers:
+- any listing with pending offers → needs attention
+
+This should not be generic — it should follow clear rules.
+
+-----------------------------------
+3) Pricing consistency (critical)
+
+After M1:
+
+- All user-facing prices must be TOTAL values (SAR)
+- Unit price is secondary only
+- No mixed presentation across pages
+
+Please confirm strict consistency across:
+- marketplace cards
+- listing detail
+- my listings
+- my participations
+
+-----------------------------------
+4) Buyer result clarity (small but important)
+
+In “My Participations”, for rejected buyers:
+
+We want clear visibility of:
+- final accepted price (if listing is closed)
+
+Example:
+“Another offer was accepted — final price: X SAR”
+
+-----------------------------------
+Final confirmation
+
+Please confirm:
+
+1) alignment with these clarifications
+2) that no additional UX, technical, or governance gaps remain
+3) that the plan is execution-ready with minimal future rework
+
+If you see any remaining weak points, raise them now.
+
+Otherwise, confirm readiness to begin implementation.
