@@ -1,0 +1,99 @@
+Great work — this is a very solid and thoughtful response.
+
+We reviewed your proposal carefully, and we agree with the majority of your approach. Below is our final alignment before implementation.
+
+-----------------------------------
+Confirmed decisions
+
+1) Pricing model
+We agree with your dual model:
+- Buyer inputs total offer value
+- UI shows total + calculated unit price
+- Backend keeps unit price for comparison
+
+Proceed as proposed.
+
+-----------------------------------
+2) Buyer status visibility
+Fully agreed.
+Please implement:
+- “You are currently the highest bidder”
+- “You have been outbid”
+
+-----------------------------------
+3) Marketplace signals
+Agreed.
+Please include:
+- number of offers
+- highest offer (total)
+Ensure this is visually prominent, not subtle.
+
+-----------------------------------
+4) Buyer “My Offers / My Participations” page
+Critical — must be included in M4.5.
+
+-----------------------------------
+5) Post-decision experience
+We agree partially.
+
+In addition to the participation page, we want:
+- a clear success message for accepted buyers
+- a clear rejection message for rejected buyers
+
+-----------------------------------
+6) Rejection reason
+Agreed with your model (select + optional text).
+Proceed.
+
+-----------------------------------
+7) Notifications (adjustment)
+We do NOT want to fully postpone notifications.
+
+For M4.5:
+Please implement simple email notifications for:
+- offer accepted
+- offer rejected
+- outbid
+
+No need for real-time or push notifications.
+
+-----------------------------------
+8) Competition timing
+Agreed — proceed with Option A (producer-controlled acceptance).
+
+-----------------------------------
+9) Accepting lower offer than highest
+Agreed.
+
+Adjustment:
+The reason MUST be mandatory (not optional).
+
+-----------------------------------
+10) Additional required item
+Please also implement:
+
+Buyer ranking visibility:
+Example:
+“You are ranked #2 out of 5 offers”
+
+This is important for competitive behavior.
+
+-----------------------------------
+11) Critical fix
+Agreed with your observation:
+
+When a listing is manually closed,
+ALL pending offers must be automatically rejected.
+
+This is required in M4.5.
+
+-----------------------------------
+Next step
+
+Please:
+1) confirm alignment with the above
+2) provide final M4.5 implementation breakdown
+3) estimate effort per item (Simple / Medium / etc.)
+4) confirm execution sequence (Phase 1 / Phase 2)
+
+Do not start implementation until we confirm the final scope.
