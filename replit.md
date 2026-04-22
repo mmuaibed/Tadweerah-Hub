@@ -46,12 +46,24 @@ A Saudi B2B MVP connecting waste producers, recycling buyers, and transport carr
 
 ### Module roadmap (build module-by-module, classify Simple/Medium/Complex first)
 - M1 Auth & Company Onboarding — DONE
-- M2 Waste Listings (producer create/list/close + buyer marketplace) — DONE
-- M3 Listing detail + buyer interest (next)
+- M2 Waste Listings (producer create/list/close + buyer marketplace) — DONE & UAT-approved
+- M3 Listing detail page (next, foundation for M4 offers)
 - M4 Offers / Negotiation
 - M5 Transport bids (carrier)
 - M6 Trip lifecycle / proof of delivery
 - M7 Notifications
+
+### M2 — approved deferred improvements (revisit before launch)
+1. Custom AR/EN validation messages on forms (replace browser defaults).
+2. Make `<ListingCard>` clickable / add "View details" CTA — will land in M3.
+3. Buyer dashboard: stronger value messaging.
+4. Decide & document the rule: can a closed listing be reopened? (current behaviour: no — `close` is one-way).
+5. Image upload for listings — postponed until core flow stabilises.
+
+### M2 — known technical limitations (non-blocking)
+- City filter is exact-match, case-sensitive.
+- No DB indexes on `waste_listings.company_id` / `status` (acceptable at MVP volume).
+- `quantity numeric(12,3)` overflows above ~10⁹ — surfaces as generic 500.
 - M8 Payments / wallet
 - M9 Admin
 - Deferred (Complex): CR verification (manual for MVP), Nafath login (post-MVP)
