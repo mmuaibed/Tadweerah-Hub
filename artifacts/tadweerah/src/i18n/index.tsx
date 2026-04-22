@@ -25,7 +25,8 @@ const translations: Record<string, Record<Language, string>> = {
   "action.signup": { ar: "إنشاء حساب", en: "Sign Up" },
   "action.signout": { ar: "تسجيل الخروج", en: "Sign Out" },
   "action.getstarted": { ar: "ابدأ الآن", en: "Get Started" },
-  "action.learnmore": { ar: "اعرف المزيد", en: "Learn More" },
+  "action.cancel": { ar: "إلغاء", en: "Cancel" },
+  "action.back": { ar: "رجوع", en: "Back" },
 
   "home.feature1.title": { ar: "للمنتجين", en: "For Producers" },
   "home.feature1.desc": {
@@ -51,10 +52,7 @@ const translations: Record<string, Record<Language, string>> = {
   "onboarding.form.name": { ar: "اسم الشركة", en: "Company Name" },
   "onboarding.form.type": { ar: "نوع الشركة", en: "Company Type" },
   "onboarding.form.city": { ar: "المدينة", en: "City" },
-  "onboarding.form.cr": {
-    ar: "رقم السجل التجاري (اختياري)",
-    en: "Commercial Registration (Optional)",
-  },
+  "onboarding.form.cr": { ar: "رقم السجل التجاري (اختياري)", en: "Commercial Registration (Optional)" },
   "onboarding.form.phone": { ar: "رقم التواصل", en: "Contact Phone" },
   "onboarding.form.submit": { ar: "حفظ ومتابعة", en: "Save & Continue" },
   "onboarding.form.saving": { ar: "جاري الحفظ...", en: "Saving..." },
@@ -66,18 +64,9 @@ const translations: Record<string, Record<Language, string>> = {
   "type.producer": { ar: "منتج نفايات", en: "Waste Producer" },
   "type.buyer": { ar: "شركة تدوير", en: "Recycling Buyer" },
   "type.carrier": { ar: "ناقل", en: "Carrier" },
-  "type.producer.desc": {
-    ar: "لديّ نفايات أرغب ببيعها أو التخلص منها",
-    en: "I have waste I want to sell or dispose of",
-  },
-  "type.buyer.desc": {
-    ar: "أبحث عن مواد قابلة للتدوير لشرائها",
-    en: "I'm looking for recyclable materials to purchase",
-  },
-  "type.carrier.desc": {
-    ar: "أقدم خدمات نقل النفايات والمواد",
-    en: "I provide waste and material transport services",
-  },
+  "type.producer.desc": { ar: "لديّ نفايات أرغب ببيعها أو التخلص منها", en: "I have waste I want to sell or dispose of" },
+  "type.buyer.desc": { ar: "أبحث عن مواد قابلة للتدوير لشرائها", en: "I'm looking for recyclable materials to purchase" },
+  "type.carrier.desc": { ar: "أقدم خدمات نقل النفايات والمواد", en: "I provide waste and material transport services" },
 
   "dashboard.welcome": { ar: "أهلاً بك،", en: "Welcome," },
   "dashboard.role.producer": { ar: "منتج", en: "Producer" },
@@ -85,53 +74,67 @@ const translations: Record<string, Record<Language, string>> = {
   "dashboard.role.carrier": { ar: "ناقل", en: "Carrier" },
   "dashboard.comingsoon": { ar: "قريباً", en: "Coming Soon" },
 
-  "card.producer.1.title": { ar: "إضافة عرض نفايات", en: "Add Waste Listing" },
-  "card.producer.1.desc": {
-    ar: "اعرض نفاياتك للبيع — متاح في المرحلة القادمة",
-    en: "List your waste for sale — available in the next phase",
-  },
-  "card.producer.2.title": { ar: "عروضي الحالية", en: "My Listings" },
-  "card.producer.2.desc": {
-    ar: "تابع جميع عروضك ومستجداتها",
-    en: "Track all your listings and their status",
-  },
-  "card.producer.3.title": { ar: "الطلبات الواردة", en: "Incoming Offers" },
-  "card.producer.3.desc": {
-    ar: "راجع طلبات الشراء من شركات التدوير",
-    en: "Review purchase requests from recycling companies",
-  },
+  // M2 — listings shared
+  "material.paper": { ar: "ورق وكرتون", en: "Paper & Cardboard" },
+  "material.plastic": { ar: "بلاستيك", en: "Plastic" },
+  "material.metal": { ar: "معادن", en: "Metals" },
+  "material.glass": { ar: "زجاج", en: "Glass" },
+  "material.electronics": { ar: "إلكترونيات", en: "Electronics" },
+  "material.organic": { ar: "نفايات عضوية", en: "Organic" },
+  "material.other": { ar: "أخرى", en: "Other" },
 
-  "card.buyer.1.title": { ar: "تصفح السوق", en: "Browse Marketplace" },
-  "card.buyer.1.desc": {
-    ar: "اكتشف نفايات قابلة للتدوير من المنتجين",
-    en: "Discover recyclable waste from producers",
-  },
-  "card.buyer.2.title": { ar: "اهتماماتي", en: "My Interests" },
-  "card.buyer.2.desc": {
-    ar: "تابع كل العروض التي قدّمت اهتمامك بها",
-    en: "Track all listings you've expressed interest in",
-  },
-  "card.buyer.3.title": { ar: "الصفقات النشطة", en: "Active Deals" },
-  "card.buyer.3.desc": {
-    ar: "تابع الصفقات الجارية حتى الإغلاق",
-    en: "Follow ongoing deals until completion",
-  },
+  "unit.kg": { ar: "كجم", en: "kg" },
+  "unit.ton": { ar: "طن", en: "ton" },
 
-  "card.carrier.1.title": { ar: "طلبات النقل المتاحة", en: "Available Transport Bids" },
-  "card.carrier.1.desc": {
-    ar: "تصفح فرص النقل وقدم عروضك",
-    en: "Browse transport opportunities and submit bids",
+  "status.open": { ar: "مفتوح", en: "Open" },
+  "status.closed": { ar: "مغلق", en: "Closed" },
+
+  // Producer — new listing
+  "listing.new.title": { ar: "إضافة عرض نفايات", en: "Add Waste Listing" },
+  "listing.new.subtitle": {
+    ar: "اعرض نفاياتك ليطّلع عليها المشترون",
+    en: "Make your waste available for buyers to discover",
   },
-  "card.carrier.2.title": { ar: "عروضي المقدّمة", en: "My Bids" },
-  "card.carrier.2.desc": {
-    ar: "تابع كل عروض النقل التي قدمتها",
-    en: "Track all the bids you've submitted",
-  },
-  "card.carrier.3.title": { ar: "الرحلات النشطة", en: "Active Trips" },
-  "card.carrier.3.desc": {
-    ar: "تابع الرحلات قيد التنفيذ",
-    en: "Monitor trips currently in progress",
-  },
+  "listing.form.material": { ar: "نوع المادة", en: "Material" },
+  "listing.form.quantity": { ar: "الكمية", en: "Quantity" },
+  "listing.form.unit": { ar: "الوحدة", en: "Unit" },
+  "listing.form.city": { ar: "المدينة", en: "City" },
+  "listing.form.description": { ar: "وصف مختصر (اختياري)", en: "Short Description (Optional)" },
+  "listing.form.priceHint": { ar: "السعر الإرشادي (ريال) — اختياري", en: "Price Hint (SAR) — Optional" },
+  "listing.form.submit": { ar: "نشر العرض", en: "Publish Listing" },
+  "listing.form.saving": { ar: "جاري النشر...", en: "Publishing..." },
+  "listing.form.error": { ar: "تعذر نشر العرض. تأكد من البيانات وحاول مرة أخرى.", en: "Could not publish the listing. Check your inputs and try again." },
+
+  // Producer — my listings
+  "myListings.title": { ar: "عروضي", en: "My Listings" },
+  "myListings.subtitle": { ar: "كل عروض النفايات التي نشرتها", en: "All the waste listings you've published" },
+  "myListings.empty.title": { ar: "لا توجد عروض حالياً", en: "No listings yet" },
+  "myListings.empty.desc": { ar: "ابدأ بإضافة أول عرض نفايات لك.", en: "Start by adding your first waste listing." },
+  "myListings.add": { ar: "إضافة عرض", en: "Add Listing" },
+  "myListings.close": { ar: "إغلاق العرض", en: "Close Listing" },
+  "myListings.closing": { ar: "جاري الإغلاق...", en: "Closing..." },
+  "myListings.closeError": { ar: "تعذر إغلاق العرض. حاول مرة أخرى.", en: "Could not close the listing. Try again." },
+
+  // Buyer — marketplace
+  "marketplace.title": { ar: "السوق", en: "Marketplace" },
+  "marketplace.subtitle": { ar: "تصفح عروض النفايات المتاحة من المنتجين", en: "Browse available waste listings from producers" },
+  "marketplace.filter.material": { ar: "فلترة بالمادة", en: "Filter by material" },
+  "marketplace.filter.city": { ar: "ابحث بالمدينة", en: "Search by city" },
+  "marketplace.filter.all": { ar: "جميع المواد", en: "All materials" },
+  "marketplace.empty.title": { ar: "لا توجد عروض حالياً", en: "No listings available" },
+  "marketplace.empty.desc": { ar: "جرّب تعديل الفلاتر، أو عُد لاحقاً عند توفّر عروض جديدة.", en: "Try adjusting your filters, or check back later for new listings." },
+
+  // Listing card / detail
+  "listing.quantity": { ar: "الكمية", en: "Quantity" },
+  "listing.city": { ar: "المدينة", en: "City" },
+  "listing.priceHint": { ar: "السعر الإرشادي", en: "Price Hint" },
+  "listing.publishedBy": { ar: "نشرها", en: "Published by" },
+  "listing.publishedOn": { ar: "تاريخ النشر", en: "Published" },
+  "listing.sar": { ar: "ر.س", en: "SAR" },
+
+  // Generic errors
+  "error.generic": { ar: "حدث خطأ. حاول مرة أخرى لاحقاً.", en: "Something went wrong. Please try again later." },
+  "error.loading": { ar: "تعذر تحميل البيانات.", en: "Could not load data." },
 };
 
 export const I18nProvider: React.FC<{

@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Topbar } from "@/components/topbar";
+import { AppLayout } from "@/components/app-layout";
 import { useT } from "@/i18n";
 
 const TYPE_OPTIONS: Array<{
@@ -66,119 +66,114 @@ export function OnboardingPage() {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-background">
-      <Topbar showSignOut />
-      <main className="mx-auto w-full max-w-2xl px-4 py-10 sm:px-6 sm:py-16">
-        <div className="mb-8 text-center sm:text-start">
-          <h1 className="text-3xl font-bold text-foreground sm:text-4xl">
-            {t("onboarding.title")}
-          </h1>
-          <p className="mt-2 text-muted-foreground">{t("onboarding.subtitle")}</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-8">
-          <fieldset>
-            <legend className="mb-3 block text-sm font-medium text-foreground">
-              {t("onboarding.form.type")}
-            </legend>
-            <div className="grid gap-3 sm:grid-cols-3">
-              {TYPE_OPTIONS.map(({ value, icon: Icon, titleKey, descKey }) => {
-                const selected = type === value;
-                return (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => setType(value)}
-                    className={`group relative flex flex-col items-start gap-3 rounded-lg border p-4 text-start transition-colors ${
+    <AppLayout
+      showSignOut
+      width="narrow"
+      title={t("onboarding.title")}
+      subtitle={t("onboarding.subtitle")}
+    >
+      <form onSubmit={handleSubmit} className="space-y-8">
+        <fieldset>
+          <legend className="mb-3 block text-sm font-medium text-foreground">
+            {t("onboarding.form.type")}
+          </legend>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {TYPE_OPTIONS.map(({ value, icon: Icon, titleKey, descKey }) => {
+              const selected = type === value;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setType(value)}
+                  className={`group relative flex flex-col items-start gap-3 rounded-lg border p-4 text-start transition-colors ${
+                    selected
+                      ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                      : "border-border bg-card hover:border-primary/50"
+                  }`}
+                >
+                  <span
+                    className={`flex h-10 w-10 items-center justify-center rounded-md ${
                       selected
-                        ? "border-primary bg-primary/5 ring-2 ring-primary/20"
-                        : "border-border bg-card hover:border-primary/50"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground"
                     }`}
                   >
-                    <span
-                      className={`flex h-10 w-10 items-center justify-center rounded-md ${
-                        selected
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted text-muted-foreground"
-                      }`}
-                    >
-                      <Icon className="h-5 w-5" />
-                    </span>
-                    <div>
-                      <div className="font-semibold text-card-foreground">
-                        {t(titleKey)}
-                      </div>
-                      <div className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                        {t(descKey)}
-                      </div>
+                    <Icon className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <div className="font-semibold text-card-foreground">
+                      {t(titleKey)}
                     </div>
-                  </button>
-                );
-              })}
-            </div>
-          </fieldset>
+                    <div className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                      {t(descKey)}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
 
-          <Card className="border-card-border bg-card">
-            <CardContent className="space-y-5 p-6">
+        <Card className="border-card-border bg-card">
+          <CardContent className="space-y-5 p-6">
+            <div className="space-y-2">
+              <Label htmlFor="name">{t("onboarding.form.name")}</Label>
+              <Input
+                id="name"
+                required
+                minLength={2}
+                maxLength={120}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </div>
+            <div className="grid gap-5 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="name">{t("onboarding.form.name")}</Label>
+                <Label htmlFor="city">{t("onboarding.form.city")}</Label>
                 <Input
-                  id="name"
+                  id="city"
                   required
                   minLength={2}
-                  maxLength={120}
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  maxLength={80}
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
                 />
-              </div>
-              <div className="grid gap-5 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="city">{t("onboarding.form.city")}</Label>
-                  <Input
-                    id="city"
-                    required
-                    minLength={2}
-                    maxLength={80}
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">{t("onboarding.form.phone")}</Label>
-                  <Input
-                    id="phone"
-                    required
-                    minLength={6}
-                    maxLength={20}
-                    value={contactPhone}
-                    onChange={(e) => setPhone(e.target.value)}
-                  />
-                </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="cr">{t("onboarding.form.cr")}</Label>
+                <Label htmlFor="phone">{t("onboarding.form.phone")}</Label>
                 <Input
-                  id="cr"
-                  maxLength={40}
-                  value={commercialRegistration}
-                  onChange={(e) => setCr(e.target.value)}
+                  id="phone"
+                  required
+                  minLength={6}
+                  maxLength={20}
+                  value={contactPhone}
+                  onChange={(e) => setPhone(e.target.value)}
                 />
               </div>
-            </CardContent>
-          </Card>
-
-          {error && (
-            <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
-              {error}
             </div>
-          )}
+            <div className="space-y-2">
+              <Label htmlFor="cr">{t("onboarding.form.cr")}</Label>
+              <Input
+                id="cr"
+                maxLength={40}
+                value={commercialRegistration}
+                onChange={(e) => setCr(e.target.value)}
+              />
+            </div>
+          </CardContent>
+        </Card>
 
-          <Button type="submit" size="lg" className="w-full gap-2" disabled={isPending}>
-            {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-            {isPending ? t("onboarding.form.saving") : t("onboarding.form.submit")}
-          </Button>
-        </form>
-      </main>
-    </div>
+        {error && (
+          <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+            {error}
+          </div>
+        )}
+
+        <Button type="submit" size="lg" className="w-full gap-2" disabled={isPending}>
+          {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+          {isPending ? t("onboarding.form.saving") : t("onboarding.form.submit")}
+        </Button>
+      </form>
+    </AppLayout>
   );
 }

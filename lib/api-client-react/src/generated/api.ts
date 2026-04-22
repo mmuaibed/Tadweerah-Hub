@@ -19,8 +19,11 @@ import type {
 import type {
   Company,
   CreateCompanyBody,
+  CreateWasteListingBody,
   HealthStatus,
+  ListMarketplaceListingsParams,
   MeResponse,
+  WasteListing,
 } from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
@@ -254,4 +257,437 @@ export const useCreateCompany = <
   TContext
 > => {
   return useMutation(getCreateCompanyMutationOptions(options));
+};
+
+/**
+ * @summary Public marketplace listings (open status only). Buyers browse here.
+ */
+export const getListMarketplaceListingsUrl = (
+  params?: ListMarketplaceListingsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/listings?${stringifiedParams}`
+    : `/api/listings`;
+};
+
+export const listMarketplaceListings = async (
+  params?: ListMarketplaceListingsParams,
+  options?: RequestInit,
+): Promise<WasteListing[]> => {
+  return customFetch<WasteListing[]>(getListMarketplaceListingsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListMarketplaceListingsQueryKey = (
+  params?: ListMarketplaceListingsParams,
+) => {
+  return [`/api/listings`, ...(params ? [params] : [])] as const;
+};
+
+export const getListMarketplaceListingsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listMarketplaceListings>>,
+  TError = ErrorType<void>,
+>(
+  params?: ListMarketplaceListingsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listMarketplaceListings>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListMarketplaceListingsQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listMarketplaceListings>>
+  > = ({ signal }) =>
+    listMarketplaceListings(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listMarketplaceListings>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListMarketplaceListingsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listMarketplaceListings>>
+>;
+export type ListMarketplaceListingsQueryError = ErrorType<void>;
+
+/**
+ * @summary Public marketplace listings (open status only). Buyers browse here.
+ */
+
+export function useListMarketplaceListings<
+  TData = Awaited<ReturnType<typeof listMarketplaceListings>>,
+  TError = ErrorType<void>,
+>(
+  params?: ListMarketplaceListingsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listMarketplaceListings>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListMarketplaceListingsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create a waste listing for the current producer company
+ */
+export const getCreateWasteListingUrl = () => {
+  return `/api/listings`;
+};
+
+export const createWasteListing = async (
+  createWasteListingBody: CreateWasteListingBody,
+  options?: RequestInit,
+): Promise<WasteListing> => {
+  return customFetch<WasteListing>(getCreateWasteListingUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createWasteListingBody),
+  });
+};
+
+export const getCreateWasteListingMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createWasteListing>>,
+    TError,
+    { data: BodyType<CreateWasteListingBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createWasteListing>>,
+  TError,
+  { data: BodyType<CreateWasteListingBody> },
+  TContext
+> => {
+  const mutationKey = ["createWasteListing"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createWasteListing>>,
+    { data: BodyType<CreateWasteListingBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createWasteListing(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateWasteListingMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createWasteListing>>
+>;
+export type CreateWasteListingMutationBody = BodyType<CreateWasteListingBody>;
+export type CreateWasteListingMutationError = ErrorType<void>;
+
+/**
+ * @summary Create a waste listing for the current producer company
+ */
+export const useCreateWasteListing = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createWasteListing>>,
+    TError,
+    { data: BodyType<CreateWasteListingBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createWasteListing>>,
+  TError,
+  { data: BodyType<CreateWasteListingBody> },
+  TContext
+> => {
+  return useMutation(getCreateWasteListingMutationOptions(options));
+};
+
+/**
+ * @summary Listings owned by the current producer company
+ */
+export const getListMyListingsUrl = () => {
+  return `/api/listings/mine`;
+};
+
+export const listMyListings = async (
+  options?: RequestInit,
+): Promise<WasteListing[]> => {
+  return customFetch<WasteListing[]>(getListMyListingsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListMyListingsQueryKey = () => {
+  return [`/api/listings/mine`] as const;
+};
+
+export const getListMyListingsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listMyListings>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listMyListings>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListMyListingsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listMyListings>>> = ({
+    signal,
+  }) => listMyListings({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listMyListings>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListMyListingsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listMyListings>>
+>;
+export type ListMyListingsQueryError = ErrorType<void>;
+
+/**
+ * @summary Listings owned by the current producer company
+ */
+
+export function useListMyListings<
+  TData = Awaited<ReturnType<typeof listMyListings>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listMyListings>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListMyListingsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get a single listing by id
+ */
+export const getGetWasteListingUrl = (wasteListingId: string) => {
+  return `/api/listings/${wasteListingId}`;
+};
+
+export const getWasteListing = async (
+  wasteListingId: string,
+  options?: RequestInit,
+): Promise<WasteListing> => {
+  return customFetch<WasteListing>(getGetWasteListingUrl(wasteListingId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetWasteListingQueryKey = (wasteListingId: string) => {
+  return [`/api/listings/${wasteListingId}`] as const;
+};
+
+export const getGetWasteListingQueryOptions = <
+  TData = Awaited<ReturnType<typeof getWasteListing>>,
+  TError = ErrorType<void>,
+>(
+  wasteListingId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getWasteListing>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetWasteListingQueryKey(wasteListingId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getWasteListing>>> = ({
+    signal,
+  }) => getWasteListing(wasteListingId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!wasteListingId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getWasteListing>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetWasteListingQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getWasteListing>>
+>;
+export type GetWasteListingQueryError = ErrorType<void>;
+
+/**
+ * @summary Get a single listing by id
+ */
+
+export function useGetWasteListing<
+  TData = Awaited<ReturnType<typeof getWasteListing>>,
+  TError = ErrorType<void>,
+>(
+  wasteListingId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getWasteListing>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetWasteListingQueryOptions(wasteListingId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Close a listing (owner producer only)
+ */
+export const getCloseWasteListingUrl = (wasteListingId: string) => {
+  return `/api/listings/${wasteListingId}/close`;
+};
+
+export const closeWasteListing = async (
+  wasteListingId: string,
+  options?: RequestInit,
+): Promise<WasteListing> => {
+  return customFetch<WasteListing>(getCloseWasteListingUrl(wasteListingId), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getCloseWasteListingMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof closeWasteListing>>,
+    TError,
+    { wasteListingId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof closeWasteListing>>,
+  TError,
+  { wasteListingId: string },
+  TContext
+> => {
+  const mutationKey = ["closeWasteListing"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof closeWasteListing>>,
+    { wasteListingId: string }
+  > = (props) => {
+    const { wasteListingId } = props ?? {};
+
+    return closeWasteListing(wasteListingId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CloseWasteListingMutationResult = NonNullable<
+  Awaited<ReturnType<typeof closeWasteListing>>
+>;
+
+export type CloseWasteListingMutationError = ErrorType<void>;
+
+/**
+ * @summary Close a listing (owner producer only)
+ */
+export const useCloseWasteListing = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof closeWasteListing>>,
+    TError,
+    { wasteListingId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof closeWasteListing>>,
+  TError,
+  { wasteListingId: string },
+  TContext
+> => {
+  return useMutation(getCloseWasteListingMutationOptions(options));
 };

@@ -1,10 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Switch, Route, Redirect, useLocation, Router as WouterRouter } from "wouter";
-import {
-  ClerkProvider,
-  Show,
-  useClerk,
-} from "@clerk/react";
+import { ClerkProvider, Show, useClerk } from "@clerk/react";
 import { shadcn } from "@clerk/themes";
 import {
   QueryClient,
@@ -15,11 +11,15 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { I18nProvider, useT } from "@/i18n";
 import { RouteGuard } from "@/components/route-guard";
+import { RoleRoute } from "@/components/role-route";
 import { HomePage } from "@/pages/home";
 import { SignInPage } from "@/pages/sign-in";
 import { SignUpPage } from "@/pages/sign-up";
 import { OnboardingPage } from "@/pages/onboarding";
 import { DashboardPage } from "@/pages/dashboard";
+import { ListingNewPage } from "@/pages/listing-new";
+import { MyListingsPage } from "@/pages/my-listings";
+import { MarketplacePage } from "@/pages/marketplace";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -82,6 +82,49 @@ function DashboardRoute() {
   );
 }
 
+function SignedInRoleRoute({
+  allow,
+  children,
+}: {
+  allow: ReadonlyArray<"producer" | "buyer" | "carrier">;
+  children: React.ReactNode;
+}) {
+  return (
+    <>
+      <Show when="signed-in">
+        <RoleRoute allow={allow}>{children}</RoleRoute>
+      </Show>
+      <Show when="signed-out">
+        <Redirect to="/" />
+      </Show>
+    </>
+  );
+}
+
+function ListingNewRoute() {
+  return (
+    <SignedInRoleRoute allow={["producer"]}>
+      <ListingNewPage />
+    </SignedInRoleRoute>
+  );
+}
+
+function MyListingsRoute() {
+  return (
+    <SignedInRoleRoute allow={["producer"]}>
+      <MyListingsPage />
+    </SignedInRoleRoute>
+  );
+}
+
+function MarketplaceRoute() {
+  return (
+    <SignedInRoleRoute allow={["buyer"]}>
+      <MarketplacePage />
+    </SignedInRoleRoute>
+  );
+}
+
 function ClerkQueryClientCacheInvalidator() {
   const { addListener } = useClerk();
   const qc = useQueryClient();
@@ -105,10 +148,7 @@ function ClerkQueryClientCacheInvalidator() {
 }
 
 function buildAppearance(lang: "ar" | "en") {
-  const fontFamily =
-    lang === "ar"
-      ? `'IBM Plex Sans Arabic', 'Inter', sans-serif`
-      : `'Inter', sans-serif`;
+  const fontFamily = `'Tajawal', system-ui, sans-serif`;
 
   return {
     theme: shadcn,
@@ -116,18 +156,18 @@ function buildAppearance(lang: "ar" | "en") {
     options: {
       logoPlacement: "inside" as const,
       logoLinkUrl: basePath || "/",
-      logoImageUrl: `${window.location.origin}${basePath}/logo.svg`,
+      logoImageUrl: `${window.location.origin}${basePath}/logo.png`,
     },
     variables: {
-      colorPrimary: "hsl(142, 60%, 30%)",
-      colorForeground: "hsl(142, 40%, 10%)",
-      colorMutedForeground: "hsl(142, 20%, 40%)",
-      colorDanger: "hsl(0, 84%, 60%)",
+      colorPrimary: "hsl(223, 67%, 50%)",
+      colorForeground: "hsl(223, 35%, 15%)",
+      colorMutedForeground: "hsl(220, 12%, 42%)",
+      colorDanger: "hsl(0, 75%, 50%)",
       colorBackground: "hsl(0, 0%, 100%)",
-      colorInput: "hsl(40, 20%, 98%)",
-      colorInputForeground: "hsl(142, 40%, 10%)",
-      colorNeutral: "hsl(142, 20%, 85%)",
-      colorModalBackdrop: "rgba(20, 40, 25, 0.55)",
+      colorInput: "hsl(0, 0%, 100%)",
+      colorInputForeground: "hsl(223, 35%, 15%)",
+      colorNeutral: "hsl(220, 16%, 90%)",
+      colorModalBackdrop: "rgba(15, 23, 42, 0.55)",
       fontFamily,
       borderRadius: "0.5rem",
     },
@@ -139,7 +179,6 @@ function buildAppearance(lang: "ar" | "en") {
       footer: "!shadow-none !border-0 !bg-transparent !rounded-none",
       headerTitle: "text-foreground",
       headerSubtitle: "text-muted-foreground",
-      socialButtonsBlockButtonText: "text-foreground",
       formFieldLabel: "text-foreground",
       footerActionLink: "text-primary font-medium",
       footerActionText: "text-muted-foreground",
@@ -169,30 +208,18 @@ function buildAppearance(lang: "ar" | "en") {
 const localizationByLang = {
   ar: {
     signIn: {
-      start: {
-        title: "أهلاً بعودتك",
-        subtitle: "سجّل دخولك للمتابعة إلى تدويرة",
-      },
+      start: { title: "أهلاً بعودتك", subtitle: "سجّل دخولك للمتابعة إلى تدويرة" },
     },
     signUp: {
-      start: {
-        title: "أنشئ حسابك",
-        subtitle: "ابدأ رحلتك مع تدويرة اليوم",
-      },
+      start: { title: "أنشئ حسابك", subtitle: "ابدأ رحلتك مع تدويرة اليوم" },
     },
   },
   en: {
     signIn: {
-      start: {
-        title: "Welcome back",
-        subtitle: "Sign in to continue to Tadweerah",
-      },
+      start: { title: "Welcome back", subtitle: "Sign in to continue to Tadweerah" },
     },
     signUp: {
-      start: {
-        title: "Create your account",
-        subtitle: "Get started with Tadweerah today",
-      },
+      start: { title: "Create your account", subtitle: "Get started with Tadweerah today" },
     },
   },
 } as const;
@@ -221,6 +248,9 @@ function ClerkProviderWithRoutes() {
             <Route path="/sign-up/*?" component={SignUpPage} />
             <Route path="/onboarding/company" component={OnboardingRoute} />
             <Route path="/dashboard" component={DashboardRoute} />
+            <Route path="/listings/new" component={ListingNewRoute} />
+            <Route path="/listings/mine" component={MyListingsRoute} />
+            <Route path="/marketplace" component={MarketplaceRoute} />
             <Route component={NotFound} />
           </Switch>
           <Toaster />

@@ -56,3 +56,65 @@ export interface MeResponse {
   email?: string;
   company?: Company | null;
 }
+
+export type WasteMaterial = (typeof WasteMaterial)[keyof typeof WasteMaterial];
+
+export const WasteMaterial = {
+  paper: "paper",
+  plastic: "plastic",
+  metal: "metal",
+  glass: "glass",
+  electronics: "electronics",
+  organic: "organic",
+  other: "other",
+} as const;
+
+export type WasteUnit = (typeof WasteUnit)[keyof typeof WasteUnit];
+
+export const WasteUnit = {
+  kg: "kg",
+  ton: "ton",
+} as const;
+
+export type WasteListingStatus =
+  (typeof WasteListingStatus)[keyof typeof WasteListingStatus];
+
+export const WasteListingStatus = {
+  open: "open",
+  closed: "closed",
+} as const;
+
+export interface WasteListing {
+  id: string;
+  company_id: string;
+  company_name: string;
+  material: WasteMaterial;
+  quantity: number;
+  unit: WasteUnit;
+  city: string;
+  description?: string;
+  price_hint?: number;
+  status: WasteListingStatus;
+  created_at: string;
+}
+
+export interface CreateWasteListingBody {
+  material: WasteMaterial;
+  /** @exclusiveMinimum 0 */
+  quantity: number;
+  unit: WasteUnit;
+  /**
+   * @minLength 2
+   * @maxLength 80
+   */
+  city: string;
+  /** @maxLength 500 */
+  description?: string;
+  /** @minimum 0 */
+  price_hint?: number;
+}
+
+export type ListMarketplaceListingsParams = {
+  material?: WasteMaterial;
+  city?: string;
+};

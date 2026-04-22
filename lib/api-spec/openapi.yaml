@@ -14,6 +14,8 @@ tags:
     description: Current user
   - name: companies
     description: Company management
+  - name: listings
+    description: Waste listings (M2)
 paths:
   /healthz:
     get:
@@ -65,6 +67,125 @@ paths:
           description: Unauthorized
         "409":
           description: User already has a company
+
+  /listings:
+    get:
+      operationId: listMarketplaceListings
+      tags: [listings]
+      summary: Public marketplace listings (open status only). Buyers browse here.
+      parameters:
+        - in: query
+          name: material
+          schema:
+            $ref: "#/components/schemas/WasteMaterial"
+        - in: query
+          name: city
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WasteListing"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Buyer access required
+    post:
+      operationId: createWasteListing
+      tags: [listings]
+      summary: Create a waste listing for the current producer company
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateWasteListingBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WasteListing"
+        "400":
+          description: Validation error
+        "401":
+          description: Unauthorized
+        "403":
+          description: Producer access required
+
+  /listings/mine:
+    get:
+      operationId: listMyListings
+      tags: [listings]
+      summary: Listings owned by the current producer company
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WasteListing"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Producer access required
+
+  /listings/{waste_listing_id}:
+    get:
+      operationId: getWasteListing
+      tags: [listings]
+      summary: Get a single listing by id
+      parameters:
+        - in: path
+          name: waste_listing_id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WasteListing"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not found
+
+  /listings/{waste_listing_id}/close:
+    post:
+      operationId: closeWasteListing
+      tags: [listings]
+      summary: Close a listing (owner producer only)
+      parameters:
+        - in: path
+          name: waste_listing_id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WasteListing"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Not the owner
+        "404":
+          description: Not found
+
 components:
   schemas:
     HealthStatus:
@@ -129,3 +250,62 @@ components:
             - $ref: "#/components/schemas/Company"
             - type: "null"
       required: [userId]
+
+    WasteMaterial:
+      type: string
+      enum: [paper, plastic, metal, glass, electronics, organic, other]
+    WasteUnit:
+      type: string
+      enum: [kg, ton]
+    WasteListingStatus:
+      type: string
+      enum: [open, closed]
+    WasteListing:
+      type: object
+      properties:
+        id:
+          type: string
+        company_id:
+          type: string
+        company_name:
+          type: string
+        material:
+          $ref: "#/components/schemas/WasteMaterial"
+        quantity:
+          type: number
+        unit:
+          $ref: "#/components/schemas/WasteUnit"
+        city:
+          type: string
+        description:
+          type: string
+        price_hint:
+          type: number
+        status:
+          $ref: "#/components/schemas/WasteListingStatus"
+        created_at:
+          type: string
+          format: date-time
+      required:
+        [id, company_id, company_name, material, quantity, unit, city, status, created_at]
+    CreateWasteListingBody:
+      type: object
+      properties:
+        material:
+          $ref: "#/components/schemas/WasteMaterial"
+        quantity:
+          type: number
+          exclusiveMinimum: 0
+        unit:
+          $ref: "#/components/schemas/WasteUnit"
+        city:
+          type: string
+          minLength: 2
+          maxLength: 80
+        description:
+          type: string
+          maxLength: 500
+        price_hint:
+          type: number
+          minimum: 0
+      required: [material, quantity, unit, city]

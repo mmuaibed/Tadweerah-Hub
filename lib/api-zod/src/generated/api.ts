@@ -77,3 +77,165 @@ export const CreateCompanyBody = zod.object({
     .min(createCompanyBodyContactPhoneMin)
     .max(createCompanyBodyContactPhoneMax),
 });
+
+/**
+ * @summary Public marketplace listings (open status only). Buyers browse here.
+ */
+export const ListMarketplaceListingsQueryParams = zod.object({
+  material: zod
+    .enum([
+      "paper",
+      "plastic",
+      "metal",
+      "glass",
+      "electronics",
+      "organic",
+      "other",
+    ])
+    .optional(),
+  city: zod.coerce.string().optional(),
+});
+
+export const ListMarketplaceListingsResponseItem = zod.object({
+  id: zod.string(),
+  company_id: zod.string(),
+  company_name: zod.string(),
+  material: zod.enum([
+    "paper",
+    "plastic",
+    "metal",
+    "glass",
+    "electronics",
+    "organic",
+    "other",
+  ]),
+  quantity: zod.number(),
+  unit: zod.enum(["kg", "ton"]),
+  city: zod.string(),
+  description: zod.string().optional(),
+  price_hint: zod.number().optional(),
+  status: zod.enum(["open", "closed"]),
+  created_at: zod.coerce.date(),
+});
+export const ListMarketplaceListingsResponse = zod.array(
+  ListMarketplaceListingsResponseItem,
+);
+
+/**
+ * @summary Create a waste listing for the current producer company
+ */
+export const createWasteListingBodyQuantityExclusiveMin = 0;
+
+export const createWasteListingBodyCityMin = 2;
+export const createWasteListingBodyCityMax = 80;
+
+export const createWasteListingBodyDescriptionMax = 500;
+
+export const createWasteListingBodyPriceHintMin = 0;
+
+export const CreateWasteListingBody = zod.object({
+  material: zod.enum([
+    "paper",
+    "plastic",
+    "metal",
+    "glass",
+    "electronics",
+    "organic",
+    "other",
+  ]),
+  quantity: zod.number().gt(createWasteListingBodyQuantityExclusiveMin),
+  unit: zod.enum(["kg", "ton"]),
+  city: zod
+    .string()
+    .min(createWasteListingBodyCityMin)
+    .max(createWasteListingBodyCityMax),
+  description: zod
+    .string()
+    .max(createWasteListingBodyDescriptionMax)
+    .optional(),
+  price_hint: zod.number().min(createWasteListingBodyPriceHintMin).optional(),
+});
+
+/**
+ * @summary Listings owned by the current producer company
+ */
+export const ListMyListingsResponseItem = zod.object({
+  id: zod.string(),
+  company_id: zod.string(),
+  company_name: zod.string(),
+  material: zod.enum([
+    "paper",
+    "plastic",
+    "metal",
+    "glass",
+    "electronics",
+    "organic",
+    "other",
+  ]),
+  quantity: zod.number(),
+  unit: zod.enum(["kg", "ton"]),
+  city: zod.string(),
+  description: zod.string().optional(),
+  price_hint: zod.number().optional(),
+  status: zod.enum(["open", "closed"]),
+  created_at: zod.coerce.date(),
+});
+export const ListMyListingsResponse = zod.array(ListMyListingsResponseItem);
+
+/**
+ * @summary Get a single listing by id
+ */
+export const GetWasteListingParams = zod.object({
+  waste_listing_id: zod.coerce.string(),
+});
+
+export const GetWasteListingResponse = zod.object({
+  id: zod.string(),
+  company_id: zod.string(),
+  company_name: zod.string(),
+  material: zod.enum([
+    "paper",
+    "plastic",
+    "metal",
+    "glass",
+    "electronics",
+    "organic",
+    "other",
+  ]),
+  quantity: zod.number(),
+  unit: zod.enum(["kg", "ton"]),
+  city: zod.string(),
+  description: zod.string().optional(),
+  price_hint: zod.number().optional(),
+  status: zod.enum(["open", "closed"]),
+  created_at: zod.coerce.date(),
+});
+
+/**
+ * @summary Close a listing (owner producer only)
+ */
+export const CloseWasteListingParams = zod.object({
+  waste_listing_id: zod.coerce.string(),
+});
+
+export const CloseWasteListingResponse = zod.object({
+  id: zod.string(),
+  company_id: zod.string(),
+  company_name: zod.string(),
+  material: zod.enum([
+    "paper",
+    "plastic",
+    "metal",
+    "glass",
+    "electronics",
+    "organic",
+    "other",
+  ]),
+  quantity: zod.number(),
+  unit: zod.enum(["kg", "ton"]),
+  city: zod.string(),
+  description: zod.string().optional(),
+  price_hint: zod.number().optional(),
+  status: zod.enum(["open", "closed"]),
+  created_at: zod.coerce.date(),
+});
