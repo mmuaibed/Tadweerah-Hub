@@ -85,6 +85,25 @@ export const WasteListingStatus = {
 } as const;
 
 /**
+ * Controls whether a listing appears in the public marketplace feed.
+CURRENTLY READ-ONLY: all listings default to "public". The field is present
+in all listing responses but is NOT accepted in CreateWasteListingBody —
+there is no mechanism to create a private listing yet.
+FUTURE: when a listing_invitations layer exists, producers will be able to
+set visibility = "private" at creation time and invite specific buyer companies.
+The GET /listings feed already filters WHERE visibility = 'public', so private
+listings will be automatically excluded once enforcement is in place.
+
+ */
+export type ListingVisibility =
+  (typeof ListingVisibility)[keyof typeof ListingVisibility];
+
+export const ListingVisibility = {
+  public: "public",
+  private: "private",
+} as const;
+
+/**
  * Governs how price_per_unit is interpreted and what settlement mechanics apply.
 Immutable once a listing is published — producers must close and re-list to change model.
 fixed: price_per_unit × quantity = agreed commercial amount (current MVP).
@@ -112,6 +131,11 @@ export interface WasteListing {
   /** Immutable once published. Defaults to "fixed" for the current MVP.
    */
   pricing_model?: PricingModel;
+  /** CURRENTLY READ-ONLY. Always "public" for listings created via this API.
+Defaults to "public". Private enforcement depends on a future listing_invitations layer.
+This field is NOT present in CreateWasteListingBody — producers cannot set it yet.
+ */
+  visibility?: ListingVisibility;
   created_at: string;
   closed_at?: string;
   /** Total number of offers on this listing (included for producer my-listings and marketplace M3) */

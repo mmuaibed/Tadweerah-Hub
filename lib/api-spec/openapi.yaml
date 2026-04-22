@@ -479,6 +479,18 @@ components:
     WasteListingStatus:
       type: string
       enum: [open, closed]
+    ListingVisibility:
+      type: string
+      enum: [public, private]
+      description: |
+        Controls whether a listing appears in the public marketplace feed.
+        CURRENTLY READ-ONLY: all listings default to "public". The field is present
+        in all listing responses but is NOT accepted in CreateWasteListingBody —
+        there is no mechanism to create a private listing yet.
+        FUTURE: when a listing_invitations layer exists, producers will be able to
+        set visibility = "private" at creation time and invite specific buyer companies.
+        The GET /listings feed already filters WHERE visibility = 'public', so private
+        listings will be automatically excluded once enforcement is in place.
     PricingModel:
       type: string
       enum: [fixed, by_weight]
@@ -514,6 +526,12 @@ components:
           $ref: "#/components/schemas/PricingModel"
           description: |
             Immutable once published. Defaults to "fixed" for the current MVP.
+        visibility:
+          $ref: "#/components/schemas/ListingVisibility"
+          description: |
+            CURRENTLY READ-ONLY. Always "public" for listings created via this API.
+            Defaults to "public". Private enforcement depends on a future listing_invitations layer.
+            This field is NOT present in CreateWasteListingBody — producers cannot set it yet.
         created_at:
           type: string
           format: date-time

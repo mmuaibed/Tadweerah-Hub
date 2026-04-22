@@ -121,6 +121,12 @@ export const ListMarketplaceListingsResponseItem = zod.object({
     .describe(
       'Immutable once published. Defaults to \"fixed\" for the current MVP.\n',
     ),
+  visibility: zod
+    .enum(["public", "private"])
+    .optional()
+    .describe(
+      'CURRENTLY READ-ONLY. Always \"public\" for listings created via this API.\nDefaults to \"public\". Private enforcement depends on a future listing_invitations layer.\nThis field is NOT present in CreateWasteListingBody — producers cannot set it yet.\n',
+    ),
   created_at: zod.coerce.date(),
   closed_at: zod.coerce.date().optional(),
   offer_count: zod
@@ -213,6 +219,12 @@ export const ListMyListingsResponseItem = zod.object({
     .describe(
       'Immutable once published. Defaults to \"fixed\" for the current MVP.\n',
     ),
+  visibility: zod
+    .enum(["public", "private"])
+    .optional()
+    .describe(
+      'CURRENTLY READ-ONLY. Always \"public\" for listings created via this API.\nDefaults to \"public\". Private enforcement depends on a future listing_invitations layer.\nThis field is NOT present in CreateWasteListingBody — producers cannot set it yet.\n',
+    ),
   created_at: zod.coerce.date(),
   closed_at: zod.coerce.date().optional(),
   offer_count: zod
@@ -262,6 +274,12 @@ export const GetWasteListingResponse = zod.object({
     .describe(
       'Immutable once published. Defaults to \"fixed\" for the current MVP.\n',
     ),
+  visibility: zod
+    .enum(["public", "private"])
+    .optional()
+    .describe(
+      'CURRENTLY READ-ONLY. Always \"public\" for listings created via this API.\nDefaults to \"public\". Private enforcement depends on a future listing_invitations layer.\nThis field is NOT present in CreateWasteListingBody — producers cannot set it yet.\n',
+    ),
   created_at: zod.coerce.date(),
   closed_at: zod.coerce.date().optional(),
   offer_count: zod
@@ -309,6 +327,12 @@ export const CloseWasteListingResponse = zod.object({
     .optional()
     .describe(
       'Immutable once published. Defaults to \"fixed\" for the current MVP.\n',
+    ),
+  visibility: zod
+    .enum(["public", "private"])
+    .optional()
+    .describe(
+      'CURRENTLY READ-ONLY. Always \"public\" for listings created via this API.\nDefaults to \"public\". Private enforcement depends on a future listing_invitations layer.\nThis field is NOT present in CreateWasteListingBody — producers cannot set it yet.\n',
     ),
   created_at: zod.coerce.date(),
   closed_at: zod.coerce.date().optional(),

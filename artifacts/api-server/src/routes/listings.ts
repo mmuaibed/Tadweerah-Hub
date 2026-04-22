@@ -52,6 +52,7 @@ function serialize(row: Row) {
     price_hint: row.price_hint != null ? Number(row.price_hint) : undefined,
     status: row.status,
     pricing_model: row.pricing_model,
+    visibility: row.visibility,
     created_at: row.created_at.toISOString(),
     closed_at: row.closed_at?.toISOString() ?? undefined,
     offer_count: row.offer_count ?? undefined,
@@ -71,6 +72,7 @@ const baseSelect = {
   price_hint: wasteListingsTable.price_hint,
   status: wasteListingsTable.status,
   pricing_model: wasteListingsTable.pricing_model,
+  visibility: wasteListingsTable.visibility,
   created_at: wasteListingsTable.created_at,
   closed_at: wasteListingsTable.closed_at,
   company_name: companiesTable.name,
@@ -105,7 +107,12 @@ router.get(
     );
     const city = typeof req.query.city === "string" ? req.query.city.trim() : undefined;
 
-    const conditions = [eq(wasteListingsTable.status, "open")];
+    // Only public listings appear in the marketplace feed.
+    // Private listings (when eventually supported) are never leaked here.
+    const conditions = [
+      eq(wasteListingsTable.status, "open"),
+      eq(wasteListingsTable.visibility, "public"),
+    ];
     if (material) {
       conditions.push(eq(wasteListingsTable.material, material));
     }

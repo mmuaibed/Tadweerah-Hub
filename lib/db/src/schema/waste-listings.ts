@@ -38,6 +38,28 @@ export const wasteListingStatusEnum = pgEnum("waste_listing_status", [
  */
 export const pricingModelEnum = pgEnum("pricing_model", ["fixed", "by_weight"]);
 
+/**
+ * Controls whether a listing appears in the public marketplace feed.
+ *
+ * CURRENT BEHAVIOUR (read-only from API):
+ *   All listings default to "public". This field is returned in responses but
+ *   is NOT accepted in CreateWasteListingBody — there is no mechanism to create
+ *   a private listing yet.
+ *
+ * FUTURE (when listing_invitations layer exists):
+ *   Producers will be able to set visibility = "private" at creation time.
+ *   Access enforcement will be handled by the listing_invitations table (FK
+ *   listing_id → waste_listings.id, invited_company_id → companies.id).
+ *   The GET /listings marketplace feed already filters WHERE visibility = 'public',
+ *   so private listings will be automatically excluded once created.
+ *
+ * DO NOT allow updates to this field — immutable once published.
+ */
+export const listingVisibilityEnum = pgEnum("listing_visibility", [
+  "public",
+  "private",
+]);
+
 export const wasteListingsTable = pgTable("waste_listings", {
   id: uuid("id").primaryKey().defaultRandom(),
   company_id: uuid("company_id")
@@ -56,6 +78,14 @@ export const wasteListingsTable = pgTable("waste_listings", {
    * Do NOT allow updates to this field — producers must close + re-list to change model.
    */
   pricing_model: pricingModelEnum("pricing_model").notNull().default("fixed"),
+  /**
+   * CURRENTLY READ-ONLY from the API. Defaults to "public".
+   * Immutable once published — producers must close + re-list to change visibility.
+   * "private" listings are filtered out of GET /listings (marketplace feed).
+   * Private access enforcement requires a future listing_invitations table.
+   * Do NOT accept this field in CreateWasteListingBody until enforcement exists.
+   */
+  visibility: listingVisibilityEnum("visibility").notNull().default("public"),
   created_at: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

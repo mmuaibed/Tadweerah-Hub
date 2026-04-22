@@ -78,12 +78,17 @@ A Saudi B2B MVP connecting waste producers, recycling buyers, and transport carr
 - `listing_offers.rejection_reason` (text, nullable) — set on reject/auto-reject; visible to affected buyer only
 - `listing_offers.acceptance_reason` (text, nullable) — set on accept when lower than highest; INTERNAL only
 - `waste_listings.pricing_model` (enum: fixed|by_weight, default fixed, NOT NULL) — passive structural column; IMMUTABLE once published
+- `waste_listings.visibility` (enum: public|private, default public, NOT NULL) — passive structural column; IMMUTABLE once published; read-only from API until listing_invitations layer exists
 
 **Governance decisions (locked)**
 - `pricing_model` is immutable once a listing is published. Producers must close + re-list to change model.
 - `accepted` offer status = "commercial intent confirmed, listing closed to bidding" — NOT a final settled invoice amount.
 - `estimated_total` = UI-only derived value (price_per_unit × quantity); never persisted. Safe for by-weight settlement reuse.
 - All estimated total UI copy must use "تقديري / estimated" semantics — never "final price" or "السعر النهائي".
+- `visibility` is immutable once a listing is published. Defaults to "public". CURRENTLY READ-ONLY from the API — `CreateWasteListingBody` does NOT accept this field.
+- `visibility = "private"` enforcement depends on a future `listing_invitations` table (not yet built). Do NOT surface private-listing creation in UI until enforcement exists.
+- `GET /listings` (marketplace feed) permanently filters `WHERE visibility = 'public'` — private listings can never leak into the public feed.
+- Access control for private listings is listing-level intent + invitations layer (NOT an `allowed_buyer_ids` column — wrong pattern).
 
 **Frontend (Phase 2)**
 - F1 close warning: confirm dialog shows pending offer count

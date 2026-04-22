@@ -13,6 +13,7 @@ export * from "./createCompanyBody";
 export * from "./createWasteListingBody";
 export * from "./healthStatus";
 export * from "./listingOffer";
+export * from "./listingVisibility";
 export * from "./listMarketplaceListingsParams";
 export * from "./listMyListingsParams";
 export * from "./listMyOffersParams";

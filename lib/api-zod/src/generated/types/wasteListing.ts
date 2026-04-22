@@ -5,6 +5,7 @@
  * Tadweerah API
  * OpenAPI spec version: 0.1.0
  */
+import type { ListingVisibility } from "./listingVisibility";
 import type { PricingModel } from "./pricingModel";
 import type { WasteListingStatus } from "./wasteListingStatus";
 import type { WasteMaterial } from "./wasteMaterial";
@@ -24,6 +25,11 @@ export interface WasteListing {
   /** Immutable once published. Defaults to "fixed" for the current MVP.
    */
   pricing_model?: PricingModel;
+  /** CURRENTLY READ-ONLY. Always "public" for listings created via this API.
+Defaults to "public". Private enforcement depends on a future listing_invitations layer.
+This field is NOT present in CreateWasteListingBody — producers cannot set it yet.
+ */
+  visibility?: ListingVisibility;
   created_at: Date;
   closed_at?: Date;
   /** Total number of offers on this listing (included for producer my-listings and marketplace M3) */
