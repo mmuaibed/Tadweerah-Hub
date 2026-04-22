@@ -3,20 +3,23 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Tadweerah API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: me
+    description: Current user
+  - name: companies
+    description: Company management
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +27,44 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /me:
+    get:
+      operationId: getMe
+      tags: [me]
+      summary: Get current authenticated user and their company (if any)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MeResponse"
+        "401":
+          description: Unauthorized
+  /companies:
+    post:
+      operationId: createCompany
+      tags: [companies]
+      summary: Create a company for the current user (one company per user in MVP)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCompanyBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Company"
+        "400":
+          description: Validation error
+        "401":
+          description: Unauthorized
+        "409":
+          description: User already has a company
 components:
   schemas:
     HealthStatus:
@@ -31,6 +72,60 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
-
+      required: [status]
+    CompanyType:
+      type: string
+      enum: [producer, buyer, carrier]
+      description: producer = waste producer, buyer = recycling company, carrier = transporter
+    Company:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          $ref: "#/components/schemas/CompanyType"
+        city:
+          type: string
+        commercialRegistration:
+          type: string
+        contactPhone:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, name, type, city, contactPhone, createdAt]
+    CreateCompanyBody:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 120
+        type:
+          $ref: "#/components/schemas/CompanyType"
+        city:
+          type: string
+          minLength: 2
+          maxLength: 80
+        commercialRegistration:
+          type: string
+          maxLength: 40
+        contactPhone:
+          type: string
+          minLength: 6
+          maxLength: 20
+      required: [name, type, city, contactPhone]
+    MeResponse:
+      type: object
+      properties:
+        userId:
+          type: string
+        email:
+          type: string
+        company:
+          oneOf:
+            - $ref: "#/components/schemas/Company"
+            - type: "null"
+      required: [userId]
