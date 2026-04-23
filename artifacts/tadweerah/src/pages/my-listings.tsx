@@ -171,18 +171,6 @@ export function MyListingsPage() {
                     </div>
                   )}
 
-                  {/* F12: View Offers CTA */}
-                  <Link to={`/listings/${listing.id}`}>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="w-full gap-2 text-primary hover:text-primary hover:bg-primary/5"
-                    >
-                      {t("myListings.viewOffers")}
-                    </Button>
-                  </Link>
-
                   {/* Close button */}
                   {listing.status === "open" && (
                     <Button

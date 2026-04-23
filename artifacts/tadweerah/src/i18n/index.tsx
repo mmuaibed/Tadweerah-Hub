@@ -327,6 +327,19 @@ const translations: Record<string, Record<Language, string>> = {
   "deal.error.generic": { ar: "حدث خطأ، يرجى المحاولة مجدداً", en: "An error occurred, please try again" },
 
   "deal.disclaimer": { ar: "* المبلغ تقديري بناءً على الكمية المُعلنة", en: "* Amount is estimated based on the listed quantity" },
+
+  // Waiting-for status — who acts next
+  "deal.waiting.active": { ar: "بانتظار المنتج لتأكيد استلام الدفع", en: "Waiting for producer to confirm payment" },
+  "deal.waiting.payment_confirmed": { ar: "بانتظار المنتج لتأكيد إرسال البضاعة", en: "Waiting for producer to confirm dispatch" },
+  "deal.waiting.dispatched": { ar: "بانتظار المشتري لتأكيد استلام البضاعة", en: "Waiting for buyer to confirm receipt" },
+
+  // Confirmation dialogs
+  "deal.confirm.payment.title": { ar: "تأكيد استلام الدفع", en: "Confirm Payment Received" },
+  "deal.confirm.payment.desc": { ar: "هل تأكدت من استلام الدفع من المشتري؟ لا يمكن التراجع عن هذه الخطوة.", en: "Have you received payment from the buyer? This step cannot be undone." },
+  "deal.confirm.dispatch.title": { ar: "تأكيد إرسال البضاعة", en: "Confirm Dispatch" },
+  "deal.confirm.dispatch.desc": { ar: "هل تأكدت من إرسال البضاعة للمشتري؟ لا يمكن التراجع عن هذه الخطوة.", en: "Have you dispatched the goods to the buyer? This step cannot be undone." },
+  "deal.confirm.receipt.title": { ar: "تأكيد استلام البضاعة", en: "Confirm Receipt" },
+  "deal.confirm.receipt.desc": { ar: "هل تأكدت من استلام البضاعة من المنتج؟ لا يمكن التراجع عن هذه الخطوة.", en: "Have you received the goods from the producer? This step cannot be undone." },
 };
 
 export const I18nProvider: React.FC<{
