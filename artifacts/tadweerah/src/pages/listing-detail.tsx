@@ -33,6 +33,8 @@ import {
   ChevronUp,
   BadgeCheck,
   Medal,
+  Copy,
+  Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -927,6 +929,7 @@ export function ListingDetailPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [closeError, setCloseError] = useState<string | null>(null);
   const [pendingOfferCount, setPendingOfferCount] = useState(0);
+  const [refCopied, setRefCopied] = useState(false);
   const [dealOverride, setDealOverride] = useState<DealInfo | null>(null);
 
   const isValidId = UUID_RE.test(wasteListingId);
@@ -1065,7 +1068,23 @@ export function ListingDetailPage() {
             </span>
             <div>
               <h2 className="text-lg font-bold text-foreground">{materialLabel}</h2>
-              <span className="text-xs text-muted-foreground">{ref}</span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-muted-foreground">{ref}</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    void navigator.clipboard.writeText(ref);
+                    setRefCopied(true);
+                    setTimeout(() => setRefCopied(false), 2000);
+                  }}
+                  className="text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+                  title={t("action.copy")}
+                >
+                  {refCopied
+                    ? <Check className="h-3 w-3 text-green-500" />
+                    : <Copy className="h-3 w-3" />}
+                </button>
+              </div>
             </div>
           </div>
           <Badge variant={isOpen ? "secondary" : "outline"} className="text-sm">

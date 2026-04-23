@@ -38,6 +38,7 @@ type Row = WasteListing & {
   company_name: string;
   offer_count?: number;
   highest_offer_total?: number | null;
+  deal_status?: string | null;
 };
 
 function serialize(row: Row) {
@@ -59,6 +60,7 @@ function serialize(row: Row) {
     offer_count: row.offer_count ?? undefined,
     highest_offer_total:
       row.highest_offer_total != null ? Number(row.highest_offer_total) : undefined,
+    deal_status: row.deal_status ?? undefined,
   };
 }
 
@@ -171,10 +173,12 @@ router.get(
         ...baseSelect,
         offer_count: offerAgg.offer_count,
         max_price_per_unit: offerAgg.max_price_per_unit,
+        deal_status: dealsTable.status,
       })
       .from(wasteListingsTable)
       .innerJoin(companiesTable, eq(companiesTable.id, wasteListingsTable.company_id))
       .leftJoin(offerAgg, eq(offerAgg.waste_listing_id, wasteListingsTable.id))
+      .leftJoin(dealsTable, eq(dealsTable.listing_id, wasteListingsTable.id))
       .where(and(...conditions))
       .orderBy(
         // F8: active first, then most offers, then newest

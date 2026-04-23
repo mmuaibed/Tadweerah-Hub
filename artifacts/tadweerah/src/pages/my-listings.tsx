@@ -7,7 +7,7 @@ import {
   getListMyListingsQueryKey,
   type WasteListing,
 } from "@workspace/api-client-react";
-import { Loader2, Plus, Recycle, TrendingUp } from "lucide-react";
+import { Loader2, Plus, Recycle, TrendingUp, Handshake } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AppLayout } from "@/components/app-layout";
@@ -158,6 +158,20 @@ export function MyListingsPage() {
               href={`/listings/${listing.id}`}
               footer={
                 <div className="flex flex-col gap-2">
+                  {/* Deal status badge — shows on closed listings with an active/completed deal */}
+                  {(listing as unknown as { deal_status?: string }).deal_status && (
+                    <div className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg w-fit ${
+                      (listing as unknown as { deal_status?: string }).deal_status === "completed"
+                        ? "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200"
+                        : "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200"
+                    }`}>
+                      <Handshake className="h-3.5 w-3.5 shrink-0" />
+                      {(listing as unknown as { deal_status?: string }).deal_status === "completed"
+                        ? t("myListings.deal.completed")
+                        : t("myListings.deal.active")}
+                    </div>
+                  )}
+
                   {/* F13: Offer count badge */}
                   {(listing.offer_count ?? 0) > 0 && (
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground">

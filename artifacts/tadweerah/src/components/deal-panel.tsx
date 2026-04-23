@@ -227,9 +227,13 @@ export function DealPanel({ deal, role, unit, onUpdate }: DealPanelProps) {
             <div className="min-w-0">
               <p className="text-xs text-muted-foreground">{t("deal.contact.title")}</p>
               <p className="font-semibold text-sm truncate">{deal.counterparty.name}</p>
-              <p dir="ltr" className="text-sm text-primary font-mono">
+              <a
+                href={`tel:${deal.counterparty.contact_phone}`}
+                dir="ltr"
+                className="text-sm text-primary font-mono hover:underline"
+              >
                 {deal.counterparty.contact_phone}
-              </p>
+              </a>
             </div>
           </div>
         )}

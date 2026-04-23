@@ -328,6 +328,14 @@ const translations: Record<string, Record<Language, string>> = {
 
   "deal.disclaimer": { ar: "* المبلغ تقديري بناءً على الكمية المُعلنة", en: "* Amount is estimated based on the listed quantity" },
 
+  // Deal status badge in my-listings (producer view)
+  "myListings.deal.active": { ar: "صفقة جارية", en: "Deal in progress" },
+  "myListings.deal.completed": { ar: "صفقة مكتملة", en: "Deal completed" },
+
+  // Copy to clipboard
+  "action.copy": { ar: "نسخ", en: "Copy" },
+  "action.copied": { ar: "تم النسخ ✓", en: "Copied ✓" },
+
   // Role labels in DealPanel
   "deal.role.producer": { ar: "أنت المنتج", en: "You: Producer" },
   "deal.role.buyer": { ar: "أنت المشتري", en: "You: Buyer" },
