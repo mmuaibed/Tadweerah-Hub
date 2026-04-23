@@ -1,0 +1,233 @@
+Follow the Tadweerah Replit Working Covenant.
+
+This is a design + governance + architecture + build-scope request.
+Answer as BOTH:
+- Senior Backend/Frontend Engineer
+- CTO / Product-Technical Architect
+
+Do NOT answer only from a UAT perspective.
+
+---
+
+## Context (Current State)
+
+M4.5 is complete and frozen:
+- Listing → Offers → Reject (with reason) → Accept (with acceptance_reason if below highest) → Auto-reject others → Listing closes
+- UI and DB invariants are validated
+
+Problem: After acceptance, the platform reaches a dead end.
+There is no post-acceptance workflow to complete a real transaction.
+
+---
+
+## Goal
+
+Design and validate a minimum viable transaction completion flow (MVP-light) that:
+- Works in the Saudi waste trading context
+- Supports BOTH:
+  1) Fixed lump-sum deals
+  2) Price-per-unit / weight-based deals
+- Enables a real, practical trade to be completed
+- Does NOT overbuild (no full logistics or payment systems)
+- Does NOT destabilize M4.5
+
+---
+
+## Proposed MVP Transaction Flow
+
+### 0) Accepted (Existing)
+- Offer accepted
+- Listing closed
+- Other offers auto-rejected
+
+---
+
+### 1) Settlement Type (NEW — must be explicit)
+Each accepted deal must have:
+- settlement_type = "fixed" | "actual_quantity"
+
+Source:
+- Either from the accepted offer
+- Or inferred if offer already has unit pricing
+
+---
+
+### 2) Actual Quantity / Finalization Step (NEW — conditional)
+
+IF settlement_type = "fixed":
+- final_amount = accepted_offer_amount
+- No quantity input required
+
+IF settlement_type = "actual_quantity":
+- Require recording:
+  - actual_quantity (number)
+  - optional unit (ton/kg)
+  - optional evidence (image/document)
+- System calculates:
+  - final_amount = price_per_unit × actual_quantity
+
+---
+
+### 3) Final Amount Visibility (NEW)
+- Both producer and buyer must see:
+  - settlement_type
+  - unit price (if applicable)
+  - actual_quantity (if applicable)
+  - final_amount
+- This must be read-only once confirmed
+
+---
+
+### 4) Payment Proof (MVP — offline)
+- Buyer uploads:
+  - payment_proof (image/file)
+- Status → "payment_submitted"
+
+---
+
+### 5) Payment Confirmation
+- Producer confirms receipt
+- Status → "payment_confirmed"
+
+---
+
+### 6) Handover to Carrier (Lightweight)
+- Producer records:
+  - carrier_name (required)
+  - optional phone
+  - optional notes
+- Status → "handed_over"
+
+---
+
+### 7) Final Receipt Confirmation
+- Buyer confirms material received
+- Status → "received"
+
+---
+
+### 8) Transaction Close
+- Status → "completed"
+- Immutable end state
+
+---
+
+## Key Requirements
+
+- Must remain MVP-light (no full logistics engine, no payment gateway)
+- Must be auditable (who did what, when)
+- Must avoid ambiguity in final price
+- Must not break M4.5 flows or invariants
+
+---
+
+## What I need from you
+
+### Part 1 — Product / Operational / Governance Assessment
+
+1. Is this flow operationally valid for an MVP in this market?
+2. Does it solve the “dead end after acceptance” effectively?
+3. Does it introduce any trust or dispute risks?
+4. Is the flow sufficiently clear for non-technical business users?
+5. Where are ambiguity points (e.g. who enters quantity, disputes on weight, fake payment proof)?
+6. What governance controls are minimally required (timestamps, actor IDs, locking rules)?
+7. What would you REMOVE or SIMPLIFY to keep MVP tight?
+
+---
+
+### Part 2 — Technical / Architecture Assessment
+
+1. Is this design technically sound for the current codebase?
+2. Can it be added without destabilizing M4.5?
+3. What is the cleanest way to support BOTH settlement types?
+
+#### Data Model (propose concrete fields)
+- transaction (new or extension of listing/offer?)
+- settlement_type
+- price_per_unit (nullable)
+- accepted_amount
+- actual_quantity
+- final_amount
+- payment_proof_url
+- payment_confirmed_at / by
+- handed_over_at / by
+- received_at / by
+- status (enumeration)
+
+4. Should this be:
+   - a new transaction entity, OR
+   - an extension of listing / accepted_offer?
+
+5. Define the state machine clearly (allowed transitions only):
+   - accepted → (quantity_recorded?) → payment_submitted → payment_confirmed → handed_over → received → completed
+
+6. How do we enforce:
+   - immutability of final_amount after confirmation?
+   - no skipping of steps?
+   - idempotency (no double actions)?
+
+7. Identify edge cases:
+   - buyer uploads wrong proof
+   - producer confirms without actual payment
+   - quantity entered incorrectly
+   - user drops mid-flow
+   - re-opening a closed listing (must be impossible)
+
+---
+
+### Part 3 — Risk & Complexity Assessment
+
+For each step:
+- classify complexity: Low / Medium / High
+- identify hidden risks
+
+Call out anything that might:
+- introduce tight coupling
+- create hard-to-maintain logic
+- conflict with existing flows
+
+---
+
+### Part 4 — Recommendation (Decisive)
+
+Answer clearly:
+
+- Is this the right MVP completion flow to build now?
+- If NOT, propose a simpler alternative (strictly MVP)
+- If YES, confirm this is the minimum viable version
+
+---
+
+### Part 5 — Minimal Build Scope Proposal
+
+Propose:
+
+1. What MUST be built now (strict MVP)
+2. What MUST be deferred (no discussion)
+3. Suggested implementation order (step-by-step)
+4. Estimated effort per block (Low / Medium / High)
+
+---
+
+### Part 6 — Compatibility with M4.5
+
+Explicitly confirm:
+
+- No change to:
+  - offer acceptance logic
+  - auto-rejection logic
+  - listing closure logic
+
+- This flow starts ONLY after "accepted"
+
+---
+
+### Output Rules
+
+- Be direct and critical
+- Do not agree blindly
+- Prefer simplest working design
+- Highlight trade-offs
+- Answer as if you are accountable for building and scaling this system
+
+This is a decision-critical design review, not a summary.
