@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useParams, Link, useLocation } from "wouter";
+import { useParams, Link, useLocation, useSearch } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useGetWasteListing,
@@ -907,6 +907,7 @@ export function ListingDetailPage() {
   const params = useParams<{ waste_listing_id: string }>();
   const wasteListingId = params.waste_listing_id ?? "";
   const [, navigate] = useLocation();
+  const search = useSearch();
   const queryClient = useQueryClient();
 
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -935,12 +936,15 @@ export function ListingDetailPage() {
   const activeDeal: DealInfo | null = dealOverride ?? rawDeal;
   const isOpen = listing?.status === "open";
 
+  const fromParam = new URLSearchParams(search).get("from");
   const backPath =
-    role === "producer"
-      ? "/listings/mine"
-      : role === "buyer"
-        ? "/marketplace"
-        : "/dashboard";
+    fromParam === "participations"
+      ? "/participations"
+      : role === "producer"
+        ? "/listings/mine"
+        : role === "buyer"
+          ? "/marketplace"
+          : "/dashboard";
 
   const dateStr = listing
     ? new Date(listing.created_at).toLocaleDateString(

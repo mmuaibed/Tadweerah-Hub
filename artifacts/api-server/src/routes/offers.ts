@@ -114,6 +114,8 @@ router.get(
         listing_status: wasteListingsTable.status,
         listing_closed_at: wasteListingsTable.closed_at,
         listing_company_name: companiesTable.name,
+        deal_status: dealsTable.status,
+        deal_id: dealsTable.id,
       })
       .from(listingOffersTable)
       .innerJoin(
@@ -123,6 +125,10 @@ router.get(
       .innerJoin(
         companiesTable,
         eq(companiesTable.id, wasteListingsTable.company_id),
+      )
+      .leftJoin(
+        dealsTable,
+        eq(dealsTable.offer_id, listingOffersTable.id),
       )
       .where(and(...conditions))
       .orderBy(
@@ -206,6 +212,8 @@ router.get(
           created_at: row.offer_created_at.toISOString(),
           updated_at: row.offer_updated_at.toISOString(),
           resolved_at: row.offer_resolved_at?.toISOString() ?? undefined,
+          deal_id: row.deal_id ?? undefined,
+          deal_status: row.deal_status ?? undefined,
         };
       }),
     );

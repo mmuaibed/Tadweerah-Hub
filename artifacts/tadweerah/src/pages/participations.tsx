@@ -35,11 +35,14 @@ function translateRejectionReason(code: string | undefined, t: (k: string) => st
   return detail ? `${translated}: ${detail}` : translated;
 }
 
+type DealStatus = "active" | "payment_confirmed" | "dispatched" | "completed";
+
 function OfferCard({ offer }: { offer: MyOffer }) {
   const { t, lang } = useT();
   const isRejected = offer.status === "rejected";
   const isAccepted = offer.status === "accepted";
   const isPending = offer.status === "pending";
+  const dealStatus = (offer as unknown as { deal_status?: DealStatus }).deal_status;
 
   const closedDateStr = offer.listing_closed_at
     ? new Date(offer.listing_closed_at).toLocaleDateString(
@@ -107,13 +110,23 @@ function OfferCard({ offer }: { offer: MyOffer }) {
         </span>
       </div>
 
-      {/* Accepted: winner banner */}
+      {/* Accepted: winner banner + deal stage */}
       {isAccepted && (
-        <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2.5 dark:border-green-800 dark:bg-green-950">
+        <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2.5 dark:border-green-800 dark:bg-green-950 space-y-1.5">
           <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
             <CheckCircle2 className="h-4 w-4 shrink-0" />
             <span className="text-sm font-semibold">{t("participations.winner.label")}</span>
           </div>
+          {dealStatus && (
+            <div className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full ${
+              dealStatus === "completed"
+                ? "bg-green-200 text-green-800 dark:bg-green-800 dark:text-green-100"
+                : "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200"
+            }`}>
+              <Clock className="h-3 w-3 shrink-0" />
+              {t(`participations.deal.${dealStatus}`)}
+            </div>
+          )}
         </div>
       )}
 
@@ -183,7 +196,7 @@ function OfferCard({ offer }: { offer: MyOffer }) {
       )}
 
       {/* Action: view listing detail */}
-      <Link to={`/listings/${offer.waste_listing_id}`}>
+      <Link to={`/listings/${offer.waste_listing_id}?from=participations`}>
         <Button variant="outline" size="sm" className="w-full mt-1">
           {t("listing.viewDetail")}
         </Button>

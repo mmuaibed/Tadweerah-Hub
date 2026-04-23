@@ -328,6 +328,12 @@ const translations: Record<string, Record<Language, string>> = {
 
   "deal.disclaimer": { ar: "* المبلغ تقديري بناءً على الكمية المُعلنة", en: "* Amount is estimated based on the listed quantity" },
 
+  // Deal stage labels for participations page (buyer perspective)
+  "participations.deal.active": { ar: "بانتظار تأكيد الدفع", en: "Awaiting payment confirmation" },
+  "participations.deal.payment_confirmed": { ar: "بانتظار الشحن", en: "Awaiting dispatch" },
+  "participations.deal.dispatched": { ar: "بانتظار تأكيد الاستلام", en: "Awaiting receipt confirmation" },
+  "participations.deal.completed": { ar: "مكتملة ✓", en: "Completed ✓" },
+
   // Waiting-for status — who acts next
   "deal.waiting.active": { ar: "بانتظار المنتج لتأكيد استلام الدفع", en: "Waiting for producer to confirm payment" },
   "deal.waiting.payment_confirmed": { ar: "بانتظار المنتج لتأكيد إرسال البضاعة", en: "Waiting for producer to confirm dispatch" },
