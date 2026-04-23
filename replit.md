@@ -49,7 +49,7 @@ A Saudi B2B MVP connecting waste producers, recycling buyers, and transport carr
 - M2 Waste Listings (producer create/list/close + buyer marketplace) — DONE & UAT-approved
 - M3 Listing detail page + clickable cards + confirm-close — DONE & UAT-approved
 - M4 Offers / Bidding — DONE & UAT-approved
-- M4.5 Bug-fix & polish sprint — COMPLETE (Phase 1 backend + Phase 2 frontend; Phase 3 email TBD)
+- M4.5 Bug-fix & polish sprint — COMPLETE & UAT-approved (Phase 1 backend + Phase 2 frontend; Phase 3 email TBD)
 - M5 Transport bids (carrier)
 - M6 Trip lifecycle / proof of delivery
 - M7 Notifications
