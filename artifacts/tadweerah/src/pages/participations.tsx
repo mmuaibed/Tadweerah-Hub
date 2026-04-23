@@ -54,14 +54,18 @@ function OfferCard({ offer }: { offer: MyOffer }) {
   const rejectionReason = translateRejectionReason(offer.rejection_reason, t);
   const estimatedTotal = offer.price_per_unit * offer.listing_quantity;
 
+  const isCompleted = isAccepted && dealStatus === "completed";
+
   return (
     <div
-      className={`rounded-xl border bg-card p-5 space-y-4 transition-shadow hover:shadow-sm ${
-        isAccepted
-          ? "border-green-200 dark:border-green-800"
-          : isRejected
-            ? "border-destructive/20"
-            : "border-border"
+      className={`rounded-xl border p-5 space-y-4 transition-shadow hover:shadow-sm ${
+        isCompleted
+          ? "border-green-400 bg-green-50/60 dark:border-green-600 dark:bg-green-950/40"
+          : isAccepted
+            ? "border-green-200 bg-card dark:border-green-800"
+            : isRejected
+              ? "border-destructive/20 bg-card"
+              : "border-border bg-card"
       }`}
     >
       {/* Top: material + listing status */}
@@ -123,7 +127,9 @@ function OfferCard({ offer }: { offer: MyOffer }) {
                 ? "bg-green-200 text-green-800 dark:bg-green-800 dark:text-green-100"
                 : "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200"
             }`}>
-              <Clock className="h-3 w-3 shrink-0" />
+              {dealStatus === "completed"
+                ? <CheckCircle2 className="h-3 w-3 shrink-0" />
+                : <Clock className="h-3 w-3 shrink-0" />}
               {t(`participations.deal.${dealStatus}`)}
             </div>
           )}

@@ -489,20 +489,34 @@ function BuyerOfferSection({
     );
   }
 
-  // Rejected offer — F2: show rejection reason
+  // Rejected offer — F2: show rejection reason + consistent price display
   if (myOffer?.status === "rejected") {
     const reasonText = translateRejectionReason(myOffer.rejection_reason, t);
+    const rejectedTotal = myOffer.price_per_unit * listingQuantity;
     return (
       <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-5 space-y-2">
         <div className="flex items-center gap-2 text-destructive">
           <XCircle className="h-5 w-5" />
           <span className="font-semibold">{t("offer.mine.rejected")}</span>
         </div>
-        <div className="text-sm text-muted-foreground">
-          {myOffer.price_per_unit.toLocaleString()} {t("listing.sar")}
+        <div className="flex items-baseline gap-1">
+          <span className="text-lg font-bold text-foreground/70">
+            {myOffer.price_per_unit.toLocaleString()}
+          </span>
+          <span className="text-xs text-muted-foreground">
+            {t("listing.sar")} / {t("offer.summary.perUnit").split("/")[1]}
+          </span>
+        </div>
+        <div className="text-xs text-muted-foreground">
+          {t("offer.mine.total")}:{" "}
+          <span className="font-medium text-foreground/70">
+            {rejectedTotal.toLocaleString()} {t("listing.sar")}
+          </span>
+          {" "}
+          <span className="text-muted-foreground/60">{t("offer.quantityDisclaimer")}</span>
         </div>
         {reasonText && (
-          <div className="text-xs text-muted-foreground">
+          <div className="text-xs text-muted-foreground border-t border-destructive/20 pt-2 mt-1">
             <span className="font-medium">{t("offer.mine.rejectionReason")}:</span>{" "}
             {reasonText}
           </div>

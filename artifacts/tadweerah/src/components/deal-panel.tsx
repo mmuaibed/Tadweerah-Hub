@@ -6,6 +6,8 @@ import {
   Loader2,
   AlertCircle,
   Clock,
+  UserCheck,
+  UserCog,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -141,6 +143,10 @@ export function DealPanel({ deal, role, unit, onUpdate }: DealPanelProps) {
   const waitingText =
     deal.status !== "completed" ? t(`deal.waiting.${deal.status}`) : null;
 
+  const isMyTurn =
+    (role === "producer" && (deal.status === "active" || deal.status === "payment_confirmed")) ||
+    (role === "buyer" && deal.status === "dispatched");
+
   const confirmDialogProps: Record<
     Exclude<PendingAction, null>,
     { title: string; desc: string; label: string }
@@ -181,20 +187,35 @@ export function DealPanel({ deal, role, unit, onUpdate }: DealPanelProps) {
 
       <div className="rounded-xl border border-primary/20 bg-primary/5 space-y-0 overflow-hidden">
         {/* Header */}
-        <div className="px-4 py-3 bg-primary/10 space-y-1.5">
+        <div className="px-4 py-3 bg-primary/10 space-y-2">
           <div className="flex items-center justify-between">
             <span className="font-semibold text-primary text-sm">{t("deal.panel.title")}</span>
             <Badge variant={statusBadgeVariant(deal.status)}>
               {statusLabel(deal.status)}
             </Badge>
           </div>
-          {/* Who acts next */}
-          {waitingText && (
-            <div className="flex items-center gap-1.5 text-xs text-primary/80">
-              <Clock className="h-3.5 w-3.5 shrink-0" />
-              <span>{waitingText}</span>
+
+          {/* Role badge + action status */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 text-xs text-primary/80 font-medium">
+              {role === "producer"
+                ? <UserCog className="h-3.5 w-3.5 shrink-0" />
+                : <UserCheck className="h-3.5 w-3.5 shrink-0" />}
+              <span>{t(`deal.role.${role}`)}</span>
             </div>
-          )}
+            {deal.status !== "completed" && (
+              <div className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${
+                isMyTurn
+                  ? "bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-200"
+                  : "bg-muted text-muted-foreground"
+              }`}>
+                {isMyTurn
+                  ? <><AlertCircle className="h-3 w-3 shrink-0" />{t("deal.role.your_turn")}</>
+                  : <><Clock className="h-3 w-3 shrink-0" />{t("deal.role.not_your_turn")}</>
+                }
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Contact */}
@@ -343,20 +364,10 @@ export function DealPanel({ deal, role, unit, onUpdate }: DealPanelProps) {
             )}
 
             {/* Waiting — not the current user's turn */}
-            {deal.status !== "completed" && (
-              (() => {
-                const isMyTurn =
-                  (role === "producer" && (deal.status === "active" || deal.status === "payment_confirmed")) ||
-                  (role === "buyer" && deal.status === "dispatched");
-                if (!isMyTurn) {
-                  return (
-                    <p className="text-xs text-center text-muted-foreground py-1">
-                      {waitingText}
-                    </p>
-                  );
-                }
-                return null;
-              })()
+            {deal.status !== "completed" && !isMyTurn && waitingText && (
+              <div className="rounded-md bg-muted/60 px-3 py-2 text-xs text-muted-foreground text-center leading-relaxed">
+                {waitingText}
+              </div>
             )}
 
             {/* Error */}

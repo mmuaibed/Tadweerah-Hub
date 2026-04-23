@@ -328,6 +328,12 @@ const translations: Record<string, Record<Language, string>> = {
 
   "deal.disclaimer": { ar: "* المبلغ تقديري بناءً على الكمية المُعلنة", en: "* Amount is estimated based on the listed quantity" },
 
+  // Role labels in DealPanel
+  "deal.role.producer": { ar: "أنت المنتج", en: "You: Producer" },
+  "deal.role.buyer": { ar: "أنت المشتري", en: "You: Buyer" },
+  "deal.role.your_turn": { ar: "الإجراء مطلوب منك الآن", en: "Action required from you now" },
+  "deal.role.not_your_turn": { ar: "لا يلزمك إجراء الآن", en: "No action required from you now" },
+
   // Deal stage labels for participations page (buyer perspective)
   "participations.deal.active": { ar: "بانتظار تأكيد الدفع", en: "Awaiting payment confirmation" },
   "participations.deal.payment_confirmed": { ar: "بانتظار الشحن", en: "Awaiting dispatch" },
