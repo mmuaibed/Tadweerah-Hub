@@ -1,0 +1,231 @@
+Follow the Tadweerah Replit Working Covenant.
+
+This is a final design + build + governance review request.
+Act as BOTH:
+- Senior Engineer (backend + frontend)
+- CTO / Product-Technical Architect
+
+Do NOT answer only theoretically. Provide concrete, implementable details and a clear go/no-go recommendation.
+
+---
+
+## Context (Current State)
+
+M4.5 is complete and frozen:
+- listing → offers → reject (with reason) → accept (with acceptance_reason if below highest) → auto-reject others → listing closes
+- UI + DB invariants are validated
+- No changes to M4.5 are allowed
+
+Problem: Post-acceptance is a dead end. We need a minimal, real-world completion flow.
+
+---
+
+## Approved MVP Direction (to implement)
+
+Use a simplified deal lifecycle (no payment gateway, no carrier system):
+
+### State Machine (STRICT)
+active → payment_confirmed → dispatched → completed
+
+No backward transitions. No skipping.
+
+---
+
+## Core Rules
+
+1) Deal creation (MANDATORY)
+- Auto-create a deal record inside the SAME DB transaction of POST /offers/:id/accept
+- Enforce 1:1 (UNIQUE on offer_id)
+- Must NOT alter existing acceptance logic or side-effects
+
+2) Settlement (derived, not user-entered)
+- Derive from existing data:
+  - fixed → final_amount = estimated_amount (immutable at creation)
+  - by_weight → producer must enter actual_quantity during confirm-payment
+- Do NOT introduce a new user input for settlement_type
+
+3) Transitions (role-based, guarded, idempotent)
+
+- POST /deals/:id/confirm-payment  (producer)
+  - If by_weight: require actual_quantity
+  - Compute & set final_amount
+  - Set payment_confirmed_at + payment_confirmed_by
+  - Status → payment_confirmed
+  - Lock actual_quantity and final_amount (immutable afterwards)
+
+- POST /deals/:id/confirm-dispatch  (producer)
+  - Set dispatched_at + dispatched_by
+  - Status → dispatched
+
+- POST /deals/:id/confirm-receipt  (buyer)
+  - Set received_at + received_by
+  - Status → completed
+
+4) Contact disclosure (MUST)
+- After acceptance only:
+  - producer sees buyer phone
+  - buyer sees producer phone
+- Read-only; sourced from companies profile
+
+5) Constraints
+- No payment proof upload
+- No carrier fields
+- No changes to M4.5 APIs or DB
+- Enforce transitions via:
+  - status guards
+  - SELECT FOR UPDATE (row-level lock)
+  - idempotency (repeat calls → 409, no mutation)
+
+---
+
+## Required Implementation Output
+
+### A) Data Model (confirm/refine)
+Provide exact schema:
+- deals table
+- enums:
+  - deal_status: active | payment_confirmed | dispatched | completed
+- fields (must include):
+  - offer_id (UNIQUE FK)
+  - listing_id (FK)
+  - producer_company_id (FK)
+  - buyer_company_id (FK)
+  - settlement_type (derived, persisted)
+  - price_per_unit
+  - estimated_amount
+  - actual_quantity (nullable)
+  - final_amount (nullable until confirmed)
+  - payment_confirmed_at/by
+  - dispatched_at/by
+  - received_at/by
+  - created_at / updated_at
+
+Also specify:
+- indexes
+- constraints (NOT NULL, UNIQUE)
+- immutability rules
+
+---
+
+### B) API Design (exact)
+Define:
+- GET /deals/:id
+- POST /deals/:id/confirm-payment
+- POST /deals/:id/confirm-dispatch
+- POST /deals/:id/confirm-receipt
+
+For EACH endpoint include:
+- request schema
+- validation rules
+- authorization (producer vs buyer)
+- allowed current status
+- DB transaction steps
+- error cases (400 / 403 / 404 / 409)
+- idempotency behavior
+
+---
+
+### C) State Machine Enforcement
+Provide explicit rules:
+- allowed transitions only
+- no skipping
+- no backward moves
+- row-level locking strategy
+- how race conditions are prevented
+
+---
+
+### D) Frontend Scope (minimal but complete)
+Define:
+- Deal panel (shared view)
+- Role-based actions:
+  - producer: confirm payment, confirm dispatch
+  - buyer: confirm receipt
+- Display:
+  - settlement summary
+  - final amount
+  - current status
+  - timestamps
+  - counterparty contact (post-acceptance only)
+
+---
+
+### E) Testing Plan (MANDATORY)
+Define:
+- unit tests for transitions
+- integration tests for:
+  - accept → deal created
+  - payment_confirmed flow
+  - dispatch flow
+  - receipt flow
+- negative tests:
+  - skipping states
+  - double actions
+  - wrong role actions
+  - missing actual_quantity
+- regression check: M4.5 must remain intact
+
+---
+
+## Part 1 — CTO / Product Assessment
+
+Answer clearly:
+
+1) Do you fully agree this is the right MVP completion flow?
+2) Is it minimal yet sufficient for a real controlled trial?
+3) Any operational risks we are underestimating?
+4) Any governance gaps (audit, disputes, misuse)?
+5) Any further simplification possible?
+
+---
+
+## Part 2 — Technical Assessment
+
+1) Is this safe to implement on top of current codebase?
+2) Any hidden complexity or coupling risks?
+3) Any future technical debt introduced?
+4) Is the deals table approach correct vs extending existing tables?
+
+---
+
+## Part 3 — Improvements (if any)
+
+If you recommend changes:
+- be specific
+- prefer simplification
+- do NOT expand scope beyond MVP
+
+---
+
+## Part 4 — Build Plan (concrete)
+
+Provide:
+- step-by-step implementation order
+- estimated complexity per step (Low / Medium / High)
+- critical risk points during build
+
+---
+
+## Part 5 — Final Decision
+
+Give a decisive answer:
+
+- GO (build as is)
+- GO with modifications (list them)
+- NO (propose simpler alternative)
+
+Justify briefly.
+
+---
+
+## Hard Constraints
+
+- Do NOT modify M4.5 behavior
+- Do NOT introduce new subsystems (payments, logistics)
+- Do NOT over-engineer
+- Optimize for:
+  - simplicity
+  - correctness
+  - real-world usability
+
+This is the final design gate before build. Be critical and accountable.
