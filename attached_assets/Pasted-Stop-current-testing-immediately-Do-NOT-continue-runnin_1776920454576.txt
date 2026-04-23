@@ -1,0 +1,111 @@
+Stop current testing immediately.
+
+Do NOT continue running automated tests, load tests, or any long-running tasks.
+
+We are switching priorities to a fast validation demo (2–3 hours max) for a live walkthrough.
+
+---
+
+## Objective (now)
+
+Build a lightweight, realistic demo that simulates the full post-acceptance journey:
+
+accepted → active → payment_confirmed → dispatched → completed
+
+This is for internal validation only, not production.
+
+---
+
+## Hard Constraints (STRICT)
+
+- Do NOT create the deals table now
+- Do NOT implement full backend APIs
+- Do NOT implement full state machine enforcement (no locking, no idempotency)
+- Do NOT modify or risk M4.5 logic or endpoints
+- Do NOT add payments, carriers, notifications, or file uploads
+- Keep all changes isolated and reversible (feature flag or demo-only path)
+
+---
+
+## Demo Scope (MUST include)
+
+### A) After acceptance
+- A clear “Post-Acceptance / Deal” panel on:
+  - listing detail (producer)
+  - participations (buyer)
+- Show:
+  - counterparty phone (from company profile)
+  - settlement summary
+  - current status
+
+### B) Support both models
+- Fixed price → final amount = agreed amount
+- By-weight → simple input for actual_quantity + calculate final_amount = price_per_unit × actual_quantity
+
+### C) Status progression (visual + clickable)
+- active
+- payment_confirmed
+- dispatched
+- completed
+
+### D) Role-based actions
+- Producer:
+  - Confirm Payment (for by-weight: require quantity input)
+  - Confirm Dispatch
+- Buyer:
+  - Confirm Receipt
+
+### E) Display
+- price_per_unit
+- estimated_amount
+- actual_quantity (if entered)
+- final_amount
+- simple status bar
+- timestamps (lightweight is fine)
+
+---
+
+## Approach (choose fastest)
+
+Prefer:
+- Frontend-first simulation (local state / component state)
+- Or minimal temporary endpoint ONLY if strictly needed
+
+Avoid heavy backend work.
+
+---
+
+## Safety
+
+- Must NOT affect existing flows
+- Must NOT change accept/reject/close behavior
+- Must NOT break any existing pages
+- Guard behind a simple flag if needed (e.g., DEMO_MODE)
+
+---
+
+## What I need from you BEFORE building
+
+Provide a short plan:
+
+1) Exact approach (frontend-only or minimal backend)
+2) Files/components you will touch
+3) What you will simulate vs what you will implement
+4) Confirmation that M4.5 remains untouched
+5) Confirmation this can be delivered in ≤ 3 hours
+
+WAIT for approval before starting implementation.
+
+---
+
+## CTO Opinion (MANDATORY)
+
+Also answer:
+
+- Do you agree this demo-first step is correct before full build?
+- Any risk this demo could mislead decisions?
+- Any way to simplify further while preserving the journey?
+
+---
+
+Keep it minimal, fast, and aligned with the final architecture.
