@@ -1,0 +1,142 @@
+"}
+Follow the Tadweerah Replit Working Covenant.
+
+Provide a FINAL executive UAT closure note for M4.5.
+
+This is a closure-grade report. Be precise, complete, and decision-oriented.  
+Do NOT repeat logs. Do NOT assume completeness without validation.
+
+---
+
+## 1) Scope Definition
+- Clearly define what was included in M4.5 testing
+- Explicitly confirm boundaries of scope (what is included vs excluded)
+
+---
+
+## 2) Scenario Inventory (MANDATORY)
+Create a complete list of all scenarios relevant to M4.5, including:
+
+- Core feature scenarios
+- User flows
+- Edge cases
+- Failure scenarios
+- Previously tested scenarios
+- Previously untested or blocked scenarios
+
+For each scenario, assign a status:
+- Passed
+- Failed
+- Fixed and Re-tested
+- Blocked
+- Not Yet Tested
+
+No scenario should be missing from this inventory.
+
+---
+
+## 3) Confirmed Passed Features
+- List only features that are fully tested, validated, and stable
+- Each item must map to verified scenarios
+
+---
+
+## 4) Fixes Applied During UAT
+- List all fixes implemented
+- For each fix:
+  - What was the issue
+  - What was changed
+  - Confirm it was re-tested
+  - Confirm stability after fix
+
+---
+
+## 5) Untested / Blocked / Partial Scenarios (CRITICAL)
+
+Identify ALL scenarios that are:
+- Not tested
+- Partially tested
+- Previously blocked
+
+For each scenario:
+
+1. Explain why it was not tested previously  
+2. Attempt to test it now IF it is currently possible  
+3. If still not testable:
+   - Clearly state why
+   - Specify what is required to test it
+
+No scenario should remain unaccounted for.
+
+---
+
+## 6) Mandatory Retesting Confirmation
+
+Explicitly confirm:
+
+- All previously FAILED scenarios were re-tested after fixes  
+- All FIXED scenarios are now stable  
+- All scenarios that became testable have been tested  
+- No critical scenario remains unvalidated  
+
+If any exception exists, it must be clearly listed.
+
+---
+
+## 7) Remaining Issues
+
+List ONLY unresolved issues:
+
+For each issue:
+- Description
+- Impact (Low / Medium / High)
+- Root cause (if known)
+- Why not fixed
+- Whether it requires:
+  - Product decision
+  - Structural change
+  - External dependency
+
+---
+
+## 8) Risk Assessment for Trial
+
+Identify any realistic risk that could affect:
+- user experience
+- business logic correctness
+- workflow reliability
+
+Be practical and conservative.
+
+---
+
+## 9) Final Readiness Decision
+
+State clearly:
+
+- Ready  
+- Conditionally Ready  
+- Not Ready  
+
+With a strict one-line justification.
+
+---
+
+## 10) Recommendation
+
+- Can we proceed with the trial?
+- If yes:
+  - Any conditions or precautions
+- If no:
+  - Exact blockers that must be resolved
+
+---
+
+## Completion Rule
+
+Do NOT mark M4.5 as complete unless:
+- every scenario is either tested or explicitly accounted for
+- all fixes are validated
+- no silent gaps remain
+
+Ensure full traceability between scenarios, results, and conclusion
