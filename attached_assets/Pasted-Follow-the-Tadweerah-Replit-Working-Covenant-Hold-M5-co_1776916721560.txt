@@ -1,0 +1,82 @@
+Follow the Tadweerah Replit Working Covenant.
+
+Hold M5 completely. Do not start any new feature work.
+
+We are now in final trial readiness phase. Focus ONLY on authentication readiness and operational stability.
+
+---
+
+## Objective
+Ensure the platform can support real trial users without login/signup failure or rate-limit issues.
+
+---
+
+## 1) Clerk Environment Verification (MANDATORY)
+
+- Confirm whether the project is currently using:
+  - Clerk development keys OR production keys
+
+- If development keys are in use:
+  - Clearly state that this will cause rate-limiting during trial
+  - Confirm that this is the root cause of previous failures
+
+---
+
+## 2) Production Readiness Requirements
+
+Provide a complete checklist of what is required to switch to production-ready authentication:
+
+- Required environment variables (names and purpose)
+- Clerk dashboard configurations:
+  - allowed domains
+  - redirect URLs
+  - session settings (if relevant)
+- Any required domain or deployment considerations
+
+---
+
+## 3) Impact Assessment
+
+Explain clearly:
+
+- What will break if we stay on development keys
+- What will work correctly after switching to production
+- Whether multiple users can sign up and log in simultaneously without issues
+
+---
+
+## 4) Validation Plan (POST-SWITCH)
+
+Define how we will confirm readiness after switching:
+
+- Create at least 2–3 user accounts
+- Perform login/logout flows
+- Confirm no rate-limit errors
+- Confirm sessions are stable
+
+Do NOT execute unless instructed. Just define the plan.
+
+---
+
+## 5) No Scope Expansion
+
+- Do NOT modify business logic
+- Do NOT change any feature behavior
+- Do NOT touch M4.5 flows
+- Focus only on authentication readiness
+
+---
+
+## 6) Final Output Format
+
+Provide a clean, decision-ready response including:
+
+1. Current Clerk status (dev or prod)
+2. Required steps to become production-ready
+3. Risks if not completed
+4. Confirmation of expected behavior after fix
+5. Clear recommendation: can we proceed with trial after this step or not
+
+---
+
+Be precise. No assumptions. No unnecessary detail. Focus on enabling a successful real-user trial.
