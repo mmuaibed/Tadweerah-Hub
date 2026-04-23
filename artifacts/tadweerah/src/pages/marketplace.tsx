@@ -4,7 +4,7 @@ import {
   WasteMaterial,
 } from "@workspace/api-client-react";
 import type { WasteMaterial as WasteMaterialT } from "@workspace/api-client-react";
-import { Loader2, ShoppingBag, Search } from "lucide-react";
+import { Loader2, ShoppingBag, Search, PackageSearch, MapPin, Layers3, Tag } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -39,7 +39,15 @@ export function MarketplacePage() {
   if (material !== ALL) params.material = material as WasteMaterialT;
   if (city.trim()) params.city = city.trim();
 
+  // Always fetch all listings for stats (no filter)
+  const { data: allData = [] } = useListMarketplaceListings();
   const { data, isLoading, isError } = useListMarketplaceListings(params);
+
+  // Buyer-facing stats computed from full unfiltered dataset
+  const totalListings    = allData.length;
+  const uniqueCities     = new Set(allData.map((l) => l.city)).size;
+  const uniqueMaterials  = new Set(allData.map((l) => l.material)).size;
+  const withPriceHint    = allData.filter((l) => l.price_hint != null).length;
 
   return (
     <AppLayout
@@ -47,6 +55,29 @@ export function MarketplacePage() {
       title={t("marketplace.title")}
       subtitle={t("marketplace.subtitle")}
     >
+      {/* Buyer stats bar */}
+      {!isLoading && totalListings > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+          {[
+            { icon: PackageSearch, value: totalListings, label: t("marketplace.stats.listings") },
+            { icon: MapPin,         value: uniqueCities,   label: t("marketplace.stats.cities") },
+            { icon: Layers3,        value: uniqueMaterials, label: t("marketplace.stats.materials") },
+            { icon: Tag,            value: withPriceHint,  label: t("marketplace.stats.priced") },
+          ].map(({ icon: Icon, value, label }) => (
+            <div
+              key={label}
+              className="rounded-xl border border-border bg-card px-4 py-3 space-y-1"
+            >
+              <div className="flex items-center gap-1.5 text-muted-foreground">
+                <Icon className="h-3.5 w-3.5" />
+                <span className="text-xs">{label}</span>
+              </div>
+              <div className="text-2xl font-bold text-foreground">{value}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="mb-6 grid gap-3 sm:grid-cols-2">
         <Select value={material} onValueChange={setMaterial}>
           <SelectTrigger>

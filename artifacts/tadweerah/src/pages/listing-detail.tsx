@@ -1060,6 +1060,17 @@ export function ListingDetailPage() {
       )}
 
       <div className="mx-auto max-w-2xl space-y-6">
+        {/* Listing image */}
+        {(listing as typeof listing & { image_url?: string }).image_url && (
+          <div className="w-full overflow-hidden rounded-xl border border-border">
+            <img
+              src={(listing as typeof listing & { image_url?: string }).image_url}
+              alt={t(`material.${listing.material}`)}
+              className="h-56 w-full object-cover"
+            />
+          </div>
+        )}
+
         {/* Header card */}
         <div className="flex items-center justify-between rounded-xl border border-border bg-card p-5">
           <div className="flex items-center gap-3">

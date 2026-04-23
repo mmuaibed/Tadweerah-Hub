@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState, useRef, type FormEvent } from "react";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -11,7 +11,7 @@ import type {
   WasteMaterial as WasteMaterialT,
   WasteUnit as WasteUnitT,
 } from "@workspace/api-client-react";
-import { Loader2 } from "lucide-react";
+import { Loader2, ImagePlus, X, Scale, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -39,10 +39,13 @@ const MATERIAL_OPTIONS: WasteMaterialT[] = [
 
 const UNIT_OPTIONS: WasteUnitT[] = [WasteUnit.kg, WasteUnit.ton];
 
+type PricingModel = "fixed" | "by_weight";
+
 export function ListingNewPage() {
   const { t } = useT();
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [material, setMaterial] = useState<WasteMaterialT>(WasteMaterial.plastic);
   const [unit, setUnit] = useState<WasteUnitT>(WasteUnit.kg);
@@ -50,9 +53,40 @@ export function ListingNewPage() {
   const [city, setCity] = useState("");
   const [description, setDescription] = useState("");
   const [priceHint, setPriceHint] = useState("");
+  const [pricingModel, setPricingModel] = useState<PricingModel>("fixed");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const { mutate, isPending } = useCreateWasteListing();
+
+  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0] ?? null;
+    if (!file) return;
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onload = (ev) => setImagePreview(ev.target?.result as string);
+    reader.readAsDataURL(file);
+  }
+
+  function clearImage() {
+    setImageFile(null);
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  async function uploadImage(listingId: string): Promise<void> {
+    if (!imageFile) return;
+    const form = new FormData();
+    form.append("image", imageFile);
+    const res = await fetch(`/api/listings/${listingId}/image`, {
+      method: "POST",
+      body: form,
+      credentials: "include",
+    });
+    if (!res.ok) throw new Error("Image upload failed");
+  }
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -73,6 +107,7 @@ export function ListingNewPage() {
           unit,
           quantity: qty,
           city: city.trim(),
+          pricing_model: pricingModel,
           ...(description.trim() ? { description: description.trim() } : {}),
           ...(priceNumber != null && Number.isFinite(priceNumber) && priceNumber >= 0
             ? { price_hint: priceNumber }
@@ -80,7 +115,17 @@ export function ListingNewPage() {
         },
       },
       {
-        onSuccess: () => {
+        onSuccess: async (created) => {
+          if (imageFile && (created as { id: string }).id) {
+            setIsUploading(true);
+            try {
+              await uploadImage((created as { id: string }).id);
+            } catch {
+              // Non-fatal — listing is published, image upload failed silently
+            } finally {
+              setIsUploading(false);
+            }
+          }
           queryClient.invalidateQueries({ queryKey: getListMyListingsQueryKey() });
           setLocation("/listings/mine");
         },
@@ -88,6 +133,8 @@ export function ListingNewPage() {
       },
     );
   };
+
+  const isBusy = isPending || isUploading;
 
   return (
     <AppLayout
@@ -162,6 +209,41 @@ export function ListingNewPage() {
               </div>
             </div>
 
+            {/* Pricing model toggle */}
+            <div className="space-y-2">
+              <Label>{t("listing.form.pricingModel")}</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {(["fixed", "by_weight"] as PricingModel[]).map((model) => {
+                  const active = pricingModel === model;
+                  return (
+                    <button
+                      key={model}
+                      type="button"
+                      onClick={() => setPricingModel(model)}
+                      className={`flex items-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium transition-all ${
+                        active
+                          ? model === "fixed"
+                            ? "border-secondary bg-secondary/10 text-secondary"
+                            : "border-primary bg-primary/10 text-primary"
+                          : "border-border bg-background text-muted-foreground hover:border-muted-foreground/40"
+                      }`}
+                    >
+                      {model === "fixed" ? (
+                        <Tag className="h-4 w-4 shrink-0" />
+                      ) : (
+                        <Scale className="h-4 w-4 shrink-0" />
+                      )}
+                      <span>{t(`listing.pricing_model.${model}`)}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {t(`listing.form.pricingModel.${pricingModel}.hint`)}
+              </p>
+            </div>
+
+            {/* Price hint */}
             <div className="space-y-2">
               <Label htmlFor="priceHint">{t("listing.form.priceHint")}</Label>
               <Input
@@ -175,14 +257,53 @@ export function ListingNewPage() {
               />
             </div>
 
+            {/* Description */}
             <div className="space-y-2">
               <Label htmlFor="description">{t("listing.form.description")}</Label>
               <Textarea
                 id="description"
                 maxLength={500}
-                rows={4}
+                rows={3}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
+              />
+            </div>
+
+            {/* Image upload */}
+            <div className="space-y-2">
+              <Label>{t("listing.form.image")}</Label>
+              {imagePreview ? (
+                <div className="relative w-full overflow-hidden rounded-lg border border-border">
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    className="h-44 w-full object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={clearImage}
+                    className="absolute top-2 end-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex w-full flex-col items-center gap-2 rounded-lg border border-dashed border-border bg-muted/30 py-8 text-muted-foreground transition-colors hover:border-primary/50 hover:bg-primary/5"
+                >
+                  <ImagePlus className="h-8 w-8" />
+                  <span className="text-sm">{t("listing.form.image.prompt")}</span>
+                  <span className="text-xs opacity-70">{t("listing.form.image.hint")}</span>
+                </button>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleImageChange}
               />
             </div>
           </CardContent>
@@ -199,13 +320,17 @@ export function ListingNewPage() {
             type="button"
             variant="outline"
             onClick={() => setLocation("/dashboard")}
-            disabled={isPending}
+            disabled={isBusy}
           >
             {t("action.cancel")}
           </Button>
-          <Button type="submit" className="flex-1 gap-2" disabled={isPending}>
-            {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-            {isPending ? t("listing.form.saving") : t("listing.form.submit")}
+          <Button type="submit" className="flex-1 gap-2" disabled={isBusy}>
+            {isBusy && <Loader2 className="h-4 w-4 animate-spin" />}
+            {isUploading
+              ? t("listing.form.uploading")
+              : isPending
+                ? t("listing.form.saving")
+                : t("listing.form.submit")}
           </Button>
         </div>
       </form>

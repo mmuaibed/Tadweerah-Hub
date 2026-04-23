@@ -446,7 +446,7 @@ router.post(
       if (fs.existsSync(oldFile)) fs.unlinkSync(oldFile);
     }
 
-    const imageUrl = `/uploads/${req.file.filename}`;
+    const imageUrl = `/api/uploads/${req.file.filename}`;
 
     await db
       .update(wasteListingsTable)

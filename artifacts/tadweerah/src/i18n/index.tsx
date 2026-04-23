@@ -101,8 +101,21 @@ const translations: Record<string, Record<Language, string>> = {
   "listing.form.city": { ar: "المدينة", en: "City" },
   "listing.form.description": { ar: "وصف مختصر (اختياري)", en: "Short Description (Optional)" },
   "listing.form.priceHint": { ar: "السعر الإرشادي (ريال) — اختياري", en: "Price Hint (SAR) — Optional" },
+  "listing.form.pricingModel": { ar: "نوع التسعير", en: "Pricing Model" },
+  "listing.form.pricingModel.fixed.hint": {
+    ar: "السعر ثابت ولا يتغير بعد الاتفاق — الأنسب لمعظم صفقات المواد المعاد تدويرها.",
+    en: "Price is fixed and does not change after agreement — ideal for most recycling deals.",
+  },
+  "listing.form.pricingModel.by_weight.hint": {
+    ar: "السعر يُحسب بعد الوزن الفعلي عند التسليم — مناسب للمواد التي تتفاوت أوزانها.",
+    en: "Price is calculated after actual weighing at delivery — suitable for variable-weight materials.",
+  },
+  "listing.form.image": { ar: "صورة العرض (اختياري)", en: "Listing Image (Optional)" },
+  "listing.form.image.prompt": { ar: "انقر لرفع صورة", en: "Click to upload an image" },
+  "listing.form.image.hint": { ar: "JPG أو PNG · حتى 5 ميجابايت", en: "JPG or PNG · up to 5 MB" },
   "listing.form.submit": { ar: "نشر العرض", en: "Publish Listing" },
   "listing.form.saving": { ar: "جاري النشر...", en: "Publishing..." },
+  "listing.form.uploading": { ar: "جاري رفع الصورة...", en: "Uploading image..." },
   "listing.form.error": { ar: "تعذر نشر العرض. تأكد من البيانات وحاول مرة أخرى.", en: "Could not publish the listing. Check your inputs and try again." },
 
   // Producer — my listings
@@ -123,6 +136,10 @@ const translations: Record<string, Record<Language, string>> = {
   "marketplace.filter.all": { ar: "جميع المواد", en: "All materials" },
   "marketplace.empty.title": { ar: "لا توجد عروض حالياً", en: "No listings available" },
   "marketplace.empty.desc": { ar: "جرّب تعديل الفلاتر، أو عُد لاحقاً عند توفّر عروض جديدة.", en: "Try adjusting your filters, or check back later for new listings." },
+  "marketplace.stats.listings":  { ar: "إعلانات متاحة", en: "Available listings" },
+  "marketplace.stats.cities":    { ar: "مدن", en: "Cities" },
+  "marketplace.stats.materials": { ar: "أنواع مواد", en: "Material types" },
+  "marketplace.stats.priced":    { ar: "بسعر إرشادي", en: "With price guide" },
 
   // Listing card / detail
   "listing.quantity": { ar: "الكمية", en: "Quantity" },

@@ -36,6 +36,7 @@ export function ListingCard({
   const { t, lang } = useT();
   const isOpen = listing.status === "open";
   const isRtl = lang === "ar";
+  const imageUrl = (listing as WasteListing & { image_url?: string }).image_url;
 
   const dateStr = new Date(listing.created_at).toLocaleDateString(
     lang === "ar" ? "ar-SA" : "en-US",
@@ -43,7 +44,17 @@ export function ListingCard({
   );
 
   return (
-    <Card className="border-card-border bg-card transition-shadow hover:shadow-md">
+    <Card className="border-card-border bg-card transition-shadow hover:shadow-md overflow-hidden">
+      {/* Listing image */}
+      {imageUrl && (
+        <div className="h-36 w-full overflow-hidden bg-muted">
+          <img
+            src={imageUrl}
+            alt={t(`material.${listing.material}`)}
+            className="h-full w-full object-cover"
+          />
+        </div>
+      )}
       <CardContent className="flex h-full flex-col gap-4 p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2">

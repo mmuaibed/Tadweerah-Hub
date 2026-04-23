@@ -41,8 +41,9 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(clerkMiddleware());
 
-// Serve uploaded images statically
-app.use("/uploads", express.static(path.join(process.cwd(), "public", "uploads")));
+// Serve uploaded images at /api/uploads/ so the Replit proxy routes them correctly
+// (Replit routes /api/* → port 8080; express receives the full path)
+app.use("/api/uploads", express.static(path.join(process.cwd(), "public", "uploads")));
 
 app.use("/api", router);
 
