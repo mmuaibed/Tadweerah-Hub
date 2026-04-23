@@ -294,6 +294,39 @@ const translations: Record<string, Record<Language, string>> = {
   "participations.listing.acceptedTotal": { ar: "الإجمالي المقبول", en: "Accepted total" },
   "participations.offer.submitted": { ar: "عرضك", en: "Your offer" },
   "participations.listingRef": { ar: "رقم الإعلان", en: "Listing ref" },
+
+  // M5-Pre — Deal lifecycle panel
+  "deal.panel.title": { ar: "تفاصيل الصفقة", en: "Deal Details" },
+  "deal.contact.title": { ar: "تواصل مع الطرف الآخر", en: "Contact Counterparty" },
+  "deal.contact.phone": { ar: "رقم التواصل", en: "Phone" },
+
+  "deal.status.active": { ar: "نشطة", en: "Active" },
+  "deal.status.payment_confirmed": { ar: "تم تأكيد الدفع", en: "Payment Confirmed" },
+  "deal.status.dispatched": { ar: "تم الإرسال", en: "Dispatched" },
+  "deal.status.completed": { ar: "مكتملة", en: "Completed" },
+
+  "deal.settlement.fixed": { ar: "سعر ثابت", en: "Fixed Price" },
+  "deal.settlement.by_weight": { ar: "حسب الوزن الفعلي", en: "By Actual Weight" },
+  "deal.settlement.label": { ar: "نوع التسوية", en: "Settlement Type" },
+  "deal.field.price_per_unit": { ar: "السعر لكل وحدة", en: "Price per unit" },
+  "deal.field.estimated_amount": { ar: "المبلغ التقديري *", en: "Estimated amount *" },
+  "deal.field.actual_quantity": { ar: "الكمية الفعلية", en: "Actual quantity" },
+  "deal.field.final_amount": { ar: "المبلغ النهائي", en: "Final amount" },
+  "deal.field.quantity.placeholder": { ar: "أدخل الكمية الفعلية", en: "Enter actual quantity" },
+
+  "deal.action.confirm_payment": { ar: "تأكيد استلام الدفع", en: "Confirm Payment Received" },
+  "deal.action.confirm_dispatch": { ar: "تأكيد إرسال البضاعة", en: "Confirm Dispatch" },
+  "deal.action.confirm_receipt": { ar: "تأكيد استلام البضاعة", en: "Confirm Receipt" },
+
+  "deal.timestamp.payment_confirmed": { ar: "تم تأكيد الدفع", en: "Payment confirmed" },
+  "deal.timestamp.dispatched": { ar: "تم إرسال البضاعة", en: "Goods dispatched" },
+  "deal.timestamp.received": { ar: "تم استلام البضاعة", en: "Goods received" },
+  "deal.timestamp.completed": { ar: "الصفقة مكتملة", en: "Deal completed" },
+
+  "deal.error.invalid_state": { ar: "هذه الخطوة غير متاحة الآن", en: "This step is not available now" },
+  "deal.error.generic": { ar: "حدث خطأ، يرجى المحاولة مجدداً", en: "An error occurred, please try again" },
+
+  "deal.disclaimer": { ar: "* المبلغ تقديري بناءً على الكمية المُعلنة", en: "* Amount is estimated based on the listed quantity" },
 };
 
 export const I18nProvider: React.FC<{

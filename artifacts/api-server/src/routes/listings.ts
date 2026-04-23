@@ -1,10 +1,11 @@
 import { Router, type IRouter } from "express";
-import { and, asc, desc, eq, ilike, sql } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, or, sql } from "drizzle-orm";
 import {
   db,
   companiesTable,
   wasteListingsTable,
   listingOffersTable,
+  dealsTable,
   type WasteListing,
 } from "@workspace/db";
 import { CreateWasteListingBody } from "@workspace/api-zod";
@@ -249,6 +250,8 @@ router.get(
   requireCompany(),
   async (req, res) => {
     const id = assertUuid(req.params.waste_listing_id, "waste_listing_id");
+    const { company } = req as AuthedCompanyRequest;
+
     const rows = await db
       .select(baseSelect)
       .from(wasteListingsTable)
@@ -259,7 +262,54 @@ router.get(
     if (!rows[0]) {
       throw new HttpError(404, "NotFound", "Listing not found");
     }
-    res.json(serialize(rows[0]));
+
+    // Attach deal info if the current user is a party (producer or accepted buyer)
+    let deal = null;
+    const dealRows = await db
+      .select()
+      .from(dealsTable)
+      .where(
+        and(
+          eq(dealsTable.listing_id, id),
+          or(
+            eq(dealsTable.producer_company_id, company.id),
+            eq(dealsTable.buyer_company_id, company.id),
+          ),
+        ),
+      )
+      .limit(1);
+
+    if (dealRows[0]) {
+      const d = dealRows[0];
+      const isProducer = d.producer_company_id === company.id;
+      const counterpartyId = isProducer ? d.buyer_company_id : d.producer_company_id;
+      const [counterparty] = await db
+        .select({ name: companiesTable.name, contactPhone: companiesTable.contactPhone })
+        .from(companiesTable)
+        .where(eq(companiesTable.id, counterpartyId))
+        .limit(1);
+
+      deal = {
+        id: d.id,
+        offer_id: d.offer_id,
+        settlement_type: d.settlement_type,
+        price_per_unit: Number(d.price_per_unit),
+        estimated_amount: Number(d.estimated_amount),
+        actual_quantity: d.actual_quantity != null ? Number(d.actual_quantity) : null,
+        final_amount: d.final_amount != null ? Number(d.final_amount) : null,
+        status: d.status,
+        counterparty: counterparty
+          ? { name: counterparty.name, contact_phone: counterparty.contactPhone }
+          : null,
+        payment_confirmed_at: d.payment_confirmed_at?.toISOString() ?? null,
+        dispatched_at: d.dispatched_at?.toISOString() ?? null,
+        received_at: d.received_at?.toISOString() ?? null,
+        created_at: d.created_at.toISOString(),
+        updated_at: d.updated_at.toISOString(),
+      };
+    }
+
+    res.json({ ...serialize(rows[0]), deal });
   },
 );
 

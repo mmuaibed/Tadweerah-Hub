@@ -1,0 +1,212 @@
+}
+Follow the Tadweerah Replit Working Covenant.
+
+We fully agree with your final design gate decision:
+GO with the simplified 4-state post-acceptance deal model
+(active → payment_confirmed → dispatched → completed)
+
+However, we need to separate validation demo from full production-ready implementation.
+
+At this moment, the goal is NOT to build the full M5-Pre implementation.
+The goal is to prepare a fast, realistic validation demo within 2–3 hours for a live walkthrough between two users:
+- Producer
+- Buyer
+
+This demo will be used internally to validate the end-to-end journey with a partner before we commit to the full build.
+
+---
+
+## Important Context
+
+We do NOT want to lose your approved final architecture.
+
+Your approved design remains the target implementation.
+
+But for now, we need a demo version that:
+- visually and logically reflects the same final journey
+- can be shown and interacted with inside the platform
+- is fast to build
+- does not require full backend completion
+- does not destabilize M4.5
+
+---
+
+## Demo Objective
+
+Create a lightweight internal validation flow that allows us to simulate the full post-acceptance journey from:
+
+offer accepted
+→ deal becomes active
+→ payment confirmed
+→ dispatched
+→ completed
+
+This is for validation and walkthrough only, not production readiness.
+
+---
+
+## Demo Constraints (STRICT)
+
+For this demo phase:
+
+1. Do NOT create the full deals table yet unless absolutely necessary for the fastest route
+2. Do NOT implement the full backend/API design if a lighter simulation is faster
+3. Do NOT implement full state machine enforcement
+4. Do NOT implement locking, idempotency, or full transition guards
+5. Do NOT modify or destabilize any M4.5 logic
+6. Do NOT change existing acceptance behavior
+7. Do NOT expand scope into payments, carriers, notifications, or admin systems
+
+The demo must be:
+- fast
+- safe
+- isolated
+- logically aligned with the final design
+
+---
+
+## What the Demo MUST Show
+
+### A) After acceptance
+Once an offer is accepted, the platform should no longer feel like a dead end.
+
+It must show a clear post-acceptance section/panel that includes:
+
+- deal status
+- settlement summary
+- final amount logic
+- next-step actions
+- counterparty phone number
+
+---
+
+### B) Support both commercial models
+
+The demo must support BOTH:
+
+#### 1. Fixed-price deal
+- final amount shown directly from agreed amount
+
+#### 2. By-weight deal
+- producer can enter actual_quantity
+- final amount is calculated from price_per_unit × actual_quantity
+
+This can be demo-only logic if faster.
+
+---
+
+### C) Demo status progression
+The user should be able to move through these statuses visually and interactively:
+
+- active
+- payment_confirmed
+- dispatched
+- completed
+
+Role-based actions:
+
+#### Producer
+- confirm payment
+- confirm dispatch
+
+#### Buyer
+- confirm receipt
+
+---
+
+### D) Shared deal visibility
+Both sides should see:
+
+- current status
+- settlement type
+- price per unit
+- estimated amount
+- actual quantity (if applicable)
+- final amount
+- timestamps or status markers (lightweight is enough)
+- counterparty phone number
+
+---
+
+## Fastest Acceptable Demo Approach
+
+You may choose the fastest safe method, for example:
+
+- frontend-only simulated state
+- temporary local state
+- mock deal object derived from accepted offer
+- minimal temporary endpoint only if truly necessary
+
+Choose the fastest path that still gives a convincing and realistic validation experience.
+
+---
+
+## What I need from you now
+
+### Part 1 — Demo Strategy
+Propose the fastest and safest way to deliver this demo in 2–3 hours maximum.
+
+Be explicit:
+
+- what you will build
+- what you will simulate
+- what you will intentionally defer
+- whether this can be done entirely in frontend or needs minimal backend support
+
+---
+
+### Part 2 — CTO / Engineering Opinion
+Answer clearly:
+
+1. Do you agree that building a validation demo first is the correct move before full implementation?
+2. Is there any risk that this demo could mislead us or create false confidence?
+3. How do we keep the demo aligned with the final architecture so we do not waste work?
+4. Would you simplify the demo even further?
+5. Is 2–3 hours realistic for a solid walkthrough-quality result?
+
+---
+
+### Part 3 — Demo Build Scope
+Define exactly:
+
+#### Must include now
+- what is essential for the walkthrough
+
+#### Must NOT be built now
+- what would waste time or create unnecessary complexity
+
+#### Nice-to-have only if time remains
+- optional polish items
+
+---
+
+### Part 4 — Protection of M4.5
+Explicitly confirm:
+
+- M4.5 remains frozen
+- no existing acceptance logic changes
+- no regression risk to current working flows
+- demo code/path will be isolated from the final production implementation
+
+---
+
+### Part 5 — Final Recommendation
+Give a decisive answer:
+
+- GO for validation demo now
+- GO, but simplify further
+- NO, build the real implementation directly
+
+Justify your answer briefly.
+
+---
+
+## Output Rules
+
+- Be practical
+- Be critical
+- Optimize for speed and clarity
+- Do NOT jump into full implementation planning unless necessary
+- Think like both a CTO and the engineer responsible for delivering within 2–3 hours
+
+This is a validation-step decision, not a production build request

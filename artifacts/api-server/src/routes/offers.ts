@@ -5,6 +5,7 @@ import {
   companiesTable,
   listingOffersTable,
   wasteListingsTable,
+  dealsTable,
 } from "@workspace/db";
 import {
   SubmitOfferBody,
@@ -689,6 +690,24 @@ router.post(
         .update(wasteListingsTable)
         .set({ status: "closed", closed_at: now })
         .where(eq(wasteListingsTable.id, offer.waste_listing_id));
+
+      // 4. Auto-create deal record (M5-Pre)
+      const settlementType = listing.pricing_model;
+      const estimatedAmount =
+        Number(offer.price_per_unit) * Number(listing.quantity);
+      const finalAmountAtCreation =
+        settlementType === "fixed" ? String(estimatedAmount) : null;
+
+      await tx.insert(dealsTable).values({
+        offer_id: offerId,
+        listing_id: offer.waste_listing_id,
+        producer_company_id: listing.company_id,
+        buyer_company_id: offer.buyer_company_id,
+        settlement_type: settlementType,
+        price_per_unit: offer.price_per_unit,
+        estimated_amount: String(estimatedAmount),
+        final_amount: finalAmountAtCreation,
+      });
     });
 
     // Re-fetch with company name for response

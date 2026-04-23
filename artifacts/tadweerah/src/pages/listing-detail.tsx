@@ -48,6 +48,7 @@ import {
 import { AppLayout } from "@/components/app-layout";
 import { EmptyState } from "@/components/empty-state";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { DealPanel, type DealInfo } from "@/components/deal-panel";
 import { useT } from "@/i18n";
 import { listingRef } from "@/lib/listing-ref";
 
@@ -911,6 +912,7 @@ export function ListingDetailPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [closeError, setCloseError] = useState<string | null>(null);
   const [pendingOfferCount, setPendingOfferCount] = useState(0);
+  const [dealOverride, setDealOverride] = useState<DealInfo | null>(null);
 
   const isValidId = UUID_RE.test(wasteListingId);
 
@@ -927,6 +929,10 @@ export function ListingDetailPage() {
   const role = me?.company?.type;
   const myCompanyId = me?.company?.id;
   const isOwner = !!myCompanyId && listing?.company_id === myCompanyId;
+
+  // Derive active deal — prefer locally-updated override (post-action), fall back to server data
+  const rawDeal = (listing as unknown as { deal?: DealInfo | null })?.deal ?? null;
+  const activeDeal: DealInfo | null = dealOverride ?? rawDeal;
   const isOpen = listing?.status === "open";
 
   const backPath =
@@ -1080,6 +1086,16 @@ export function ListingDetailPage() {
 
         {/* Offers summary bar */}
         {me?.company && <OfferSummaryBar wasteListingId={wasteListingId} />}
+
+        {/* M5-Pre: Deal panel — shown to producer (owner) and accepted buyer after acceptance */}
+        {activeDeal && (role === "producer" || role === "buyer") && (
+          <DealPanel
+            deal={activeDeal}
+            role={role as "producer" | "buyer"}
+            unit={listing?.unit ?? ""}
+            onUpdate={(updated) => setDealOverride(updated)}
+          />
+        )}
 
         {/* Producer: close button + incoming offers */}
         {role === "producer" && isOwner && (

@@ -4,6 +4,7 @@ import meRouter from "./me";
 import companiesRouter from "./companies";
 import listingsRouter from "./listings";
 import offersRouter from "./offers";
+import dealsRouter from "./deals";
 
 const router: IRouter = Router();
 
@@ -12,5 +13,6 @@ router.use(meRouter);
 router.use(companiesRouter);
 router.use(listingsRouter);
 router.use(offersRouter);
+router.use(dealsRouter);
 
 export default router;
