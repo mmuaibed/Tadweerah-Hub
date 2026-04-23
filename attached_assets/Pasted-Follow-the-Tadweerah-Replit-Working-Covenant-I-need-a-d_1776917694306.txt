@@ -1,0 +1,97 @@
+Follow the Tadweerah Replit Working Covenant.
+
+I need a definitive product-readiness assessment beyond M4.5 UAT.
+
+Context:
+M4.5 is technically passing. However, the key question is NOT whether M4.5 passed — it is whether the platform is ready for a real MVP trial based on the intended full selling journey.
+
+---
+
+## 1) Current End-to-End Capability (MANDATORY)
+
+Describe exactly what a real user can do today, step-by-step:
+
+- Can a producer:
+  - create a listing
+  - receive multiple offers
+  - review and compare offers
+  - reject offers with reason
+  - accept one offer
+  - close the listing
+
+- After the listing is closed:
+  - What exactly happens next?
+  - What does each party (producer / buyer) see?
+  - Is the transaction considered “complete” from a user perspective?
+
+Be explicit. Do not generalize.
+
+---
+
+## 2) Gap Analysis — Missing for Real MVP Trial
+
+List ALL missing elements required for a realistic selling experience, including but not limited to:
+
+- Final transaction confirmation or completion state
+- Post-acceptance workflow (what happens after acceptance)
+- Communication between parties (if missing)
+- Visibility of final outcome to both sides
+- Any step where a real user would feel the flow is incomplete or unclear
+
+For each gap:
+- Explain the user impact
+- State whether it blocks a real trial or not
+
+---
+
+## 3) Trial Readiness Classification (CRITICAL)
+
+Choose ONE clearly:
+
+A) Ready for real MVP trial (full user journey works)  
+B) Ready only for controlled trial (limited to M4.5 scope)  
+C) Not ready for trial  
+
+You MUST justify your choice based on user experience, not only technical correctness.
+
+---
+
+## 4) Required Work Before Real Trial (if not fully ready)
+
+If the answer is not (A), list:
+
+- The exact missing features or steps
+- The minimum implementation required (not ideal, but sufficient)
+- Which items are critical vs optional
+
+---
+
+## 5) Recommendation on Next Step
+
+Answer clearly:
+
+- Should we:
+  1) Proceed with a limited controlled trial now, OR
+  2) Continue building before involving real users
+
+- Provide a direct recommendation and reasoning
+
+---
+
+## 6) Alignment Check with Original Intent
+
+Based on the original project intent:
+
+- Was stopping at M4.5 correct?
+- Or should we have continued building before planning any trial?
+
+---
+
+## Output Rules
+
+- Be direct and decisive
+- Do NOT answer only from a UAT/testing perspective
+- Answer from a real-user, product, and operational perspective
+- Avoid vague language
+
+This is a decision-making input, not a technical summary.
