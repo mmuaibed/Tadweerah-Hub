@@ -142,15 +142,22 @@ function RankBadge({
   if (total_offers <= 1) return null;
   const isTop = rank === 1;
 
+  const label = isTop
+    ? t("offer.rank.top")
+    : `${t("offer.rank.label")}: ${rank} ${t("offer.rank.of")} ${total_offers}`;
+
   return (
     <div
+      data-testid="rank-badge"
+      aria-label={label}
+      role="status"
       className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium ${
         isTop
           ? "bg-amber-50 text-amber-700 border border-amber-200"
           : "bg-muted text-muted-foreground border border-border"
       }`}
     >
-      <Medal className="h-3 w-3" />
+      <Medal className="h-3 w-3" aria-hidden="true" />
       {isTop ? (
         <span>{t("offer.rank.top")}</span>
       ) : (

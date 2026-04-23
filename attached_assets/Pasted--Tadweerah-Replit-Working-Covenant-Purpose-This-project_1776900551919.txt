@@ -1,0 +1,238 @@
+# Tadweerah — Replit Working Covenant
+
+## Purpose
+This project uses Replit as the primary development and execution environment. The goal is to build a real, reliable, and scalable platform with clear logic, strong governance, and disciplined testing — not just a functional demo.
+
+---
+
+## Core Principle
+Replit is not a simple code generator.  
+It is a structured execution partner that must operate based on clear business logic, explicit rules, and controlled workflows.
+
+---
+
+## Working Method
+
+### 1) Always start with intent
+Before building anything, clearly define:
+- the business goal
+- the user role
+- the functional requirement
+- the governing rules
+- constraints
+- expected output
+- edge cases
+
+Do not proceed with vague or incomplete instructions.
+
+---
+
+### 2) Separate logic from UI
+All important rules must be implemented as:
+- explicit business logic
+- structured and modular functions
+- reviewable and testable components
+
+Do not rely on UI behavior to enforce logic.
+
+---
+
+### 3) Mandatory execution cycle
+Every meaningful feature must follow this cycle:
+
+1. Implement the feature  
+2. Test the defined scenarios  
+3. Identify issues and edge cases  
+4. Fix issues  
+5. Re-test  
+6. Confirm expected behavior  
+
+No feature is considered complete without passing this cycle.
+
+---
+
+### 4) Testing is required, not optional
+Testing must include:
+- normal user flows (happy path)
+- invalid inputs
+- misuse scenarios
+- edge cases
+
+Do not assume correctness without validation.
+
+---
+
+### 5) Handle roadblocks explicitly
+If a flow involves:
+- login
+- OTP / phone verification
+- external systems
+- sensitive access
+
+Stop at the correct point and request user intervention.  
+Do not simulate or falsely complete such flows.
+
+---
+
+## Governance Rules
+
+### 6) No hidden logic
+Any logic affecting:
+- approvals
+- rejections
+- selection rules
+- compliance status
+- audit trail
+- permissions
+- status transitions
+
+must be explicit, visible, and understandable.
+
+---
+
+### 7) Structural changes require care
+Changes affecting:
+- database structure
+- core workflows
+- user roles
+- compliance logic
+- auditability
+
+must be treated as structural decisions, not quick fixes.
+
+Such changes must be:
+- clearly explained
+- carefully implemented
+- documented if important
+
+---
+
+### 8) Speed does not equal correctness
+Fast output is not sufficient.
+
+Every feature must be:
+- logically correct
+- testable
+- maintainable
+- aligned with governance
+
+---
+
+## Testing Layers
+
+### A) Replit automated testing
+Use Replit to test:
+- UI flows
+- navigation
+- form validation
+- repeatable actions
+
+---
+
+### B) Manual controlled testing
+User must validate:
+- login / OTP flows
+- permissions
+- critical approvals/rejections
+- sensitive operations
+
+---
+
+### C) UAT / real-world validation
+Validate:
+- usability
+- clarity
+- workflow realism
+- trust and consistency
+
+---
+
+## Documentation Rules
+
+### 9) Record important decisions
+All important decisions must be stored in the project record.
+
+Examples:
+- business logic decisions
+- governance rules
+- audit logic
+- role responsibilities
+- postponed items
+
+Do not rely on chat memory.
+
+---
+
+### 10) Track deferred items
+If something is postponed, record:
+- what was deferred
+- why
+- when to revisit
+- whether it affects launch
+
+---
+
+## Product Philosophy
+
+### 11) This is a real platform, not a demo
+All work must support:
+- real operations
+- real governance
+- real compliance
+- future scalability
+
+---
+
+### 12) Prefer clarity over artificial simplicity
+Simplify where possible, but do not hide necessary complexity.
+
+The system must remain:
+- understandable
+- practical
+- scalable
+- transparent
+
+---
+
+## Decision Standard
+
+### 13) Validate every major decision
+Before accepting any major solution, confirm:
+- Is the logic clear?
+- Is it testable?
+- Is it maintainable?
+- Is it documented?
+- Does it protect governance?
+- Does it reduce ambiguity?
+- Can a future developer understand it?
+
+If not, the solution is not final.
+
+---
+
+## Role of Replit
+
+### 14) Replit is the execution engine at this stage
+Replit is responsible for:
+- building
+- testing
+- iterating
+- refining
+
+However, outputs must always be reviewed against:
+- business intent
+- governance integrity
+- operational reality
+
+---
+
+## Final Commitment
+All work must follow:
+- clear intent
+- modular logic
+- disciplined testing
+- explicit governance
+- documented decisions
+
+The goal is not just to build fast.  
+The goal is to build correctly, reliably, and sustainably.
