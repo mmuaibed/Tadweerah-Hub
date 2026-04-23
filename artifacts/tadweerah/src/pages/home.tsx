@@ -5,6 +5,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { AppLayout } from "@/components/app-layout";
 import { useT } from "@/i18n";
 
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+
 export function HomePage() {
   const { t, lang } = useT();
   const Arrow = lang === "ar" ? ArrowLeft : ArrowRight;
@@ -17,14 +19,19 @@ export function HomePage() {
 
   return (
     <AppLayout>
-      <section className="flex flex-col items-center pt-8 pb-12 text-center sm:pt-16 sm:pb-16">
-        <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-1.5 text-xs font-medium text-muted-foreground">
+      <section className="flex flex-col items-center pt-10 pb-14 text-center sm:pt-20 sm:pb-20">
+        <span className="mb-8 inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-1.5 text-xs font-medium text-muted-foreground">
           {t("app.tagline")}
         </span>
-        <h1 className="max-w-3xl text-balance text-4xl font-bold leading-tight tracking-tight text-foreground sm:text-5xl md:text-6xl">
-          {t("app.name")}
-        </h1>
-        <p className="mt-6 max-w-2xl text-pretty text-base text-muted-foreground sm:text-lg">
+
+        <img
+          src={`${basePath}/logo.png`}
+          alt="Tadweerah | تدويرة"
+          className="mb-8 h-36 w-auto sm:h-44"
+          style={{ mixBlendMode: "multiply" }}
+        />
+
+        <p className="max-w-xl text-pretty text-base text-muted-foreground sm:text-lg leading-relaxed">
           {t("app.description")}
         </p>
 

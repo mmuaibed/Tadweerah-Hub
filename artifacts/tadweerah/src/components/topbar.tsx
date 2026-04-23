@@ -18,7 +18,7 @@ export function Topbar({ showSignOut = false }: { showSignOut?: boolean }) {
           <img
             src={`${basePath}/logo.png`}
             alt="Tadweerah"
-            className="h-9 w-auto"
+            className="h-12 w-auto"
           />
         </Link>
 
