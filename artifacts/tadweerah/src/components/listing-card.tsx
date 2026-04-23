@@ -21,7 +21,7 @@ interface ListingCardProps {
   listing: WasteListing;
   /** Show the company name (marketplace) or hide it (my listings). */
   showCompany?: boolean;
-  /** Navigate to this href when "View Details" is clicked. */
+  /** Navigate to this href when the card is clicked. */
   href?: string;
   /** Footer slot — typically actions like "Close listing". */
   footer?: React.ReactNode;
@@ -43,11 +43,15 @@ export function ListingCard({
     { year: "numeric", month: "short", day: "numeric" },
   );
 
-  return (
-    <Card className="border-card-border bg-card transition-shadow hover:shadow-md overflow-hidden">
+  const inner = (
+    <Card
+      className={`border-card-border bg-card overflow-hidden transition-shadow ${
+        href ? "hover:shadow-md cursor-pointer" : ""
+      }`}
+    >
       {/* Listing image */}
       {imageUrl && (
-        <div className="h-36 w-full overflow-hidden bg-muted">
+        <div className="h-36 w-full shrink-0 overflow-hidden bg-muted">
           <img
             src={imageUrl}
             alt={t(`material.${listing.material}`)}
@@ -55,10 +59,12 @@ export function ListingCard({
           />
         </div>
       )}
-      <CardContent className="flex h-full flex-col gap-4 p-5">
+
+      <CardContent className="flex flex-col gap-4 p-5">
+        {/* Header row */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2">
-            <span className="flex h-9 w-9 items-center justify-center rounded-md bg-secondary/10 text-secondary">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-secondary/10 text-secondary">
               <Recycle className="h-4 w-4" />
             </span>
             <div className="flex flex-col">
@@ -75,6 +81,7 @@ export function ListingCard({
           </Badge>
         </div>
 
+        {/* Details grid */}
         <div className="grid gap-2 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <Package className="h-4 w-4 shrink-0" />
@@ -97,11 +104,13 @@ export function ListingCard({
           {listing.pricing_model && (
             <div className="flex items-center gap-2">
               <Scale className="h-4 w-4 shrink-0" />
-              <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
-                listing.pricing_model === "fixed"
-                  ? "bg-secondary/15 text-secondary"
-                  : "bg-primary/10 text-primary"
-              }`}>
+              <span
+                className={`text-xs font-medium px-1.5 py-0.5 rounded ${
+                  listing.pricing_model === "fixed"
+                    ? "bg-secondary/15 text-secondary"
+                    : "bg-primary/10 text-primary"
+                }`}
+              >
                 {t(`listing.pricing_model.${listing.pricing_model}`)}
               </span>
             </div>
@@ -124,24 +133,39 @@ export function ListingCard({
           </p>
         )}
 
-        {(footer || href) && (
-          <div className="mt-auto flex flex-col gap-2 pt-2">
+        {/* Footer actions (e.g. Close listing button) — stop propagation so card link doesn't fire */}
+        {footer && (
+          <div
+            className="mt-1 flex flex-col gap-2"
+            onClick={(e) => e.stopPropagation()}
+          >
             {footer}
-            {href && (
-              <Link to={href}>
-                <Button variant="ghost" size="sm" className="w-full gap-1">
-                  {t("listing.viewDetail")}
-                  {isRtl ? (
-                    <ChevronLeft className="h-3.5 w-3.5" />
-                  ) : (
-                    <ChevronRight className="h-3.5 w-3.5" />
-                  )}
-                </Button>
-              </Link>
+          </div>
+        )}
+
+        {/* Show "View details" chevron only when there's no href wrapper (footer-only cards) */}
+        {!href && footer && null}
+        {href && !footer && (
+          <div className="flex items-center justify-end gap-1 text-xs text-primary/70 mt-1">
+            <span>{t("listing.viewDetail")}</span>
+            {isRtl ? (
+              <ChevronLeft className="h-3.5 w-3.5" />
+            ) : (
+              <ChevronRight className="h-3.5 w-3.5" />
             )}
           </div>
         )}
       </CardContent>
     </Card>
   );
+
+  if (href) {
+    return (
+      <Link to={href} className="block">
+        {inner}
+      </Link>
+    );
+  }
+
+  return inner;
 }
