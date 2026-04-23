@@ -100,12 +100,12 @@
   --popover-foreground: 160 38% 12%;
   --popover-border: 207 23% 88%;
 
-  /* Primary = الأخضر الأساسي  #1E7A5A */
-  --primary: 158 60% 30%;
+  /* Primary = الأزرق الأساسي  #1F4FA3 */
+  --primary: 219 68% 37%;
   --primary-foreground: 0 0% 100%;
 
-  /* Secondary = الأزرق الأساسي  #1F4FA3 */
-  --secondary: 219 68% 37%;
+  /* Secondary = الأخضر الأساسي  #1E7A5A */
+  --secondary: 158 60% 30%;
   --secondary-foreground: 0 0% 100%;
 
   /* Muted = #F2F6F9 */
@@ -119,11 +119,11 @@
   --destructive-foreground: 0 0% 100%;
 
   --input: 207 23% 88%;             /* #E6ECEF */
-  --ring: 158 60% 30%;              /* matches primary */
+  --ring: 219 68% 37%;              /* matches primary */
 
   /* Charts — brand colour ramp */
-  --chart-1: 158 60% 30%;          /* primary green     */
-  --chart-2: 219 68% 37%;          /* primary blue      */
+  --chart-1: 219 68% 37%;          /* primary blue      */
+  --chart-2: 158 60% 30%;          /* secondary green   */
   --chart-3: 134 52% 43%;          /* #34A853 bright    */
   --chart-4:  86 50% 53%;          /* #8BC34A lime      */
   --chart-5: 194  7% 42%;          /* #636E72 gray      */
