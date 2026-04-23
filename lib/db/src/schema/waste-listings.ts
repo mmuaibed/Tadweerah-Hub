@@ -90,6 +90,7 @@ export const wasteListingsTable = pgTable("waste_listings", {
     .notNull()
     .defaultNow(),
   closed_at: timestamp("closed_at", { withTimezone: true }),
+  image_url: text("image_url"),
 });
 
 export type WasteListing = typeof wasteListingsTable.$inferSelect;

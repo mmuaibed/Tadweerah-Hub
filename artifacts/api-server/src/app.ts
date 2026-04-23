@@ -1,6 +1,7 @@
 import express, { type Express } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
+import path from "path";
 import { clerkMiddleware } from "@clerk/express";
 import {
   CLERK_PROXY_PATH,
@@ -39,6 +40,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use(clerkMiddleware());
+
+// Serve uploaded images statically
+app.use("/uploads", express.static(path.join(process.cwd(), "public", "uploads")));
 
 app.use("/api", router);
 

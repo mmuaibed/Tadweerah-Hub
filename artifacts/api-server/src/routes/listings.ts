@@ -1,5 +1,8 @@
 import { Router, type IRouter } from "express";
 import { and, asc, desc, eq, ilike, or, sql } from "drizzle-orm";
+import path from "path";
+import fs from "fs";
+import multer from "multer";
 import {
   db,
   companiesTable,
@@ -19,6 +22,28 @@ import {
   assertEnum,
   assertUuid,
 } from "../middlewares/errorHandler";
+
+// Multer storage — saves to <project-root>/public/uploads/
+const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
+fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, UPLOAD_DIR),
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname) || ".jpg";
+    cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
+  },
+});
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+  fileFilter: (_req, file, cb) => {
+    if (!file.mimetype.startsWith("image/")) {
+      return cb(new Error("Only image files are allowed"));
+    }
+    cb(null, true);
+  },
+});
 
 const ALLOWED_MATERIALS = [
   "paper",
@@ -55,6 +80,7 @@ function serialize(row: Row) {
     status: row.status,
     pricing_model: row.pricing_model,
     visibility: row.visibility,
+    image_url: row.image_url ?? undefined,
     created_at: row.created_at.toISOString(),
     closed_at: row.closed_at?.toISOString() ?? undefined,
     offer_count: row.offer_count ?? undefined,
@@ -76,6 +102,7 @@ const baseSelect = {
   status: wasteListingsTable.status,
   pricing_model: wasteListingsTable.pricing_model,
   visibility: wasteListingsTable.visibility,
+  image_url: wasteListingsTable.image_url,
   created_at: wasteListingsTable.created_at,
   closed_at: wasteListingsTable.closed_at,
   company_name: companiesTable.name,
@@ -379,6 +406,54 @@ router.post(
       .limit(1);
 
     res.json(serialize(updated!));
+  },
+);
+
+/**
+ * POST /listings/:waste_listing_id/image — upload a single image for a listing.
+ * Only the listing owner (producer) can upload.
+ * Returns the updated listing.
+ */
+router.post(
+  "/listings/:waste_listing_id/image",
+  requireAuth,
+  requireCompany(["producer"]),
+  upload.single("image"),
+  async (req, res) => {
+    const id = assertUuid(req.params.waste_listing_id, "waste_listing_id");
+    const { company } = req as AuthedCompanyRequest;
+
+    if (!req.file) {
+      throw new HttpError(400, "ValidationError", "No image file provided");
+    }
+
+    const [existing] = await db
+      .select()
+      .from(wasteListingsTable)
+      .where(eq(wasteListingsTable.id, id))
+      .limit(1);
+
+    if (!existing) {
+      throw new HttpError(404, "NotFound", "Listing not found");
+    }
+    if (existing.company_id !== company.id) {
+      throw new HttpError(403, "Forbidden", "Not the owner of this listing");
+    }
+
+    // Delete old image file if it exists
+    if (existing.image_url) {
+      const oldFile = path.join(process.cwd(), "public", existing.image_url.replace(/^\//, ""));
+      if (fs.existsSync(oldFile)) fs.unlinkSync(oldFile);
+    }
+
+    const imageUrl = `/uploads/${req.file.filename}`;
+
+    await db
+      .update(wasteListingsTable)
+      .set({ image_url: imageUrl })
+      .where(eq(wasteListingsTable.id, id));
+
+    res.json({ image_url: imageUrl });
   },
 );
 
