@@ -14,6 +14,7 @@ import {
   MapPin,
   Package,
   Building2,
+  AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -211,13 +212,51 @@ function OfferCard({ offer }: { offer: MyOffer }) {
   );
 }
 
+type AugOffer = MyOffer & { deal_status?: string };
+
+function StatCard({ value, label, urgent = false, onClick }: {
+  value: number;
+  label: string;
+  urgent?: boolean;
+  onClick?: () => void;
+}) {
+  const active = urgent && value > 0;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={!onClick}
+      className={`rounded-xl border px-4 py-3 text-start space-y-1 transition-shadow hover:shadow-sm w-full disabled:cursor-default ${
+        active
+          ? "border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/50"
+          : "border-border bg-card"
+      }`}
+    >
+      <div className={`text-2xl font-bold ${active ? "text-amber-700 dark:text-amber-300" : "text-foreground"}`}>
+        {value}
+      </div>
+      <div className={`text-xs flex items-center gap-1 ${active ? "text-amber-700 dark:text-amber-400 font-medium" : "text-muted-foreground"}`}>
+        {active && <AlertCircle className="h-3 w-3 shrink-0" />}
+        {label}
+      </div>
+    </button>
+  );
+}
+
 export function ParticipationsPage() {
   const { t } = useT();
   const [tab, setTab] = useState<Tab>("all");
 
-  const { data, isLoading, isError } = useListMyOffers(
-    tab !== "all" ? { status: tab } : undefined,
-  );
+  // Always fetch all offers — used both for stats and filtered display
+  const { data: allData = [], isLoading, isError } = useListMyOffers();
+  const offers = allData as AugOffer[];
+  const data = tab === "all" ? offers : offers.filter((o) => o.status === tab);
+
+  // Stats
+  const statPending  = offers.filter(o => o.status === "pending").length;
+  const statActive   = offers.filter(o => o.status === "accepted" && o.deal_status && ["active","payment_confirmed","dispatched"].includes(o.deal_status)).length;
+  const statMyTurn   = offers.filter(o => o.status === "accepted" && o.deal_status === "dispatched").length;
+  const statCompleted = offers.filter(o => o.status === "accepted" && o.deal_status === "completed").length;
 
   return (
     <AppLayout
@@ -225,6 +264,16 @@ export function ParticipationsPage() {
       title={t("participations.title")}
       subtitle={t("participations.subtitle")}
     >
+      {/* Summary stats bar */}
+      {!isLoading && !isError && offers.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+          <StatCard value={statPending}   label={t("stats.pending_offers")} />
+          <StatCard value={statActive}    label={t("stats.active_deals")} />
+          <StatCard value={statMyTurn}    label={t("stats.my_turn")} urgent onClick={() => setTab("accepted")} />
+          <StatCard value={statCompleted} label={t("stats.completed")} />
+        </div>
+      )}
+
       {/* Status tabs */}
       <div className="mb-6 flex gap-1 rounded-lg border border-border bg-muted/30 p-1 w-fit flex-wrap">
         {TABS.map((tabKey) => (

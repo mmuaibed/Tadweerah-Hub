@@ -280,21 +280,39 @@ export function DealPanel({ deal, role, unit, onUpdate }: DealPanelProps) {
         </div>
 
         {/* Status stepper */}
-        <div className="px-4 py-3 border-b border-primary/10 bg-background">
+        <div className="px-4 py-3 border-b border-primary/10 bg-background space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-muted-foreground">{t("deal.stepper.title")}</span>
+            <span className="text-xs text-muted-foreground">
+              {currentStepIndex + 1} / {STATUS_STEPS.length}
+            </span>
+          </div>
           <div className="flex items-center gap-0">
             {STATUS_STEPS.map((step, i) => {
               const done = i <= currentStepIndex;
+              const isCurrent = i === currentStepIndex && deal.status !== "completed";
               const isLast = i === STATUS_STEPS.length - 1;
               return (
                 <div key={step} className="flex items-center flex-1">
-                  <div className="flex flex-col items-center gap-0.5 flex-1">
-                    {done ? (
+                  <div className="flex flex-col items-center gap-1 flex-1">
+                    {isCurrent ? (
+                      <div className="relative flex items-center justify-center">
+                        <div className="absolute h-8 w-8 rounded-full bg-primary/20 animate-pulse" />
+                        <CheckCircle2 className="h-5 w-5 text-primary shrink-0 relative" />
+                      </div>
+                    ) : done ? (
                       <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
                     ) : (
-                      <Circle className="h-5 w-5 text-muted-foreground/40 shrink-0" />
+                      <Circle className="h-5 w-5 text-muted-foreground/30 shrink-0" />
                     )}
                     <span
-                      className={`text-center text-[10px] leading-tight ${done ? "text-primary font-medium" : "text-muted-foreground/60"}`}
+                      className={`text-center text-[10px] leading-tight ${
+                        isCurrent
+                          ? "text-primary font-bold"
+                          : done
+                            ? "text-primary/70 font-medium"
+                            : "text-muted-foreground/50"
+                      }`}
                       style={{ maxWidth: "60px" }}
                     >
                       {statusLabel(step)}
@@ -302,7 +320,7 @@ export function DealPanel({ deal, role, unit, onUpdate }: DealPanelProps) {
                   </div>
                   {!isLast && (
                     <div
-                      className={`h-px flex-1 mx-1 mb-4 ${i < currentStepIndex ? "bg-primary" : "bg-muted"}`}
+                      className={`h-0.5 flex-1 mx-1 mb-5 rounded-full ${i < currentStepIndex ? "bg-primary" : "bg-muted"}`}
                     />
                   )}
                 </div>

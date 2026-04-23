@@ -7,7 +7,7 @@ import {
   getListMyListingsQueryKey,
   type WasteListing,
 } from "@workspace/api-client-react";
-import { Loader2, Plus, Recycle, TrendingUp, Handshake } from "lucide-react";
+import { Loader2, Plus, Recycle, TrendingUp, Handshake, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AppLayout } from "@/components/app-layout";
@@ -17,12 +17,52 @@ import { ConfirmDialog } from "@/components/confirm-dialog";
 import { useT } from "@/i18n";
 
 type TabFilter = "open" | "closed";
+type AugListing = WasteListing & { deal_status?: string };
+
+function StatCard({ value, label, urgent = false, onClick }: {
+  value: number;
+  label: string;
+  urgent?: boolean;
+  onClick?: () => void;
+}) {
+  const active = urgent && value > 0;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={!onClick}
+      className={`rounded-xl border px-4 py-3 text-start space-y-1 transition-shadow hover:shadow-sm w-full disabled:cursor-default ${
+        active
+          ? "border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/50"
+          : "border-border bg-card"
+      }`}
+    >
+      <div className={`text-2xl font-bold ${active ? "text-amber-700 dark:text-amber-300" : "text-foreground"}`}>
+        {value}
+      </div>
+      <div className={`text-xs flex items-center gap-1 ${active ? "text-amber-700 dark:text-amber-400 font-medium" : "text-muted-foreground"}`}>
+        {active && <AlertCircle className="h-3 w-3 shrink-0" />}
+        {label}
+      </div>
+    </button>
+  );
+}
 
 export function MyListingsPage() {
   const { t } = useT();
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<TabFilter>("open");
   const { data, isLoading, isError } = useListMyListings({ status: tab });
+  // Always fetch all listings for stats computation
+  const { data: allListingsRaw = [] } = useListMyListings();
+  const allListings = allListingsRaw as AugListing[];
+
+  // Stats
+  const statOpen      = allListings.filter(l => l.status === "open").length;
+  const statActive    = allListings.filter(l => l.deal_status && ["active","payment_confirmed","dispatched"].includes(l.deal_status)).length;
+  const statMyTurn    = allListings.filter(l => l.deal_status && ["active","payment_confirmed"].includes(l.deal_status)).length;
+  const statCompleted = allListings.filter(l => l.deal_status === "completed").length;
+
   const { mutate: closeListing, isPending: isClosing } = useCloseWasteListing();
 
   const [confirmId, setConfirmId] = useState<string | null>(null);
@@ -91,6 +131,16 @@ export function MyListingsPage() {
       {closeError && (
         <div className="mb-6 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
           {closeError}
+        </div>
+      )}
+
+      {/* Summary stats bar */}
+      {!isLoading && !isError && allListings.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+          <StatCard value={statOpen}      label={t("stats.open_listings")} />
+          <StatCard value={statActive}    label={t("stats.active_deals")} />
+          <StatCard value={statMyTurn}    label={t("stats.my_turn")} urgent onClick={() => setTab("closed")} />
+          <StatCard value={statCompleted} label={t("stats.completed")} />
         </div>
       )}
 

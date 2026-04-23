@@ -7,6 +7,7 @@ import {
   Building2,
   ChevronLeft,
   ChevronRight,
+  Scale,
 } from "lucide-react";
 import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
@@ -78,7 +79,19 @@ export function ListingCard({
             <div className="flex items-center gap-2">
               <Tag className="h-4 w-4 shrink-0" />
               <span>
-                {listing.price_hint} {t("listing.sar")}
+                {listing.price_hint.toLocaleString()} {t("listing.sar")} / {t(`unit.${listing.unit}`)}
+              </span>
+            </div>
+          )}
+          {listing.pricing_model && (
+            <div className="flex items-center gap-2">
+              <Scale className="h-4 w-4 shrink-0" />
+              <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
+                listing.pricing_model === "fixed"
+                  ? "bg-secondary/15 text-secondary"
+                  : "bg-primary/10 text-primary"
+              }`}>
+                {t(`listing.pricing_model.${listing.pricing_model}`)}
               </span>
             </div>
           )}

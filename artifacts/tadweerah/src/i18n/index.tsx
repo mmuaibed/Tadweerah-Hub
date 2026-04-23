@@ -336,6 +336,21 @@ const translations: Record<string, Record<Language, string>> = {
   "action.copy": { ar: "نسخ", en: "Copy" },
   "action.copied": { ar: "تم النسخ ✓", en: "Copied ✓" },
 
+  // Summary stats bar
+  "stats.open_listings": { ar: "إعلانات مفتوحة", en: "Open listings" },
+  "stats.active_deals": { ar: "صفقات نشطة", en: "Active deals" },
+  "stats.my_turn": { ar: "بانتظارك", en: "Awaiting your action" },
+  "stats.completed": { ar: "مكتملة", en: "Completed" },
+  "stats.pending_offers": { ar: "عروض قيد المراجعة", en: "Offers under review" },
+  "stats.rejected": { ar: "مرفوضة", en: "Rejected" },
+
+  // Pricing model labels
+  "listing.pricing_model.fixed": { ar: "سعر ثابت", en: "Fixed price" },
+  "listing.pricing_model.by_weight": { ar: "سعر بالوزن", en: "Price by weight" },
+
+  // Deal stepper section title
+  "deal.stepper.title": { ar: "مراحل الصفقة", en: "Deal stages" },
+
   // Role labels in DealPanel
   "deal.role.producer": { ar: "أنت المنتج", en: "You: Producer" },
   "deal.role.buyer": { ar: "أنت المشتري", en: "You: Buyer" },
