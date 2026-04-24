@@ -60,16 +60,20 @@ export function ListingCard({
         href ? "hover:shadow-md cursor-pointer" : ""
       }`}
     >
-      {/* Listing image */}
-      {imageUrl && (
-        <div className="h-36 w-full shrink-0 overflow-hidden bg-muted">
+      {/* Listing image — always shown; falls back to a material-icon placeholder */}
+      <div className="h-36 w-full shrink-0 overflow-hidden bg-muted">
+        {imageUrl ? (
           <img
             src={imageUrl}
             alt={t(`material.${listing.material}`)}
             className="h-full w-full object-cover"
           />
-        </div>
-      )}
+        ) : (
+          <div className="flex h-full w-full items-center justify-center">
+            <Recycle className="h-12 w-12 text-muted-foreground/30" />
+          </div>
+        )}
+      </div>
 
       <CardContent className="flex flex-col gap-4 p-5">
         {/* Header row */}

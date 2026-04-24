@@ -222,18 +222,39 @@ export function MyListingsPage() {
                     </div>
                   )}
 
-                  {/* F13: Offer count badge */}
-                  {(listing.offer_count ?? 0) > 0 && (
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <TrendingUp className="h-3.5 w-3.5 text-primary" />
-                      <span>
-                        <span className="font-semibold text-foreground">
-                          {listing.offer_count}
-                        </span>{" "}
-                        {t("myListings.offersCount")}
-                      </span>
-                    </div>
-                  )}
+                  {/* F13: Offer count + highest price */}
+                  {(listing.offer_count ?? 0) > 0 && (() => {
+                    const highestPpu = (listing as WasteListing & { highest_offer_price?: number | null }).highest_offer_price;
+                    const highestTotal = (listing as WasteListing & { highest_offer_total?: number | null }).highest_offer_total;
+                    return (
+                      <div className="rounded-lg border border-secondary/30 bg-secondary/5 px-3 py-2 space-y-1">
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <TrendingUp className="h-3.5 w-3.5 text-secondary" />
+                          <span>
+                            <span className="font-semibold text-foreground">{listing.offer_count}</span>{" "}
+                            {t("myListings.offersCount")}
+                          </span>
+                        </div>
+                        {highestPpu != null && (
+                          <div className="flex items-center justify-between text-xs ps-5">
+                            <span className="text-muted-foreground">{t("myListings.highestOffer.label")}:</span>
+                            <span className="font-semibold text-foreground">
+                              {Number(highestPpu).toLocaleString()} {t("listing.sar")}
+                              {listing.unit ? ` / ${t(`unit.${listing.unit}`)}` : ""}
+                            </span>
+                          </div>
+                        )}
+                        {highestTotal != null && (
+                          <div className="flex items-center justify-between text-xs ps-5">
+                            <span className="text-muted-foreground">{t("myListings.highestOffer.total")}:</span>
+                            <span className="font-medium text-foreground">
+                              {Number(highestTotal).toLocaleString()} {t("listing.sar")}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
 
                   {/* Close button */}
                   {listing.status === "open" && (

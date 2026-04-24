@@ -436,6 +436,7 @@ router.get(
             ...r,
             offer_count: r.offer_count ?? 0,
             highest_offer_total: maxPpu != null ? maxPpu * qty : null,
+            highest_offer_price: maxPpu,
           },
           mineReqSvcMap.get(r.id) ?? [],
           mineTargetCatMap.get(r.id) ?? [],

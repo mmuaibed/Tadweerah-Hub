@@ -356,7 +356,7 @@ const translations: Record<string, Record<Language, string>> = {
   "deal.field.final_amount": { ar: "المبلغ النهائي", en: "Final amount" },
   "deal.field.quantity.placeholder": { ar: "أدخل الكمية الفعلية", en: "Enter actual quantity" },
 
-  "deal.action.confirm_payment": { ar: "تأكيد استلام الدفع", en: "Confirm Receipt of Payment" },
+  "deal.action.confirm_payment": { ar: "تأكيد الدفع", en: "Confirm Payment" },
   "deal.action.confirm_dispatch": { ar: "تأكيد إرسال البضاعة", en: "Confirm Dispatch" },
   "deal.action.confirm_receipt": { ar: "تأكيد استلام البضاعة", en: "Confirm Receipt" },
 
@@ -429,13 +429,13 @@ const translations: Record<string, Record<Language, string>> = {
   "participations.deal.completed": { ar: "مكتملة ✓", en: "Completed ✓" },
 
   // Waiting-for status — who acts next
-  "deal.waiting.active": { ar: "بانتظار المنتج لتأكيد استلام الدفع", en: "Waiting for producer to confirm payment" },
+  "deal.waiting.active": { ar: "بانتظار المنتج لتأكيد الدفع", en: "Waiting for producer to confirm payment" },
   "deal.waiting.payment_confirmed": { ar: "بانتظار المنتج لتأكيد إرسال البضاعة", en: "Waiting for producer to confirm dispatch" },
   "deal.waiting.dispatched": { ar: "بانتظار المشتري لتأكيد استلام البضاعة", en: "Waiting for buyer to confirm receipt" },
 
   // Confirmation dialogs
-  "deal.confirm.payment.title": { ar: "تأكيد استلام الدفع", en: "Confirm Receipt of Payment" },
-  "deal.confirm.payment.desc": { ar: "هل تأكدت من استلام الدفع من المشتري؟ لا يمكن التراجع عن هذه الخطوة.", en: "Have you received payment from the buyer? This step cannot be undone." },
+  "deal.confirm.payment.title": { ar: "تأكيد الدفع", en: "Confirm Payment" },
+  "deal.confirm.payment.desc": { ar: "هل تأكدت من تحصيل الدفع من المشتري؟ لا يمكن التراجع عن هذه الخطوة.", en: "Have you confirmed receipt of payment from the buyer? This step cannot be undone." },
   "deal.confirm.dispatch.title": { ar: "تأكيد إرسال البضاعة", en: "Confirm Dispatch" },
   "deal.confirm.dispatch.desc": { ar: "هل تأكدت من إرسال البضاعة للمشتري؟ لا يمكن التراجع عن هذه الخطوة.", en: "Have you dispatched the goods to the buyer? This step cannot be undone." },
   "deal.confirm.receipt.title": { ar: "تأكيد استلام البضاعة", en: "Confirm Receipt" },
@@ -460,9 +460,10 @@ const translations: Record<string, Record<Language, string>> = {
   "listing.targeting.open": { ar: "مفتوح للجميع", en: "Open to all" },
   "listing.targeting.category": { ar: "مخصص لتصنيف معين", en: "Category-targeted" },
   "listing.targeting.specific_company": { ar: "صفقة خاصة", en: "Private deal" },
-  "listing.targeting.banner.seller": { ar: "أنشأت هذا الإعلان كصفقة خاصة موجهة لشركة محددة فقط", en: "You created this as a private deal — only the targeted company can view and bid" },
+  "listing.targeting.banner.seller": { ar: "أنشأت هذا الإعلان كصفقة خاصة موجهة لشركة محددة فقط — لا يمكن لأي شركة أخرى رؤيته", en: "You created this as a private deal — only the targeted company can view and bid. No other company can see it." },
+  "listing.targeting.banner.seller.category": { ar: "أنشأت هذا الإعلان مخصصاً لتصنيفات تجارية محددة — لن تراه إلا الشركات ضمن تلك التصنيفات", en: "You created this listing targeted to selected business categories — only companies in those categories can see it." },
   "listing.targeting.banner.buyer.private": { ar: "هذه الصفقة الخاصة موجهة حصرياً لشركتك — أنتم الوحيدون المدعوون للمشاركة", en: "This private deal was directed exclusively to your company — you are the only invited bidder" },
-  "listing.targeting.banner.buyer.category": { ar: "هذا الإعلان مخصص للشركات في تصنيفات تجارية محددة", en: "This listing is targeted to companies in selected business categories" },
+  "listing.targeting.banner.buyer.category": { ar: "هذا الإعلان مخصص للشركات في تصنيفات تجارية محددة، وشركتك ضمن هذه التصنيفات", en: "This listing is targeted to specific business categories — your company qualifies" },
 
   // Targeting form UI (create listing)
   "listing.form.targeting.label": { ar: "من يمكنه رؤية هذا الإعلان؟", en: "Who can see this listing?" },
@@ -617,6 +618,24 @@ const translations: Record<string, Record<Language, string>> = {
     ar: "أعلم أنني أعلى مزايد وأريد رفع عرضي بشكل مقصود",
     en: "I know I am already the top bidder and I intentionally want to raise my offer",
   },
+  "offer.confirm.alreadyTop.popup.title": {
+    ar: "أنت الأعلى مزايدة حالياً",
+    en: "You are currently the top bidder",
+  },
+  "offer.confirm.alreadyTop.popup.desc": {
+    ar: "عرضك الحالي هو الأعلى على هذا الإعلان. هل تريد رفع عرضك؟ هذا لن يلغي الصفقة الحالية، لكنه سيزيد من التزامك.",
+    en: "Your offer is currently the highest on this listing. Do you want to raise it anyway? This won't cancel anything, but your committed price will increase.",
+  },
+  "offer.confirm.alreadyTop.popup.confirm": {
+    ar: "نعم، أرفع عرضي",
+    en: "Yes, raise my offer",
+  },
+  "offer.confirm.alreadyTop.popup.cancel": {
+    ar: "لا، أبقى على عرضي الحالي",
+    en: "No, keep my current offer",
+  },
+  "myListings.highestOffer.label": { ar: "أعلى عرض", en: "Top offer" },
+  "myListings.highestOffer.total": { ar: "الإجمالي", en: "Total" },
 
   // P2 — Dual price entry
   "offer.form.mode.unit": { ar: "سعر الوحدة", en: "Per unit" },
@@ -632,12 +651,12 @@ const translations: Record<string, Record<Language, string>> = {
 
   // P4 — Deal stage descriptions (deal.status.active / dispatched already updated above)
   "deal.stage.action.active.producer": {
-    ar: "أدخل رقم الحوالة وأكّد استلام الدفع من المشتري",
-    en: "Enter the transfer reference and confirm you received payment from the buyer",
+    ar: "أدخل رقم الحوالة وأكّد تأكيد الدفع",
+    en: "Enter the transfer reference and confirm payment",
   },
   "deal.stage.action.active.buyer": {
-    ar: "في انتظار المنتج لتأكيد استلام دفعتك",
-    en: "Waiting for the producer to confirm receipt of your payment",
+    ar: "في انتظار المنتج لتأكيد الدفع",
+    en: "Waiting for the producer to confirm payment",
   },
   "deal.stage.action.payment_confirmed.producer": {
     ar: "أكّد شحن البضاعة وإرسالها للمشتري",

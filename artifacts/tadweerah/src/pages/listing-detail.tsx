@@ -419,7 +419,7 @@ function BuyerOfferSection({
   const [newPrice, setNewPrice] = useState("");
   const [newPriceMode, setNewPriceMode] = useState<"unit" | "total">("unit");
   const [newMessage, setNewMessage] = useState("");
-  const [confirmedSelfImprove, setConfirmedSelfImprove] = useState(false);
+  const [showSelfImprovePopup, setShowSelfImprovePopup] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
   const myOffer = offers[0] as ListingOffer | undefined;
@@ -462,37 +462,51 @@ function BuyerOfferSection({
     );
   }
 
+  // P1 — holds the validated unit price pending self-improve confirmation
+  const [pendingImproveData, setPendingImproveData] = useState<{ price_per_unit: number; message?: string } | null>(null);
+
+  function submitImprove(data: { price_per_unit: number; message?: string; explicit_self_improve?: boolean }) {
+    improveOffer(
+      { wasteListingId, data },
+      {
+        onSuccess: () => {
+          console.log("[tadweerah] offer improved for listing:", wasteListingId);
+          setShowImproveForm(false);
+          setNewPrice("");
+          setNewMessage("");
+          setPendingImproveData(null);
+          onSuccess();
+        },
+        onError: (err: unknown) => {
+          console.warn("[tadweerah] offer improve failed:", err);
+          setFormError(mapOfferError(err));
+        },
+      },
+    );
+  }
+
   function handleImprove(e: React.FormEvent) {
     e.preventDefault();
     setFormError(null);
     const entered = parseFloat(newPrice);
     if (!entered || entered <= 0) return;
     const unitVal = toUnitPrice(entered, newPriceMode);
-
-    // P1 — pass explicit_self_improve when buyer confirms they are already top bidder
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const data: any = { price_per_unit: unitVal, message: newMessage.trim() || undefined };
     const myRank = (myOffer as unknown as { rank?: number })?.rank;
-    if (myRank === 1 && confirmedSelfImprove) data.explicit_self_improve = true;
+    const payload = { price_per_unit: unitVal, message: newMessage.trim() || undefined };
+    // P1 — if already top bidder, show confirmation popup instead of submitting
+    if (myRank === 1) {
+      setPendingImproveData(payload);
+      setShowSelfImprovePopup(true);
+      return;
+    }
+    submitImprove(payload);
+  }
 
-    improveOffer(
-      { wasteListingId, data },
-      {
-        onSuccess: () => {
-          console.log("[tadweerah] offer improved for listing:", wasteListingId);
-          setShowImproveForm(false); setNewPrice(""); setNewMessage(""); setConfirmedSelfImprove(false); onSuccess();
-        },
-        onError: (err: unknown) => {
-          console.warn("[tadweerah] offer improve failed:", err);
-          const code = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "";
-          if (code === "AlreadyTopBidder") {
-            setFormError(t("offer.error.AlreadyTopBidder"));
-          } else {
-            setFormError(mapOfferError(err));
-          }
-        },
-      },
-    );
+  function handleConfirmedSelfImprove() {
+    if (!pendingImproveData) return;
+    setShowSelfImprovePopup(false);
+    submitImprove({ ...pendingImproveData, explicit_self_improve: true });
+    setPendingImproveData(null);
   }
 
   if (isLoading) {
@@ -570,6 +584,7 @@ function BuyerOfferSection({
     const totalOffers = (myOffer as unknown as { total_offers?: number }).total_offers;
 
     return (
+      <>
       <div className="space-y-4">
         <div className="rounded-xl border border-border bg-card p-5 space-y-3">
           <div className="flex items-center justify-between flex-wrap gap-2">
@@ -620,25 +635,12 @@ function BuyerOfferSection({
               </span>
               {showImproveForm ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </button>
-            {/* P1: Top-bidder confirmation when rank === 1 */}
+            {/* P1: Top-bidder info note (no checkbox — popup fires on submit) */}
             {rank === 1 && showImproveForm && (
               <div className="px-5 pt-3">
-                <div className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 space-y-2">
-                  <div className="flex items-start gap-2">
-                    <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-                    <p className="text-xs font-medium text-amber-800">{t("offer.warning.already_top")}</p>
-                  </div>
-                  <label className="flex items-start gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={confirmedSelfImprove}
-                      onChange={(e) => setConfirmedSelfImprove(e.target.checked)}
-                      className="mt-0.5 h-4 w-4 accent-amber-600 shrink-0"
-                    />
-                    <span className="text-xs text-amber-700 leading-relaxed">
-                      {t("offer.confirm.alreadyTop.checkbox")}
-                    </span>
-                  </label>
+                <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-4 py-3">
+                  <AlertCircle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-800">{t("offer.warning.already_top")}</p>
                 </div>
               </div>
             )}
@@ -651,8 +653,8 @@ function BuyerOfferSection({
                   </span>
                 </p>
 
-                {/* P2: Price mode toggle for improve form */}
-                <div className="flex gap-1 rounded-lg bg-muted p-0.5 w-fit">
+                {/* P2: Price mode toggle — highlighted active option */}
+                <div className="flex gap-1 rounded-lg border border-border bg-muted/40 p-1 w-fit">
                   {(["unit", "total"] as const).map((mode) => (
                     <button
                       key={mode}
@@ -667,7 +669,11 @@ function BuyerOfferSection({
                         }
                         setNewPriceMode(mode);
                       }}
-                      className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${newPriceMode === mode ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                      className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-all ${
+                        newPriceMode === mode
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
                     >
                       {t(`offer.form.mode.${mode}`)}
                     </button>
@@ -713,7 +719,7 @@ function BuyerOfferSection({
                 <Button
                   type="submit"
                   className="w-full"
-                  disabled={isImproving || (rank === 1 && !confirmedSelfImprove)}
+                  disabled={isImproving}
                 >
                   {isImproving && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
                   {isImproving ? t("offer.form.improving") : t("offer.form.improve")}
@@ -723,6 +729,18 @@ function BuyerOfferSection({
           </div>
         )}
       </div>
+
+      {/* P1 — Self-improve confirmation popup */}
+      <ConfirmDialog
+        open={showSelfImprovePopup}
+        onOpenChange={(open) => { if (!open) { setShowSelfImprovePopup(false); setPendingImproveData(null); } }}
+        title={t("offer.confirm.alreadyTop.popup.title")}
+        description={t("offer.confirm.alreadyTop.popup.desc")}
+        confirmLabel={t("offer.confirm.alreadyTop.popup.confirm")}
+        onConfirm={handleConfirmedSelfImprove}
+        isPending={isImproving}
+      />
+      </>
     );
   }
 
@@ -746,8 +764,8 @@ function BuyerOfferSection({
         </p>
       )}
       <form onSubmit={handleSubmit} className="space-y-3">
-        {/* P2: Price mode toggle for new offer form */}
-        <div className="flex gap-1 rounded-lg bg-muted p-0.5 w-fit">
+        {/* P2: Price mode toggle — highlighted active option */}
+        <div className="flex gap-1 rounded-lg border border-border bg-muted/40 p-1 w-fit">
           {(["unit", "total"] as const).map((mode) => (
             <button
               key={mode}
@@ -762,7 +780,11 @@ function BuyerOfferSection({
                 }
                 setPriceMode(mode);
               }}
-              className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${priceMode === mode ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+              className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-all ${
+                priceMode === mode
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
             >
               {t(`offer.form.mode.${mode}`)}
             </button>
@@ -1238,7 +1260,13 @@ export function ListingDetailPage() {
               </div>
             );
           }
-          return (
+          // targeting === "category"
+          return isOwner ? (
+            <div className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+              <Lock className="h-4 w-4 shrink-0 mt-0.5 text-amber-500" />
+              <span>{t("listing.targeting.banner.seller.category")}</span>
+            </div>
+          ) : (
             <div className="flex items-start gap-2.5 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-primary">
               <Info className="h-4 w-4 shrink-0 mt-0.5" />
               <span>{t("listing.targeting.banner.buyer.category")}</span>
