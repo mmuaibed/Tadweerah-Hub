@@ -64,7 +64,7 @@ const translations: Record<string, Record<Language, string>> = {
   "onboarding.form.actions.other_required": { ar: "الرجاء وصف النشاط الآخر", en: "Please describe the other activity" },
   "onboarding.form.actions.other_placeholder": { ar: "صف ما تقوم به شركتك...", en: "Describe what your company does..." },
   "onboarding.form.license_section": { ar: "معلومات الترخيص", en: "License Information" },
-  "onboarding.form.license_section.hint": { ar: "بعض الأنشطة المختارة تستلزم ترخيصًا. يُرجى تزويدنا بمعلوماته.", en: "Some selected activities require a license. Please provide your license details." },
+  "onboarding.form.license_section.hint": { ar: "إن كان لديك رقم ترخيص نشاط، يمكنك إدخاله هنا. سيتم مراجعته لاحقًا من قِبَل فريقنا.", en: "If you have an activity license number, you may enter it here. It will be reviewed by our team." },
   "onboarding.form.license.required_badge": { ar: "يتطلب ترخيصًا", en: "License required" },
   "onboarding.form.submit": { ar: "حفظ ومتابعة", en: "Save & Continue" },
   "onboarding.form.saving": { ar: "جاري الحفظ...", en: "Saving..." },

@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Link, useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { getGetMeQueryKey } from "@workspace/api-client-react";
-import { CheckSquare, Square, Loader2, ShieldCheck } from "lucide-react";
+import { CheckSquare, Square, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -70,8 +70,6 @@ export function OnboardingPage() {
   };
 
   const otherAction = actions.find((a) => a.key === "other");
-  const selectedActions = actions.filter((a) => selectedActionIds.has(a.id));
-  const needsLicense = selectedActions.some((a) => a.requires_license);
   const hasOtherSelected = otherAction ? selectedActionIds.has(otherAction.id) : false;
 
   const handleSubmit = async (e: FormEvent) => {
@@ -235,12 +233,6 @@ export function OnboardingPage() {
                     <div>
                       <div className={`text-sm font-medium ${selected ? "text-primary" : "text-foreground"}`}>
                         {label}
-                        {action.requires_license && (
-                          <span className="me-2 ms-1 inline-flex items-center gap-0.5 text-xs text-amber-600">
-                            <ShieldCheck className="h-3 w-3" />
-                            {t("onboarding.form.license.required_badge")}
-                          </span>
-                        )}
                       </div>
                       {desc && (
                         <div className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{desc}</div>
@@ -273,29 +265,18 @@ export function OnboardingPage() {
           )}
         </fieldset>
 
-        {/* ── Section 3: Conditional license ── */}
-        {needsLicense && (
-          <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-4">
-            <div>
-              <p className="text-sm font-medium text-amber-900">{t("onboarding.form.license_section")}</p>
-              <p className="text-xs text-amber-700 mt-0.5">{t("onboarding.form.license_section.hint")}</p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="license" className="text-amber-900">
-                {t("onboarding.form.license_number")}
-              </Label>
-              <Input
-                id="license"
-                maxLength={60}
-                dir="ltr"
-                className="bg-white"
-                value={licenseNumber}
-                onChange={(e) => setLicenseNumber(e.target.value)}
-              />
-              <p className="text-xs text-amber-700">{t("onboarding.form.license_pending")}</p>
-            </div>
-          </div>
-        )}
+        {/* ── Section 3: License (always optional) ── */}
+        <div className="space-y-2">
+          <Label htmlFor="license">{t("onboarding.form.license_number")}</Label>
+          <Input
+            id="license"
+            maxLength={60}
+            dir="ltr"
+            value={licenseNumber}
+            onChange={(e) => setLicenseNumber(e.target.value)}
+          />
+          <p className="text-xs text-muted-foreground">{t("onboarding.form.license_section.hint")}</p>
+        </div>
 
         {/* ── Section 4: Terms ── */}
         <div className="rounded-lg border border-border bg-card p-4">
