@@ -1,0 +1,108 @@
+Before we move to the next batch, please review and confirm the following alignment points:
+
+## 1) Actions vs Capabilities
+
+The latest onboarding change is correct:
+
+* Actions = company intent only
+* Capabilities / required services = eligibility and operational logic
+
+Please confirm that `company_actions.requires_license` is NOT used in any eligibility logic.
+
+If it is not needed anymore, keep it non-functional for now or propose whether we should remove/deprecate it later to avoid confusion.
+
+---
+
+## 2) License Section
+
+The license section should remain:
+
+* Always visible
+* Optional
+* Neutral wording
+
+It should NOT appear or disappear based on selected actions.
+
+---
+
+## 3) Eligibility Logic
+
+No global restriction should exist on:
+
+* creating listings
+* submitting offers
+
+Eligibility should apply only when:
+
+* a listing requires a capability/service
+* and that capability/service requires license
+* or the material is marked sensitive
+
+If so, only `license_status = approved` can proceed.
+
+---
+
+## 4) User-Facing Labels
+
+Please keep confirming this throughout all future work:
+
+* Labels must not be used in DB values, logic, routes, API fields, or conditions
+* Use stable internal keys only
+* Arabic/English names are display only
+* Any word shown to the user must remain changeable later without code impact
+
+---
+
+## 5) Existing Data / Test Data
+
+Since the model changed from role-based to capability/action-based:
+
+Please confirm:
+
+* old role-based test data will not affect the new flows
+* transactional test data is either cleaned or clearly separated
+* company records are mapped to the new structure cleanly
+
+---
+
+## 6) Company Actions
+
+Company actions are for onboarding, filtering, and understanding user intent.
+
+They should not drive:
+
+* permissions
+* license requirements
+* listing gates
+* offer gates
+
+---
+
+## 7) Capabilities / Required Services
+
+Capabilities should drive:
+
+* required services on listings
+* offer eligibility
+* license gate when needed
+
+Examples:
+
+* transport
+* safe disposal
+* recycling/processing
+* storage
+
+---
+
+## 8) Before Next Batch
+
+Please confirm:
+
+* the app is running cleanly
+* onboarding works with the new model
+* company actions save correctly
+* license input saves correctly if provided
+* there are no remaining role-based guards in routes or frontend pages
+
+Once confirmed, we can move to the next batch.

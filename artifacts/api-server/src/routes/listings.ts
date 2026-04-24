@@ -200,7 +200,7 @@ const offerAgg = db
 router.get(
   "/listings",
   requireAuth,
-  requireCompany(["buyer"]),
+  requireCompany(),
   async (req, res) => {
     const { company } = req as AuthedCompanyRequest;
     const material = assertEnum(
@@ -310,7 +310,7 @@ router.get(
 router.get(
   "/listings/mine",
   requireAuth,
-  requireCompany(["producer"]),
+  requireCompany(),
   async (req, res) => {
     const { company } = req as AuthedCompanyRequest;
     const status = assertEnum(req.query.status, ALLOWED_STATUSES, "status");
@@ -367,7 +367,7 @@ router.get(
 router.post(
   "/listings",
   requireAuth,
-  requireCompany(["producer"]),
+  requireCompany(),
   async (req, res) => {
     const parsed = CreateWasteListingBody.safeParse(req.body);
     if (!parsed.success) {
@@ -529,7 +529,7 @@ router.get(
 router.post(
   "/listings/:waste_listing_id/close",
   requireAuth,
-  requireCompany(["producer"]),
+  requireCompany(),
   async (req, res) => {
     const id = assertUuid(req.params.waste_listing_id, "waste_listing_id");
     const { company } = req as AuthedCompanyRequest;
@@ -602,7 +602,7 @@ router.post(
 router.post(
   "/listings/:waste_listing_id/image",
   requireAuth,
-  requireCompany(["producer"]),
+  requireCompany(),
   upload.single("image"),
   async (req, res) => {
     const id = assertUuid(req.params.waste_listing_id, "waste_listing_id");

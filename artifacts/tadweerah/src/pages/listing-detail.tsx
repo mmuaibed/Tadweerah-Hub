@@ -956,9 +956,15 @@ export function ListingDetailPage() {
 
   const { mutate: closeListing, isPending: isClosing } = useCloseWasteListing();
 
-  const role = me?.company?.type;
   const myCompanyId = me?.company?.id;
   const isOwner = !!myCompanyId && listing?.company_id === myCompanyId;
+  // Role is derived from ownership, not company.type.
+  // "producer" = listing owner (seller side), "buyer" = any other authenticated company.
+  const role: "producer" | "buyer" | null = listing
+    ? isOwner
+      ? "producer"
+      : "buyer"
+    : null;
 
   // Derive active deal — prefer locally-updated override (post-action), fall back to server data
   const rawDeal = (listing as unknown as { deal?: DealInfo | null })?.deal ?? null;
@@ -969,11 +975,9 @@ export function ListingDetailPage() {
   const backPath =
     fromParam === "participations"
       ? "/participations"
-      : role === "producer"
+      : isOwner
         ? "/listings/mine"
-        : role === "buyer"
-          ? "/marketplace"
-          : "/dashboard";
+        : "/marketplace";
 
   const dateStr = listing
     ? new Date(listing.created_at).toLocaleDateString(

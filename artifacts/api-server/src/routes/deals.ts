@@ -84,7 +84,7 @@ async function fetchDealWithCounterparty(
 router.get(
   "/deals/:deal_id",
   requireAuth,
-  requireCompany(["producer", "buyer"]),
+  requireCompany(),
   async (req, res) => {
     const dealId = assertUuid(req.params.deal_id, "deal_id");
     const { company } = req as AuthedCompanyRequest;
@@ -109,7 +109,7 @@ router.get(
 router.post(
   "/deals/:deal_id/confirm-payment",
   requireAuth,
-  requireCompany(["producer"]),
+  requireCompany(),
   async (req, res) => {
     const dealId = assertUuid(req.params.deal_id, "deal_id");
     const { company } = req as AuthedCompanyRequest;
@@ -270,7 +270,7 @@ router.post(
 router.post(
   "/deals/:deal_id/confirm-dispatch",
   requireAuth,
-  requireCompany(["producer"]),
+  requireCompany(),
   async (req, res) => {
     const dealId = assertUuid(req.params.deal_id, "deal_id");
     const { company } = req as AuthedCompanyRequest;
@@ -342,7 +342,7 @@ router.post(
 router.post(
   "/deals/:deal_id/confirm-receipt",
   requireAuth,
-  requireCompany(["buyer"]),
+  requireCompany(),
   async (req, res) => {
     const dealId = assertUuid(req.params.deal_id, "deal_id");
     const { company } = req as AuthedCompanyRequest;

@@ -95,7 +95,7 @@ const offerSelect = {
 router.get(
   "/offers/mine",
   requireAuth,
-  requireCompany(["buyer"]),
+  requireCompany(),
   async (req, res) => {
     const { company } = req as AuthedCompanyRequest;
     const ALLOWED_STATUSES = ["pending", "accepted", "rejected", "withdrawn"] as const;
@@ -280,7 +280,7 @@ router.get(
 router.get(
   "/listings/:waste_listing_id/offers",
   requireAuth,
-  requireCompany(["producer", "buyer"]),
+  requireCompany(),
   async (req, res) => {
     const listingId = assertUuid(
       req.params.waste_listing_id,
@@ -371,7 +371,7 @@ router.get(
 router.post(
   "/listings/:waste_listing_id/offers",
   requireAuth,
-  requireCompany(["buyer"]),
+  requireCompany(),
   async (req, res) => {
     const listingId = assertUuid(
       req.params.waste_listing_id,
@@ -604,7 +604,7 @@ router.post(
 router.put(
   "/listings/:waste_listing_id/offers/mine",
   requireAuth,
-  requireCompany(["buyer"]),
+  requireCompany(),
   async (req, res) => {
     const listingId = assertUuid(
       req.params.waste_listing_id,
@@ -751,7 +751,7 @@ router.put(
 router.delete(
   "/listings/:waste_listing_id/offers/mine",
   requireAuth,
-  requireCompany(["buyer"]),
+  requireCompany(),
   async (req, res) => {
     const listingId = assertUuid(
       req.params.waste_listing_id,
@@ -824,7 +824,7 @@ router.delete(
 router.post(
   "/offers/:offer_id/accept",
   requireAuth,
-  requireCompany(["producer"]),
+  requireCompany(),
   async (req, res) => {
     const offerId = assertUuid(req.params.offer_id, "offer_id");
     const { company } = req as AuthedCompanyRequest;
@@ -1016,7 +1016,7 @@ router.post(
 router.post(
   "/offers/:offer_id/reject",
   requireAuth,
-  requireCompany(["producer"]),
+  requireCompany(),
   async (req, res) => {
     const offerId = assertUuid(req.params.offer_id, "offer_id");
     const { company } = req as AuthedCompanyRequest;
