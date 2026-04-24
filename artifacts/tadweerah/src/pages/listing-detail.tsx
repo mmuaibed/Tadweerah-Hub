@@ -420,6 +420,15 @@ function BuyerOfferSection({
   const myOffer = offers[0] as ListingOffer | undefined;
   const highestPrice = summary?.highest_price ?? 0;
 
+  function mapOfferError(err: unknown): string {
+    const code = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "";
+    if (code === "PriceTooLow" || code.includes("higher")) return t("offer.error.tooLow");
+    if (code === "MissingCapability") return t("offer.error.MissingCapability");
+    if (code === "LicenseRequired") return t("offer.error.LicenseRequired");
+    if (code === "TargetingRestricted") return t("offer.error.TargetingRestricted");
+    return t("offer.error.generic");
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setFormError(null);
@@ -430,14 +439,7 @@ function BuyerOfferSection({
       { wasteListingId, data: { price_per_unit: val, message: message.trim() || undefined } },
       {
         onSuccess: () => { setPrice(""); setMessage(""); onSuccess(); },
-        onError: (err: unknown) => {
-          const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
-          setFormError(
-            msg?.includes("PriceTooLow") || msg?.includes("higher")
-              ? t("offer.error.tooLow")
-              : t("offer.error.generic"),
-          );
-        },
+        onError: (err: unknown) => setFormError(mapOfferError(err)),
       },
     );
   }
@@ -452,14 +454,7 @@ function BuyerOfferSection({
       { wasteListingId, data: { price_per_unit: val, message: newMessage.trim() || undefined } },
       {
         onSuccess: () => { setShowImproveForm(false); setNewPrice(""); setNewMessage(""); onSuccess(); },
-        onError: (err: unknown) => {
-          const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
-          setFormError(
-            msg?.includes("PriceTooLow") || msg?.includes("higher")
-              ? t("offer.error.tooLow")
-              : t("offer.error.generic"),
-          );
-        },
+        onError: (err: unknown) => setFormError(mapOfferError(err)),
       },
     );
   }

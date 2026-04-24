@@ -239,6 +239,9 @@ const translations: Record<string, Record<Language, string>> = {
   "offer.reject.confirm.action": { ar: "رفض العرض", en: "Reject Offer" },
 
   "offer.error.tooLow": { ar: "يجب أن يكون سعرك أعلى من العرض الأعلى الحالي", en: "Your price must be higher than the current highest offer" },
+  "offer.error.MissingCapability": { ar: "شركتك لا تمتلك الخدمة المطلوبة لهذا العرض. راجع خدمات شركتك أولاً.", en: "Your company does not have the required service for this listing. Review your company capabilities first." },
+  "offer.error.LicenseRequired": { ar: "هذا العرض يتطلب ترخيصاً معتمداً. يُرجى رفع ترخيصك وانتظار المراجعة قبل المشاركة.", en: "This listing requires an approved license. Please upload your license and wait for review before participating." },
+  "offer.error.TargetingRestricted": { ar: "هذا العرض خاص وغير موجّه لشركتك.", en: "This listing is restricted and was not directed to your company." },
   "offer.error.generic": { ar: "تعذر إرسال العرض. حاول مرة أخرى.", en: "Could not submit the offer. Please try again." },
 
   "listing.notFound.title": { ar: "العرض غير موجود", en: "Listing Not Found" },
