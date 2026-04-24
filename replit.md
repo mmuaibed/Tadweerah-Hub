@@ -112,7 +112,7 @@ A Saudi B2B MVP connecting waste producers, recycling buyers, and transport carr
 ### Batch 3 (April 2026) — implemented
 
 **Backend**
-- **License eligibility gate** on `POST /listings` (producer) and `POST /listings/:id/offers` (buyer): companies with `license_status = 'rejected'` or `'expired'` receive 403 LicenseBlocked. Companies with no license or pending/approved status are unaffected.
+- **No global license gate** on `POST /listings` or `POST /listings/:id/offers` — selling and buying are always permitted. Eligibility logic is deferred to when specific capabilities or sensitive materials are involved.
 - **Admin CRUD routes** for 3 lookup tables (company-categories, unit-options, material-categories), protected by `X-Admin-Key` header vs `ADMIN_API_KEY` env var:
   - `POST /admin/lookup/{table}` — create entry
   - `PUT /admin/lookup/{table}/:id` — update entry

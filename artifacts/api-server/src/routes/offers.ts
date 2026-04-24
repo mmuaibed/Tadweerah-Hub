@@ -405,15 +405,6 @@ router.post(
         "This listing is no longer accepting offers",
       );
     }
-    // License gate: block buyers with a rejected or expired license
-    if (company.license_status === "rejected" || company.license_status === "expired") {
-      throw new HttpError(
-        403,
-        "LicenseBlocked",
-        "Your license is not valid. Please contact support to resolve your license status.",
-      );
-    }
-
     if (listing.company_id === company.id) {
       throw new HttpError(
         403,

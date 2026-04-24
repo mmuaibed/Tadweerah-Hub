@@ -313,15 +313,6 @@ router.post(
     const { company } = req as AuthedCompanyRequest;
     const data = parsed.data;
 
-    // License gate: block producers with a rejected or expired license
-    if (company.license_status === "rejected" || company.license_status === "expired") {
-      throw new HttpError(
-        403,
-        "LicenseBlocked",
-        "Your license is not valid. Please contact support to resolve your license status.",
-      );
-    }
-
     // Extra fields not in generated schema (safe to read directly from body)
     const saleType = req.body.sale_type === "direct" ? "direct" : "auction";
     const materialCategoryId: string | null =
