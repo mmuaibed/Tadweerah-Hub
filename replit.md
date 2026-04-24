@@ -17,6 +17,16 @@ I prefer concise and clear communication. When implementing features, prioritize
 - **Quality still mandatory:** flag risky or critical paths, recommend the right level of testing, but protect the project budget.
 - **Act as a cost-aware CTO:** build fast, build well, protect budget.
 
+## Risk-Based Testing Classification
+
+Classify every change before deciding on validation depth:
+
+| Risk | Examples | Validation |
+|------|----------|------------|
+| **Low** | UI tweaks, label changes, simple fields | build + light checks only |
+| **Medium** | New endpoints, business logic changes | targeted validation only (no full flows) |
+| **High** | Auth, payments, deal lifecycle, eligibility logic | propose test approach before running anything heavy |
+
 # System Architecture
 
 The project is built as a pnpm workspace monorepo using TypeScript.
