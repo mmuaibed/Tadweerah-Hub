@@ -33,11 +33,43 @@ These rules are **final and permanent**. They override any assumption or prior i
 - Visibility (targeting) ≠ Eligibility ≠ Creation
 - Never mix these three under any condition
 
+### 4. Targeting vs Eligibility
+- Targeting controls visibility only (GET /listings filter)
+- Eligibility controls participation only (POST /offers gate)
+- Do NOT hide listings because of eligibility — those are different concerns
+
+### 5. Actions vs Capabilities
+- Company actions (sell, buy, transport, etc.) are UI/onboarding display only
+- Capabilities drive all logic and eligibility checks
+- Never use actions in any logic condition or gate
+
+### 6. Keys vs Labels
+- All logic MUST use internal `key` fields only
+- `name_en` / `name_ar` are display-only — never branch logic on them
+- Never hardcode UUIDs or display strings in logic
+
+### 7. No Hardcoding
+- Do NOT hardcode UUIDs or lookup values in logic
+- Always use database lookups or joins to resolve values
+
+### 8. Ownership over Roles
+- Do not reintroduce company-type role assumptions ("producer", "buyer", "carrier" as gates)
+- Use ownership (company_id match) for all access control decisions
+
+### 9. Multi-user Permissions
+- `owner`: full access (listings, offers, members, company settings)
+- `member`: operational only (create listings, submit offers) — cannot manage members or company settings
+- Enforce via `memberRole` on `AuthedCompanyRequest`
+
+### 10. Notifications
+- Always link to the listing as the primary navigation anchor (`related_entity_type = "listing"`)
+- Do not create notification dead-ends (every notification must be navigable)
+
 ### Process Rule
-Before adding any gate or restriction, explicitly state:
-- Which endpoint the gate is on
-- Why it belongs there per the rules above
-If it violates any rule → do NOT implement it.
+Before implementing anything that affects eligibility, permissions, or visibility:
+- State which endpoint is affected
+- Justify why it belongs there per the rules above
+- If it violates any rule → do NOT implement it — stop and flag it instead.
 
 ---
 
