@@ -49,12 +49,13 @@ function requireAdminKey(req: Request, res: Response, next: NextFunction): void 
 }
 
 /* -------------------------------------------------------------------------- */
-/* Read endpoints (authenticated company users)                                */
+/* Read endpoints                                                              */
+/* company-categories + company-actions: public (used during onboarding)      */
+/* unit-options, material-categories, capabilities: requireAuth + requireCo   */
 /* -------------------------------------------------------------------------- */
 
 router.get(
   "/lookup/company-categories",
-  requireAuth,
   async (_req, res) => {
     const rows = await db
       .select()
@@ -67,7 +68,6 @@ router.get(
 
 router.get(
   "/lookup/company-actions",
-  requireAuth,
   async (_req, res) => {
     const rows = await db
       .select()

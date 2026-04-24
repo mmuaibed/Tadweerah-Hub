@@ -1,7 +1,8 @@
 import { useEffect, useRef } from "react";
 import { Switch, Route, Redirect, useLocation, Router as WouterRouter } from "wouter";
-import { ClerkProvider, Show, useClerk } from "@clerk/react";
+import { ClerkProvider, Show, useClerk, useAuth } from "@clerk/react";
 import { shadcn } from "@clerk/themes";
+import { setAuthTokenGetter } from "@workspace/api-client-react";
 import {
   QueryClient,
   QueryClientProvider,
@@ -107,6 +108,23 @@ function ClerkQueryClientCacheInvalidator() {
   return null;
 }
 
+function AuthTokenSync() {
+  const { getToken, isSignedIn } = useAuth();
+
+  useEffect(() => {
+    if (isSignedIn) {
+      setAuthTokenGetter(() => getToken());
+    } else {
+      setAuthTokenGetter(null);
+    }
+    return () => {
+      setAuthTokenGetter(null);
+    };
+  }, [isSignedIn, getToken]);
+
+  return null;
+}
+
 function buildAppearance(lang: "ar" | "en") {
   const fontFamily = `'Tajawal', system-ui, sans-serif`;
 
@@ -201,6 +219,7 @@ function ClerkProviderWithRoutes() {
     >
       <QueryClientProvider client={queryClient}>
         <ClerkQueryClientCacheInvalidator />
+        <AuthTokenSync />
         <TooltipProvider>
           <Switch>
             <Route path="/" component={HomeRedirect} />

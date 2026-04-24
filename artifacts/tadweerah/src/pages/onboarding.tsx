@@ -46,17 +46,37 @@ export function OnboardingPage() {
 
   const [categories, setCategories] = useState<CompanyCategoryOption[]>([]);
   const [actions, setActions] = useState<CompanyActionOption[]>([]);
+  const [lookupLoading, setLookupLoading] = useState(true);
+  const [lookupError, setLookupError] = useState(false);
 
   useEffect(() => {
-    fetch("/api/lookup/company-categories")
-      .then((r) => r.json())
-      .then((data) => { if (Array.isArray(data)) setCategories(data as CompanyCategoryOption[]); })
-      .catch(() => {});
+    let cancelled = false;
+    setLookupLoading(true);
+    setLookupError(false);
 
-    fetch("/api/lookup/company-actions")
-      .then((r) => r.json())
-      .then((data) => { if (Array.isArray(data)) setActions(data as CompanyActionOption[]); })
-      .catch(() => {});
+    Promise.all([
+      fetch("/api/lookup/company-categories").then((r) => {
+        if (!r.ok) throw new Error("categories fetch failed");
+        return r.json();
+      }),
+      fetch("/api/lookup/company-actions").then((r) => {
+        if (!r.ok) throw new Error("actions fetch failed");
+        return r.json();
+      }),
+    ])
+      .then(([cats, acts]) => {
+        if (cancelled) return;
+        if (Array.isArray(cats)) setCategories(cats as CompanyCategoryOption[]);
+        if (Array.isArray(acts)) setActions(acts as CompanyActionOption[]);
+      })
+      .catch(() => {
+        if (!cancelled) setLookupError(true);
+      })
+      .finally(() => {
+        if (!cancelled) setLookupLoading(false);
+      });
+
+    return () => { cancelled = true; };
   }, []);
 
   const toggleAction = (id: string) => {
@@ -210,7 +230,27 @@ export function OnboardingPage() {
             {t("onboarding.form.actions")} *
           </legend>
           <p className="mb-3 text-xs text-muted-foreground">{t("onboarding.form.actions.hint")}</p>
-          {actions.length > 0 ? (
+          {lookupLoading ? (
+            <div className="flex items-center justify-center h-16 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin me-2" />
+              {t("onboarding.form.actions.loading")}
+            </div>
+          ) : lookupError ? (
+            <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 py-6 text-sm text-destructive">
+              <span>{t("onboarding.form.actions.error")}</span>
+              <button
+                type="button"
+                className="text-xs underline underline-offset-2"
+                onClick={() => window.location.reload()}
+              >
+                {t("common.retry")}
+              </button>
+            </div>
+          ) : actions.length === 0 ? (
+            <div className="flex items-center justify-center h-16 text-sm text-muted-foreground">
+              {t("onboarding.form.actions.empty")}
+            </div>
+          ) : (
             <div className="grid gap-2 sm:grid-cols-2">
               {actions.map((action) => {
                 const selected = selectedActionIds.has(action.id);
@@ -241,11 +281,6 @@ export function OnboardingPage() {
                   </button>
                 );
               })}
-            </div>
-          ) : (
-            <div className="flex items-center justify-center h-16 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin me-2" />
-              {t("onboarding.form.actions.loading")}
             </div>
           )}
 

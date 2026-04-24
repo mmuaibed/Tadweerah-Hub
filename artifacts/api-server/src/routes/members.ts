@@ -135,7 +135,7 @@ router.delete(
       throw new HttpError(403, "Forbidden", "Only the company owner can remove members");
     }
 
-    const targetUserId = req.params.user_id.trim();
+    const targetUserId = String(req.params["user_id"]).trim();
 
     if (targetUserId === userId) {
       throw new HttpError(
