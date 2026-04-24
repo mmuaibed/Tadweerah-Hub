@@ -70,6 +70,19 @@ export const listingVisibilityEnum = pgEnum("listing_visibility", [
  */
 export const saleTypeEnum = pgEnum("sale_type", ["auction", "direct"]);
 
+/**
+ * Applies only to Direct Sale listings.
+ * open             — visible to all companies in the marketplace
+ * category         — visible only to companies whose category is in listing_target_categories
+ * specific_company — visible only to one named company (target_company_id)
+ * Auction listings always use 'open'.
+ */
+export const targetingTypeEnum = pgEnum("targeting_type", [
+  "open",
+  "category",
+  "specific_company",
+]);
+
 export const wasteListingsTable = pgTable("waste_listings", {
   id: uuid("id").primaryKey().defaultRandom(),
   company_id: uuid("company_id")
@@ -144,6 +157,25 @@ export const wasteListingsTable = pgTable("waste_listings", {
    * Immutable once published — producers must close + re-list to change.
    */
   revenue_share_pct: numeric("revenue_share_pct", { precision: 5, scale: 2 }),
+
+  /**
+   * Controls which companies can see and bid on this listing.
+   * Applies to Direct Sale only — auction listings are always 'open'.
+   * open             — visible to all companies
+   * category         — visible to companies in listed company categories (listing_target_categories)
+   * specific_company — visible only to target_company_id (private deal)
+   * Immutable once published.
+   */
+  targeting_type: targetingTypeEnum("targeting_type").notNull().default("open"),
+
+  /**
+   * Set when targeting_type = 'specific_company'.
+   * Only this company can view the listing and submit an offer.
+   */
+  target_company_id: uuid("target_company_id").references(
+    () => companiesTable.id,
+    { onDelete: "set null" },
+  ),
 });
 
 export type WasteListing = typeof wasteListingsTable.$inferSelect;

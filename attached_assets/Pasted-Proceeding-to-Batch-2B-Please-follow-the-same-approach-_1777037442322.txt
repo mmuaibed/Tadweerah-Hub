@@ -1,0 +1,174 @@
+Proceeding to Batch 2B.
+
+Please follow the same approach:
+
+* classify items (clear vs needs clarification)
+* implement clear items directly
+* flag anything ambiguous before implementation
+
+---
+
+## 1) Direct Sale Targeting [DB + API + UI]
+
+Support targeting for Direct Sale listings:
+
+* targeting_type:
+
+  * open (default)
+  * category
+  * specific_company
+
+* If category:
+  → listing_target_categories table
+
+* If specific_company:
+  → target_company_id
+
+Expected behavior:
+
+* Non-targeted companies must NOT see the listing at all
+* Targeting applies only to Direct Sale
+* Auction listings remain open to all
+
+---
+
+## 2) Revenue Sharing (Finalize Flow) [API + UI]
+
+Already exists — now refine:
+
+* Available only in Direct Sale
+
+* pricing_model:
+
+  * fixed
+  * by_weight
+  * revenue_share
+
+* revenue_share_pct:
+
+  * required only when selected
+  * visible in:
+
+    * listing card
+    * listing detail
+    * deal panel
+
+No calculation logic required.
+
+---
+
+## 3) Eligibility Enhancement (Refinement) [API]
+
+Current logic is correct — refine only:
+
+* Apply eligibility ONLY when:
+
+  * listing_required_services exists
+  * OR material.is_sensitive = true
+
+* Add support for:
+  material_categories.is_sensitive (boolean)
+
+Expected:
+
+* If material is sensitive → require approved license
+* Otherwise → no restriction unless required service exists
+
+---
+
+## 4) Private Deal Flow (Single Buyer Optimization) [API + UI]
+
+For Direct Sale with specific_company:
+
+* Only that company can:
+
+  * see the listing
+  * submit an offer
+
+* Seller should see:
+
+  * “Private Deal” indicator
+
+* No auction behavior
+
+---
+
+## 5) Notifications Enhancement [API + UI]
+
+Extend current system:
+
+* Add types:
+
+  * private_deal_invitation
+  * deal_progress_update
+
+* Ensure all notifications:
+
+  * link to listing or deal
+  * mark as read correctly
+
+---
+
+## 6) Multi-User Foundation (Phase 1) [DB + API]
+
+Add basic support:
+
+* company_users table:
+
+  * user_id
+  * company_id
+  * role: owner | member
+
+Rules:
+
+* owner:
+
+  * full access
+* member:
+
+  * can create listings
+  * can submit offers
+
+All data must still be:
+→ company-owned (company_id)
+
+No UI complexity yet.
+
+---
+
+## 7) Data Integrity — Material Sensitivity [DB]
+
+Add:
+
+* material_categories.is_sensitive (boolean)
+
+Admin-managed field
+
+Used in eligibility logic only
+
+---
+
+## 8) Final Cleanup
+
+* Remove any remaining references to:
+
+  * company.type
+  * role-based assumptions
+
+* Confirm:
+
+  * all access is capability-based or ownership-based
+
+---
+
+## Reminders
+
+* No labels in logic
+* Use internal keys only
+* No global restrictions
+* No coupling between actions and eligibility
+* Keep implementation simple
+
+---
+
+Provide classification first, then proceed.

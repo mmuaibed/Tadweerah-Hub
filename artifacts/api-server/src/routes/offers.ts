@@ -1,11 +1,13 @@
 import { Router, type IRouter } from "express";
-import { and, desc, eq, gt, inArray, max, ne, sql } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, max, ne, or, sql } from "drizzle-orm";
 import {
   db,
   companiesTable,
   listingOffersTable,
   wasteListingsTable,
   listingRequiredServicesTable,
+  listingTargetCategoriesTable,
+  materialCategoriesTable,
   capabilitiesTable,
   companyCapabilitiesTable,
   dealsTable,
@@ -396,6 +398,9 @@ router.post(
         company_id: wasteListingsTable.company_id,
         status: wasteListingsTable.status,
         quantity: wasteListingsTable.quantity,
+        targeting_type: wasteListingsTable.targeting_type,
+        target_company_id: wasteListingsTable.target_company_id,
+        material_category_id: wasteListingsTable.material_category_id,
       })
       .from(wasteListingsTable)
       .where(eq(wasteListingsTable.id, listingId))
@@ -418,6 +423,41 @@ router.post(
         "You cannot submit an offer on your own listing",
       );
     }
+
+    // ── Targeting gate ────────────────────────────────────────────────────────
+    // Enforce that this company is allowed to bid on the listing.
+    if (listing.targeting_type === "specific_company") {
+      if (listing.target_company_id !== company.id) {
+        throw new HttpError(
+          403,
+          "TargetingRestricted",
+          "This listing is a private deal and was not directed to your company",
+        );
+      }
+    } else if (listing.targeting_type === "category") {
+      // The buyer's category must be in listing_target_categories
+      const [allowed] = await db
+        .select({ listing_id: listingTargetCategoriesTable.listing_id })
+        .from(listingTargetCategoriesTable)
+        .where(
+          and(
+            eq(listingTargetCategoriesTable.listing_id, listingId),
+            company.company_category_id
+              ? eq(listingTargetCategoriesTable.company_category_id, company.company_category_id)
+              : sql`false`,
+          ),
+        )
+        .limit(1);
+      if (!allowed) {
+        throw new HttpError(
+          403,
+          "TargetingRestricted",
+          "This listing is restricted to specific company categories that do not include yours",
+        );
+      }
+    }
+    // targeting_type = 'open' → all companies may bid
+    // ── End targeting gate ────────────────────────────────────────────────────
 
     // ── Item 4: Required services gate ────────────────────────────────────────
     // Fetch any capability requirements on this listing
@@ -464,6 +504,26 @@ router.post(
       }
     }
     // ── End required services gate ────────────────────────────────────────────
+
+    // ── Sensitive material gate ───────────────────────────────────────────────
+    // If the listing's material category is flagged as sensitive, the buyer must
+    // hold an approved recycling license (same rule as license-gated capabilities).
+    if (listing.material_category_id) {
+      const [matCat] = await db
+        .select({ is_sensitive: materialCategoriesTable.is_sensitive })
+        .from(materialCategoriesTable)
+        .where(eq(materialCategoriesTable.id, listing.material_category_id))
+        .limit(1);
+
+      if (matCat?.is_sensitive && company.license_status !== "approved") {
+        throw new HttpError(
+          403,
+          "LicenseRequired",
+          `This listing contains a sensitive material category that requires an approved recycling license. Your current license status: ${company.license_status ?? "not submitted"}.`,
+        );
+      }
+    }
+    // ── End sensitive material gate ───────────────────────────────────────────
 
     // Check for duplicate
     const [existing] = await db

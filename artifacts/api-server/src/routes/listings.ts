@@ -9,6 +9,8 @@ import {
   wasteListingsTable,
   listingOffersTable,
   listingRequiredServicesTable,
+  listingTargetCategoriesTable,
+  materialCategoriesTable,
   capabilitiesTable,
   dealsTable,
   type WasteListing,
@@ -25,6 +27,8 @@ import {
   assertUuid,
 } from "../middlewares/errorHandler";
 import { logAudit } from "../lib/audit";
+import { notifyPrivateDealInvitation } from "../lib/notify";
+import { listingRef as makeListingRef } from "../lib/listing-ref";
 
 // Multer storage — saves to <project-root>/public/uploads/
 const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
@@ -77,7 +81,20 @@ type RequiredServiceShape = {
   requires_license: boolean;
 };
 
-function serialize(row: Row, requiredServices?: RequiredServiceShape[]) {
+function serialize(
+  row: Row,
+  requiredServices?: RequiredServiceShape[],
+  targetCategoryIds?: string[],
+) {
+  const r = row as Row & {
+    sale_type?: string;
+    material_category_id?: string | null;
+    material_subcategory_id?: string | null;
+    unit_option_id?: string | null;
+    revenue_share_pct?: string | null;
+    targeting_type?: string | null;
+    target_company_id?: string | null;
+  };
   return {
     id: row.id,
     company_id: row.company_id,
@@ -90,14 +107,15 @@ function serialize(row: Row, requiredServices?: RequiredServiceShape[]) {
     price_hint: row.price_hint != null ? Number(row.price_hint) : undefined,
     status: row.status,
     pricing_model: row.pricing_model,
-    sale_type: (row as Row & { sale_type?: string }).sale_type ?? "auction",
-    material_category_id: (row as Row & { material_category_id?: string | null }).material_category_id ?? null,
-    material_subcategory_id: (row as Row & { material_subcategory_id?: string | null }).material_subcategory_id ?? null,
-    unit_option_id: (row as Row & { unit_option_id?: string | null }).unit_option_id ?? null,
-    revenue_share_pct: (row as Row & { revenue_share_pct?: string | null }).revenue_share_pct != null
-      ? Number((row as Row & { revenue_share_pct?: string | null }).revenue_share_pct)
-      : undefined,
+    sale_type: r.sale_type ?? "auction",
+    material_category_id: r.material_category_id ?? null,
+    material_subcategory_id: r.material_subcategory_id ?? null,
+    unit_option_id: r.unit_option_id ?? null,
+    revenue_share_pct: r.revenue_share_pct != null ? Number(r.revenue_share_pct) : undefined,
     visibility: row.visibility,
+    targeting_type: r.targeting_type ?? "open",
+    target_company_id: r.target_company_id ?? null,
+    target_category_ids: targetCategoryIds ?? [],
     image_url: row.image_url ?? undefined,
     created_at: row.created_at.toISOString(),
     closed_at: row.closed_at?.toISOString() ?? undefined,
@@ -149,6 +167,30 @@ async function fetchRequiredServicesMap(
   return map;
 }
 
+/**
+ * Batch-fetch target category IDs for a set of listing IDs.
+ * Returns a map: listingId → company_category_id[]
+ */
+async function fetchTargetCategoryIdsMap(
+  listingIds: string[],
+): Promise<Map<string, string[]>> {
+  const map = new Map<string, string[]>();
+  if (listingIds.length === 0) return map;
+  const rows = await db
+    .select({
+      listing_id: listingTargetCategoriesTable.listing_id,
+      company_category_id: listingTargetCategoriesTable.company_category_id,
+    })
+    .from(listingTargetCategoriesTable)
+    .where(inArray(listingTargetCategoriesTable.listing_id, listingIds));
+  for (const row of rows) {
+    const existing = map.get(row.listing_id) ?? [];
+    existing.push(row.company_category_id);
+    map.set(row.listing_id, existing);
+  }
+  return map;
+}
+
 const baseSelect = {
   id: wasteListingsTable.id,
   company_id: wasteListingsTable.company_id,
@@ -166,6 +208,8 @@ const baseSelect = {
   unit_option_id: wasteListingsTable.unit_option_id,
   revenue_share_pct: wasteListingsTable.revenue_share_pct,
   visibility: wasteListingsTable.visibility,
+  targeting_type: wasteListingsTable.targeting_type,
+  target_company_id: wasteListingsTable.target_company_id,
   image_url: wasteListingsTable.image_url,
   created_at: wasteListingsTable.created_at,
   closed_at: wasteListingsTable.closed_at,
@@ -210,11 +254,38 @@ router.get(
     );
     const city = typeof req.query.city === "string" ? req.query.city.trim() : undefined;
 
-    // Only public listings appear in the marketplace feed.
-    // Private listings (when eventually supported) are never leaked here.
+    // Only public, open listings appear in the marketplace feed.
+    // Targeting: only show listings the viewer is allowed to see.
+    //   open             → visible to all
+    //   specific_company → only the named company (or the owner)
+    //   category         → companies whose category matches any of the listed categories
+    const targetingFilter = or(
+      // Owner can always see their own listings in the feed
+      eq(wasteListingsTable.company_id, company.id),
+      // Fully open listing
+      eq(wasteListingsTable.targeting_type, "open"),
+      // Direct invite to this company
+      and(
+        eq(wasteListingsTable.targeting_type, "specific_company"),
+        eq(wasteListingsTable.target_company_id, company.id),
+      ),
+      // Category-targeted: viewer's category is in listing_target_categories
+      company.company_category_id
+        ? and(
+            eq(wasteListingsTable.targeting_type, "category"),
+            sql`EXISTS (
+              SELECT 1 FROM listing_target_categories ltc
+              WHERE ltc.listing_id = ${wasteListingsTable.id}
+                AND ltc.company_category_id = ${company.company_category_id}
+            )`,
+          )
+        : sql`false`,
+    )!;
+
     const conditions = [
       eq(wasteListingsTable.status, "open"),
       eq(wasteListingsTable.visibility, "public"),
+      targetingFilter,
     ];
     if (material) {
       conditions.push(eq(wasteListingsTable.material, material));
@@ -278,7 +349,10 @@ router.get(
       }
     }
 
-    const reqSvcMap = await fetchRequiredServicesMap(listingIds);
+    const [reqSvcMap, targetCatMap] = await Promise.all([
+      fetchRequiredServicesMap(listingIds),
+      fetchTargetCategoryIdsMap(listingIds),
+    ]);
 
     res.json(
       rows.map((r) => {
@@ -293,6 +367,7 @@ router.get(
               highest_offer_total: maxPpu != null ? maxPpu * qty : null,
             },
             reqSvcMap.get(r.id) ?? [],
+            targetCatMap.get(r.id) ?? [],
           ),
           my_offer_price: myOffer?.price_per_unit,
           my_rank: myOffer?.rank,
@@ -342,7 +417,10 @@ router.get(
       );
 
     const mineIds = rows.map((r) => r.id);
-    const mineReqSvcMap = await fetchRequiredServicesMap(mineIds);
+    const [mineReqSvcMap, mineTargetCatMap] = await Promise.all([
+      fetchRequiredServicesMap(mineIds),
+      fetchTargetCategoryIdsMap(mineIds),
+    ]);
 
     res.json(
       rows.map((r) => {
@@ -355,6 +433,7 @@ router.get(
             highest_offer_total: maxPpu != null ? maxPpu * qty : null,
           },
           mineReqSvcMap.get(r.id) ?? [],
+          mineTargetCatMap.get(r.id) ?? [],
         );
       }),
     );
@@ -382,7 +461,7 @@ router.post(
     const data = parsed.data;
 
     // Extra fields not in generated schema (safe to read directly from body)
-    const saleType = req.body.sale_type === "direct" ? "direct" : "auction";
+    const saleType: "auction" | "direct" = req.body.sale_type === "direct" ? "direct" : "auction";
     const materialCategoryId: string | null =
       typeof req.body.material_category_id === "string" ? req.body.material_category_id : null;
     const materialSubcategoryId: string | null =
@@ -390,10 +469,59 @@ router.post(
     const unitOptionId: string | null =
       typeof req.body.unit_option_id === "string" ? req.body.unit_option_id : null;
     const pricingModel: string = typeof req.body.pricing_model === "string" ? req.body.pricing_model : (data.pricing_model ?? "fixed");
+
+    // ── Revenue-share validation ───────────────────────────────────────────────
+    // revenue_share pricing is only valid for Direct Sale listings.
+    if (pricingModel === "revenue_share" && saleType !== "direct") {
+      throw new HttpError(
+        400,
+        "ValidationError",
+        "revenue_share pricing is only allowed for Direct Sale listings (sale_type=direct)",
+      );
+    }
     const revenueSharePct: string | null =
       pricingModel === "revenue_share" && req.body.revenue_share_pct != null
         ? String(Number(req.body.revenue_share_pct))
         : null;
+
+    // ── Targeting ─────────────────────────────────────────────────────────────
+    // Targeting is only valid for Direct Sale; auction listings are always open.
+    const rawTargetingType = req.body.targeting_type;
+    const targetingType: "open" | "category" | "specific_company" =
+      saleType === "direct" &&
+      (rawTargetingType === "category" || rawTargetingType === "specific_company")
+        ? rawTargetingType
+        : "open";
+
+    const targetCompanyId: string | null =
+      targetingType === "specific_company" &&
+      typeof req.body.target_company_id === "string"
+        ? req.body.target_company_id
+        : null;
+
+    if (targetingType === "specific_company" && !targetCompanyId) {
+      throw new HttpError(
+        400,
+        "ValidationError",
+        "target_company_id is required when targeting_type=specific_company",
+      );
+    }
+
+    // category UUIDs to store in listing_target_categories
+    const targetCategoryIds: string[] =
+      targetingType === "category" && Array.isArray(req.body.target_category_ids)
+        ? (req.body.target_category_ids as unknown[]).filter(
+            (v): v is string => typeof v === "string",
+          )
+        : [];
+
+    if (targetingType === "category" && targetCategoryIds.length === 0) {
+      throw new HttpError(
+        400,
+        "ValidationError",
+        "At least one target_category_id is required when targeting_type=category",
+      );
+    }
 
     // required_service_ids: array of capability UUIDs
     const requiredServiceIds: string[] = Array.isArray(req.body.required_service_ids)
@@ -416,6 +544,8 @@ router.post(
         material_subcategory_id: materialSubcategoryId,
         unit_option_id: unitOptionId,
         revenue_share_pct: revenueSharePct,
+        targeting_type: targetingType,
+        target_company_id: targetCompanyId,
       })
       .returning();
 
@@ -429,8 +559,31 @@ router.post(
       ).onConflictDoNothing();
     }
 
-    // Fetch the required services for the response
-    const reqSvcMap = await fetchRequiredServicesMap([created.id]);
+    // Save target category rows
+    if (targetCategoryIds.length > 0) {
+      await db.insert(listingTargetCategoriesTable).values(
+        targetCategoryIds.map((catId) => ({
+          listing_id: created.id,
+          company_category_id: catId,
+        })),
+      ).onConflictDoNothing();
+    }
+
+    // Notify the target company when a specific_company listing is created
+    if (targetingType === "specific_company" && targetCompanyId) {
+      void notifyPrivateDealInvitation({
+        targetCompanyId,
+        listingId: created.id,
+        listingRef: makeListingRef(created.id),
+        producerName: company.name,
+      });
+    }
+
+    // Fetch the required services + target categories for the response
+    const [reqSvcMap, targetCatMap] = await Promise.all([
+      fetchRequiredServicesMap([created.id]),
+      fetchTargetCategoryIdsMap([created.id]),
+    ]);
 
     void logAudit({
       userId: (req as AuthedCompanyRequest).userId,
@@ -438,11 +591,20 @@ router.post(
       action: "listing.created",
       entityType: "listing",
       entityId: created.id,
-      details: { sale_type: saleType, pricing_model: pricingModel, material: data.material },
+      details: {
+        sale_type: saleType,
+        pricing_model: pricingModel,
+        material: data.material,
+        targeting_type: targetingType,
+      },
     });
 
     res.status(201).json(
-      serialize({ ...created, company_name: company.name }, reqSvcMap.get(created.id) ?? []),
+      serialize(
+        { ...created, company_name: company.name },
+        reqSvcMap.get(created.id) ?? [],
+        targetCatMap.get(created.id) ?? [],
+      ),
     );
   },
 );
@@ -469,6 +631,37 @@ router.get(
     if (!rows[0]) {
       throw new HttpError(404, "NotFound", "Listing not found");
     }
+
+    const listing = rows[0];
+
+    // ── Targeting visibility enforcement ──────────────────────────────────────
+    // Owners always see their own listing. Others must pass the targeting gate.
+    if (listing.company_id !== company.id) {
+      if (listing.targeting_type === "specific_company") {
+        if (listing.target_company_id !== company.id) {
+          throw new HttpError(404, "NotFound", "Listing not found");
+        }
+      } else if (listing.targeting_type === "category") {
+        // Check whether this company's category is in the allowed set
+        const [allowed] = await db
+          .select({ listing_id: listingTargetCategoriesTable.listing_id })
+          .from(listingTargetCategoriesTable)
+          .where(
+            and(
+              eq(listingTargetCategoriesTable.listing_id, id),
+              company.company_category_id
+                ? eq(listingTargetCategoriesTable.company_category_id, company.company_category_id)
+                : sql`false`,
+            ),
+          )
+          .limit(1);
+        if (!allowed) {
+          throw new HttpError(404, "NotFound", "Listing not found");
+        }
+      }
+      // targeting_type = 'open' → no additional check needed
+    }
+    // ── End targeting enforcement ──────────────────────────────────────────────
 
     // Attach deal info if the current user is a party (producer or accepted buyer)
     let deal = null;
@@ -516,8 +709,11 @@ router.get(
       };
     }
 
-    const reqSvcMap = await fetchRequiredServicesMap([id]);
-    res.json({ ...serialize(rows[0], reqSvcMap.get(id) ?? []), deal });
+    const [reqSvcMap, targetCatMap] = await Promise.all([
+      fetchRequiredServicesMap([id]),
+      fetchTargetCategoryIdsMap([id]),
+    ]);
+    res.json({ ...serialize(listing, reqSvcMap.get(id) ?? [], targetCatMap.get(id) ?? []), deal });
   },
 );
 

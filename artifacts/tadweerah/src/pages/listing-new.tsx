@@ -11,7 +11,7 @@ import {
   type UnitOption,
   type Capability,
 } from "@workspace/api-client-react";
-import { Loader2, ImagePlus, X, Scale, Tag, Gavel, ShoppingBag, Percent, Shield } from "lucide-react";
+import { Loader2, ImagePlus, X, Scale, Tag, Gavel, ShoppingBag, Percent, Shield, Lock, Globe, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -29,6 +29,7 @@ import { useT } from "@/i18n";
 
 type PricingModel = "fixed" | "by_weight" | "revenue_share";
 type SaleType = "auction" | "direct";
+type TargetingType = "open" | "specific_company";
 
 const LEGACY_MATERIAL_KEYS = new Set(["paper", "plastic", "metal", "glass", "electronics", "organic", "other"]);
 const LEGACY_UNIT_KEYS = new Set(["kg", "ton"]);
@@ -71,6 +72,8 @@ export function ListingNewPage() {
   const [saleType, setSaleType] = useState<SaleType>("auction");
   const [revenueSharePct, setRevenueSharePct] = useState("");
   const [requiredServiceIds, setRequiredServiceIds] = useState<Set<string>>(new Set());
+  const [targetingType, setTargetingType] = useState<TargetingType>("open");
+  const [targetCompanyId, setTargetCompanyId] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -150,6 +153,10 @@ export function ListingNewPage() {
             : {}),
           ...(requiredServiceIds.size > 0
             ? { required_service_ids: Array.from(requiredServiceIds) }
+            : {}),
+          ...(saleType === "direct" ? { targeting_type: targetingType } : {}),
+          ...(saleType === "direct" && targetingType === "specific_company" && targetCompanyId.trim()
+            ? { target_company_id: targetCompanyId.trim() }
             : {}),
         } as any,
       },
@@ -287,8 +294,10 @@ export function ListingNewPage() {
                       type="button"
                       onClick={() => {
                         setSaleType(type);
-                        if (type === "auction" && pricingModel === "revenue_share") {
-                          setPricingModel("fixed");
+                        if (type === "auction") {
+                          if (pricingModel === "revenue_share") setPricingModel("fixed");
+                          setTargetingType("open");
+                          setTargetCompanyId("");
                         }
                       }}
                       className={`flex items-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium transition-all ${
@@ -369,6 +378,56 @@ export function ListingNewPage() {
                   dir="ltr"
                 />
                 <p className="text-xs text-muted-foreground">{t("listing.form.revenue_share_pct.hint")}</p>
+              </div>
+            )}
+
+            {/* Targeting — only for direct sale */}
+            {saleType === "direct" && (
+              <div className="space-y-2">
+                <Label>{t("listing.form.targeting.label")}</Label>
+                <p className="text-xs text-muted-foreground">{t("listing.form.targeting.hint")}</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {(["open", "specific_company"] as TargetingType[]).map((type) => {
+                    const active = targetingType === type;
+                    return (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => setTargetingType(type)}
+                        className={`flex flex-col items-center gap-1.5 rounded-lg border px-3 py-3 text-sm font-medium transition-all ${
+                          active
+                            ? type === "open"
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-amber-500 bg-amber-50 text-amber-700"
+                            : "border-border bg-background text-muted-foreground hover:border-muted-foreground/40"
+                        }`}
+                      >
+                        {type === "open" ? (
+                          <Globe className="h-4 w-4 shrink-0" />
+                        ) : (
+                          <Lock className="h-4 w-4 shrink-0" />
+                        )}
+                        <span className="text-center text-xs leading-tight">
+                          {t(`listing.targeting.${type}`)}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {targetingType === "specific_company" && (
+                  <div className="space-y-1 pt-1">
+                    <Label htmlFor="targetCompanyId">{t("listing.form.targeting.companyId.label")}</Label>
+                    <Input
+                      id="targetCompanyId"
+                      type="text"
+                      value={targetCompanyId}
+                      onChange={(e) => setTargetCompanyId(e.target.value)}
+                      placeholder={t("listing.form.targeting.companyId.placeholder")}
+                      dir="ltr"
+                    />
+                    <p className="text-xs text-muted-foreground">{t("listing.form.targeting.companyId.hint")}</p>
+                  </div>
+                )}
               </div>
             )}
 

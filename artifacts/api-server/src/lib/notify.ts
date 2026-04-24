@@ -126,6 +126,33 @@ export async function notifyOfferRejected({
   });
 }
 
+/**
+ * Fired when a producer creates a specific_company listing targeting a named buyer.
+ * The target company is notified that a private deal has been offered to them.
+ */
+export async function notifyPrivateDealInvitation({
+  targetCompanyId,
+  listingId,
+  listingRef,
+  producerName,
+}: {
+  targetCompanyId: string;
+  listingId: string;
+  listingRef: string;
+  producerName: string;
+}): Promise<void> {
+  await createNotification({
+    companyId: targetCompanyId,
+    type: "private_deal_invitation",
+    title_ar: `عرض خاص من ${producerName}`,
+    title_en: `Private deal from ${producerName}`,
+    body_ar: `تلقيت عرضاً خاصاً على ${listingRef}. يمكنك مراجعة العرض والمشاركة فيه`,
+    body_en: `You received a private listing on ${listingRef}. Review it and submit your offer`,
+    relatedEntityType: "listing",
+    relatedEntityId: listingId,
+  });
+}
+
 export async function notifyDealStageChange({
   companyId,
   dealId,

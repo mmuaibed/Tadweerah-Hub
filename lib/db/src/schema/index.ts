@@ -8,6 +8,7 @@ export * from "./companies";
 export * from "./company-capabilities";
 export * from "./waste-listings";
 export * from "./listing-required-services";
+export * from "./listing-target-categories";
 export * from "./listing-offers";
 export * from "./deals";
 export * from "./audit-log";

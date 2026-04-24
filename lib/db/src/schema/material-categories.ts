@@ -24,6 +24,13 @@ export const materialCategoriesTable = pgTable("material_categories", {
   parent_id: uuid("parent_id"),
   is_active: boolean("is_active").notNull().default(true),
   sort_order: integer("sort_order").notNull().default(0),
+  /**
+   * Admin-managed flag. When true, any offer on a listing that uses this
+   * material category requires the buyer to have license_status = 'approved',
+   * even if no specific capability is required by the listing.
+   * Evaluated in POST /offers eligibility logic.
+   */
+  is_sensitive: boolean("is_sensitive").notNull().default(false),
 });
 
 export type MaterialCategory = typeof materialCategoriesTable.$inferSelect;

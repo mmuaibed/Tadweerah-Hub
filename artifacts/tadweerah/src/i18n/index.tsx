@@ -448,6 +448,32 @@ const translations: Record<string, Record<Language, string>> = {
     en: "You are currently the top bidder on this listing. You may raise your offer if you wish.",
   },
 
+  // Targeting type (private deal / category-targeted)
+  "listing.targeting.label": { ar: "نطاق الإعلان", en: "Listing Access" },
+  "listing.targeting.open": { ar: "مفتوح للجميع", en: "Open to all" },
+  "listing.targeting.category": { ar: "مخصص لتصنيف معين", en: "Category-targeted" },
+  "listing.targeting.specific_company": { ar: "صفقة خاصة", en: "Private deal" },
+
+  // Targeting form UI (create listing)
+  "listing.form.targeting.label": { ar: "من يمكنه رؤية هذا الإعلان؟", en: "Who can see this listing?" },
+  "listing.form.targeting.hint": {
+    ar: "في البيع المباشر يمكنك تقييد الوصول إلى شركة بعينها.",
+    en: "For Direct Sale you can restrict access to a specific company.",
+  },
+  "listing.form.targeting.companyId.label": { ar: "معرّف الشركة المستهدفة", en: "Target Company ID" },
+  "listing.form.targeting.companyId.placeholder": { ar: "الصق UUID الشركة هنا", en: "Paste the company UUID here" },
+  "listing.form.targeting.companyId.hint": {
+    ar: "يمكن للشركة المستهدفة فقط رؤية هذا الإعلان وتقديم عروضها عليه. تلقى إشعارًا فورًا.",
+    en: "Only the target company will see this listing and can submit an offer. They receive a notification immediately.",
+  },
+
+  // Notification: private deal invitation
+  "notification.private_deal_invitation.title": { ar: "عرض خاص بك", en: "Private deal for you" },
+  "notification.private_deal_invitation.body": {
+    ar: "تلقيت دعوة لعرض خاص. راجع الإعلان وشارك بعرضك.",
+    en: "You received a private listing invitation. Review it and submit your offer.",
+  },
+
   // Item 6 — Sale type
   "listing.sale_type.auction": { ar: "مزاد مفتوح", en: "Open Auction" },
   "listing.sale_type.direct": { ar: "بيع مباشر", en: "Direct Sale" },

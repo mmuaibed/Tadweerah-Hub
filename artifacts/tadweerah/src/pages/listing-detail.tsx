@@ -39,6 +39,7 @@ import {
   ShoppingBag,
   Scale,
   Percent,
+  Lock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -1141,6 +1142,17 @@ export function ListingDetailPage() {
                 icon={saleType === "auction" ? <Gavel className="h-4 w-4" /> : <ShoppingBag className="h-4 w-4" />}
                 label={t("listing.form.saleType")}
                 value={t(`listing.sale_type.${saleType}`)}
+              />
+            );
+          })()}
+          {(() => {
+            const targeting = (listing as typeof listing & { targeting_type?: string }).targeting_type;
+            if (!targeting || targeting === "open") return null;
+            return (
+              <DetailRow
+                icon={<Lock className="h-4 w-4 text-amber-500" />}
+                label={t("listing.targeting.label")}
+                value={t(`listing.targeting.${targeting}`)}
               />
             );
           })()}
