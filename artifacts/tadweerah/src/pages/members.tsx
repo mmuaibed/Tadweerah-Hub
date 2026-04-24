@@ -112,6 +112,7 @@ export function MembersPage() {
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [inviteSuccess, setInviteSuccess] = useState(false);
   const [pendingRemove, setPendingRemove] = useState<CompanyMember | null>(null);
+  const [removeError, setRemoveError] = useState<string | null>(null);
 
   const myUserId = me?.userId ?? "";
   const allMembers = members as CompanyMember[];
@@ -143,7 +144,16 @@ export function MembersPage() {
     mutation: {
       onSuccess: () => {
         setPendingRemove(null);
+        setRemoveError(null);
         void queryClient.invalidateQueries({ queryKey: getGetCompanyMembersQueryKey() });
+      },
+      onError: (err: unknown) => {
+        setPendingRemove(null);
+        const msg =
+          typeof err === "object" && err !== null && "message" in err
+            ? String((err as { message?: unknown }).message)
+            : t("members.remove.error.generic");
+        setRemoveError(msg);
       },
     },
   });
@@ -268,6 +278,12 @@ export function MembersPage() {
       </div>
 
       {/* Remove confirm */}
+      {removeError && (
+        <div className="mt-4 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+          {removeError}
+        </div>
+      )}
+
       {pendingRemove && (
         <ConfirmDialog
           open

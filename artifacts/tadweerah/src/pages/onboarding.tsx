@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { useAuth } from "@clerk/react";
 import { Link, useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { getGetMeQueryKey } from "@workspace/api-client-react";
@@ -29,6 +30,7 @@ interface CompanyActionOption {
 
 export function OnboardingPage() {
   const { t, lang } = useT();
+  const { getToken } = useAuth();
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const [isPending, setIsPending] = useState(false);
@@ -122,19 +124,26 @@ export function OnboardingPage() {
         ...(licenseNumber.trim() ? { license_number: licenseNumber.trim() } : {}),
       };
 
+      const authToken = await getToken();
       const res = await fetch("/api/companies", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
         credentials: "include",
         body: JSON.stringify(body),
       });
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError((data as { message?: string }).message ?? t("onboarding.error.generic"));
+        const msg = (data as { message?: string }).message ?? t("onboarding.error.generic");
+        console.warn("[tadweerah] company creation failed:", msg);
+        setError(msg);
         return;
       }
 
+      console.log("[tadweerah] company created successfully");
       await queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
       setLocation("/dashboard");
     } catch {

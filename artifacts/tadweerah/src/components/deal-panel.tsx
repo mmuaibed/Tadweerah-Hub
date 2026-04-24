@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useAuth } from "@clerk/react";
 import {
   Phone,
   CheckCircle2,
@@ -62,10 +63,14 @@ async function callDealApi(
   dealId: string,
   action: "confirm-payment" | "confirm-dispatch" | "confirm-receipt",
   body?: object,
+  authToken?: string | null,
 ): Promise<DealInfo> {
+  const headers: Record<string, string> = {};
+  if (body !== undefined) headers["Content-Type"] = "application/json";
+  if (authToken) headers["Authorization"] = `Bearer ${authToken}`;
   const res = await fetch(`/api/deals/${dealId}/${action}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: body ? JSON.stringify(body) : undefined,
   });
   if (!res.ok) {
@@ -88,6 +93,7 @@ function formatDate(iso: string | null, lang: string): string {
 
 export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSharePct }: DealPanelProps) {
   const { t, lang } = useT();
+  const { getToken } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [actualQty, setActualQty] = useState("");
@@ -105,9 +111,12 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
     setError(null);
     setPendingAction(null);
     try {
-      const updated = await callDealApi(deal.id, action, body);
+      const authToken = await getToken();
+      const updated = await callDealApi(deal.id, action, body, authToken);
       onUpdate(updated);
+      console.log(`[tadweerah] deal action '${action}' succeeded — deal ${deal.id}`);
     } catch (e) {
+      console.warn(`[tadweerah] deal action '${action}' failed — deal ${deal.id}:`, e);
       setError(e instanceof Error ? e.message : t("deal.error.generic"));
     } finally {
       setLoading(false);

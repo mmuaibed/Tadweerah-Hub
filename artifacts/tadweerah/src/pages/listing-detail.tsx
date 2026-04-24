@@ -439,8 +439,14 @@ function BuyerOfferSection({
     submitOffer(
       { wasteListingId, data: { price_per_unit: val, message: message.trim() || undefined } },
       {
-        onSuccess: () => { setPrice(""); setMessage(""); onSuccess(); },
-        onError: (err: unknown) => setFormError(mapOfferError(err)),
+        onSuccess: () => {
+          console.log("[tadweerah] offer submitted for listing:", wasteListingId);
+          setPrice(""); setMessage(""); onSuccess();
+        },
+        onError: (err: unknown) => {
+          console.warn("[tadweerah] offer submission failed:", err);
+          setFormError(mapOfferError(err));
+        },
       },
     );
   }
@@ -454,8 +460,14 @@ function BuyerOfferSection({
     improveOffer(
       { wasteListingId, data: { price_per_unit: val, message: newMessage.trim() || undefined } },
       {
-        onSuccess: () => { setShowImproveForm(false); setNewPrice(""); setNewMessage(""); onSuccess(); },
-        onError: (err: unknown) => setFormError(mapOfferError(err)),
+        onSuccess: () => {
+          console.log("[tadweerah] offer improved for listing:", wasteListingId);
+          setShowImproveForm(false); setNewPrice(""); setNewMessage(""); onSuccess();
+        },
+        onError: (err: unknown) => {
+          console.warn("[tadweerah] offer improve failed:", err);
+          setFormError(mapOfferError(err));
+        },
       },
     );
   }
@@ -1146,7 +1158,7 @@ export function ListingDetailPage() {
           <DetailRow
             icon={<Package className="h-4 w-4" />}
             label={t("listing.quantity")}
-            value={`${listing.quantity} ${t(`unit.${listing.unit}`)}`}
+            value={`${listing.quantity} ${listing.unit ? t(`unit.${listing.unit}`) : ""}`}
           />
           <DetailRow icon={<MapPin className="h-4 w-4" />} label={t("listing.city")} value={listing.city} />
           {listing.price_hint != null && (

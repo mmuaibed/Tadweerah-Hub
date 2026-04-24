@@ -1,4 +1,5 @@
 import { useState, useRef, type FormEvent } from "react";
+import { useAuth } from "@clerk/react";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -44,6 +45,7 @@ function toLegacyUnit(key: string): string {
 
 export function ListingNewPage() {
   const { t } = useT();
+  const { getToken } = useAuth();
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -98,10 +100,12 @@ export function ListingNewPage() {
 
   async function uploadImage(listingId: string): Promise<void> {
     if (!imageFile) return;
+    const authToken = await getToken();
     const form = new FormData();
     form.append("image", imageFile);
     const res = await fetch(`/api/listings/${listingId}/image`, {
       method: "POST",
+      headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
       body: form,
       credentials: "include",
     });
@@ -162,12 +166,15 @@ export function ListingNewPage() {
       },
       {
         onSuccess: async (created) => {
-          if (imageFile && (created as { id: string }).id) {
+          const listingId = (created as { id: string }).id;
+          console.log("[tadweerah] listing created:", listingId);
+          if (imageFile && listingId) {
             setIsUploading(true);
             try {
-              await uploadImage((created as { id: string }).id);
-            } catch {
-              // Non-fatal — listing is published, image upload failed silently
+              await uploadImage(listingId);
+              console.log("[tadweerah] listing image uploaded:", listingId);
+            } catch (e) {
+              console.warn("[tadweerah] listing image upload failed (non-fatal):", e);
             } finally {
               setIsUploading(false);
             }
@@ -175,7 +182,10 @@ export function ListingNewPage() {
           queryClient.invalidateQueries({ queryKey: getListMyListingsQueryKey() });
           setLocation("/listings/mine");
         },
-        onError: () => setError(t("listing.form.error")),
+        onError: (err) => {
+          console.warn("[tadweerah] listing creation failed:", err);
+          setError(t("listing.form.error"));
+        },
       },
     );
   };

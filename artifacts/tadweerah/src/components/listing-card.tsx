@@ -103,7 +103,7 @@ export function ListingCard({
           <div className="flex items-center gap-2">
             <Package className="h-4 w-4 shrink-0" />
             <span>
-              {listing.quantity} {t(`unit.${listing.unit}`)}
+              {listing.quantity} {listing.unit ? t(`unit.${listing.unit}`) : ""}
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -114,7 +114,7 @@ export function ListingCard({
             <div className="flex items-center gap-2">
               <Tag className="h-4 w-4 shrink-0" />
               <span>
-                {listing.price_hint.toLocaleString()} {t("listing.sar")} / {t(`unit.${listing.unit}`)}
+                {listing.price_hint.toLocaleString()} {t("listing.sar")}{listing.unit ? ` / ${t(`unit.${listing.unit}`)}` : ""}
               </span>
             </div>
           )}
@@ -161,7 +161,7 @@ export function ListingCard({
           {showCompany && (
             <div className="flex items-center gap-2">
               <Building2 className="h-4 w-4 shrink-0" />
-              <span>{listing.company_name}</span>
+              <span>{listing.company_name ?? "—"}</span>
             </div>
           )}
           <div className="flex items-center gap-2">

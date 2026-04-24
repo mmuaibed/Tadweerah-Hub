@@ -558,6 +558,7 @@ const translations: Record<string, Record<Language, string>> = {
   "members.invite.error.empty": { ar: "يرجى إدخال معرّف المستخدم", en: "Please enter a user ID" },
   "members.invite.error.generic": { ar: "حدث خطأ. يرجى المحاولة مجدداً", en: "Something went wrong. Please try again" },
   "members.remove.cta": { ar: "إزالة العضو", en: "Remove Member" },
+  "members.remove.error.generic": { ar: "فشل إزالة العضو. يرجى المحاولة مرة أخرى.", en: "Failed to remove member. Please try again." },
   "members.remove.confirm.title": { ar: "تأكيد إزالة العضو", en: "Confirm Member Removal" },
   "members.remove.confirm.desc": { ar: "هل أنت متأكد من إزالة هذا العضو من شركتك؟ لن يتمكن بعد ذلك من الوصول إلى أي من بياناتها.", en: "Are you sure you want to remove this member from your company? They will no longer have access to any company data." },
   "members.section.owner": { ar: "مالك الحساب", en: "Account Owner" },
