@@ -1,8 +1,14 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
-import { db, companiesTable } from "@workspace/db";
+import { eq, and } from "drizzle-orm";
+import {
+  db,
+  companiesTable,
+  capabilitiesTable,
+  companyCapabilitiesTable,
+} from "@workspace/db";
 import { CreateCompanyBody } from "@workspace/api-zod";
 import { requireAuth, type AuthedRequest } from "../middlewares/requireAuth";
+import { requireCompany, type AuthedCompanyRequest } from "../middlewares/requireCompany";
 
 const router: IRouter = Router();
 
@@ -29,7 +35,6 @@ router.post("/companies", requireAuth, async (req, res) => {
     return;
   }
 
-  // Extract optional new fields from body (not in generated schema yet)
   const licenseNumber =
     typeof req.body?.license_number === "string" && req.body.license_number.trim()
       ? req.body.license_number.trim()
@@ -71,5 +76,100 @@ router.post("/companies", requireAuth, async (req, res) => {
     createdAt: created.createdAt.toISOString(),
   });
 });
+
+/* -------------------------------------------------------------------------- */
+/* Company capabilities                                                        */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * GET /companies/mine/capabilities
+ * Returns the current company's declared capabilities (key + id).
+ */
+router.get(
+  "/companies/mine/capabilities",
+  requireAuth,
+  requireCompany(),
+  async (req, res) => {
+    const { company } = req as AuthedCompanyRequest;
+    const rows = await db
+      .select({
+        capability_id: companyCapabilitiesTable.capability_id,
+        key: capabilitiesTable.key,
+        name_ar: capabilitiesTable.name_ar,
+        name_en: capabilitiesTable.name_en,
+        sort_order: capabilitiesTable.sort_order,
+      })
+      .from(companyCapabilitiesTable)
+      .innerJoin(
+        capabilitiesTable,
+        eq(companyCapabilitiesTable.capability_id, capabilitiesTable.id),
+      )
+      .where(
+        and(
+          eq(companyCapabilitiesTable.company_id, company.id),
+          eq(capabilitiesTable.is_active, true),
+        ),
+      );
+    res.json(rows);
+  },
+);
+
+/**
+ * PUT /companies/mine/capabilities
+ * Body: { capability_ids: string[] }
+ * Replaces the company's capability list atomically.
+ */
+router.put(
+  "/companies/mine/capabilities",
+  requireAuth,
+  requireCompany(),
+  async (req, res) => {
+    const { company } = req as AuthedCompanyRequest;
+    const ids: unknown = req.body?.capability_ids;
+    if (!Array.isArray(ids) || ids.some((x) => typeof x !== "string")) {
+      res.status(400).json({
+        error: "ValidationError",
+        message: "capability_ids must be an array of strings",
+      });
+      return;
+    }
+    const capabilityIds = ids as string[];
+
+    await db.transaction(async (tx) => {
+      await tx
+        .delete(companyCapabilitiesTable)
+        .where(eq(companyCapabilitiesTable.company_id, company.id));
+      if (capabilityIds.length > 0) {
+        await tx.insert(companyCapabilitiesTable).values(
+          capabilityIds.map((cid) => ({
+            company_id: company.id,
+            capability_id: cid,
+          })),
+        );
+      }
+    });
+
+    const rows = await db
+      .select({
+        capability_id: companyCapabilitiesTable.capability_id,
+        key: capabilitiesTable.key,
+        name_ar: capabilitiesTable.name_ar,
+        name_en: capabilitiesTable.name_en,
+        sort_order: capabilitiesTable.sort_order,
+      })
+      .from(companyCapabilitiesTable)
+      .innerJoin(
+        capabilitiesTable,
+        eq(companyCapabilitiesTable.capability_id, capabilitiesTable.id),
+      )
+      .where(
+        and(
+          eq(companyCapabilitiesTable.company_id, company.id),
+          eq(capabilitiesTable.is_active, true),
+        ),
+      );
+    res.json(rows);
+  },
+);
 
 export default router;

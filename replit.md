@@ -140,6 +140,16 @@ A Saudi B2B MVP connecting waste producers, recycling buyers, and transport carr
 - `capabilities` table seeded with 10 entries
 - `company_categories.key`, `unit_options.key`, `material_categories.key` — stable internal identifiers (not null, unique)
 - `listing_offers.status` enum extended with `'withdrawn'`
+- `company_capabilities` join table (company_id FK, capability_id FK, unique constraint) — created in Batch 2A
+
+**Batch 2A — implemented (April 2026)**
+- Codegen re-run: `useGetMyCapabilities`, `useUpdateMyCapabilities`, `useWithdrawOffer`, `useGetMaterialCategories`, `useGetUnitOptions` all generated cleanly
+- `GET /companies/mine/capabilities` + `PUT /companies/mine/capabilities` — replace a company's capability list atomically
+- OpenAPI: `CompanyCapabilityRow`, `UpdateCapabilitiesBody` schemas added; company capabilities paths added
+- Listing form (listing-new.tsx): now uses lookup-table-driven material category + subcategory dropdowns and unit-options dropdown instead of hardcoded enums; still sends legacy `material`/`unit` fields for backward compat (derived from category/unit key)
+- Participations page: Withdraw button added to pending offer cards (DELETE /listings/:id/offers/mine via ConfirmDialog)
+- i18n: added `offer.status.withdrawn`, withdraw confirm dialog keys, `unit.*` keys for all 9 unit options, `listing.form.subcategory` keys, `capabilities.*` keys
+- Fixed pre-existing TS errors: `deal-panel.tsx` type narrowing cast, `reports.tsx` invalid `width` prop
 
 ### M2 — known technical limitations (non-blocking)
 - City filter updated to ILIKE partial-match (was exact-match — now fixed).

@@ -85,6 +85,13 @@ const translations: Record<string, Record<Language, string>> = {
 
   "unit.kg": { ar: "كجم", en: "kg" },
   "unit.ton": { ar: "طن", en: "ton" },
+  "unit.gram": { ar: "جرام", en: "g" },
+  "unit.liter": { ar: "لتر", en: "L" },
+  "unit.cubic_meter": { ar: "م³", en: "m³" },
+  "unit.piece": { ar: "قطعة", en: "pc" },
+  "unit.box": { ar: "صندوق", en: "box" },
+  "unit.barrel": { ar: "برميل", en: "bbl" },
+  "unit.other": { ar: "أخرى", en: "other" },
 
   "status.open": { ar: "مفتوح", en: "Open" },
   "status.closed": { ar: "مغلق", en: "Closed" },
@@ -95,7 +102,9 @@ const translations: Record<string, Record<Language, string>> = {
     ar: "اعرض نفاياتك ليطّلع عليها المشترون",
     en: "Make your waste available for buyers to discover",
   },
-  "listing.form.material": { ar: "نوع المادة", en: "Material" },
+  "listing.form.material": { ar: "تصنيف المادة", en: "Material Category" },
+  "listing.form.subcategory": { ar: "التصنيف الفرعي (اختياري)", en: "Subcategory (Optional)" },
+  "listing.form.subcategory.placeholder": { ar: "اختر التصنيف الفرعي", en: "Select subcategory" },
   "listing.form.quantity": { ar: "الكمية", en: "Quantity" },
   "listing.form.unit": { ar: "الوحدة", en: "Unit" },
   "listing.form.city": { ar: "المدينة", en: "City" },
@@ -199,6 +208,11 @@ const translations: Record<string, Record<Language, string>> = {
   "offer.status.pending": { ar: "معلّق", en: "Pending" },
   "offer.status.accepted": { ar: "مقبول", en: "Accepted" },
   "offer.status.rejected": { ar: "مرفوض", en: "Rejected" },
+  "offer.status.withdrawn": { ar: "مسحوب", en: "Withdrawn" },
+  "offer.withdraw.button": { ar: "سحب العرض", en: "Withdraw Offer" },
+  "offer.withdraw.confirm.title": { ar: "سحب العرض؟", en: "Withdraw offer?" },
+  "offer.withdraw.confirm.desc": { ar: "سيُلغى عرضك نهائيًا. يمكنك تقديم عرض جديد لاحقًا.", en: "Your offer will be cancelled. You can submit a new offer later." },
+  "offer.withdraw.confirm.action": { ar: "نعم، سحب", en: "Yes, withdraw" },
 
   "offer.producer.title": { ar: "العروض الواردة", en: "Incoming Offers" },
   "offer.producer.empty": { ar: "لا توجد عروض بعد. سيتواصل المشترون قريباً.", en: "No offers yet. Buyers will reach out soon." },
@@ -466,6 +480,14 @@ const translations: Record<string, Record<Language, string>> = {
   "reports.metric.weight": { ar: "كجم مواد مُعاد تدويرها", en: "Kg Materials Recycled" },
   "reports.metric.deals": { ar: "صفقات مكتملة", en: "Deals Completed" },
   "reports.metric.growth": { ar: "نمو شهري", en: "Monthly Growth" },
+
+  // Capabilities
+  "capabilities.title": { ar: "خدمات الشركة", en: "Company Capabilities" },
+  "capabilities.subtitle": { ar: "حدد ما تستطيع شركتك تقديمه", en: "Select what your company can offer" },
+  "capabilities.saving": { ar: "جاري الحفظ...", en: "Saving..." },
+  "capabilities.saved": { ar: "تم الحفظ", en: "Saved" },
+  "capabilities.error": { ar: "حدث خطأ أثناء الحفظ", en: "Failed to save capabilities" },
+  "capabilities.empty": { ar: "لا توجد خدمات متاحة", en: "No capabilities available" },
 
   // Item 8 — Terms page content
   "terms.title": { ar: "الشروط والأحكام", en: "Terms & Conditions" },

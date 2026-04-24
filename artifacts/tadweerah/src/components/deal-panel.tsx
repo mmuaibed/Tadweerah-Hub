@@ -433,7 +433,7 @@ export function DealPanel({ deal, role, unit, onUpdate }: DealPanelProps) {
             )}
 
             {/* Waiting — not the current user's turn */}
-            {deal.status !== "completed" && !isMyTurn && waitingText && (
+            {(deal.status as string) !== "completed" && !isMyTurn && waitingText && (
               <div className="rounded-md bg-muted/60 px-3 py-2 text-xs text-muted-foreground text-center leading-relaxed">
                 {waitingText}
               </div>

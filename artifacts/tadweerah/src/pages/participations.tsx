@@ -2,8 +2,11 @@ import { useState } from "react";
 import { Link } from "wouter";
 import {
   useListMyOffers,
+  useWithdrawOffer,
+  getListMyOffersQueryKey,
   type MyOffer,
 } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Loader2,
   ShoppingBag,
@@ -20,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AppLayout } from "@/components/app-layout";
 import { EmptyState } from "@/components/empty-state";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { useT } from "@/i18n";
 
 type Tab = "all" | "pending" | "accepted" | "rejected";
@@ -40,10 +44,21 @@ type DealStatus = "active" | "payment_confirmed" | "dispatched" | "completed";
 
 function OfferCard({ offer }: { offer: MyOffer }) {
   const { t, lang } = useT();
+  const queryClient = useQueryClient();
   const isRejected = offer.status === "rejected";
   const isAccepted = offer.status === "accepted";
   const isPending = offer.status === "pending";
   const dealStatus = (offer as unknown as { deal_status?: DealStatus }).deal_status;
+
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
+  const { mutate: withdraw, isPending: isWithdrawing } = useWithdrawOffer({
+    mutation: {
+      onSuccess: () => {
+        setWithdrawOpen(false);
+        queryClient.invalidateQueries({ queryKey: getListMyOffersQueryKey() });
+      },
+    },
+  });
 
   const closedDateStr = offer.listing_closed_at
     ? new Date(offer.listing_closed_at).toLocaleDateString(
@@ -200,6 +215,32 @@ function OfferCard({ offer }: { offer: MyOffer }) {
         <div className="text-xs text-muted-foreground">
           {t("participations.listing.closedAt")}: {closedDateStr}
         </div>
+      )}
+
+      {/* Withdraw — only for pending offers on open listings */}
+      {isPending && offer.listing_status === "open" && (
+        <>
+          <ConfirmDialog
+            open={withdrawOpen}
+            onOpenChange={setWithdrawOpen}
+            title={t("offer.withdraw.confirm.title")}
+            description={t("offer.withdraw.confirm.desc")}
+            confirmLabel={t("offer.withdraw.confirm.action")}
+            destructive
+            isPending={isWithdrawing}
+            onConfirm={() => withdraw({ wasteListingId: offer.waste_listing_id })}
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full mt-1 border-destructive/40 text-destructive hover:bg-destructive/10"
+            disabled={isWithdrawing}
+            onClick={() => setWithdrawOpen(true)}
+          >
+            {isWithdrawing ? <Loader2 className="h-3.5 w-3.5 animate-spin me-1" /> : null}
+            {t("offer.withdraw.button")}
+          </Button>
+        </>
       )}
 
       {/* Action: view listing detail */}

@@ -74,6 +74,50 @@ paths:
         "409":
           description: User already has a company
 
+  /companies/mine/capabilities:
+    get:
+      operationId: getMyCapabilities
+      tags: [companies]
+      summary: Get the current company's declared capabilities.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CompanyCapabilityRow"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Company required
+    put:
+      operationId: updateMyCapabilities
+      tags: [companies]
+      summary: Replace the current company's capability list.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCapabilitiesBody"
+      responses:
+        "200":
+          description: Updated list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CompanyCapabilityRow"
+        "400":
+          description: Validation error
+        "401":
+          description: Unauthorized
+        "403":
+          description: Company required
+
   /listings:
     get:
       operationId: listMarketplaceListings
@@ -1330,6 +1374,33 @@ components:
         sort_order:
           type: integer
       required: [id, key, name_ar, name_en, is_active, sort_order]
+
+    CompanyCapabilityRow:
+      type: object
+      description: A capability entry as returned when reading a company's declared capabilities.
+      properties:
+        capability_id:
+          type: string
+        key:
+          type: string
+          description: Stable internal key (e.g. "recycle_metal"). Never changes.
+        name_ar:
+          type: string
+        name_en:
+          type: string
+        sort_order:
+          type: integer
+      required: [capability_id, key, name_ar, name_en, sort_order]
+
+    UpdateCapabilitiesBody:
+      type: object
+      properties:
+        capability_ids:
+          type: array
+          items:
+            type: string
+          description: Full replacement list of capability UUIDs for this company.
+      required: [capability_ids]
 
     # ── Deals ────────────────────────────────────────────────────────────────
 

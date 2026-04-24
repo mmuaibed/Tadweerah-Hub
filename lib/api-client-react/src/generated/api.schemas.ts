@@ -374,6 +374,23 @@ export interface Capability {
   sort_order: number;
 }
 
+/**
+ * A capability entry as returned when reading a company's declared capabilities.
+ */
+export interface CompanyCapabilityRow {
+  capability_id: string;
+  /** Stable internal key (e.g. "recycle_metal"). Never changes. */
+  key: string;
+  name_ar: string;
+  name_en: string;
+  sort_order: number;
+}
+
+export interface UpdateCapabilitiesBody {
+  /** Full replacement list of capability UUIDs for this company. */
+  capability_ids: string[];
+}
+
 export type DealStatus = (typeof DealStatus)[keyof typeof DealStatus];
 
 export const DealStatus = {

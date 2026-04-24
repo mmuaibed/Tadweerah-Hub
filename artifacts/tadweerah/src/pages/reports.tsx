@@ -31,7 +31,6 @@ export function ReportsPage() {
 
   return (
     <AppLayout
-      width="default"
       title={t("reports.title")}
       subtitle={t("reports.subtitle")}
     >

@@ -110,6 +110,52 @@ export const CreateCompanyBody = zod.object({
 });
 
 /**
+ * @summary Get the current company's declared capabilities.
+ */
+export const GetMyCapabilitiesResponseItem = zod
+  .object({
+    capability_id: zod.string(),
+    key: zod
+      .string()
+      .describe('Stable internal key (e.g. \"recycle_metal\"). Never changes.'),
+    name_ar: zod.string(),
+    name_en: zod.string(),
+    sort_order: zod.number(),
+  })
+  .describe(
+    "A capability entry as returned when reading a company's declared capabilities.",
+  );
+export const GetMyCapabilitiesResponse = zod.array(
+  GetMyCapabilitiesResponseItem,
+);
+
+/**
+ * @summary Replace the current company's capability list.
+ */
+export const UpdateMyCapabilitiesBody = zod.object({
+  capability_ids: zod
+    .array(zod.string())
+    .describe("Full replacement list of capability UUIDs for this company."),
+});
+
+export const UpdateMyCapabilitiesResponseItem = zod
+  .object({
+    capability_id: zod.string(),
+    key: zod
+      .string()
+      .describe('Stable internal key (e.g. \"recycle_metal\"). Never changes.'),
+    name_ar: zod.string(),
+    name_en: zod.string(),
+    sort_order: zod.number(),
+  })
+  .describe(
+    "A capability entry as returned when reading a company's declared capabilities.",
+  );
+export const UpdateMyCapabilitiesResponse = zod.array(
+  UpdateMyCapabilitiesResponseItem,
+);
+
+/**
  * @summary Public marketplace listings (open status only). Buyers browse here.
  */
 export const ListMarketplaceListingsQueryParams = zod.object({

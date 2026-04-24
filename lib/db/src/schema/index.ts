@@ -3,6 +3,7 @@ export * from "./unit-options";
 export * from "./material-categories";
 export * from "./capabilities";
 export * from "./companies";
+export * from "./company-capabilities";
 export * from "./waste-listings";
 export * from "./listing-offers";
 export * from "./deals";
