@@ -1,0 +1,370 @@
+We are now at a critical stage where we want to review the full product direction before proceeding with any further implementation.
+
+Important:
+We are NOT asking you to implement anything at this stage.
+We want a structured technical and product assessment first.
+
+---
+
+## 1) Objective
+
+We have completed a real validation session and identified a set of gaps and improvements across:
+
+* Marketplace experience
+* Listing clarity
+* Governance and compliance
+* Company structure (multi-users, roles)
+* Classification (materials, companies, units)
+* Sales models
+* Future roadmap (feature catalog, Replit tools, etc.)
+
+We want you to review everything below and give us your evaluation point-by-point.
+
+---
+
+## 2) What we expect from you
+
+For each item below, please provide:
+
+1. Do you agree with the problem or observation?
+
+   * Yes / No / Partially
+   * Why?
+
+2. Is the proposed solution appropriate?
+
+   * Yes / No / Needs adjustment
+   * Why?
+
+3. Complexity level:
+
+   * Simple / Medium / Complex
+
+4. Is there a better alternative with less complexity?
+
+   * If yes, explain it clearly
+   * What are its trade-offs?
+
+5. Recommendation:
+
+   * Build now
+   * Prepare foundation now, implement later
+   * Defer
+   * Not recommended
+
+6. Expected impact:
+
+   * UX
+   * Governance
+   * Scalability
+   * Business value
+
+---
+
+## 3) Areas to review
+
+---
+
+### A) Marketplace Listing Experience
+
+Goal:
+A buyer should decide within 3 seconds whether to open a listing.
+
+Required improvements:
+
+* Clear listing summary card that shows:
+
+  * Material (main + subcategory)
+  * Form and condition (future-ready)
+  * Location (city at minimum)
+  * Price (unit + total)
+  * Sales type (auction / direct / private)
+  * Visual badges:
+
+    * Participating or not
+    * Highest bidder or not
+    * Action required
+
+* Image handling:
+
+  * Small thumbnail in marketplace
+  * Larger images inside listing details
+
+---
+
+### B) Self-Bidding Prevention
+
+Problem:
+User can bid against themselves without warning.
+
+Expected:
+If user is currently the highest bidder:
+
+* Show clear warning before allowing a higher bid
+
+---
+
+### C) Error Messages
+
+Problem:
+Error messages are not aligned with actual issues.
+
+Expected:
+We want to:
+
+* Extract all current system errors
+* Map:
+
+  * Error cause
+  * Current message
+  * Improved user-facing message
+* Redesign all error messages in one pass
+
+---
+
+### D) Payment Confirmation Stage
+
+Changes required:
+
+* Rename stage to:
+  "Confirm Receipt of Payment"
+
+* Add:
+
+  * Transfer reference number
+  * Optional or required proof (image upload)
+
+* Confirmation message:
+  "You are confirming that you have received the payment from the buyer. This action cannot be reversed."
+
+---
+
+### E) Governance & Terms
+
+We will introduce:
+
+* Terms and conditions covering:
+
+  * Seller responsibility in choosing offers
+  * Accepting lower offers
+  * Payment confirmation responsibility
+  * Platform liability boundaries
+  * Role-based responsibility within companies
+
+* Must be:
+
+  * Accepted during registration
+  * Accessible as a standalone page
+
+---
+
+### F) Company Structure (Multi-User)
+
+Requirement:
+
+* One company can have multiple users
+
+Roles:
+
+* Admin
+* Operator
+* Viewer
+
+Capabilities:
+
+* Admin approves users and manages roles
+* Alerts for abnormal decisions (e.g. accepting lower offer)
+
+This is also tied to future monetization (subscriptions based on users and roles)
+
+---
+
+### G) Material Classification
+
+We want a flexible classification system:
+
+* Main category + subcategory
+* Managed fully from Admin (no hardcoding)
+
+"Other":
+
+* Must exist
+* Requires mandatory description
+* Used for future classification improvements
+
+---
+
+### H) Company Classification
+
+* Company types managed via Admin:
+
+  * Manufacturer
+  * Recycler
+  * Scrap trader
+  * Collector / Transporter
+  * Contractor
+  * Commercial entity
+  * Government entity
+  * Non-profit
+  * Other (with required description)
+
+---
+
+### I) Company Capabilities
+
+Multi-select capabilities (Admin managed):
+
+* Sell
+* Buy
+* Process / recycle
+* Transport / collect
+* Safe disposal
+* Sorting / aggregation
+* Storage
+
+Important:
+
+* Capabilities require Admin approval before being considered verified
+
+---
+
+### J) Sales Model
+
+Clear separation between:
+
+Sales Type:
+
+* Auction
+* Direct
+* Private (restricted to selected companies)
+
+Pricing Model:
+
+* Fixed
+* By weight
+
+Private listings:
+
+* Only visible to selected companies
+* Used as a temporary solution for contract-based transactions
+
+---
+
+### K) Units of Measurement
+
+Must NOT be fixed.
+
+Admin-managed list including:
+
+* kg
+* ton
+* piece
+* liter
+* bale
+* container
+* etc.
+
+"Other" allowed with description
+
+---
+
+### L) Eligibility & Licensing
+
+Critical for:
+
+* Transporters
+* Recyclers
+* Safe disposal
+
+During registration:
+
+* License number
+* License document upload
+
+Status:
+
+* Pending
+* Approved
+* Rejected
+
+Visual indicator required
+
+Eligibility should affect:
+
+* Ability to participate in certain listings
+
+---
+
+### M) Reports & Sustainability
+
+We want:
+
+* Dashboard & reporting page
+
+  * Visible to all
+  * Data depends on subscription level
+
+* Sustainability reports:
+
+  * View
+  * Export / print
+  * Optional paid certification service
+
+---
+
+### N) Feature Catalog (Future Roadmap)
+
+We want an internal Admin-managed list of future features:
+
+* Categorized as:
+
+  * Useful now
+  * Foundation for later
+  * Future
+  * Not useful
+
+* Source:
+
+  * Internal
+  * Replit
+  * Third-party
+
+Includes potential tools like:
+
+* Accounting agent
+* Marketing agent
+* Smart alerts
+
+Important:
+This is for evaluation only, not implementation.
+
+---
+
+## 4) Key Principle
+
+Nothing should be hardcoded if it is expected to evolve.
+
+All classifications and configurable elements must be manageable via Admin.
+
+---
+
+## 5) Next Step
+
+After your analysis:
+
+We will:
+
+* Agree on final decisions
+* Move to phased implementation:
+
+  * One item at a time
+  * Implement → test → fix → confirm → move to next
+
+---
+
+Goal:
+Build a strong, scalable foundation with minimal rework, while maintaining simplicity and high business value.
+
+---
+
+Please review carefully and provide a structured response.
