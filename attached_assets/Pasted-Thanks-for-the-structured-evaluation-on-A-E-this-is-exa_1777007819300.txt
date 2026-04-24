@@ -1,0 +1,103 @@
+Thanks for the structured evaluation on A–E — this is exactly the level of clarity we need.
+
+Before we move into implementation, we want to complete the same level of assessment for the remaining areas (F → N).
+
+Important:
+We are still NOT asking for implementation.
+We want full evaluation first so we can make clean, non-reversible decisions.
+
+---
+
+## Please continue your assessment for the following areas:
+
+### F) Company Multi-User Structure
+
+* Multiple users per company
+* Roles (Admin / Operator / Viewer)
+* Approval flow for users
+* Alerts for abnormal actions (e.g. accepting lower offer)
+
+---
+
+### G) Material Classification
+
+* Main + subcategory
+* Fully Admin-managed (no hardcoding)
+* “Other” with required description
+
+---
+
+### H) Company Classification
+
+* Admin-managed company types
+* “Other” with required description
+
+---
+
+### I) Company Capabilities
+
+* Multi-select capabilities (sell, buy, transport, recycle, etc.)
+* Whether to include Admin approval at this stage or defer
+
+---
+
+### J) Sales Model
+
+* Clear separation:
+
+  * Sales type (auction / direct / private)
+  * Pricing model (fixed / by weight)
+* Private listings restricted to selected companies
+
+---
+
+### K) Units of Measurement
+
+* Fully Admin-managed
+* Includes kg, ton, liter, piece, bale, container, etc.
+* “Other” with description
+
+---
+
+### L) Eligibility & Licensing
+
+* License number + document upload at registration
+* Status (pending / approved / rejected)
+* Whether to enforce eligibility now or only collect data
+
+---
+
+### M) Reports & Sustainability
+
+* Dashboard visibility (based on subscription)
+* Sustainability reports (view / export / certification later)
+* Whether to implement now, placeholder, or defer
+
+---
+
+### N) Feature Catalog (Future Roadmap)
+
+* Admin-managed list of future features
+* Categorized (now / foundation / later / not useful)
+* Source tagging (internal / Replit / third-party)
+* Including potential Replit tools (agents, automation, etc.)
+
+---
+
+## For each item, please follow the same structure you used:
+
+1. Do you agree with the problem or need?
+2. Is the proposed direction appropriate?
+3. Complexity (Simple / Medium / Complex)
+4. Better alternative (if any) with trade-offs
+5. Recommendation (Now / Foundation / Later / Not recommended)
+6. Expected impact (UX / Governance / Scalability / Business)
+
+---
+
+Once we have your full evaluation, we will:
+
+* Lock final decisions
+* Move into phased implementation (one item at a time)
+
+Thanks — looking forward to your structured input on the remaining items.
