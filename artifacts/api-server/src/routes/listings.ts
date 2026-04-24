@@ -381,15 +381,6 @@ router.post(
     const { company } = req as AuthedCompanyRequest;
     const data = parsed.data;
 
-    // License eligibility gate: producers with rejected/expired licenses cannot post listings
-    if (company.license_status === "rejected" || company.license_status === "expired") {
-      throw new HttpError(
-        403,
-        "LicenseInvalid",
-        `Your company's license has been ${company.license_status}. Please contact support to post new listings.`,
-      );
-    }
-
     // Extra fields not in generated schema (safe to read directly from body)
     const saleType = req.body.sale_type === "direct" ? "direct" : "auction";
     const materialCategoryId: string | null =
