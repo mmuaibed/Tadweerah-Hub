@@ -151,6 +151,10 @@ The project is built as a pnpm workspace monorepo using TypeScript.
 - **Cleanup:** `role-route.tsx` (unused after capability-based migration) deleted.
 - **Governance Decisions:** Strict rules on immutability for `pricing_model` and `visibility` after listing publication, clear definitions for `accepted` offer status, and disclaimers regarding platform liability.
 
+# Pending Integrations
+
+- **Resend (Email):** Infrastructure is ready at `artifacts/api-server/src/lib/email.ts`. The `notify.ts` helper calls `sendEmail()` for all key notification events (offer received, outbid, offer accepted/rejected, deal stage changes). Email is soft-disabled until `RESEND_API_KEY` env secret is set. When the user is ready to activate, use the Replit Resend integration (connector:ccfg_resend_01K69QKYK789WN202XSE3QS17V) or ask the user for a Resend API key to store as `RESEND_API_KEY`. Also set `EMAIL_FROM` (e.g. `تدويرة <noreply@tadweerah.sa>`) and `PLATFORM_URL` for correct links in emails.
+
 # External Dependencies
 
 - **PostgreSQL:** Primary database for storing all application data.
