@@ -8,6 +8,7 @@ import {
   companyActionsTable,
   companyActionSelectionsTable,
   companyMembersTable,
+  companyCategoriesTable,
 } from "@workspace/db";
 import { CreateCompanyBody } from "@workspace/api-zod";
 import { requireAuth, type AuthedRequest } from "../middlewares/requireAuth";
@@ -223,6 +224,157 @@ router.put(
     });
 
     res.json(rows);
+  },
+);
+
+/* -------------------------------------------------------------------------- */
+/* Company profile (GET + PUT /companies/mine)                                */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * GET /companies/mine
+ * Returns the authenticated user's company profile including category and
+ * license information.
+ */
+router.get(
+  "/companies/mine",
+  requireAuth,
+  requireCompany(),
+  async (req, res) => {
+    const { company } = req as AuthedCompanyRequest;
+
+    const rows = await db
+      .select({
+        id: companiesTable.id,
+        name: companiesTable.name,
+        city: companiesTable.city,
+        contactPhone: companiesTable.contactPhone,
+        commercialRegistration: companiesTable.commercialRegistration,
+        license_number: companiesTable.license_number,
+        license_status: companiesTable.license_status,
+        company_category_id: companiesTable.company_category_id,
+        accepted_terms_at: companiesTable.accepted_terms_at,
+        createdAt: companiesTable.createdAt,
+        category_name_ar: companyCategoriesTable.name_ar,
+        category_name_en: companyCategoriesTable.name_en,
+      })
+      .from(companiesTable)
+      .leftJoin(
+        companyCategoriesTable,
+        eq(companiesTable.company_category_id, companyCategoriesTable.id),
+      )
+      .where(eq(companiesTable.id, company.id))
+      .limit(1);
+
+    if (!rows.length) {
+      res.status(404).json({ error: "NotFound", message: "Company not found" });
+      return;
+    }
+    const r = rows[0];
+    res.json({
+      id: r.id,
+      name: r.name,
+      city: r.city,
+      contactPhone: r.contactPhone,
+      commercialRegistration: r.commercialRegistration ?? undefined,
+      license_number: r.license_number ?? undefined,
+      license_status: r.license_status ?? undefined,
+      company_category_id: r.company_category_id ?? undefined,
+      category_name_ar: r.category_name_ar ?? undefined,
+      category_name_en: r.category_name_en ?? undefined,
+      accepted_terms_at: r.accepted_terms_at?.toISOString() ?? undefined,
+      createdAt: r.createdAt.toISOString(),
+    });
+  },
+);
+
+/**
+ * PUT /companies/mine
+ * Updates mutable company fields: name, city, contactPhone,
+ * commercialRegistration, license_number, company_category_id.
+ * license_status is NEVER changed here — admin only.
+ */
+router.put(
+  "/companies/mine",
+  requireAuth,
+  requireCompany(),
+  async (req, res) => {
+    const { company } = req as AuthedCompanyRequest;
+
+    const nameRaw = typeof req.body?.name === "string" ? req.body.name.trim() : null;
+    const cityRaw = typeof req.body?.city === "string" ? req.body.city.trim() : null;
+    const phoneRaw = typeof req.body?.contactPhone === "string" ? req.body.contactPhone.trim() : null;
+
+    if (nameRaw !== null && (nameRaw.length < 2 || nameRaw.length > 120)) {
+      res.status(400).json({ error: "ValidationError", message: "name must be 2–120 characters" });
+      return;
+    }
+    if (cityRaw !== null && (cityRaw.length < 2 || cityRaw.length > 80)) {
+      res.status(400).json({ error: "ValidationError", message: "city must be 2–80 characters" });
+      return;
+    }
+    if (phoneRaw !== null && (phoneRaw.length < 6 || phoneRaw.length > 20)) {
+      res.status(400).json({ error: "ValidationError", message: "contactPhone must be 6–20 characters" });
+      return;
+    }
+
+    const crRaw =
+      typeof req.body?.commercialRegistration === "string"
+        ? req.body.commercialRegistration.trim() || null
+        : undefined;
+    const licenseRaw =
+      typeof req.body?.license_number === "string"
+        ? req.body.license_number.trim() || null
+        : undefined;
+    const categoryIdRaw =
+      typeof req.body?.company_category_id === "string"
+        ? req.body.company_category_id.trim() || null
+        : undefined;
+
+    const patch: Partial<typeof companiesTable.$inferInsert> = {};
+    if (nameRaw !== null) patch.name = nameRaw;
+    if (cityRaw !== null) patch.city = cityRaw;
+    if (phoneRaw !== null) patch.contactPhone = phoneRaw;
+    if (crRaw !== undefined) patch.commercialRegistration = crRaw;
+    if (licenseRaw !== undefined) {
+      patch.license_number = licenseRaw;
+      if (licenseRaw && !company.license_status) {
+        patch.license_status = "pending";
+      }
+    }
+    if (categoryIdRaw !== undefined) patch.company_category_id = categoryIdRaw;
+
+    if (Object.keys(patch).length === 0) {
+      res.status(400).json({ error: "ValidationError", message: "No fields to update" });
+      return;
+    }
+
+    const [updated] = await db
+      .update(companiesTable)
+      .set(patch)
+      .where(eq(companiesTable.id, company.id))
+      .returning();
+
+    void logAudit({
+      userId: (req as AuthedCompanyRequest).userId,
+      companyId: company.id,
+      action: "company.profile_updated",
+      entityType: "company",
+      entityId: company.id,
+      details: { fields: Object.keys(patch) },
+    });
+
+    res.json({
+      id: updated.id,
+      name: updated.name,
+      city: updated.city,
+      contactPhone: updated.contactPhone,
+      commercialRegistration: updated.commercialRegistration ?? undefined,
+      license_number: updated.license_number ?? undefined,
+      license_status: updated.license_status ?? undefined,
+      company_category_id: updated.company_category_id ?? undefined,
+      createdAt: updated.createdAt.toISOString(),
+    });
   },
 );
 

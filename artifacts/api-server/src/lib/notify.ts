@@ -1,11 +1,15 @@
 /**
  * Notification creation helpers.
  * Creates DB notification rows for company users.
+ * Also fires transactional emails (fire-and-forget) via email.ts.
  *
  * Charter: notification `type` keys are stable internal identifiers.
  * Title/body text is defined here and must be bilingual (AR + EN).
  */
-import { db, notificationsTable } from "@workspace/db";
+import { eq, and } from "drizzle-orm";
+import { clerkClient } from "@clerk/express";
+import { db, notificationsTable, companyMembersTable } from "@workspace/db";
+import { sendEmail } from "./email";
 
 interface NotifyParams {
   companyId: string;
@@ -16,6 +20,28 @@ interface NotifyParams {
   body_en?: string;
   relatedEntityType?: string;
   relatedEntityId?: string;
+  /** If true, also send a transactional email to the company owner. */
+  sendMail?: boolean;
+}
+
+async function lookupOwnerEmail(companyId: string): Promise<string | null> {
+  try {
+    const rows = await db
+      .select({ user_id: companyMembersTable.user_id })
+      .from(companyMembersTable)
+      .where(
+        and(
+          eq(companyMembersTable.company_id, companyId),
+          eq(companyMembersTable.role, "owner"),
+        ),
+      )
+      .limit(1);
+    if (!rows.length) return null;
+    const user = await clerkClient.users.getUser(rows[0].user_id);
+    return user.emailAddresses[0]?.emailAddress ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export async function createNotification(p: NotifyParams): Promise<void> {
@@ -31,8 +57,23 @@ export async function createNotification(p: NotifyParams): Promise<void> {
       related_entity_id: p.relatedEntityId ?? null,
     });
   } catch {
-    // Notification failure must never surface to the caller.
     console.error(`[notify] Failed to create notification type=${p.type}`, { companyId: p.companyId });
+  }
+
+  if (p.sendMail) {
+    void (async () => {
+      const email = await lookupOwnerEmail(p.companyId);
+      if (email) {
+        await sendEmail({
+          to: email,
+          title_ar: p.title_ar,
+          title_en: p.title_en,
+          body_ar: p.body_ar,
+          body_en: p.body_en,
+          listingId: p.relatedEntityType === "listing" ? p.relatedEntityId : undefined,
+        });
+      }
+    })();
   }
 }
 
@@ -58,6 +99,7 @@ export async function notifyOfferReceived({
     body_en: `${buyerName} submitted a new offer on your listing`,
     relatedEntityType: "listing",
     relatedEntityId: listingId,
+    sendMail: true,
   });
 }
 
@@ -79,6 +121,7 @@ export async function notifyOutbid({
     body_en: "A higher offer was submitted — improve your offer to stay competitive",
     relatedEntityType: "listing",
     relatedEntityId: listingId,
+    sendMail: true,
   });
 }
 
@@ -100,6 +143,7 @@ export async function notifyOfferAccepted({
     body_en: "Congratulations! Your offer was accepted and a deal has been created",
     relatedEntityType: "listing",
     relatedEntityId: listingId,
+    sendMail: true,
   });
 }
 
@@ -123,12 +167,12 @@ export async function notifyOfferRejected({
     body_en: reason ? `Reason: ${reason}` : undefined,
     relatedEntityType: "listing",
     relatedEntityId: listingId,
+    sendMail: true,
   });
 }
 
 /**
  * Fired when a producer creates a specific_company listing targeting a named buyer.
- * The target company is notified that a private deal has been offered to them.
  */
 export async function notifyPrivateDealInvitation({
   targetCompanyId,
@@ -150,6 +194,7 @@ export async function notifyPrivateDealInvitation({
     body_en: `You received a private listing on ${listingRef}. Review it and submit your offer`,
     relatedEntityType: "listing",
     relatedEntityId: listingId,
+    sendMail: true,
   });
 }
 
@@ -181,5 +226,6 @@ export async function notifyDealStageChange({
     body_en,
     relatedEntityType: listingId ? "listing" : "deal",
     relatedEntityId: listingId ?? dealId,
+    sendMail: true,
   });
 }

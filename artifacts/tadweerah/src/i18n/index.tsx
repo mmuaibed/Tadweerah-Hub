@@ -789,6 +789,35 @@ const translations: Record<string, Record<Language, string>> = {
     ar: "الأرقام مسجلة عبر منصة تدويرة",
     en: "Figures recorded via Tadweerah platform",
   },
+
+  // Dashboard: empty-state onboarding CTA
+  "dashboard.onboarding.title": {
+    ar: "ابدأ رحلتك الأولى مع تدويرة",
+    en: "Start your first journey with Tadweerah",
+  },
+  "dashboard.onboarding.desc": {
+    ar: "أنشئ إعلان نفاياتك الأول — يستغرق 3 دقائق. ستصلك العروض من المشترين المعتمدين مباشرة.",
+    en: "Create your first waste listing — takes 3 minutes. Verified buyers will start sending offers directly.",
+  },
+  "dashboard.onboarding.cta": { ar: "أنشئ إعلانك الأول", en: "Create your first listing" },
+
+  // Company profile edit page
+  "profile.title": { ar: "ملف الشركة", en: "Company Profile" },
+  "profile.subtitle": { ar: "عدّل بيانات شركتك ومعلومات التواصل", en: "Edit your company data and contact information" },
+  "profile.section.basic": { ar: "البيانات الأساسية", en: "Basic Information" },
+  "profile.save": { ar: "حفظ التغييرات", en: "Save Changes" },
+  "profile.saving": { ar: "جاري الحفظ...", en: "Saving..." },
+  "profile.saved": { ar: "تم حفظ بيانات الشركة بنجاح", en: "Company profile saved successfully" },
+  "profile.error.required": { ar: "مطلوب", en: "is required" },
+  "profile.license.status": { ar: "حالة الترخيص", en: "License Status" },
+  "profile.license.approved": { ar: "معتمد", en: "Approved" },
+  "profile.license.pending": { ar: "قيد المراجعة", en: "Under Review" },
+  "profile.license.rejected": { ar: "مرفوض", en: "Rejected" },
+  "profile.license.expired": { ar: "منتهي الصلاحية", en: "Expired" },
+
+  // Company profile nav card in dashboard
+  "profile.nav.title": { ar: "ملف الشركة", en: "Company Profile" },
+  "profile.nav.subtitle": { ar: "عدّل بيانات شركتك ومعلوماتها", en: "Update your company details and contact info" },
 };
 
 export const I18nProvider: React.FC<{

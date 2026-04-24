@@ -16,6 +16,8 @@ import {
   Users,
   Package,
   Handshake,
+  Building2,
+  Sparkles,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { AppLayout } from "@/components/app-layout";
@@ -36,6 +38,7 @@ const PLATFORM_CARDS: PlatformCard[] = [
   { titleKey: "capabilities.title", descKey: "capabilities.subtitle", icon: Settings, href: "/company/capabilities" },
   { titleKey: "reports.title", descKey: "reports.subtitle", icon: BarChart2, href: "/reports" },
   { titleKey: "members.dashboard.title", descKey: "members.dashboard.subtitle", icon: Users, href: "/company/members" },
+  { titleKey: "profile.nav.title", descKey: "profile.nav.subtitle", icon: Building2, href: "/company/profile" },
 ];
 
 interface DashboardStats {
@@ -106,7 +109,7 @@ export function DashboardPage() {
       {stats && (
         <div className="mb-8">
           <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">{t("dashboard.stats.title")}</p>
-          <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
             <StatPill icon={FileText}    label={t("dashboard.stats.listings")}         value={stats.listings_count} />
             <StatPill icon={TrendingUp}  label={t("dashboard.stats.offers_received")}  value={stats.offers_received_count} />
             <StatPill icon={Package}     label={t("dashboard.stats.offers_made")}      value={stats.offers_made_count} />
@@ -118,6 +121,27 @@ export function DashboardPage() {
                 ? stats.total_deal_value.toLocaleString(lang === "ar" ? "ar-SA" : "en-US", { maximumFractionDigits: 0 })
                 : "—"}
             />
+          </div>
+        </div>
+      )}
+
+      {/* Onboarding CTA — shown only to new accounts with no activity yet */}
+      {stats && stats.listings_count === 0 && stats.offers_received_count === 0 && stats.offers_made_count === 0 && (
+        <div className="mb-8 rounded-xl border border-primary/20 bg-primary/5 p-5 sm:p-6">
+          <div className="flex items-start gap-4">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <Sparkles className="h-5 w-5" />
+            </span>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-base font-semibold text-foreground">{t("dashboard.onboarding.title")}</h2>
+              <p className="mt-1 text-sm text-muted-foreground leading-relaxed">{t("dashboard.onboarding.desc")}</p>
+              <Link to="/listings/new">
+                <button className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors">
+                  <Recycle className="h-4 w-4" />
+                  {t("dashboard.onboarding.cta")}
+                </button>
+              </Link>
+            </div>
           </div>
         </div>
       )}

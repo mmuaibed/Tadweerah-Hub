@@ -70,6 +70,7 @@ type Row = WasteListing & {
   company_name: string;
   offer_count?: number;
   highest_offer_total?: number | null;
+  highest_offer_price?: number | null;
   deal_status?: string | null;
 };
 
@@ -122,6 +123,8 @@ function serialize(
     offer_count: row.offer_count ?? undefined,
     highest_offer_total:
       row.highest_offer_total != null ? Number(row.highest_offer_total) : undefined,
+    highest_offer_price:
+      row.highest_offer_price != null ? Number(row.highest_offer_price) : undefined,
     deal_status: row.deal_status ?? undefined,
     required_services: requiredServices ?? [],
   };

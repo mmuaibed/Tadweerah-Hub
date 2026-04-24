@@ -168,9 +168,10 @@ export function Topbar({ showSignOut = false }: { showSignOut?: boolean }) {
                 size="sm"
                 onClick={() => signOut({ redirectUrl: basePath || "/" })}
                 className="gap-2"
+                title={t("action.signout")}
               >
                 <LogOut className="h-4 w-4" />
-                {t("action.signout")}
+                <span className="hidden sm:inline">{t("action.signout")}</span>
               </Button>
             )}
           </Show>

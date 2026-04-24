@@ -35,6 +35,9 @@ router.get("/me", requireAuth, async (req, res) => {
         city: rows[0].city,
         commercialRegistration: rows[0].commercialRegistration ?? undefined,
         contactPhone: rows[0].contactPhone,
+        license_number: rows[0].license_number ?? undefined,
+        license_status: rows[0].license_status ?? undefined,
+        company_category_id: rows[0].company_category_id ?? undefined,
         createdAt: rows[0].createdAt.toISOString(),
       }
     : null;
