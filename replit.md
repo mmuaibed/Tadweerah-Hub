@@ -8,6 +8,15 @@ The platform's core capabilities include user authentication and company onboard
 
 I prefer concise and clear communication. When implementing features, prioritize a modular approach. For any major architectural changes or significant feature additions, please ask for confirmation before proceeding. Ensure all user-facing strings are externalized for i18n.
 
+## Cost-Aware Development & Testing
+
+- **During development:** lightweight checks only — typecheck, build, targeted API curl, quick smoke checks. No broad automated browser testing unless explicitly approved.
+- **Before heavy testing:** declare what will be tested, why it matters, and the cost level (lightweight / medium / heavy), and offer cheaper manual alternatives where applicable.
+- **Phased approach:** build → focused validation → full end-to-end only when a batch is complete.
+- **Avoid:** long-running agent loops, repeated full-scenario passes, testing flows that do not add meaningful confidence.
+- **Quality still mandatory:** flag risky or critical paths, recommend the right level of testing, but protect the project budget.
+- **Act as a cost-aware CTO:** build fast, build well, protect budget.
+
 # System Architecture
 
 The project is built as a pnpm workspace monorepo using TypeScript.
