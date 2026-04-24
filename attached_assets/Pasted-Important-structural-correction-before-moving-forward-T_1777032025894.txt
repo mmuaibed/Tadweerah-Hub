@@ -1,0 +1,102 @@
+Important structural correction before moving forward:
+
+The current onboarding is still role-based (producer / recycler / carrier), but our model has changed.
+
+A company is NOT one fixed role anymore.
+A company can sell, buy, transport, recycle, provide safe disposal, etc.
+
+So we need to correct onboarding and clean the test data accordingly.
+
+## 1) Data cleanup / migration
+
+Please do NOT delete everything blindly.
+
+First, assess the current test data and recommend the safest approach:
+
+Option A:
+
+* Keep existing users/companies
+* Remove or archive old test listings, offers, deals, notifications, audit logs
+* Migrate companies from old role-based fields into the new model:
+
+  * company_category
+  * company_capabilities
+
+Option B:
+
+* Backup/archive old test data
+* Reset transactional test data
+* Seed a clean test environment using the new capability-based model
+
+Please recommend the best approach before deleting anything.
+
+## 2) Onboarding correction
+
+Remove role-based selection from onboarding:
+
+* producer
+* recycler
+* carrier
+
+Replace with a capability-based setup:
+
+### Basic company info
+
+* company name
+* city
+* contact number
+* company category from Admin-managed list
+* Other + required description if selected
+
+### Company capabilities
+
+Multi-select from Admin-managed capabilities:
+
+* sell
+* buy
+* transport / collect
+* recycle / process
+* safe disposal
+* sorting / aggregation
+* storage
+* Other + required description if selected
+
+### License section
+
+Show license fields only if selected capabilities require a license:
+
+* license number
+* license document upload
+* expiry date if available
+
+### Terms
+
+* Terms & Conditions checkbox
+
+## 3) Reduce manual entry
+
+Please reduce manual fields as much as possible.
+
+Prefer:
+
+* dropdowns
+* checkboxes
+* Admin-managed lookup tables
+* “Other” option with required explanation
+
+Goal:
+
+* easier onboarding
+* cleaner data
+* ability to learn where users are confused from “Other” inputs
+
+## 4) Important rule
+
+Company category is descriptive only.
+Capabilities drive behavior and system logic.
+
+Please review this and tell us:
+
+* what is easy to fix now
+* what needs migration
+* what needs a decision before implementation
