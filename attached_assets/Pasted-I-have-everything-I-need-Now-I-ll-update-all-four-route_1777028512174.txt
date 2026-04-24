@@ -1,0 +1,86 @@
+I have everything I need. Now I'll update all four routes and create the notifications route in parallel. Starting with listings.ts:
+
+Now update the GET /listings marketplace handler to attach required services:
+
+Good, userId is confirmed on the request. Now update the GET /listings/:id handler and the POST /listings offers route in parallel:
+
+Now update the close listing handler with audit log, and also fix the close response to include required_services:
+
+Now update offers.ts imports and add required services gate + audit/notifications throughout:
+
+Now add the required services gate to the POST /listings/:id/offers handler:
+
+Now add notifications + audit after the offer is saved in the submit handler:
+
+Now add audit logging to the improve and withdraw handlers:
+
+Now add audit + notifications to the accept handler:
+
+Now add audit + notification to the reject handler:
+
+Now update deals.ts with audit logging and deal-stage notifications, and create the notifications route simultaneously:
+
+Now create the notifications route and update index.ts simultaneously:
+
+Let me add audit logging to the capabilities update endpoint in companies.ts:
+
+Now restart the API server to check for compilation errors:
+
+API server is clean. Now update the OpenAPI spec and run codegen simultaneously — let me check the current spec first:
+
+Now make all OpenAPI spec updates in one batch:
+
+Update DealSettlementType and add notification schemas + paths:
+
+Now add the Notification schema at the end of components/schemas:
+
+Now run codegen to regenerate all API types:
+
+Codegen clean. Now moving to the frontend. Let me read the key frontend files first:
+
+Let me check what hooks are generated for the notifications and capabilities APIs:
+
+All hooks are generated. Now let me implement all frontend changes simultaneously:
+
+Now I'll implement all frontend changes in parallel:
+
+Let me first orient myself on the current state of the codebase before starting this new batch.
+
+All T001 schema items are already done from prior work. Let me now investigate T002 and T003 requirements more carefully.
+
+Both T001 and T002 are already fully done from prior work. Only T003 frontend work remains. Let me read the relevant frontend files before implementing.
+
+Good — Terms and Reports pages exist already. Now let me check the onboarding page and the listing detail + deal panel:
+
+Excellent — onboarding and already_top warning are also already done! Let me check the listing-detail for the payment_reference input:
+
+After a thorough review of the codebase, I can confirm that all three tasks in this session plan are already fully implemented from prior sessions. Let me run through the status:
+
+T001 — DB Schema: ✅ Complete
+
+company_categories, unit_options, material_categories tables exist
+license_number, license_status, company_category_id, accepted_terms_at on companies ✅
+sale_type, unit_option_id, material_category_id on waste_listings ✅
+payment_reference, payment_proof_url on deals ✅
+T002 — API: ✅ Complete
+
+Admin CRUD routes for all 3 lookup tables (/admin/lookup/...) ✅
+confirm-payment already requires and validates payment_reference ✅
+License eligibility check in POST /offers (requires_license gate) ✅
+already_top flag returned in PUT /offers/mine ✅
+T003 — Frontend + i18n: ✅ Complete
+
+terms.tsx and reports.tsx pages exist with full content ✅
+Onboarding has T&C checkbox linked to /terms, plus license number field ✅
+DealPanel component has the payment_reference input with validation ✅
+listing-detail.tsx already renders the "offer.warning.already_top" warning ✅
+App.tsx has routes for /terms and /reports ✅
+All i18n keys present (terms, reports, license, payment_reference, already_top, onboarding) ✅
+There's one thing still pending from a different batch (Batch 2A — revenue sharing + required services). The previous session completed all the backend work for it but the frontend was not yet started. That includes:
+
+listing-new.tsx — revenue_share pricing model option + revenue_share_pct input + required services multi-select
+listing-card.tsx — required services badges + bid status badge
+Topbar — notification bell with unread count
+Company capabilities settings page — for buyers/carriers to declare capabilities
+i18n keys — for the above features
+Would you like me to proceed with that remaining Batch 2A frontend work?
