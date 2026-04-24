@@ -8,14 +8,31 @@ The platform's core capabilities include user authentication and company onboard
 
 I prefer concise and clear communication. When implementing features, prioritize a modular approach. For any major architectural changes or significant feature additions, please ask for confirmation before proceeding. Ensure all user-facing strings are externalized for i18n.
 
-## Cost-Aware Development & Testing
+## Operating Model (Project OS)
 
-- **During development:** lightweight checks only — typecheck, build, targeted API curl, quick smoke checks. No broad automated browser testing unless explicitly approved.
-- **Before heavy testing:** declare what will be tested, why it matters, and the cost level (lightweight / medium / heavy), and offer cheaper manual alternatives where applicable.
-- **Phased approach:** build → focused validation → full end-to-end only when a batch is complete.
-- **Avoid:** long-running agent loops, repeated full-scenario passes, testing flows that do not add meaningful confidence.
-- **Quality still mandatory:** flag risky or critical paths, recommend the right level of testing, but protect the project budget.
-- **Act as a cost-aware CTO:** build fast, build well, protect budget.
+### Charter = Source of Truth
+Rules in replit.md are final and override all assumptions. If anything conflicts → the charter wins.
+
+### Build Mode vs Test Mode
+**Build Mode (current):** Coding + lightweight checks (build, typecheck, targeted API) only. No e2e, no browser automation, no repeated validation loops.
+**Test Mode (later):** Full structured testing, runs once per completed batch.
+
+### Cost-Aware Execution
+Before any heavy operation: classify it (lightweight / medium / heavy), explain what runs and why. Avoid unnecessary compute, repeated flows, or validation without new information.
+
+### Explain Before Logic
+For anything affecting eligibility, permissions, or visibility: state the endpoint, justify using the charter, wait if uncertain. No silent logic changes.
+
+### Incremental Delivery
+Implement in small verifiable steps. Confirm alignment early. Avoid bundling large uncertain changes.
+
+### Signal Over Noise
+Only run checks that add real confidence. No redundant testing, no re-validating proven flows.
+
+### When to Stop and Ask
+Stop immediately if: a change touches multiple layers (DB + API + logic), rules appear to conflict, or there is ambiguity in eligibility or targeting.
+
+**Goal: Build fast. Build correctly. Protect budget. Avoid rework.**
 
 ## Project Charter — Non-Negotiable System Rules
 

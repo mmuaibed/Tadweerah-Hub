@@ -8,6 +8,7 @@ import {
   Clock,
   UserCheck,
   UserCog,
+  Percent,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -44,6 +45,8 @@ interface DealPanelProps {
   role: "producer" | "buyer";
   unit: string;
   onUpdate: (updated: DealInfo) => void;
+  pricingModel?: string;
+  revenueSharePct?: number | string | null;
 }
 
 type PendingAction = "confirm-payment" | "confirm-dispatch" | "confirm-receipt" | null;
@@ -83,7 +86,7 @@ function formatDate(iso: string | null, lang: string): string {
   });
 }
 
-export function DealPanel({ deal, role, unit, onUpdate }: DealPanelProps) {
+export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSharePct }: DealPanelProps) {
   const { t, lang } = useT();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -207,6 +210,14 @@ export function DealPanel({ deal, role, unit, onUpdate }: DealPanelProps) {
               {statusLabel(deal.status)}
             </Badge>
           </div>
+
+          {/* Revenue share indicator */}
+          {pricingModel === "revenue_share" && revenueSharePct != null && (
+            <div className="flex items-center gap-1.5 text-xs text-primary/80 font-medium border border-primary/20 rounded-md px-2 py-1 bg-primary/5 w-fit">
+              <Percent className="h-3 w-3 shrink-0" />
+              <span>{t("listing.pricing_model.revenue_share")} — {revenueSharePct}%</span>
+            </div>
+          )}
 
           {/* Role badge + action status */}
           <div className="flex items-center justify-between gap-2">

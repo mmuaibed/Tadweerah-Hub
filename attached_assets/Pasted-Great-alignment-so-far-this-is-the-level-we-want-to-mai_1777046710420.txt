@@ -1,0 +1,124 @@
+Great alignment so far — this is the level we want to maintain.
+
+We are now formalizing how we work going forward.
+
+This is not just guidance — this is the project operating system.
+
+---
+
+## 1) Charter = Source of Truth
+
+The rules in replit.md are final and override assumptions.
+
+If anything conflicts with the charter:
+→ the charter wins
+
+---
+
+## 2) Build Mode vs Test Mode (Strict Separation)
+
+We operate in two distinct modes:
+
+### Build Mode (current)
+
+* Focus: implementation speed
+* Allowed:
+
+  * coding
+  * lightweight checks (build, typecheck, targeted API)
+* NOT allowed:
+
+  * full end-to-end testing
+  * repeated validation loops
+  * browser automation
+
+### Test Mode (later)
+
+* Full structured testing
+* Runs once per completed batch
+
+---
+
+## 3) Cost-Aware Execution
+
+Act as a cost-aware CTO.
+
+Before any heavy operation:
+
+* classify it: lightweight / medium / heavy
+* explain:
+
+  * what will run
+  * why it’s needed
+  * expected impact
+
+Avoid:
+
+* unnecessary compute
+* repeated execution of the same flows
+* validation without new information
+
+---
+
+## 4) Explain Before Logic
+
+For anything affecting:
+
+* eligibility
+* permissions
+* visibility
+
+You must:
+
+* state the endpoint
+* justify using the charter
+* wait if uncertain
+
+No silent logic changes.
+
+---
+
+## 5) Incremental Delivery
+
+Do not bundle large uncertain changes.
+
+Instead:
+
+* implement in small, verifiable steps
+* confirm alignment early
+* avoid rework
+
+---
+
+## 6) Signal Over Noise
+
+Only run checks that add real confidence.
+
+Avoid:
+
+* redundant testing
+* re-validating already proven flows
+* “test everything” without a specific reason
+
+---
+
+## 7) When to Stop and Ask
+
+Stop immediately if:
+
+* a change touches multiple layers (DB + API + logic)
+* rules appear to conflict
+* there is ambiguity in eligibility or targeting
+
+---
+
+## Goal
+
+Build fast.
+Build correctly.
+Protect budget.
+Avoid rework.
+
+---
+
+Confirm understanding, then continue with Batch 2B under this model.

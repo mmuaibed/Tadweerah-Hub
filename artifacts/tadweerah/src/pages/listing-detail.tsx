@@ -40,6 +40,7 @@ import {
   Scale,
   Percent,
   Lock,
+  Info,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -1115,6 +1116,31 @@ export function ListingDetailPage() {
           </Badge>
         </div>
 
+        {/* Targeting context banner */}
+        {(() => {
+          const targeting = (listing as typeof listing & { targeting_type?: string }).targeting_type;
+          if (!targeting || targeting === "open") return null;
+          if (targeting === "specific_company") {
+            return isOwner ? (
+              <div className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                <Lock className="h-4 w-4 shrink-0 mt-0.5 text-amber-500" />
+                <span>{t("listing.targeting.banner.seller")}</span>
+              </div>
+            ) : (
+              <div className="flex items-start gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                <Info className="h-4 w-4 shrink-0 mt-0.5 text-emerald-500" />
+                <span>{t("listing.targeting.banner.buyer.private")}</span>
+              </div>
+            );
+          }
+          return (
+            <div className="flex items-start gap-2.5 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-primary">
+              <Info className="h-4 w-4 shrink-0 mt-0.5" />
+              <span>{t("listing.targeting.banner.buyer.category")}</span>
+            </div>
+          );
+        })()}
+
         {/* Details */}
         <div className="rounded-xl border border-border bg-card px-5 divide-y divide-border">
           <DetailRow
@@ -1189,6 +1215,8 @@ export function ListingDetailPage() {
             role={role as "producer" | "buyer"}
             unit={listing?.unit ?? ""}
             onUpdate={(updated) => setDealOverride(updated)}
+            pricingModel={(listing as typeof listing & { pricing_model?: string }).pricing_model}
+            revenueSharePct={(listing as typeof listing & { revenue_share_pct?: number | null }).revenue_share_pct}
           />
         )}
 

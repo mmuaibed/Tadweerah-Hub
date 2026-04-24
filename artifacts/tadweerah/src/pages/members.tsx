@@ -14,6 +14,8 @@ import {
   Crown,
   UserPlus,
   UserCheck,
+  Copy,
+  Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +23,82 @@ import { AppLayout } from "@/components/app-layout";
 import { useT } from "@/i18n";
 import { useQueryClient } from "@tanstack/react-query";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+
+function truncateUserId(id: string): string {
+  if (id.length <= 20) return id;
+  return `${id.slice(0, 12)}…${id.slice(-6)}`;
+}
+
+function MemberRow({
+  member,
+  isSelf,
+  canRemove,
+  onRemove,
+  removing,
+}: {
+  member: CompanyMember;
+  isSelf: boolean;
+  canRemove: boolean;
+  onRemove: () => void;
+  removing: boolean;
+}) {
+  const { t } = useT();
+  const [copied, setCopied] = useState(false);
+
+  function handleCopy() {
+    void navigator.clipboard.writeText(member.user_id);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <div className="flex items-center justify-between gap-3 px-5 py-4">
+      <div className="flex items-center gap-3 min-w-0">
+        <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+          member.role === "owner" ? "bg-amber-100 text-amber-600" : "bg-primary/10 text-primary"
+        }`}>
+          {member.role === "owner"
+            ? <Crown className="h-4 w-4" />
+            : <Users className="h-4 w-4" />}
+        </span>
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5">
+            <p className="text-sm font-medium text-foreground font-mono" dir="ltr">
+              {truncateUserId(member.user_id)}
+            </p>
+            <button
+              type="button"
+              onClick={handleCopy}
+              className="text-muted-foreground/50 hover:text-muted-foreground transition-colors shrink-0"
+              title={copied ? t("members.userId.copied") : t("members.userId.label")}
+            >
+              {copied
+                ? <Check className="h-3 w-3 text-emerald-500" />
+                : <Copy className="h-3 w-3" />}
+            </button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {t(`members.role.${member.role}`)}
+            {isSelf && (
+              <span className="ms-1 text-primary">({t("members.role.you")})</span>
+            )}
+          </p>
+        </div>
+      </div>
+      {canRemove && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-destructive hover:text-destructive shrink-0"
+          onClick={onRemove}
+          disabled={removing}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      )}
+    </div>
+  );
+}
 
 export function MembersPage() {
   const { t, lang } = useT();
@@ -36,9 +114,11 @@ export function MembersPage() {
   const [pendingRemove, setPendingRemove] = useState<CompanyMember | null>(null);
 
   const myUserId = me?.userId ?? "";
-  const isOwner = (members as CompanyMember[]).some(
-    (m) => m.user_id === myUserId && m.role === "owner",
-  );
+  const allMembers = members as CompanyMember[];
+  const isOwner = allMembers.some((m) => m.user_id === myUserId && m.role === "owner");
+
+  const ownerRow = allMembers.find((m) => m.role === "owner");
+  const memberRows = allMembers.filter((m) => m.role !== "owner");
 
   const { mutate: invite, isPending: inviting } = useInviteCompanyMember({
     mutation: {
@@ -107,7 +187,7 @@ export function MembersPage() {
                 value={inviteId}
                 onChange={(e) => { setInviteId(e.target.value); setInviteError(null); }}
                 placeholder={t("members.invite.placeholder")}
-                className="flex-1"
+                className="flex-1 font-mono text-sm"
                 disabled={inviting}
               />
               <Button type="submit" disabled={inviting || !inviteId.trim()} size="sm">
@@ -126,53 +206,65 @@ export function MembersPage() {
           </div>
         )}
 
-        {/* Members list */}
-        <div className="rounded-xl border border-card-border bg-card divide-y divide-border">
-          {isLoading ? (
-            <div className="flex justify-center items-center py-12">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            </div>
-          ) : (members as CompanyMember[]).length === 0 ? (
-            <p className="py-10 text-center text-sm text-muted-foreground">{t("members.empty")}</p>
-          ) : (
-            (members as CompanyMember[]).map((m) => (
-              <div
-                key={m.user_id}
-                className="flex items-center justify-between gap-3 px-5 py-4"
-                dir={isRtl ? "rtl" : "ltr"}
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${m.role === "owner" ? "bg-amber-100 text-amber-600" : "bg-primary/10 text-primary"}`}>
-                    {m.role === "owner"
-                      ? <Crown className="h-4 w-4" />
-                      : <Users className="h-4 w-4" />
-                    }
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate font-mono">{m.user_id}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {t(`members.role.${m.role}`)}
-                      {m.user_id === myUserId && (
-                        <span className="ms-1 text-primary">({t("members.role.you")})</span>
-                      )}
-                    </p>
-                  </div>
+        {isLoading ? (
+          <div className="flex justify-center items-center py-12">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {/* Owner section */}
+            {ownerRow && (
+              <div className="rounded-xl border border-card-border bg-card overflow-hidden">
+                <div className="px-5 py-2.5 bg-amber-50 border-b border-amber-100">
+                  <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide flex items-center gap-1.5">
+                    <Crown className="h-3.5 w-3.5" />
+                    {t("members.section.owner")}
+                  </p>
                 </div>
-                {isOwner && m.role !== "owner" && m.user_id !== myUserId && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-destructive hover:text-destructive shrink-0"
-                    onClick={() => setPendingRemove(m)}
-                    disabled={removing}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                <MemberRow
+                  member={ownerRow}
+                  isSelf={ownerRow.user_id === myUserId}
+                  canRemove={false}
+                  onRemove={() => {}}
+                  removing={false}
+                />
+              </div>
+            )}
+
+            {/* Members section */}
+            <div className="rounded-xl border border-card-border bg-card overflow-hidden">
+              <div className="px-5 py-2.5 bg-muted/30 border-b border-border flex items-center justify-between">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                  <Users className="h-3.5 w-3.5" />
+                  {t("members.section.members")}
+                </p>
+                {memberRows.length > 0 && (
+                  <span className="text-xs text-muted-foreground">
+                    {memberRows.length}
+                  </span>
                 )}
               </div>
-            ))
-          )}
-        </div>
+              {memberRows.length === 0 ? (
+                <p className="py-8 text-center text-sm text-muted-foreground">
+                  {t("members.noMembers")}
+                </p>
+              ) : (
+                <div className="divide-y divide-border">
+                  {memberRows.map((m) => (
+                    <MemberRow
+                      key={m.user_id}
+                      member={m}
+                      isSelf={m.user_id === myUserId}
+                      canRemove={isOwner && m.user_id !== myUserId}
+                      onRemove={() => setPendingRemove(m)}
+                      removing={removing}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Remove confirm */}

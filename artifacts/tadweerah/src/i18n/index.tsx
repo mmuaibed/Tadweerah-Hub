@@ -456,6 +456,9 @@ const translations: Record<string, Record<Language, string>> = {
   "listing.targeting.open": { ar: "مفتوح للجميع", en: "Open to all" },
   "listing.targeting.category": { ar: "مخصص لتصنيف معين", en: "Category-targeted" },
   "listing.targeting.specific_company": { ar: "صفقة خاصة", en: "Private deal" },
+  "listing.targeting.banner.seller": { ar: "أنشأت هذا الإعلان كصفقة خاصة موجهة لشركة محددة فقط", en: "You created this as a private deal — only the targeted company can view and bid" },
+  "listing.targeting.banner.buyer.private": { ar: "هذه الصفقة الخاصة موجهة حصرياً لشركتك — أنتم الوحيدون المدعوون للمشاركة", en: "This private deal was directed exclusively to your company — you are the only invited bidder" },
+  "listing.targeting.banner.buyer.category": { ar: "هذا الإعلان مخصص للشركات في تصنيفات تجارية محددة", en: "This listing is targeted to companies in selected business categories" },
 
   // Targeting form UI (create listing)
   "listing.form.targeting.label": { ar: "من يمكنه رؤية هذا الإعلان؟", en: "Who can see this listing?" },
@@ -554,6 +557,11 @@ const translations: Record<string, Record<Language, string>> = {
   "members.remove.cta": { ar: "إزالة العضو", en: "Remove Member" },
   "members.remove.confirm.title": { ar: "تأكيد إزالة العضو", en: "Confirm Member Removal" },
   "members.remove.confirm.desc": { ar: "هل أنت متأكد من إزالة هذا العضو من شركتك؟ لن يتمكن بعد ذلك من الوصول إلى أي من بياناتها.", en: "Are you sure you want to remove this member from your company? They will no longer have access to any company data." },
+  "members.section.owner": { ar: "مالك الحساب", en: "Account Owner" },
+  "members.section.members": { ar: "أعضاء الفريق", en: "Team Members" },
+  "members.noMembers": { ar: "لا يوجد أعضاء إضافيون بعد", en: "No additional members yet" },
+  "members.userId.label": { ar: "معرّف المستخدم", en: "User ID" },
+  "members.userId.copied": { ar: "تم النسخ!", en: "Copied!" },
   "members.dashboard.title": { ar: "أعضاء الفريق", en: "Team Members" },
   "members.dashboard.subtitle": { ar: "أضف زملاءك وادر فريق شركتك على المنصة", en: "Add colleagues and manage your company team on the platform" },
 
