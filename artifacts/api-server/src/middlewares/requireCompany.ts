@@ -11,11 +11,12 @@ export interface AuthedCompanyRequest extends AuthedRequest {
  * Loads the company owned by the authenticated user.
  * Must be used AFTER requireAuth.
  *
- * Optionally restricts access to a list of company types — pages and
- * endpoints scoped to a single role can pass the allowed types here.
+ * The optional `_allowedTypes` parameter is accepted for backward compatibility
+ * but is no longer enforced — the platform uses capability/ownership checks
+ * instead of company-type role gates.
  */
 export function requireCompany(
-  allowedTypes?: ReadonlyArray<Company["type"]>,
+  _allowedTypes?: ReadonlyArray<string>,
 ) {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const { userId } = req as AuthedRequest;
@@ -29,11 +30,6 @@ export function requireCompany(
     const company = rows[0];
     if (!company) {
       res.status(403).json({ error: "Company profile required" });
-      return;
-    }
-
-    if (allowedTypes && !allowedTypes.includes(company.type)) {
-      res.status(403).json({ error: "Forbidden for this company type" });
       return;
     }
 

@@ -28,7 +28,7 @@ export const companiesTable = pgTable("companies", {
   id: uuid("id").primaryKey().defaultRandom(),
   ownerUserId: text("owner_user_id").notNull().unique(),
   name: text("name").notNull(),
-  type: companyTypeEnum("type").notNull(),
+  type: companyTypeEnum("type"),
   city: text("city").notNull(),
   commercialRegistration: text("commercial_registration"),
   contactPhone: text("contact_phone").notNull(),

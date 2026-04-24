@@ -31,7 +31,7 @@ router.get("/me", requireAuth, async (req, res) => {
     ? {
         id: rows[0].id,
         name: rows[0].name,
-        type: rows[0].type,
+        type: rows[0].type ?? undefined,
         city: rows[0].city,
         commercialRegistration: rows[0].commercialRegistration ?? undefined,
         contactPhone: rows[0].contactPhone,

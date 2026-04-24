@@ -1,15 +1,8 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import {
-  useCreateCompany,
-  getGetMeQueryKey,
-} from "@workspace/api-client-react";
-import type {
-  CompanyType,
-  CreateCompanyBody,
-} from "@workspace/api-client-react";
-import { Recycle, ShoppingBag, Truck, Loader2 } from "lucide-react";
+import { getGetMeQueryKey } from "@workspace/api-client-react";
+import { CheckSquare, Square, Loader2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,78 +10,120 @@ import { Label } from "@/components/ui/label";
 import { AppLayout } from "@/components/app-layout";
 import { useT } from "@/i18n";
 
-const TYPE_OPTIONS: Array<{
-  value: CompanyType;
-  icon: typeof Recycle;
-  titleKey: string;
-  descKey: string;
-}> = [
-  { value: "producer", icon: Recycle, titleKey: "type.producer", descKey: "type.producer.desc" },
-  { value: "buyer", icon: ShoppingBag, titleKey: "type.buyer", descKey: "type.buyer.desc" },
-  { value: "carrier", icon: Truck, titleKey: "type.carrier", descKey: "type.carrier.desc" },
-];
-
 interface CompanyCategoryOption {
   id: string;
+  key: string;
   name_ar: string;
   name_en: string;
+}
+
+interface CompanyActionOption {
+  id: string;
+  key: string;
+  name_ar: string;
+  name_en: string;
+  description_ar: string | null;
+  description_en: string | null;
+  requires_license: boolean;
 }
 
 export function OnboardingPage() {
   const { t, lang } = useT();
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
-  const [type, setType] = useState<CompanyType>("producer");
+  const [isPending, setIsPending] = useState(false);
+
   const [name, setName] = useState("");
   const [city, setCity] = useState("");
-  const [commercialRegistration, setCr] = useState("");
   const [contactPhone, setPhone] = useState("");
-  const [licenseNumber, setLicenseNumber] = useState("");
+  const [commercialRegistration, setCr] = useState("");
   const [companyCategoryId, setCompanyCategoryId] = useState("");
+  const [selectedActionIds, setSelectedActionIds] = useState<Set<string>>(new Set());
+  const [otherActionDesc, setOtherActionDesc] = useState("");
+  const [licenseNumber, setLicenseNumber] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
   const [categories, setCategories] = useState<CompanyCategoryOption[]>([]);
+  const [actions, setActions] = useState<CompanyActionOption[]>([]);
 
   useEffect(() => {
     fetch("/api/lookup/company-categories")
       .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data)) setCategories(data as CompanyCategoryOption[]);
-      })
+      .then((data) => { if (Array.isArray(data)) setCategories(data as CompanyCategoryOption[]); })
+      .catch(() => {});
+
+    fetch("/api/lookup/company-actions")
+      .then((r) => r.json())
+      .then((data) => { if (Array.isArray(data)) setActions(data as CompanyActionOption[]); })
       .catch(() => {});
   }, []);
 
-  const { mutate, isPending } = useCreateCompany();
+  const toggleAction = (id: string) => {
+    setSelectedActionIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+    setError(null);
+  };
 
-  const handleSubmit = (e: FormEvent) => {
+  const otherAction = actions.find((a) => a.key === "other");
+  const selectedActions = actions.filter((a) => selectedActionIds.has(a.id));
+  const needsLicense = selectedActions.some((a) => a.requires_license);
+  const hasOtherSelected = otherAction ? selectedActionIds.has(otherAction.id) : false;
+
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (selectedActionIds.size === 0) {
+      setError(t("onboarding.form.actions.required"));
+      return;
+    }
+    if (hasOtherSelected && !otherActionDesc.trim()) {
+      setError(t("onboarding.form.actions.other_required"));
+      return;
+    }
     if (!acceptedTerms) {
       setError(t("onboarding.terms.required"));
       return;
     }
-    const body: CreateCompanyBody & Record<string, unknown> = {
-      name: name.trim(),
-      type,
-      city: city.trim(),
-      contactPhone: contactPhone.trim(),
-      ...(commercialRegistration.trim()
-        ? { commercialRegistration: commercialRegistration.trim() }
-        : {}),
-      accepted_terms: true,
-      ...(licenseNumber.trim() ? { license_number: licenseNumber.trim() } : {}),
-      ...(companyCategoryId ? { company_category_id: companyCategoryId } : {}),
-    };
-    mutate(
-      { data: body },
-      {
-        onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
-          setLocation("/dashboard");
-        },
-        onError: () => setError(t("onboarding.error.generic")),
-      },
-    );
+
+    setIsPending(true);
+    try {
+      const body: Record<string, unknown> = {
+        name: name.trim(),
+        city: city.trim(),
+        contactPhone: contactPhone.trim(),
+        ...(commercialRegistration.trim() ? { commercialRegistration: commercialRegistration.trim() } : {}),
+        ...(companyCategoryId ? { company_category_id: companyCategoryId } : {}),
+        action_ids: Array.from(selectedActionIds),
+        accepted_terms: true,
+        ...(licenseNumber.trim() ? { license_number: licenseNumber.trim() } : {}),
+      };
+
+      const res = await fetch("/api/companies", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError((data as { message?: string }).message ?? t("onboarding.error.generic"));
+        return;
+      }
+
+      await queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
+      setLocation("/dashboard");
+    } catch {
+      setError(t("onboarding.error.generic"));
+    } finally {
+      setIsPending(false);
+    }
   };
 
   return (
@@ -99,51 +134,12 @@ export function OnboardingPage() {
       subtitle={t("onboarding.subtitle")}
     >
       <form onSubmit={handleSubmit} className="space-y-8">
-        <fieldset>
-          <legend className="mb-3 block text-sm font-medium text-foreground">
-            {t("onboarding.form.type")}
-          </legend>
-          <div className="grid gap-3 sm:grid-cols-3">
-            {TYPE_OPTIONS.map(({ value, icon: Icon, titleKey, descKey }) => {
-              const selected = type === value;
-              return (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setType(value)}
-                  className={`group relative flex flex-col items-start gap-3 rounded-lg border p-4 text-start transition-colors ${
-                    selected
-                      ? "border-primary bg-primary/5 ring-2 ring-primary/20"
-                      : "border-border bg-card hover:border-primary/50"
-                  }`}
-                >
-                  <span
-                    className={`flex h-10 w-10 items-center justify-center rounded-md ${
-                      selected
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    <Icon className="h-5 w-5" />
-                  </span>
-                  <div>
-                    <div className="font-semibold text-card-foreground">
-                      {t(titleKey)}
-                    </div>
-                    <div className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                      {t(descKey)}
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </fieldset>
 
+        {/* ── Section 1: Basic info ── */}
         <Card className="border-card-border bg-card">
           <CardContent className="space-y-5 p-6">
             <div className="space-y-2">
-              <Label htmlFor="name">{t("onboarding.form.name")}</Label>
+              <Label htmlFor="name">{t("onboarding.form.name")} *</Label>
               <Input
                 id="name"
                 required
@@ -155,7 +151,7 @@ export function OnboardingPage() {
             </div>
             <div className="grid gap-5 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="city">{t("onboarding.form.city")}</Label>
+                <Label htmlFor="city">{t("onboarding.form.city")} *</Label>
                 <Input
                   id="city"
                   required
@@ -166,9 +162,10 @@ export function OnboardingPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phone">{t("onboarding.form.phone")}</Label>
+                <Label htmlFor="phone">{t("onboarding.form.phone")} *</Label>
                 <Input
                   id="phone"
+                  type="tel"
                   required
                   minLength={6}
                   maxLength={20}
@@ -190,14 +187,14 @@ export function OnboardingPage() {
             {/* Company category */}
             {categories.length > 0 && (
               <div className="space-y-2">
-                <Label htmlFor="category">{t("onboarding.form.companyCategory")}</Label>
+                <Label htmlFor="category">{t("onboarding.form.category")}</Label>
                 <select
                   id="category"
                   value={companyCategoryId}
                   onChange={(e) => setCompanyCategoryId(e.target.value)}
                   className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                 >
-                  <option value="">{t("onboarding.form.companyCategory.placeholder")}</option>
+                  <option value="">{t("onboarding.form.category.placeholder")}</option>
                   {categories.map((cat) => (
                     <option key={cat.id} value={cat.id}>
                       {lang === "ar" ? cat.name_ar : cat.name_en}
@@ -206,26 +203,101 @@ export function OnboardingPage() {
                 </select>
               </div>
             )}
+          </CardContent>
+        </Card>
 
-            {/* License number */}
+        {/* ── Section 2: Actions multi-select ── */}
+        <fieldset>
+          <legend className="mb-1 block text-sm font-medium text-foreground">
+            {t("onboarding.form.actions")} *
+          </legend>
+          <p className="mb-3 text-xs text-muted-foreground">{t("onboarding.form.actions.hint")}</p>
+          {actions.length > 0 ? (
+            <div className="grid gap-2 sm:grid-cols-2">
+              {actions.map((action) => {
+                const selected = selectedActionIds.has(action.id);
+                const label = lang === "ar" ? action.name_ar : action.name_en;
+                const desc = lang === "ar" ? action.description_ar : action.description_en;
+                return (
+                  <button
+                    key={action.id}
+                    type="button"
+                    onClick={() => toggleAction(action.id)}
+                    className={`flex items-start gap-3 rounded-lg border p-3 text-start transition-colors ${
+                      selected
+                        ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+                        : "border-border bg-card hover:border-primary/40"
+                    }`}
+                  >
+                    <span className={`mt-0.5 shrink-0 ${selected ? "text-primary" : "text-muted-foreground"}`}>
+                      {selected ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
+                    </span>
+                    <div>
+                      <div className={`text-sm font-medium ${selected ? "text-primary" : "text-foreground"}`}>
+                        {label}
+                        {action.requires_license && (
+                          <span className="me-2 ms-1 inline-flex items-center gap-0.5 text-xs text-amber-600">
+                            <ShieldCheck className="h-3 w-3" />
+                            {t("onboarding.form.license.required_badge")}
+                          </span>
+                        )}
+                      </div>
+                      {desc && (
+                        <div className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{desc}</div>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-16 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin me-2" />
+              {t("onboarding.form.actions.loading")}
+            </div>
+          )}
+
+          {/* "Other" description field */}
+          {hasOtherSelected && (
+            <div className="mt-3 space-y-1">
+              <Label htmlFor="other_desc">{t("onboarding.form.actions.other_desc")} *</Label>
+              <Input
+                id="other_desc"
+                required
+                maxLength={200}
+                placeholder={t("onboarding.form.actions.other_placeholder")}
+                value={otherActionDesc}
+                onChange={(e) => setOtherActionDesc(e.target.value)}
+              />
+            </div>
+          )}
+        </fieldset>
+
+        {/* ── Section 3: Conditional license ── */}
+        {needsLicense && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-4">
+            <div>
+              <p className="text-sm font-medium text-amber-900">{t("onboarding.form.license_section")}</p>
+              <p className="text-xs text-amber-700 mt-0.5">{t("onboarding.form.license_section.hint")}</p>
+            </div>
             <div className="space-y-2">
-              <Label htmlFor="license">{t("onboarding.form.license_number")}</Label>
+              <Label htmlFor="license" className="text-amber-900">
+                {t("onboarding.form.license_number")}
+              </Label>
               <Input
                 id="license"
                 maxLength={60}
                 dir="ltr"
+                className="bg-white"
                 value={licenseNumber}
                 onChange={(e) => setLicenseNumber(e.target.value)}
               />
-              <p className="text-xs text-muted-foreground">{t("onboarding.form.license_number.hint")}</p>
-              {licenseNumber.trim() && (
-                <p className="text-xs text-amber-600 font-medium">{t("onboarding.form.license_pending")}</p>
-              )}
+              <p className="text-xs text-amber-700">{t("onboarding.form.license_pending")}</p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        )}
 
-        {/* Terms & Conditions */}
+        {/* ── Section 4: Terms ── */}
         <div className="rounded-lg border border-border bg-card p-4">
           <label className="flex items-start gap-3 cursor-pointer">
             <input

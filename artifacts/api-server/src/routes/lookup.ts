@@ -21,6 +21,7 @@ import { Router, type Request, type Response, type NextFunction } from "express"
 import { db } from "@workspace/db";
 import {
   companyCategoriesTable,
+  companyActionsTable,
   unitOptionsTable,
   materialCategoriesTable,
   capabilitiesTable,
@@ -60,6 +61,19 @@ router.get(
       .from(companyCategoriesTable)
       .where(eq(companyCategoriesTable.is_active, true))
       .orderBy(asc(companyCategoriesTable.sort_order), asc(companyCategoriesTable.name_en));
+    res.json(rows);
+  },
+);
+
+router.get(
+  "/lookup/company-actions",
+  requireAuth,
+  async (_req, res) => {
+    const rows = await db
+      .select()
+      .from(companyActionsTable)
+      .where(eq(companyActionsTable.is_active, true))
+      .orderBy(asc(companyActionsTable.sort_order), asc(companyActionsTable.name_en));
     res.json(rows);
   },
 );

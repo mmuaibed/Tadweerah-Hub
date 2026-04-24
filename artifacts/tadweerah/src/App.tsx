@@ -11,7 +11,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { I18nProvider, useT } from "@/i18n";
 import { RouteGuard } from "@/components/route-guard";
-import { RoleRoute } from "@/components/role-route";
 import { HomePage } from "@/pages/home";
 import { SignInPage } from "@/pages/sign-in";
 import { SignUpPage } from "@/pages/sign-up";
@@ -72,93 +71,16 @@ function OnboardingRoute() {
   );
 }
 
-function DashboardRoute() {
+function CompanyRoute({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Show when="signed-in">
-        <RouteGuard requireCompany={true}>
-          <DashboardPage />
-        </RouteGuard>
+        <RouteGuard requireCompany={true}>{children}</RouteGuard>
       </Show>
       <Show when="signed-out">
         <Redirect to="/" />
       </Show>
     </>
-  );
-}
-
-function SignedInRoleRoute({
-  allow,
-  children,
-}: {
-  allow: ReadonlyArray<"producer" | "buyer" | "carrier">;
-  children: React.ReactNode;
-}) {
-  return (
-    <>
-      <Show when="signed-in">
-        <RoleRoute allow={allow}>{children}</RoleRoute>
-      </Show>
-      <Show when="signed-out">
-        <Redirect to="/" />
-      </Show>
-    </>
-  );
-}
-
-function ListingNewRoute() {
-  return (
-    <SignedInRoleRoute allow={["producer"]}>
-      <ListingNewPage />
-    </SignedInRoleRoute>
-  );
-}
-
-function MyListingsRoute() {
-  return (
-    <SignedInRoleRoute allow={["producer"]}>
-      <MyListingsPage />
-    </SignedInRoleRoute>
-  );
-}
-
-function MarketplaceRoute() {
-  return (
-    <SignedInRoleRoute allow={["buyer"]}>
-      <MarketplacePage />
-    </SignedInRoleRoute>
-  );
-}
-
-function ListingDetailRoute() {
-  return (
-    <SignedInRoleRoute allow={["producer", "buyer", "carrier"]}>
-      <ListingDetailPage />
-    </SignedInRoleRoute>
-  );
-}
-
-function ParticipationsRoute() {
-  return (
-    <SignedInRoleRoute allow={["buyer"]}>
-      <ParticipationsPage />
-    </SignedInRoleRoute>
-  );
-}
-
-function ReportsRoute() {
-  return (
-    <SignedInRoleRoute allow={["producer", "buyer", "carrier"]}>
-      <ReportsPage />
-    </SignedInRoleRoute>
-  );
-}
-
-function CompanyCapabilitiesRoute() {
-  return (
-    <SignedInRoleRoute allow={["producer", "buyer", "carrier"]}>
-      <CompanyCapabilitiesPage />
-    </SignedInRoleRoute>
   );
 }
 
@@ -284,15 +206,31 @@ function ClerkProviderWithRoutes() {
             <Route path="/sign-in/*?" component={SignInPage} />
             <Route path="/sign-up/*?" component={SignUpPage} />
             <Route path="/onboarding/company" component={OnboardingRoute} />
-            <Route path="/dashboard" component={DashboardRoute} />
-            <Route path="/listings/new" component={ListingNewRoute} />
-            <Route path="/listings/mine" component={MyListingsRoute} />
-            <Route path="/listings/:waste_listing_id" component={ListingDetailRoute} />
-            <Route path="/marketplace" component={MarketplaceRoute} />
-            <Route path="/participations" component={ParticipationsRoute} />
-            <Route path="/reports" component={ReportsRoute} />
-            <Route path="/company/capabilities" component={CompanyCapabilitiesRoute} />
             <Route path="/terms" component={TermsPage} />
+            <Route path="/dashboard">
+              <CompanyRoute><DashboardPage /></CompanyRoute>
+            </Route>
+            <Route path="/listings/new">
+              <CompanyRoute><ListingNewPage /></CompanyRoute>
+            </Route>
+            <Route path="/listings/mine">
+              <CompanyRoute><MyListingsPage /></CompanyRoute>
+            </Route>
+            <Route path="/listings/:waste_listing_id">
+              <CompanyRoute><ListingDetailPage /></CompanyRoute>
+            </Route>
+            <Route path="/marketplace">
+              <CompanyRoute><MarketplacePage /></CompanyRoute>
+            </Route>
+            <Route path="/participations">
+              <CompanyRoute><ParticipationsPage /></CompanyRoute>
+            </Route>
+            <Route path="/reports">
+              <CompanyRoute><ReportsPage /></CompanyRoute>
+            </Route>
+            <Route path="/company/capabilities">
+              <CompanyRoute><CompanyCapabilitiesPage /></CompanyRoute>
+            </Route>
             <Route component={NotFound} />
           </Switch>
           <Toaster />

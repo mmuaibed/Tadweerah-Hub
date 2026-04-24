@@ -288,24 +288,20 @@ router.get(
     );
     const { company } = req as AuthedCompanyRequest;
 
-    if (company.type === "producer") {
-      const listing = await db
-        .select({ company_id: wasteListingsTable.company_id })
-        .from(wasteListingsTable)
-        .where(eq(wasteListingsTable.id, listingId))
-        .limit(1);
+    // Determine role by ownership: if this company owns the listing, return all offers.
+    // Otherwise return only this company's own offer (buyer perspective).
+    const [listingRow] = await db
+      .select({ company_id: wasteListingsTable.company_id })
+      .from(wasteListingsTable)
+      .where(eq(wasteListingsTable.id, listingId))
+      .limit(1);
 
-      if (!listing[0]) {
-        throw new HttpError(404, "NotFound", "Listing not found");
-      }
-      if (listing[0].company_id !== company.id) {
-        throw new HttpError(
-          403,
-          "Forbidden",
-          "Only the listing owner can view all offers",
-        );
-      }
+    if (!listingRow) {
+      throw new HttpError(404, "NotFound", "Listing not found");
+    }
 
+    if (listingRow.company_id === company.id) {
+      // Listing owner: return all offers
       const rows = await db
         .select(offerSelect)
         .from(listingOffersTable)
@@ -319,7 +315,7 @@ router.get(
       return res.json(rows.map(serializeOffer));
     }
 
-    // Buyer: return only their own offer, with rank + total_offers
+    // Non-owner: return only their own offer, with rank + total_offers
     const rows = await db
       .select(offerSelect)
       .from(listingOffersTable)

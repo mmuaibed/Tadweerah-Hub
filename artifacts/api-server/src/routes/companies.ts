@@ -5,6 +5,8 @@ import {
   companiesTable,
   capabilitiesTable,
   companyCapabilitiesTable,
+  companyActionsTable,
+  companyActionSelectionsTable,
 } from "@workspace/db";
 import { CreateCompanyBody } from "@workspace/api-zod";
 import { requireAuth, type AuthedRequest } from "../middlewares/requireAuth";
@@ -16,12 +18,21 @@ const router: IRouter = Router();
 router.post("/companies", requireAuth, async (req, res) => {
   const userId = (req as AuthedRequest).userId;
 
-  const parsed = CreateCompanyBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({
-      error: "ValidationError",
-      details: parsed.error.issues,
-    });
+  // Use only the subset of fields that are still required
+  const nameRaw = typeof req.body?.name === "string" ? req.body.name.trim() : "";
+  const cityRaw = typeof req.body?.city === "string" ? req.body.city.trim() : "";
+  const phoneRaw = typeof req.body?.contactPhone === "string" ? req.body.contactPhone.trim() : "";
+
+  if (!nameRaw || nameRaw.length < 2 || nameRaw.length > 120) {
+    res.status(400).json({ error: "ValidationError", message: "name must be 2–120 characters" });
+    return;
+  }
+  if (!cityRaw || cityRaw.length < 2 || cityRaw.length > 80) {
+    res.status(400).json({ error: "ValidationError", message: "city must be 2–80 characters" });
+    return;
+  }
+  if (!phoneRaw || phoneRaw.length < 6 || phoneRaw.length > 20) {
+    res.status(400).json({ error: "ValidationError", message: "contactPhone must be 6–20 characters" });
     return;
   }
 
@@ -46,17 +57,26 @@ router.post("/companies", requireAuth, async (req, res) => {
       ? req.body.company_category_id.trim()
       : null;
 
+  const commercialRegistration =
+    typeof req.body?.commercialRegistration === "string" && req.body.commercialRegistration.trim()
+      ? req.body.commercialRegistration.trim()
+      : null;
+
   const acceptedTerms = req.body?.accepted_terms === true || req.body?.accepted_terms === "true";
+
+  // action_ids: array of company_actions UUIDs (user intent, not eligibility)
+  const actionIds: string[] = Array.isArray(req.body?.action_ids)
+    ? (req.body.action_ids as unknown[]).filter((v): v is string => typeof v === "string")
+    : [];
 
   const [created] = await db
     .insert(companiesTable)
     .values({
       ownerUserId: userId,
-      name: parsed.data.name,
-      type: parsed.data.type,
-      city: parsed.data.city,
-      commercialRegistration: parsed.data.commercialRegistration ?? null,
-      contactPhone: parsed.data.contactPhone,
+      name: nameRaw,
+      city: cityRaw,
+      contactPhone: phoneRaw,
+      commercialRegistration,
       license_number: licenseNumber,
       company_category_id: companyCategoryId,
       license_status: licenseNumber ? "pending" : null,
@@ -64,10 +84,25 @@ router.post("/companies", requireAuth, async (req, res) => {
     })
     .returning();
 
+  // Insert selected actions
+  if (actionIds.length > 0) {
+    await db.insert(companyActionSelectionsTable).values(
+      actionIds.map((aid) => ({ company_id: created.id, action_id: aid })),
+    ).onConflictDoNothing();
+  }
+
+  void logAudit({
+    userId,
+    companyId: created.id,
+    action: "company.created",
+    entityType: "company",
+    entityId: created.id,
+    details: { action_ids: actionIds },
+  });
+
   res.status(201).json({
     id: created.id,
     name: created.name,
-    type: created.type,
     city: created.city,
     commercialRegistration: created.commercialRegistration ?? undefined,
     contactPhone: created.contactPhone,
