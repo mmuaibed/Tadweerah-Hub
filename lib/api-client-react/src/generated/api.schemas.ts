@@ -20,6 +20,22 @@ export const CompanyType = {
   carrier: "carrier",
 } as const;
 
+/**
+ * null = no license submitted (participates freely).
+pending = license submitted, awaiting admin review (no restrictions yet).
+approved = license verified.
+rejected / expired = license not valid.
+
+ */
+export type LicenseStatus = (typeof LicenseStatus)[keyof typeof LicenseStatus];
+
+export const LicenseStatus = {
+  pending: "pending",
+  approved: "approved",
+  rejected: "rejected",
+  expired: "expired",
+} as const;
+
 export interface Company {
   id: string;
   name: string;
@@ -27,6 +43,11 @@ export interface Company {
   city: string;
   commercialRegistration?: string;
   contactPhone: string;
+  /** Regulatory license number (e.g. MOMRA, NCBE). Optional. */
+  license_number?: string;
+  license_status?: LicenseStatus;
+  /** FK to company_categories.id. Descriptive business category. */
+  company_category_id?: string;
   createdAt: string;
 }
 
@@ -49,6 +70,15 @@ export interface CreateCompanyBody {
    * @maxLength 20
    */
   contactPhone: string;
+  /**
+   * Optional regulatory license number.
+   * @maxLength 80
+   */
+  license_number?: string;
+  /** Optional FK to company_categories.id. */
+  company_category_id?: string;
+  /** Must be true to accept platform terms and conditions. */
+  accepted_terms?: boolean;
 }
 
 export interface MeResponse {
@@ -56,6 +86,18 @@ export interface MeResponse {
   email?: string;
   company?: Company | null;
 }
+
+/**
+ * auction = open bidding, all eligible buyers can submit offers.
+direct = targeted sale; seller controls who can see and participate.
+
+ */
+export type SaleType = (typeof SaleType)[keyof typeof SaleType];
+
+export const SaleType = {
+  auction: "auction",
+  direct: "direct",
+} as const;
 
 export type WasteMaterial = (typeof WasteMaterial)[keyof typeof WasteMaterial];
 
@@ -86,13 +128,7 @@ export const WasteListingStatus = {
 
 /**
  * Controls whether a listing appears in the public marketplace feed.
-CURRENTLY READ-ONLY: all listings default to "public". The field is present
-in all listing responses but is NOT accepted in CreateWasteListingBody —
-there is no mechanism to create a private listing yet.
-FUTURE: when a listing_invitations layer exists, producers will be able to
-set visibility = "private" at creation time and invite specific buyer companies.
-The GET /listings feed already filters WHERE visibility = 'public', so private
-listings will be automatically excluded once enforcement is in place.
+CURRENTLY READ-ONLY: all listings default to "public".
 
  */
 export type ListingVisibility =
@@ -105,9 +141,9 @@ export const ListingVisibility = {
 
 /**
  * Governs how price_per_unit is interpreted and what settlement mechanics apply.
-Immutable once a listing is published — producers must close and re-list to change model.
-fixed: price_per_unit × quantity = agreed commercial amount (current MVP).
-by_weight: price_per_unit is a rate; final amount settled post-weighing (future).
+Immutable once a listing is published.
+fixed: price_per_unit × quantity = agreed commercial amount.
+by_weight: price_per_unit is a rate; final amount settled post-weighing.
 
  */
 export type PricingModel = (typeof PricingModel)[keyof typeof PricingModel];
@@ -128,20 +164,52 @@ export interface WasteListing {
   description?: string;
   price_hint?: number;
   status: WasteListingStatus;
-  /** Immutable once published. Defaults to "fixed" for the current MVP.
-   */
   pricing_model?: PricingModel;
-  /** CURRENTLY READ-ONLY. Always "public" for listings created via this API.
-Defaults to "public". Private enforcement depends on a future listing_invitations layer.
-This field is NOT present in CreateWasteListingBody — producers cannot set it yet.
- */
+  sale_type?: SaleType;
+  /** FK to material_categories.id. Null for legacy listings. */
+  material_category_id?: string;
+  /** FK to unit_options.id. Null for listings using legacy unit enum. */
+  unit_option_id?: string;
   visibility?: ListingVisibility;
+  /** The calling buyer's current offer price_per_unit on this listing. Only included in GET /listings (marketplace) responses. Null/absent if the buyer has no offer.
+   */
+  my_offer_price?: number;
+  /** The calling buyer's current rank among all offers (1 = highest). Only included in GET /listings (marketplace) responses. Null/absent if the buyer has no offer.
+   */
+  my_rank?: number;
   created_at: string;
   closed_at?: string;
-  /** Total number of offers on this listing (included for producer my-listings and marketplace M3) */
+  /** Total number of active (non-withdrawn) offers on this listing. */
   offer_count?: number;
   /** Highest offer as a total (price_per_unit × quantity). Null if no offers. */
   highest_offer_total?: number;
+}
+
+export interface CreateWasteListingBody {
+  material: WasteMaterial;
+  /** @exclusiveMinimum 0 */
+  quantity: number;
+  unit: WasteUnit;
+  /**
+   * @minLength 2
+   * @maxLength 80
+   */
+  city: string;
+  /** @maxLength 500 */
+  description?: string;
+  /** @minimum 0 */
+  price_hint?: number;
+  /** Governs settlement mechanics. Immutable once published.
+Defaults to "fixed" if not supplied.
+ */
+  pricing_model?: PricingModel;
+  /** Controls offer model. Defaults to "auction" if not supplied.
+   */
+  sale_type?: SaleType;
+  /** Optional FK to material_categories.id. */
+  material_category_id?: string;
+  /** Optional FK to unit_options.id. Falls back to unit enum if absent. */
+  unit_option_id?: string;
 }
 
 export type OfferStatus = (typeof OfferStatus)[keyof typeof OfferStatus];
@@ -150,6 +218,7 @@ export const OfferStatus = {
   pending: "pending",
   accepted: "accepted",
   rejected: "rejected",
+  withdrawn: "withdrawn",
 } as const;
 
 export interface ListingOffer {
@@ -162,13 +231,16 @@ export interface ListingOffer {
   status: OfferStatus;
   /** Reason provided by producer when rejecting. Visible to the affected buyer only. */
   rejection_reason?: string;
-  /** Buyer rank among all offers (1 = highest). Only included in buyer-facing responses. */
+  /** Buyer rank among all active offers (1 = highest). Only included in buyer-facing responses. */
   rank?: number;
-  /** Total number of offers on this listing. Included alongside rank. */
+  /** Total number of active offers on this listing. Included alongside rank. */
   total_offers?: number;
   created_at: string;
   updated_at: string;
   resolved_at?: string;
+  /** Returned by PUT /offers/mine (improve offer). True if the buyer was already the top bidder before submitting this improvement.
+   */
+  already_top?: boolean;
 }
 
 export interface SubmitOfferBody {
@@ -242,24 +314,226 @@ export interface MyOffer {
   resolved_at?: string;
 }
 
-export interface CreateWasteListingBody {
-  material: WasteMaterial;
-  /** @exclusiveMinimum 0 */
-  quantity: number;
-  unit: WasteUnit;
-  /**
-   * @minLength 2
-   * @maxLength 80
-   */
-  city: string;
-  /** @maxLength 500 */
-  description?: string;
-  /** @minimum 0 */
-  price_hint?: number;
-  /** Governs settlement mechanics. Immutable once published.
-Defaults to "fixed" if not supplied. Must not be updated after creation.
+/**
+ * Admin-managed company business category. key is the stable internal identifier.
  */
-  pricing_model?: PricingModel;
+export interface CompanyCategory {
+  id: string;
+  /** Stable internal key (e.g. "industrial", "recycler"). Used in logic and eligibility. */
+  key: string;
+  name_ar: string;
+  name_en: string;
+  is_active: boolean;
+  sort_order: number;
+}
+
+/**
+ * Admin-managed unit of measurement. key is the stable internal identifier.
+ */
+export interface UnitOption {
+  id: string;
+  /** Stable internal key (e.g. "kg", "ton", "liter"). Used in logic and filtering. */
+  key: string;
+  name_ar: string;
+  name_en: string;
+  /** Short display symbol (e.g. "kg", "t", "L"). */
+  symbol: string;
+  is_active: boolean;
+  sort_order: number;
+}
+
+/**
+ * Admin-managed hierarchical material classification. parent_id = null means top-level category. Used in logic, eligibility, and filtering.
+
+ */
+export interface MaterialCategory {
+  id: string;
+  /** Stable internal key (e.g. "paper", "metal", "safe_disposal"). Used in eligibility logic. */
+  key: string;
+  name_ar: string;
+  name_en: string;
+  /** FK to parent material_category. Null for top-level categories. */
+  parent_id?: string;
+  is_active: boolean;
+  sort_order: number;
+}
+
+/**
+ * Admin-managed capability descriptor. Capabilities describe what a company CAN DO (e.g. recycle metal, transport waste). Used for eligibility gating and matching. key is the stable internal identifier — never changes.
+
+ */
+export interface Capability {
+  id: string;
+  /** Stable internal key (e.g. "recycle_metal", "transport_waste"). Used in logic. */
+  key: string;
+  name_ar: string;
+  name_en: string;
+  description_ar?: string;
+  description_en?: string;
+  is_active: boolean;
+  sort_order: number;
+}
+
+export type DealStatus = (typeof DealStatus)[keyof typeof DealStatus];
+
+export const DealStatus = {
+  active: "active",
+  payment_confirmed: "payment_confirmed",
+  dispatched: "dispatched",
+  completed: "completed",
+} as const;
+
+export type DealSettlementType =
+  (typeof DealSettlementType)[keyof typeof DealSettlementType];
+
+export const DealSettlementType = {
+  fixed: "fixed",
+  by_weight: "by_weight",
+} as const;
+
+export interface DealCounterparty {
+  name: string;
+  contact_phone: string;
+}
+
+/**
+ * Represents a confirmed agreement between producer and buyer following offer acceptance. Progresses through: active → payment_confirmed → dispatched → completed.
+
+ */
+export interface Deal {
+  id: string;
+  offer_id: string;
+  listing_id: string;
+  producer_company_id: string;
+  buyer_company_id: string;
+  settlement_type: DealSettlementType;
+  price_per_unit: number;
+  /** price_per_unit × listing quantity. Indicative only for by_weight deals. */
+  estimated_amount: number;
+  /** Filled by producer on payment confirmation for by_weight deals. */
+  actual_quantity?: number;
+  /** price_per_unit × actual_quantity. Only set for by_weight deals after confirmation. */
+  final_amount?: number;
+  status: DealStatus;
+  /** Contact info of the other party (producer sees buyer info and vice versa). */
+  counterparty?: DealCounterparty;
+  payment_confirmed_at?: string;
+  /** Bank transfer number / transaction reference provided by producer. */
+  payment_reference?: string;
+  /** Optional URL to payment proof document/screenshot. */
+  payment_proof_url?: string;
+  dispatched_at?: string;
+  received_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Body for POST /deals/{deal_id}/confirm-payment. payment_reference is always required. actual_quantity is required for by_weight deals.
+
+ */
+export interface ConfirmPaymentBody {
+  /**
+   * Bank transfer number or transaction reference ID.
+   * @minLength 1
+   */
+  payment_reference: string;
+  /** Optional URL to a payment screenshot or document. */
+  payment_proof_url?: string;
+  /**
+   * Actual weighed quantity. Required for by_weight deals.
+   * @exclusiveMinimum 0
+   */
+  actual_quantity?: number;
+}
+
+/**
+ * Shared fields for creating/updating company categories and material categories.
+ */
+export interface AdminLookupWriteBase {
+  /**
+   * Stable internal key. snake_case. Cannot be changed once in use by business logic.
+   * @minLength 1
+   * @maxLength 60
+   */
+  key?: string;
+  /**
+   * @minLength 1
+   * @maxLength 120
+   */
+  name_ar?: string;
+  /**
+   * @minLength 1
+   * @maxLength 120
+   */
+  name_en?: string;
+  /** @minimum 0 */
+  sort_order?: number;
+  is_active?: boolean;
+}
+
+/**
+ * Fields for creating/updating unit options.
+ */
+export interface AdminUnitOptionWrite {
+  /**
+   * @minLength 1
+   * @maxLength 60
+   */
+  key?: string;
+  /**
+   * @minLength 1
+   * @maxLength 120
+   */
+  name_ar?: string;
+  /**
+   * @minLength 1
+   * @maxLength 120
+   */
+  name_en?: string;
+  /**
+   * Short display symbol (e.g. "kg", "t", "L").
+   * @minLength 1
+   * @maxLength 20
+   */
+  symbol?: string;
+  /** @minimum 0 */
+  sort_order?: number;
+  is_active?: boolean;
+}
+
+/**
+ * Fields for creating/updating material categories (supports hierarchy via parent_id).
+ */
+export interface AdminMaterialCategoryWrite {
+  /**
+   * @minLength 1
+   * @maxLength 60
+   */
+  key?: string;
+  /**
+   * @minLength 1
+   * @maxLength 120
+   */
+  name_ar?: string;
+  /**
+   * @minLength 1
+   * @maxLength 120
+   */
+  name_en?: string;
+  /** FK to parent material_category.id. Null for top-level categories. */
+  parent_id?: string;
+  /** @minimum 0 */
+  sort_order?: number;
+  is_active?: boolean;
+}
+
+/**
+ * Response returned when an admin soft-deletes a lookup entry.
+ */
+export interface AdminDeleteResponse {
+  success: boolean;
+  id: string;
 }
 
 export type ListMarketplaceListingsParams = {

@@ -12,4 +12,5 @@ export const OfferStatus = {
   pending: "pending",
   accepted: "accepted",
   rejected: "rejected",
+  withdrawn: "withdrawn",
 } as const;

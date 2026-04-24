@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { CompanyType } from "./companyType";
+import type { LicenseStatus } from "./licenseStatus";
 
 export interface Company {
   id: string;
@@ -14,5 +15,10 @@ export interface Company {
   city: string;
   commercialRegistration?: string;
   contactPhone: string;
+  /** Regulatory license number (e.g. MOMRA, NCBE). Optional. */
+  license_number?: string;
+  license_status?: LicenseStatus;
+  /** FK to company_categories.id. Descriptive business category. */
+  company_category_id?: string;
   createdAt: Date;
 }

@@ -33,6 +33,22 @@ export const GetMeResponse = zod.object({
         city: zod.string(),
         commercialRegistration: zod.string().optional(),
         contactPhone: zod.string(),
+        license_number: zod
+          .string()
+          .optional()
+          .describe("Regulatory license number (e.g. MOMRA, NCBE). Optional."),
+        license_status: zod
+          .enum(["pending", "approved", "rejected", "expired"])
+          .optional()
+          .describe(
+            "null = no license submitted (participates freely).\npending = license submitted, awaiting admin review (no restrictions yet).\napproved = license verified.\nrejected \/ expired = license not valid.\n",
+          ),
+        company_category_id: zod
+          .string()
+          .optional()
+          .describe(
+            "FK to company_categories.id. Descriptive business category.",
+          ),
         createdAt: zod.coerce.date(),
       }),
       zod.null(),
@@ -53,6 +69,8 @@ export const createCompanyBodyCommercialRegistrationMax = 40;
 
 export const createCompanyBodyContactPhoneMin = 6;
 export const createCompanyBodyContactPhoneMax = 20;
+
+export const createCompanyBodyLicenseNumberMax = 80;
 
 export const CreateCompanyBody = zod.object({
   name: zod
@@ -76,6 +94,19 @@ export const CreateCompanyBody = zod.object({
     .string()
     .min(createCompanyBodyContactPhoneMin)
     .max(createCompanyBodyContactPhoneMax),
+  license_number: zod
+    .string()
+    .max(createCompanyBodyLicenseNumberMax)
+    .optional()
+    .describe("Optional regulatory license number."),
+  company_category_id: zod
+    .string()
+    .optional()
+    .describe("Optional FK to company_categories.id."),
+  accepted_terms: zod
+    .boolean()
+    .optional()
+    .describe("Must be true to accept platform terms and conditions."),
 });
 
 /**
@@ -119,22 +150,48 @@ export const ListMarketplaceListingsResponseItem = zod.object({
     .enum(["fixed", "by_weight"])
     .optional()
     .describe(
-      'Immutable once published. Defaults to \"fixed\" for the current MVP.\n',
+      "Governs how price_per_unit is interpreted and what settlement mechanics apply.\nImmutable once a listing is published.\nfixed: price_per_unit × quantity = agreed commercial amount.\nby_weight: price_per_unit is a rate; final amount settled post-weighing.\n",
+    ),
+  sale_type: zod
+    .enum(["auction", "direct"])
+    .optional()
+    .describe(
+      "auction = open bidding, all eligible buyers can submit offers.\ndirect = targeted sale; seller controls who can see and participate.\n",
+    ),
+  material_category_id: zod
+    .string()
+    .optional()
+    .describe("FK to material_categories.id. Null for legacy listings."),
+  unit_option_id: zod
+    .string()
+    .optional()
+    .describe(
+      "FK to unit_options.id. Null for listings using legacy unit enum.",
     ),
   visibility: zod
     .enum(["public", "private"])
     .optional()
     .describe(
-      'CURRENTLY READ-ONLY. Always \"public\" for listings created via this API.\nDefaults to \"public\". Private enforcement depends on a future listing_invitations layer.\nThis field is NOT present in CreateWasteListingBody — producers cannot set it yet.\n',
+      'Controls whether a listing appears in the public marketplace feed.\nCURRENTLY READ-ONLY: all listings default to \"public\".\n',
+    ),
+  my_offer_price: zod
+    .number()
+    .optional()
+    .describe(
+      "The calling buyer's current offer price_per_unit on this listing. Only included in GET \/listings (marketplace) responses. Null\/absent if the buyer has no offer.\n",
+    ),
+  my_rank: zod
+    .number()
+    .optional()
+    .describe(
+      "The calling buyer's current rank among all offers (1 = highest). Only included in GET \/listings (marketplace) responses. Null\/absent if the buyer has no offer.\n",
     ),
   created_at: zod.coerce.date(),
   closed_at: zod.coerce.date().optional(),
   offer_count: zod
     .number()
     .optional()
-    .describe(
-      "Total number of offers on this listing (included for producer my-listings and marketplace M3)",
-    ),
+    .describe("Total number of active (non-withdrawn) offers on this listing."),
   highest_offer_total: zod
     .number()
     .optional()
@@ -183,7 +240,23 @@ export const CreateWasteListingBody = zod.object({
     .enum(["fixed", "by_weight"])
     .optional()
     .describe(
-      'Governs settlement mechanics. Immutable once published.\nDefaults to \"fixed\" if not supplied. Must not be updated after creation.\n',
+      'Governs settlement mechanics. Immutable once published.\nDefaults to \"fixed\" if not supplied.\n',
+    ),
+  sale_type: zod
+    .enum(["auction", "direct"])
+    .optional()
+    .describe(
+      'Controls offer model. Defaults to \"auction\" if not supplied.\n',
+    ),
+  material_category_id: zod
+    .string()
+    .optional()
+    .describe("Optional FK to material_categories.id."),
+  unit_option_id: zod
+    .string()
+    .optional()
+    .describe(
+      "Optional FK to unit_options.id. Falls back to unit enum if absent.",
     ),
 });
 
@@ -217,22 +290,48 @@ export const ListMyListingsResponseItem = zod.object({
     .enum(["fixed", "by_weight"])
     .optional()
     .describe(
-      'Immutable once published. Defaults to \"fixed\" for the current MVP.\n',
+      "Governs how price_per_unit is interpreted and what settlement mechanics apply.\nImmutable once a listing is published.\nfixed: price_per_unit × quantity = agreed commercial amount.\nby_weight: price_per_unit is a rate; final amount settled post-weighing.\n",
+    ),
+  sale_type: zod
+    .enum(["auction", "direct"])
+    .optional()
+    .describe(
+      "auction = open bidding, all eligible buyers can submit offers.\ndirect = targeted sale; seller controls who can see and participate.\n",
+    ),
+  material_category_id: zod
+    .string()
+    .optional()
+    .describe("FK to material_categories.id. Null for legacy listings."),
+  unit_option_id: zod
+    .string()
+    .optional()
+    .describe(
+      "FK to unit_options.id. Null for listings using legacy unit enum.",
     ),
   visibility: zod
     .enum(["public", "private"])
     .optional()
     .describe(
-      'CURRENTLY READ-ONLY. Always \"public\" for listings created via this API.\nDefaults to \"public\". Private enforcement depends on a future listing_invitations layer.\nThis field is NOT present in CreateWasteListingBody — producers cannot set it yet.\n',
+      'Controls whether a listing appears in the public marketplace feed.\nCURRENTLY READ-ONLY: all listings default to \"public\".\n',
+    ),
+  my_offer_price: zod
+    .number()
+    .optional()
+    .describe(
+      "The calling buyer's current offer price_per_unit on this listing. Only included in GET \/listings (marketplace) responses. Null\/absent if the buyer has no offer.\n",
+    ),
+  my_rank: zod
+    .number()
+    .optional()
+    .describe(
+      "The calling buyer's current rank among all offers (1 = highest). Only included in GET \/listings (marketplace) responses. Null\/absent if the buyer has no offer.\n",
     ),
   created_at: zod.coerce.date(),
   closed_at: zod.coerce.date().optional(),
   offer_count: zod
     .number()
     .optional()
-    .describe(
-      "Total number of offers on this listing (included for producer my-listings and marketplace M3)",
-    ),
+    .describe("Total number of active (non-withdrawn) offers on this listing."),
   highest_offer_total: zod
     .number()
     .optional()
@@ -272,22 +371,48 @@ export const GetWasteListingResponse = zod.object({
     .enum(["fixed", "by_weight"])
     .optional()
     .describe(
-      'Immutable once published. Defaults to \"fixed\" for the current MVP.\n',
+      "Governs how price_per_unit is interpreted and what settlement mechanics apply.\nImmutable once a listing is published.\nfixed: price_per_unit × quantity = agreed commercial amount.\nby_weight: price_per_unit is a rate; final amount settled post-weighing.\n",
+    ),
+  sale_type: zod
+    .enum(["auction", "direct"])
+    .optional()
+    .describe(
+      "auction = open bidding, all eligible buyers can submit offers.\ndirect = targeted sale; seller controls who can see and participate.\n",
+    ),
+  material_category_id: zod
+    .string()
+    .optional()
+    .describe("FK to material_categories.id. Null for legacy listings."),
+  unit_option_id: zod
+    .string()
+    .optional()
+    .describe(
+      "FK to unit_options.id. Null for listings using legacy unit enum.",
     ),
   visibility: zod
     .enum(["public", "private"])
     .optional()
     .describe(
-      'CURRENTLY READ-ONLY. Always \"public\" for listings created via this API.\nDefaults to \"public\". Private enforcement depends on a future listing_invitations layer.\nThis field is NOT present in CreateWasteListingBody — producers cannot set it yet.\n',
+      'Controls whether a listing appears in the public marketplace feed.\nCURRENTLY READ-ONLY: all listings default to \"public\".\n',
+    ),
+  my_offer_price: zod
+    .number()
+    .optional()
+    .describe(
+      "The calling buyer's current offer price_per_unit on this listing. Only included in GET \/listings (marketplace) responses. Null\/absent if the buyer has no offer.\n",
+    ),
+  my_rank: zod
+    .number()
+    .optional()
+    .describe(
+      "The calling buyer's current rank among all offers (1 = highest). Only included in GET \/listings (marketplace) responses. Null\/absent if the buyer has no offer.\n",
     ),
   created_at: zod.coerce.date(),
   closed_at: zod.coerce.date().optional(),
   offer_count: zod
     .number()
     .optional()
-    .describe(
-      "Total number of offers on this listing (included for producer my-listings and marketplace M3)",
-    ),
+    .describe("Total number of active (non-withdrawn) offers on this listing."),
   highest_offer_total: zod
     .number()
     .optional()
@@ -326,22 +451,48 @@ export const CloseWasteListingResponse = zod.object({
     .enum(["fixed", "by_weight"])
     .optional()
     .describe(
-      'Immutable once published. Defaults to \"fixed\" for the current MVP.\n',
+      "Governs how price_per_unit is interpreted and what settlement mechanics apply.\nImmutable once a listing is published.\nfixed: price_per_unit × quantity = agreed commercial amount.\nby_weight: price_per_unit is a rate; final amount settled post-weighing.\n",
+    ),
+  sale_type: zod
+    .enum(["auction", "direct"])
+    .optional()
+    .describe(
+      "auction = open bidding, all eligible buyers can submit offers.\ndirect = targeted sale; seller controls who can see and participate.\n",
+    ),
+  material_category_id: zod
+    .string()
+    .optional()
+    .describe("FK to material_categories.id. Null for legacy listings."),
+  unit_option_id: zod
+    .string()
+    .optional()
+    .describe(
+      "FK to unit_options.id. Null for listings using legacy unit enum.",
     ),
   visibility: zod
     .enum(["public", "private"])
     .optional()
     .describe(
-      'CURRENTLY READ-ONLY. Always \"public\" for listings created via this API.\nDefaults to \"public\". Private enforcement depends on a future listing_invitations layer.\nThis field is NOT present in CreateWasteListingBody — producers cannot set it yet.\n',
+      'Controls whether a listing appears in the public marketplace feed.\nCURRENTLY READ-ONLY: all listings default to \"public\".\n',
+    ),
+  my_offer_price: zod
+    .number()
+    .optional()
+    .describe(
+      "The calling buyer's current offer price_per_unit on this listing. Only included in GET \/listings (marketplace) responses. Null\/absent if the buyer has no offer.\n",
+    ),
+  my_rank: zod
+    .number()
+    .optional()
+    .describe(
+      "The calling buyer's current rank among all offers (1 = highest). Only included in GET \/listings (marketplace) responses. Null\/absent if the buyer has no offer.\n",
     ),
   created_at: zod.coerce.date(),
   closed_at: zod.coerce.date().optional(),
   offer_count: zod
     .number()
     .optional()
-    .describe(
-      "Total number of offers on this listing (included for producer my-listings and marketplace M3)",
-    ),
+    .describe("Total number of active (non-withdrawn) offers on this listing."),
   highest_offer_total: zod
     .number()
     .optional()
@@ -365,7 +516,7 @@ export const GetListingOffersResponseItem = zod.object({
   buyer_company_name: zod.string(),
   price_per_unit: zod.number(),
   message: zod.string().optional(),
-  status: zod.enum(["pending", "accepted", "rejected"]),
+  status: zod.enum(["pending", "accepted", "rejected", "withdrawn"]),
   rejection_reason: zod
     .string()
     .optional()
@@ -376,17 +527,23 @@ export const GetListingOffersResponseItem = zod.object({
     .number()
     .optional()
     .describe(
-      "Buyer rank among all offers (1 = highest). Only included in buyer-facing responses.",
+      "Buyer rank among all active offers (1 = highest). Only included in buyer-facing responses.",
     ),
   total_offers: zod
     .number()
     .optional()
     .describe(
-      "Total number of offers on this listing. Included alongside rank.",
+      "Total number of active offers on this listing. Included alongside rank.",
     ),
   created_at: zod.coerce.date(),
   updated_at: zod.coerce.date(),
   resolved_at: zod.coerce.date().optional(),
+  already_top: zod
+    .boolean()
+    .optional()
+    .describe(
+      "Returned by PUT \/offers\/mine (improve offer). True if the buyer was already the top bidder before submitting this improvement.\n",
+    ),
 });
 export const GetListingOffersResponse = zod.array(GetListingOffersResponseItem);
 
@@ -430,7 +587,7 @@ export const ImproveOfferResponse = zod.object({
   buyer_company_name: zod.string(),
   price_per_unit: zod.number(),
   message: zod.string().optional(),
-  status: zod.enum(["pending", "accepted", "rejected"]),
+  status: zod.enum(["pending", "accepted", "rejected", "withdrawn"]),
   rejection_reason: zod
     .string()
     .optional()
@@ -441,17 +598,68 @@ export const ImproveOfferResponse = zod.object({
     .number()
     .optional()
     .describe(
-      "Buyer rank among all offers (1 = highest). Only included in buyer-facing responses.",
+      "Buyer rank among all active offers (1 = highest). Only included in buyer-facing responses.",
     ),
   total_offers: zod
     .number()
     .optional()
     .describe(
-      "Total number of offers on this listing. Included alongside rank.",
+      "Total number of active offers on this listing. Included alongside rank.",
     ),
   created_at: zod.coerce.date(),
   updated_at: zod.coerce.date(),
   resolved_at: zod.coerce.date().optional(),
+  already_top: zod
+    .boolean()
+    .optional()
+    .describe(
+      "Returned by PUT \/offers\/mine (improve offer). True if the buyer was already the top bidder before submitting this improvement.\n",
+    ),
+});
+
+/**
+ * @summary Withdraw the buyer's own pending offer on a listing. Only allowed when the offer is still in "pending" status. Withdrawn offers are excluded from ranking and highest-offer calculations.
+
+ */
+export const WithdrawOfferParams = zod.object({
+  waste_listing_id: zod.coerce.string(),
+});
+
+export const WithdrawOfferResponse = zod.object({
+  id: zod.string(),
+  waste_listing_id: zod.string(),
+  buyer_company_id: zod.string(),
+  buyer_company_name: zod.string(),
+  price_per_unit: zod.number(),
+  message: zod.string().optional(),
+  status: zod.enum(["pending", "accepted", "rejected", "withdrawn"]),
+  rejection_reason: zod
+    .string()
+    .optional()
+    .describe(
+      "Reason provided by producer when rejecting. Visible to the affected buyer only.",
+    ),
+  rank: zod
+    .number()
+    .optional()
+    .describe(
+      "Buyer rank among all active offers (1 = highest). Only included in buyer-facing responses.",
+    ),
+  total_offers: zod
+    .number()
+    .optional()
+    .describe(
+      "Total number of active offers on this listing. Included alongside rank.",
+    ),
+  created_at: zod.coerce.date(),
+  updated_at: zod.coerce.date(),
+  resolved_at: zod.coerce.date().optional(),
+  already_top: zod
+    .boolean()
+    .optional()
+    .describe(
+      "Returned by PUT \/offers\/mine (improve offer). True if the buyer was already the top bidder before submitting this improvement.\n",
+    ),
 });
 
 /**
@@ -472,7 +680,7 @@ export const GetOffersSummaryResponse = zod.object({
 
  */
 export const ListMyOffersQueryParams = zod.object({
-  status: zod.enum(["pending", "accepted", "rejected"]).optional(),
+  status: zod.enum(["pending", "accepted", "rejected", "withdrawn"]).optional(),
 });
 
 export const ListMyOffersResponseItem = zod
@@ -499,7 +707,7 @@ export const ListMyOffersResponseItem = zod
     listing_closed_at: zod.coerce.date().optional(),
     price_per_unit: zod.number(),
     message: zod.string().optional(),
-    status: zod.enum(["pending", "accepted", "rejected"]),
+    status: zod.enum(["pending", "accepted", "rejected", "withdrawn"]),
     rejection_reason: zod
       .string()
       .optional()
@@ -554,7 +762,7 @@ export const AcceptOfferResponse = zod.object({
   buyer_company_name: zod.string(),
   price_per_unit: zod.number(),
   message: zod.string().optional(),
-  status: zod.enum(["pending", "accepted", "rejected"]),
+  status: zod.enum(["pending", "accepted", "rejected", "withdrawn"]),
   rejection_reason: zod
     .string()
     .optional()
@@ -565,17 +773,23 @@ export const AcceptOfferResponse = zod.object({
     .number()
     .optional()
     .describe(
-      "Buyer rank among all offers (1 = highest). Only included in buyer-facing responses.",
+      "Buyer rank among all active offers (1 = highest). Only included in buyer-facing responses.",
     ),
   total_offers: zod
     .number()
     .optional()
     .describe(
-      "Total number of offers on this listing. Included alongside rank.",
+      "Total number of active offers on this listing. Included alongside rank.",
     ),
   created_at: zod.coerce.date(),
   updated_at: zod.coerce.date(),
   resolved_at: zod.coerce.date().optional(),
+  already_top: zod
+    .boolean()
+    .optional()
+    .describe(
+      "Returned by PUT \/offers\/mine (improve offer). True if the buyer was already the top bidder before submitting this improvement.\n",
+    ),
 });
 
 /**
@@ -613,7 +827,7 @@ export const RejectOfferResponse = zod.object({
   buyer_company_name: zod.string(),
   price_per_unit: zod.number(),
   message: zod.string().optional(),
-  status: zod.enum(["pending", "accepted", "rejected"]),
+  status: zod.enum(["pending", "accepted", "rejected", "withdrawn"]),
   rejection_reason: zod
     .string()
     .optional()
@@ -624,15 +838,782 @@ export const RejectOfferResponse = zod.object({
     .number()
     .optional()
     .describe(
-      "Buyer rank among all offers (1 = highest). Only included in buyer-facing responses.",
+      "Buyer rank among all active offers (1 = highest). Only included in buyer-facing responses.",
     ),
   total_offers: zod
     .number()
     .optional()
     .describe(
-      "Total number of offers on this listing. Included alongside rank.",
+      "Total number of active offers on this listing. Included alongside rank.",
     ),
   created_at: zod.coerce.date(),
   updated_at: zod.coerce.date(),
   resolved_at: zod.coerce.date().optional(),
+  already_top: zod
+    .boolean()
+    .optional()
+    .describe(
+      "Returned by PUT \/offers\/mine (improve offer). True if the buyer was already the top bidder before submitting this improvement.\n",
+    ),
 });
+
+/**
+ * @summary List all active company categories (admin-managed)
+ */
+export const GetCompanyCategoriesResponseItem = zod
+  .object({
+    id: zod.string(),
+    key: zod
+      .string()
+      .describe(
+        'Stable internal key (e.g. \"industrial\", \"recycler\"). Used in logic and eligibility.',
+      ),
+    name_ar: zod.string(),
+    name_en: zod.string(),
+    is_active: zod.boolean(),
+    sort_order: zod.number(),
+  })
+  .describe(
+    "Admin-managed company business category. key is the stable internal identifier.",
+  );
+export const GetCompanyCategoriesResponse = zod.array(
+  GetCompanyCategoriesResponseItem,
+);
+
+/**
+ * @summary List all active unit of measurement options (admin-managed)
+ */
+export const GetUnitOptionsResponseItem = zod
+  .object({
+    id: zod.string(),
+    key: zod
+      .string()
+      .describe(
+        'Stable internal key (e.g. \"kg\", \"ton\", \"liter\"). Used in logic and filtering.',
+      ),
+    name_ar: zod.string(),
+    name_en: zod.string(),
+    symbol: zod
+      .string()
+      .describe('Short display symbol (e.g. \"kg\", \"t\", \"L\").'),
+    is_active: zod.boolean(),
+    sort_order: zod.number(),
+  })
+  .describe(
+    "Admin-managed unit of measurement. key is the stable internal identifier.",
+  );
+export const GetUnitOptionsResponse = zod.array(GetUnitOptionsResponseItem);
+
+/**
+ * @summary List all active material categories (admin-managed, hierarchical)
+ */
+export const GetMaterialCategoriesResponseItem = zod
+  .object({
+    id: zod.string(),
+    key: zod
+      .string()
+      .describe(
+        'Stable internal key (e.g. \"paper\", \"metal\", \"safe_disposal\"). Used in eligibility logic.',
+      ),
+    name_ar: zod.string(),
+    name_en: zod.string(),
+    parent_id: zod
+      .string()
+      .optional()
+      .describe(
+        "FK to parent material_category. Null for top-level categories.",
+      ),
+    is_active: zod.boolean(),
+    sort_order: zod.number(),
+  })
+  .describe(
+    "Admin-managed hierarchical material classification. parent_id = null means top-level category. Used in logic, eligibility, and filtering.\n",
+  );
+export const GetMaterialCategoriesResponse = zod.array(
+  GetMaterialCategoriesResponseItem,
+);
+
+/**
+ * @summary List all active company capabilities (admin-managed). Capabilities describe what a company CAN DO and are used for eligibility gating and partner matching.
+
+ */
+export const GetCapabilitiesResponseItem = zod
+  .object({
+    id: zod.string(),
+    key: zod
+      .string()
+      .describe(
+        'Stable internal key (e.g. \"recycle_metal\", \"transport_waste\"). Used in logic.',
+      ),
+    name_ar: zod.string(),
+    name_en: zod.string(),
+    description_ar: zod.string().optional(),
+    description_en: zod.string().optional(),
+    is_active: zod.boolean(),
+    sort_order: zod.number(),
+  })
+  .describe(
+    "Admin-managed capability descriptor. Capabilities describe what a company CAN DO (e.g. recycle metal, transport waste). Used for eligibility gating and matching. key is the stable internal identifier — never changes.\n",
+  );
+export const GetCapabilitiesResponse = zod.array(GetCapabilitiesResponseItem);
+
+/**
+ * @summary Get deal details. Accessible by producer or buyer of the deal.
+ */
+export const GetDealParams = zod.object({
+  deal_id: zod.coerce.string(),
+});
+
+export const GetDealResponse = zod
+  .object({
+    id: zod.string(),
+    offer_id: zod.string(),
+    listing_id: zod.string(),
+    producer_company_id: zod.string(),
+    buyer_company_id: zod.string(),
+    settlement_type: zod.enum(["fixed", "by_weight"]),
+    price_per_unit: zod.number(),
+    estimated_amount: zod
+      .number()
+      .describe(
+        "price_per_unit × listing quantity. Indicative only for by_weight deals.",
+      ),
+    actual_quantity: zod
+      .number()
+      .optional()
+      .describe(
+        "Filled by producer on payment confirmation for by_weight deals.",
+      ),
+    final_amount: zod
+      .number()
+      .optional()
+      .describe(
+        "price_per_unit × actual_quantity. Only set for by_weight deals after confirmation.",
+      ),
+    status: zod.enum([
+      "active",
+      "payment_confirmed",
+      "dispatched",
+      "completed",
+    ]),
+    counterparty: zod
+      .object({
+        name: zod.string(),
+        contact_phone: zod.string(),
+      })
+      .optional()
+      .describe(
+        "Contact info of the other party (producer sees buyer info and vice versa).",
+      ),
+    payment_confirmed_at: zod.coerce.date().optional(),
+    payment_reference: zod
+      .string()
+      .optional()
+      .describe(
+        "Bank transfer number \/ transaction reference provided by producer.",
+      ),
+    payment_proof_url: zod
+      .string()
+      .optional()
+      .describe("Optional URL to payment proof document\/screenshot."),
+    dispatched_at: zod.coerce.date().optional(),
+    received_at: zod.coerce.date().optional(),
+    created_at: zod.coerce.date(),
+    updated_at: zod.coerce.date(),
+  })
+  .describe(
+    "Represents a confirmed agreement between producer and buyer following offer acceptance. Progresses through: active → payment_confirmed → dispatched → completed.\n",
+  );
+
+/**
+ * @summary Producer confirms receipt of payment. Requires payment_reference (bank transfer / transaction ID). For by_weight deals, actual_quantity is required to compute final_amount. Transitions deal status from active → payment_confirmed.
+
+ */
+export const ConfirmPaymentParams = zod.object({
+  deal_id: zod.coerce.string(),
+});
+
+export const confirmPaymentBodyActualQuantityExclusiveMin = 0;
+
+export const ConfirmPaymentBody = zod
+  .object({
+    payment_reference: zod
+      .string()
+      .min(1)
+      .describe("Bank transfer number or transaction reference ID."),
+    payment_proof_url: zod
+      .string()
+      .optional()
+      .describe("Optional URL to a payment screenshot or document."),
+    actual_quantity: zod
+      .number()
+      .gt(confirmPaymentBodyActualQuantityExclusiveMin)
+      .optional()
+      .describe("Actual weighed quantity. Required for by_weight deals."),
+  })
+  .describe(
+    "Body for POST \/deals\/{deal_id}\/confirm-payment. payment_reference is always required. actual_quantity is required for by_weight deals.\n",
+  );
+
+export const ConfirmPaymentResponse = zod
+  .object({
+    id: zod.string(),
+    offer_id: zod.string(),
+    listing_id: zod.string(),
+    producer_company_id: zod.string(),
+    buyer_company_id: zod.string(),
+    settlement_type: zod.enum(["fixed", "by_weight"]),
+    price_per_unit: zod.number(),
+    estimated_amount: zod
+      .number()
+      .describe(
+        "price_per_unit × listing quantity. Indicative only for by_weight deals.",
+      ),
+    actual_quantity: zod
+      .number()
+      .optional()
+      .describe(
+        "Filled by producer on payment confirmation for by_weight deals.",
+      ),
+    final_amount: zod
+      .number()
+      .optional()
+      .describe(
+        "price_per_unit × actual_quantity. Only set for by_weight deals after confirmation.",
+      ),
+    status: zod.enum([
+      "active",
+      "payment_confirmed",
+      "dispatched",
+      "completed",
+    ]),
+    counterparty: zod
+      .object({
+        name: zod.string(),
+        contact_phone: zod.string(),
+      })
+      .optional()
+      .describe(
+        "Contact info of the other party (producer sees buyer info and vice versa).",
+      ),
+    payment_confirmed_at: zod.coerce.date().optional(),
+    payment_reference: zod
+      .string()
+      .optional()
+      .describe(
+        "Bank transfer number \/ transaction reference provided by producer.",
+      ),
+    payment_proof_url: zod
+      .string()
+      .optional()
+      .describe("Optional URL to payment proof document\/screenshot."),
+    dispatched_at: zod.coerce.date().optional(),
+    received_at: zod.coerce.date().optional(),
+    created_at: zod.coerce.date(),
+    updated_at: zod.coerce.date(),
+  })
+  .describe(
+    "Represents a confirmed agreement between producer and buyer following offer acceptance. Progresses through: active → payment_confirmed → dispatched → completed.\n",
+  );
+
+/**
+ * @summary Producer confirms goods have been dispatched to the buyer. Transitions deal status from payment_confirmed → dispatched.
+
+ */
+export const ConfirmDispatchParams = zod.object({
+  deal_id: zod.coerce.string(),
+});
+
+export const ConfirmDispatchResponse = zod
+  .object({
+    id: zod.string(),
+    offer_id: zod.string(),
+    listing_id: zod.string(),
+    producer_company_id: zod.string(),
+    buyer_company_id: zod.string(),
+    settlement_type: zod.enum(["fixed", "by_weight"]),
+    price_per_unit: zod.number(),
+    estimated_amount: zod
+      .number()
+      .describe(
+        "price_per_unit × listing quantity. Indicative only for by_weight deals.",
+      ),
+    actual_quantity: zod
+      .number()
+      .optional()
+      .describe(
+        "Filled by producer on payment confirmation for by_weight deals.",
+      ),
+    final_amount: zod
+      .number()
+      .optional()
+      .describe(
+        "price_per_unit × actual_quantity. Only set for by_weight deals after confirmation.",
+      ),
+    status: zod.enum([
+      "active",
+      "payment_confirmed",
+      "dispatched",
+      "completed",
+    ]),
+    counterparty: zod
+      .object({
+        name: zod.string(),
+        contact_phone: zod.string(),
+      })
+      .optional()
+      .describe(
+        "Contact info of the other party (producer sees buyer info and vice versa).",
+      ),
+    payment_confirmed_at: zod.coerce.date().optional(),
+    payment_reference: zod
+      .string()
+      .optional()
+      .describe(
+        "Bank transfer number \/ transaction reference provided by producer.",
+      ),
+    payment_proof_url: zod
+      .string()
+      .optional()
+      .describe("Optional URL to payment proof document\/screenshot."),
+    dispatched_at: zod.coerce.date().optional(),
+    received_at: zod.coerce.date().optional(),
+    created_at: zod.coerce.date(),
+    updated_at: zod.coerce.date(),
+  })
+  .describe(
+    "Represents a confirmed agreement between producer and buyer following offer acceptance. Progresses through: active → payment_confirmed → dispatched → completed.\n",
+  );
+
+/**
+ * @summary Buyer confirms receipt of goods. Transitions deal status from dispatched → completed.
+
+ */
+export const ConfirmReceiptParams = zod.object({
+  deal_id: zod.coerce.string(),
+});
+
+export const ConfirmReceiptResponse = zod
+  .object({
+    id: zod.string(),
+    offer_id: zod.string(),
+    listing_id: zod.string(),
+    producer_company_id: zod.string(),
+    buyer_company_id: zod.string(),
+    settlement_type: zod.enum(["fixed", "by_weight"]),
+    price_per_unit: zod.number(),
+    estimated_amount: zod
+      .number()
+      .describe(
+        "price_per_unit × listing quantity. Indicative only for by_weight deals.",
+      ),
+    actual_quantity: zod
+      .number()
+      .optional()
+      .describe(
+        "Filled by producer on payment confirmation for by_weight deals.",
+      ),
+    final_amount: zod
+      .number()
+      .optional()
+      .describe(
+        "price_per_unit × actual_quantity. Only set for by_weight deals after confirmation.",
+      ),
+    status: zod.enum([
+      "active",
+      "payment_confirmed",
+      "dispatched",
+      "completed",
+    ]),
+    counterparty: zod
+      .object({
+        name: zod.string(),
+        contact_phone: zod.string(),
+      })
+      .optional()
+      .describe(
+        "Contact info of the other party (producer sees buyer info and vice versa).",
+      ),
+    payment_confirmed_at: zod.coerce.date().optional(),
+    payment_reference: zod
+      .string()
+      .optional()
+      .describe(
+        "Bank transfer number \/ transaction reference provided by producer.",
+      ),
+    payment_proof_url: zod
+      .string()
+      .optional()
+      .describe("Optional URL to payment proof document\/screenshot."),
+    dispatched_at: zod.coerce.date().optional(),
+    received_at: zod.coerce.date().optional(),
+    created_at: zod.coerce.date(),
+    updated_at: zod.coerce.date(),
+  })
+  .describe(
+    "Represents a confirmed agreement between producer and buyer following offer acceptance. Progresses through: active → payment_confirmed → dispatched → completed.\n",
+  );
+
+/**
+ * @summary Create a new company category (admin only)
+ */
+export const adminCreateCompanyCategoryBodyKeyMax = 60;
+
+export const adminCreateCompanyCategoryBodyNameArMax = 120;
+
+export const adminCreateCompanyCategoryBodyNameEnMax = 120;
+
+export const adminCreateCompanyCategoryBodySortOrderMin = 0;
+
+export const AdminCreateCompanyCategoryBody = zod
+  .object({
+    key: zod
+      .string()
+      .min(1)
+      .max(adminCreateCompanyCategoryBodyKeyMax)
+      .optional()
+      .describe(
+        "Stable internal key. snake_case. Cannot be changed once in use by business logic.",
+      ),
+    name_ar: zod
+      .string()
+      .min(1)
+      .max(adminCreateCompanyCategoryBodyNameArMax)
+      .optional(),
+    name_en: zod
+      .string()
+      .min(1)
+      .max(adminCreateCompanyCategoryBodyNameEnMax)
+      .optional(),
+    sort_order: zod
+      .number()
+      .min(adminCreateCompanyCategoryBodySortOrderMin)
+      .optional(),
+    is_active: zod.boolean().optional(),
+  })
+  .describe(
+    "Shared fields for creating\/updating company categories and material categories.",
+  );
+
+/**
+ * @summary Update a company category (admin only)
+ */
+export const AdminUpdateCompanyCategoryParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const adminUpdateCompanyCategoryBodyKeyMax = 60;
+
+export const adminUpdateCompanyCategoryBodyNameArMax = 120;
+
+export const adminUpdateCompanyCategoryBodyNameEnMax = 120;
+
+export const adminUpdateCompanyCategoryBodySortOrderMin = 0;
+
+export const AdminUpdateCompanyCategoryBody = zod
+  .object({
+    key: zod
+      .string()
+      .min(1)
+      .max(adminUpdateCompanyCategoryBodyKeyMax)
+      .optional()
+      .describe(
+        "Stable internal key. snake_case. Cannot be changed once in use by business logic.",
+      ),
+    name_ar: zod
+      .string()
+      .min(1)
+      .max(adminUpdateCompanyCategoryBodyNameArMax)
+      .optional(),
+    name_en: zod
+      .string()
+      .min(1)
+      .max(adminUpdateCompanyCategoryBodyNameEnMax)
+      .optional(),
+    sort_order: zod
+      .number()
+      .min(adminUpdateCompanyCategoryBodySortOrderMin)
+      .optional(),
+    is_active: zod.boolean().optional(),
+  })
+  .describe(
+    "Shared fields for creating\/updating company categories and material categories.",
+  );
+
+export const AdminUpdateCompanyCategoryResponse = zod
+  .object({
+    id: zod.string(),
+    key: zod
+      .string()
+      .describe(
+        'Stable internal key (e.g. \"industrial\", \"recycler\"). Used in logic and eligibility.',
+      ),
+    name_ar: zod.string(),
+    name_en: zod.string(),
+    is_active: zod.boolean(),
+    sort_order: zod.number(),
+  })
+  .describe(
+    "Admin-managed company business category. key is the stable internal identifier.",
+  );
+
+/**
+ * @summary Deactivate a company category (sets is_active=false)
+ */
+export const AdminDeactivateCompanyCategoryParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const AdminDeactivateCompanyCategoryResponse = zod
+  .object({
+    success: zod.boolean(),
+    id: zod.string(),
+  })
+  .describe("Response returned when an admin soft-deletes a lookup entry.");
+
+/**
+ * @summary Create a new unit option (admin only)
+ */
+export const adminCreateUnitOptionBodyKeyMax = 60;
+
+export const adminCreateUnitOptionBodyNameArMax = 120;
+
+export const adminCreateUnitOptionBodyNameEnMax = 120;
+
+export const adminCreateUnitOptionBodySymbolMax = 20;
+
+export const adminCreateUnitOptionBodySortOrderMin = 0;
+
+export const AdminCreateUnitOptionBody = zod
+  .object({
+    key: zod.string().min(1).max(adminCreateUnitOptionBodyKeyMax).optional(),
+    name_ar: zod
+      .string()
+      .min(1)
+      .max(adminCreateUnitOptionBodyNameArMax)
+      .optional(),
+    name_en: zod
+      .string()
+      .min(1)
+      .max(adminCreateUnitOptionBodyNameEnMax)
+      .optional(),
+    symbol: zod
+      .string()
+      .min(1)
+      .max(adminCreateUnitOptionBodySymbolMax)
+      .optional()
+      .describe('Short display symbol (e.g. \"kg\", \"t\", \"L\").'),
+    sort_order: zod
+      .number()
+      .min(adminCreateUnitOptionBodySortOrderMin)
+      .optional(),
+    is_active: zod.boolean().optional(),
+  })
+  .describe("Fields for creating\/updating unit options.");
+
+/**
+ * @summary Update a unit option (admin only)
+ */
+export const AdminUpdateUnitOptionParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const adminUpdateUnitOptionBodyKeyMax = 60;
+
+export const adminUpdateUnitOptionBodyNameArMax = 120;
+
+export const adminUpdateUnitOptionBodyNameEnMax = 120;
+
+export const adminUpdateUnitOptionBodySymbolMax = 20;
+
+export const adminUpdateUnitOptionBodySortOrderMin = 0;
+
+export const AdminUpdateUnitOptionBody = zod
+  .object({
+    key: zod.string().min(1).max(adminUpdateUnitOptionBodyKeyMax).optional(),
+    name_ar: zod
+      .string()
+      .min(1)
+      .max(adminUpdateUnitOptionBodyNameArMax)
+      .optional(),
+    name_en: zod
+      .string()
+      .min(1)
+      .max(adminUpdateUnitOptionBodyNameEnMax)
+      .optional(),
+    symbol: zod
+      .string()
+      .min(1)
+      .max(adminUpdateUnitOptionBodySymbolMax)
+      .optional()
+      .describe('Short display symbol (e.g. \"kg\", \"t\", \"L\").'),
+    sort_order: zod
+      .number()
+      .min(adminUpdateUnitOptionBodySortOrderMin)
+      .optional(),
+    is_active: zod.boolean().optional(),
+  })
+  .describe("Fields for creating\/updating unit options.");
+
+export const AdminUpdateUnitOptionResponse = zod
+  .object({
+    id: zod.string(),
+    key: zod
+      .string()
+      .describe(
+        'Stable internal key (e.g. \"kg\", \"ton\", \"liter\"). Used in logic and filtering.',
+      ),
+    name_ar: zod.string(),
+    name_en: zod.string(),
+    symbol: zod
+      .string()
+      .describe('Short display symbol (e.g. \"kg\", \"t\", \"L\").'),
+    is_active: zod.boolean(),
+    sort_order: zod.number(),
+  })
+  .describe(
+    "Admin-managed unit of measurement. key is the stable internal identifier.",
+  );
+
+/**
+ * @summary Deactivate a unit option (sets is_active=false)
+ */
+export const AdminDeactivateUnitOptionParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const AdminDeactivateUnitOptionResponse = zod
+  .object({
+    success: zod.boolean(),
+    id: zod.string(),
+  })
+  .describe("Response returned when an admin soft-deletes a lookup entry.");
+
+/**
+ * @summary Create a new material category (admin only)
+ */
+export const adminCreateMaterialCategoryBodyKeyMax = 60;
+
+export const adminCreateMaterialCategoryBodyNameArMax = 120;
+
+export const adminCreateMaterialCategoryBodyNameEnMax = 120;
+
+export const adminCreateMaterialCategoryBodySortOrderMin = 0;
+
+export const AdminCreateMaterialCategoryBody = zod
+  .object({
+    key: zod
+      .string()
+      .min(1)
+      .max(adminCreateMaterialCategoryBodyKeyMax)
+      .optional(),
+    name_ar: zod
+      .string()
+      .min(1)
+      .max(adminCreateMaterialCategoryBodyNameArMax)
+      .optional(),
+    name_en: zod
+      .string()
+      .min(1)
+      .max(adminCreateMaterialCategoryBodyNameEnMax)
+      .optional(),
+    parent_id: zod
+      .string()
+      .optional()
+      .describe(
+        "FK to parent material_category.id. Null for top-level categories.",
+      ),
+    sort_order: zod
+      .number()
+      .min(adminCreateMaterialCategoryBodySortOrderMin)
+      .optional(),
+    is_active: zod.boolean().optional(),
+  })
+  .describe(
+    "Fields for creating\/updating material categories (supports hierarchy via parent_id).",
+  );
+
+/**
+ * @summary Update a material category (admin only)
+ */
+export const AdminUpdateMaterialCategoryParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const adminUpdateMaterialCategoryBodyKeyMax = 60;
+
+export const adminUpdateMaterialCategoryBodyNameArMax = 120;
+
+export const adminUpdateMaterialCategoryBodyNameEnMax = 120;
+
+export const adminUpdateMaterialCategoryBodySortOrderMin = 0;
+
+export const AdminUpdateMaterialCategoryBody = zod
+  .object({
+    key: zod
+      .string()
+      .min(1)
+      .max(adminUpdateMaterialCategoryBodyKeyMax)
+      .optional(),
+    name_ar: zod
+      .string()
+      .min(1)
+      .max(adminUpdateMaterialCategoryBodyNameArMax)
+      .optional(),
+    name_en: zod
+      .string()
+      .min(1)
+      .max(adminUpdateMaterialCategoryBodyNameEnMax)
+      .optional(),
+    parent_id: zod
+      .string()
+      .optional()
+      .describe(
+        "FK to parent material_category.id. Null for top-level categories.",
+      ),
+    sort_order: zod
+      .number()
+      .min(adminUpdateMaterialCategoryBodySortOrderMin)
+      .optional(),
+    is_active: zod.boolean().optional(),
+  })
+  .describe(
+    "Fields for creating\/updating material categories (supports hierarchy via parent_id).",
+  );
+
+export const AdminUpdateMaterialCategoryResponse = zod
+  .object({
+    id: zod.string(),
+    key: zod
+      .string()
+      .describe(
+        'Stable internal key (e.g. \"paper\", \"metal\", \"safe_disposal\"). Used in eligibility logic.',
+      ),
+    name_ar: zod.string(),
+    name_en: zod.string(),
+    parent_id: zod
+      .string()
+      .optional()
+      .describe(
+        "FK to parent material_category. Null for top-level categories.",
+      ),
+    is_active: zod.boolean(),
+    sort_order: zod.number(),
+  })
+  .describe(
+    "Admin-managed hierarchical material classification. parent_id = null means top-level category. Used in logic, eligibility, and filtering.\n",
+  );
+
+/**
+ * @summary Deactivate a material category (sets is_active=false)
+ */
+export const AdminDeactivateMaterialCategoryParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const AdminDeactivateMaterialCategoryResponse = zod
+  .object({
+    success: zod.boolean(),
+    id: zod.string(),
+  })
+  .describe("Response returned when an admin soft-deletes a lookup entry.");

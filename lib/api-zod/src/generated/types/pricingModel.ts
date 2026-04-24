@@ -8,9 +8,9 @@
 
 /**
  * Governs how price_per_unit is interpreted and what settlement mechanics apply.
-Immutable once a listing is published — producers must close and re-list to change model.
-fixed: price_per_unit × quantity = agreed commercial amount (current MVP).
-by_weight: price_per_unit is a rate; final amount settled post-weighing (future).
+Immutable once a listing is published.
+fixed: price_per_unit × quantity = agreed commercial amount.
+by_weight: price_per_unit is a rate; final amount settled post-weighing.
 
  */
 export type PricingModel = (typeof PricingModel)[keyof typeof PricingModel];

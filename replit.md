@@ -50,9 +50,11 @@ A Saudi B2B MVP connecting waste producers, recycling buyers, and transport carr
 - M3 Listing detail page + clickable cards + confirm-close — DONE & UAT-approved
 - M4 Offers / Bidding — DONE & UAT-approved
 - M4.5 Bug-fix & polish sprint — COMPLETE & UAT-approved (Phase 1 backend + Phase 2 frontend; Phase 3 email TBD)
-- M5 Transport bids (carrier)
-- M6 Trip lifecycle / proof of delivery
-- M7 Notifications
+- M5 Deal lifecycle — COMPLETE (payment_reference required, DealPanel, confirm-payment/dispatch/receipt)
+- **Batch 3 (April 2026)** — COMPLETE (see section below)
+- M6 Transport bids (carrier)
+- M7 Trip lifecycle / proof of delivery
+- M8 Notifications
 
 ### M2 — approved deferred improvements (revisit before launch)
 1. Custom AR/EN validation messages on forms (replace browser defaults).
@@ -107,6 +109,38 @@ A Saudi B2B MVP connecting waste producers, recycling buyers, and transport carr
 - M2 /participations page: My Participations with tab filter + winner/rejection reason display
 - Dashboard buyer card for Participations
 
+### Batch 3 (April 2026) — implemented
+
+**Backend**
+- **License eligibility gate** on `POST /listings` (producer) and `POST /listings/:id/offers` (buyer): companies with `license_status = 'rejected'` or `'expired'` receive 403 LicenseBlocked. Companies with no license or pending/approved status are unaffected.
+- **Admin CRUD routes** for 3 lookup tables (company-categories, unit-options, material-categories), protected by `X-Admin-Key` header vs `ADMIN_API_KEY` env var:
+  - `POST /admin/lookup/{table}` — create entry
+  - `PUT /admin/lookup/{table}/:id` — update entry
+  - `DELETE /admin/lookup/{table}/:id` — soft-deactivate (sets `is_active=false`)
+  - Returns 503 `AdminNotConfigured` if `ADMIN_API_KEY` env var is not set.
+- **`already_top` flag** in `PUT /listings/:id/offers/mine` response: when buyer was already the highest bidder before submitting an improvement, `already_top: true` is returned in the offer response.
+- **Withdrawn offer re-submission**: `POST /listings/:id/offers` now allows buyers to re-submit after withdrawal (updates existing withdrawn row back to pending, preserving unique constraint).
+- **`/offers/mine` excludes withdrawn by default**: pass `?status=withdrawn` to see them explicitly.
+- **Offer price logic excludes withdrawn**: highest offer calculation in `POST /offers` and `offerAgg` both filter out withdrawn offers.
+
+**OpenAPI spec additions**
+- Deals paths: `GET/POST /deals/{deal_id}`, `/confirm-payment`, `/confirm-dispatch`, `/confirm-receipt`
+- Admin lookup paths: all 9 admin write routes
+- New schemas: `Deal`, `DealStatus`, `DealSettlementType`, `DealCounterparty`, `ConfirmPaymentBody`, `AdminLookupWriteBase`, `AdminUnitOptionWrite`, `AdminMaterialCategoryWrite`, `AdminDeleteResponse`
+- `already_top` field added to `ListingOffer` schema
+- Codegen re-run: all React Query hooks + Zod validators regenerated cleanly
+
+**Frontend (all already in place from prior work)**
+- Terms page (`/terms`), Reports page (`/reports`) — both routed in App.tsx
+- Onboarding: T&C checkbox + license number field
+- Deal panel: payment_reference input (required) + payment_proof_url (optional)
+- Already-top-bidder amber warning in the improve-offer accordion (uses rank data)
+
+**DB additions (already applied)**
+- `capabilities` table seeded with 10 entries
+- `company_categories.key`, `unit_options.key`, `material_categories.key` — stable internal identifiers (not null, unique)
+- `listing_offers.status` enum extended with `'withdrawn'`
+
 ### M2 — known technical limitations (non-blocking)
 - City filter updated to ILIKE partial-match (was exact-match — now fixed).
 - No DB indexes on `waste_listings.company_id` / `status` (acceptable at MVP volume).
@@ -148,6 +182,18 @@ Arabic default + English toggle, RTL/LTR via `<html dir>`. Tiny custom i18n hook
 **M4 DB additions**
 - `listing_offers` table: `id, waste_listing_id FK, buyer_company_id FK, price_per_unit, message, status(pending/accepted/rejected), created_at, updated_at, resolved_at, rejection_reason, acceptance_reason` — UNIQUE(waste_listing_id, buyer_company_id)
 - `waste_listings.closed_at` (timestamptz, nullable) — set on acceptance or manual close
+
+**Batch 3 — new endpoints**
+- `DELETE /listings/:waste_listing_id/offers/mine` (buyer) → withdraw pending offer (status→withdrawn)
+- `GET /deals/:deal_id` (producer or buyer of deal) → deal detail
+- `POST /deals/:deal_id/confirm-payment` (producer) → requires `payment_reference`; sets status→payment_confirmed
+- `POST /deals/:deal_id/confirm-dispatch` (producer) → sets status→dispatched
+- `POST /deals/:deal_id/confirm-receipt` (buyer) → sets status→completed
+- `GET /lookup/capabilities` → list active capabilities (any company)
+- `POST /admin/lookup/company-categories` — admin: create (requires `X-Admin-Key` header)
+- `PUT /admin/lookup/company-categories/:id` — admin: update
+- `DELETE /admin/lookup/company-categories/:id` — admin: soft-deactivate
+- Same pattern for `/admin/lookup/unit-options` and `/admin/lookup/material-categories`
 
 ### Frontend routes (cumulative)
 - `/` — landing (signed-in → /dashboard)

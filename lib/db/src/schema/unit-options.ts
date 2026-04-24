@@ -13,6 +13,8 @@ import {
  */
 export const unitOptionsTable = pgTable("unit_options", {
   id: uuid("id").primaryKey().defaultRandom(),
+  /** Internal stable key used in logic and filtering (e.g. "kg", "ton"). Never changes. */
+  key: text("key").notNull().unique(),
   name_ar: text("name_ar").notNull(),
   name_en: text("name_en").notNull(),
   symbol: text("symbol").notNull(),

@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, asc, desc, eq, ilike, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, inArray, ne, or, sql } from "drizzle-orm";
 import path from "path";
 import fs from "fs";
 import multer from "multer";
@@ -106,6 +106,7 @@ const baseSelect = {
   pricing_model: wasteListingsTable.pricing_model,
   sale_type: wasteListingsTable.sale_type,
   material_category_id: wasteListingsTable.material_category_id,
+  material_subcategory_id: wasteListingsTable.material_subcategory_id,
   unit_option_id: wasteListingsTable.unit_option_id,
   visibility: wasteListingsTable.visibility,
   image_url: wasteListingsTable.image_url,
@@ -114,13 +115,21 @@ const baseSelect = {
   company_name: companiesTable.name,
 } as const;
 
-/** Aggregate subquery: offer_count and highest_offer_total per listing */
+/**
+ * Aggregate subquery: offer_count and highest offer per listing.
+ * Withdrawn offers are excluded from both count and max calculation.
+ */
 const offerAgg = db
   .select({
     waste_listing_id: listingOffersTable.waste_listing_id,
-    offer_count: sql<number>`cast(count(*) as int)`.as("offer_count"),
+    offer_count:
+      sql<number>`cast(count(*) filter (where ${listingOffersTable.status} != 'withdrawn') as int)`.as(
+        "offer_count",
+      ),
     max_price_per_unit:
-      sql<string>`max(${listingOffersTable.price_per_unit})`.as("max_price_per_unit"),
+      sql<string>`max(case when ${listingOffersTable.status} != 'withdrawn' then ${listingOffersTable.price_per_unit} end)`.as(
+        "max_price_per_unit",
+      ),
   })
   .from(listingOffersTable)
   .groupBy(listingOffersTable.waste_listing_id)
@@ -136,6 +145,7 @@ router.get(
   requireAuth,
   requireCompany(["buyer"]),
   async (req, res) => {
+    const { company } = req as AuthedCompanyRequest;
     const material = assertEnum(
       req.query.material,
       ALLOWED_MATERIALS,
@@ -169,15 +179,62 @@ router.get(
       .orderBy(desc(wasteListingsTable.created_at))
       .limit(200);
 
+    // Batch 2 Item 1: Overlay buyer's own offer price + rank on each listing card.
+    // Single query: fetch all pending offers for visible listings, rank in memory.
+    const myOfferMap = new Map<string, { price_per_unit: number; rank: number }>();
+    const listingIds = rows.map((r) => r.id);
+
+    if (listingIds.length > 0) {
+      const allPendingOffers = await db
+        .select({
+          waste_listing_id: listingOffersTable.waste_listing_id,
+          buyer_company_id: listingOffersTable.buyer_company_id,
+          price_per_unit: listingOffersTable.price_per_unit,
+        })
+        .from(listingOffersTable)
+        .where(
+          and(
+            inArray(listingOffersTable.waste_listing_id, listingIds),
+            ne(listingOffersTable.status, "withdrawn"),
+          ),
+        );
+
+      // Group prices per listing, track which listing this buyer bid on
+      const offersByListing = new Map<string, number[]>();
+      const myPriceByListing = new Map<string, number>();
+
+      for (const offer of allPendingOffers) {
+        const prices = offersByListing.get(offer.waste_listing_id) ?? [];
+        prices.push(Number(offer.price_per_unit));
+        offersByListing.set(offer.waste_listing_id, prices);
+
+        if (offer.buyer_company_id === company.id) {
+          myPriceByListing.set(offer.waste_listing_id, Number(offer.price_per_unit));
+        }
+      }
+
+      // Compute rank in memory: rank = count of higher prices + 1
+      for (const [listingId, myPrice] of myPriceByListing) {
+        const allPrices = offersByListing.get(listingId) ?? [];
+        const rank = allPrices.filter((p) => p > myPrice).length + 1;
+        myOfferMap.set(listingId, { price_per_unit: myPrice, rank });
+      }
+    }
+
     res.json(
       rows.map((r) => {
         const qty = Number(r.quantity);
         const maxPpu = r.max_price_per_unit != null ? Number(r.max_price_per_unit) : null;
-        return serialize({
-          ...r,
-          offer_count: r.offer_count ?? 0,
-          highest_offer_total: maxPpu != null ? maxPpu * qty : null,
-        });
+        const myOffer = myOfferMap.get(r.id);
+        return {
+          ...serialize({
+            ...r,
+            offer_count: r.offer_count ?? 0,
+            highest_offer_total: maxPpu != null ? maxPpu * qty : null,
+          }),
+          my_offer_price: myOffer?.price_per_unit,
+          my_rank: myOffer?.rank,
+        };
       }),
     );
   },
@@ -255,6 +312,15 @@ router.post(
     }
     const { company } = req as AuthedCompanyRequest;
     const data = parsed.data;
+
+    // License gate: block producers with a rejected or expired license
+    if (company.license_status === "rejected" || company.license_status === "expired") {
+      throw new HttpError(
+        403,
+        "LicenseBlocked",
+        "Your license is not valid. Please contact support to resolve your license status.",
+      );
+    }
 
     // Extra fields not in generated schema (safe to read directly from body)
     const saleType = req.body.sale_type === "direct" ? "direct" : "auction";

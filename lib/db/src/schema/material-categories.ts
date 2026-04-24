@@ -17,6 +17,8 @@ import {
  */
 export const materialCategoriesTable = pgTable("material_categories", {
   id: uuid("id").primaryKey().defaultRandom(),
+  /** Internal stable key used in logic, eligibility, and filtering. Never changes. */
+  key: text("key").notNull().unique(),
   name_ar: text("name_ar").notNull(),
   name_en: text("name_en").notNull(),
   parent_id: uuid("parent_id"),

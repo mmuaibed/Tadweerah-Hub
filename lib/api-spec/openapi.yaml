@@ -18,6 +18,8 @@ tags:
     description: Waste listings (M2)
   - name: offers
     description: Listing offers / bidding (M4)
+  - name: lookup
+    description: Admin-managed lookup / reference data
 paths:
   /healthz:
     get:
@@ -31,6 +33,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
   /me:
     get:
       operationId: getMe
@@ -45,6 +48,7 @@ paths:
                 $ref: "#/components/schemas/MeResponse"
         "401":
           description: Unauthorized
+
   /companies:
     post:
       operationId: createCompany
@@ -286,6 +290,34 @@ paths:
           description: Buyer access required
         "404":
           description: No existing offer to improve
+    delete:
+      operationId: withdrawOffer
+      tags: [offers]
+      summary: >
+        Withdraw the buyer's own pending offer on a listing.
+        Only allowed when the offer is still in "pending" status.
+        Withdrawn offers are excluded from ranking and highest-offer calculations.
+      parameters:
+        - in: path
+          name: waste_listing_id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Offer withdrawn successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListingOffer"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Buyer access required
+        "404":
+          description: No offer found to withdraw
+        "409":
+          description: Offer cannot be withdrawn (already accepted or rejected)
 
   /listings/{waste_listing_id}/offers/summary:
     get:
@@ -405,6 +437,426 @@ paths:
         "409":
           description: Offer not in pending state
 
+  /lookup/company-categories:
+    get:
+      operationId: getCompanyCategories
+      tags: [lookup]
+      summary: List all active company categories (admin-managed)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CompanyCategory"
+        "401":
+          description: Unauthorized
+
+  /lookup/unit-options:
+    get:
+      operationId: getUnitOptions
+      tags: [lookup]
+      summary: List all active unit of measurement options (admin-managed)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UnitOption"
+        "401":
+          description: Unauthorized
+
+  /lookup/material-categories:
+    get:
+      operationId: getMaterialCategories
+      tags: [lookup]
+      summary: List all active material categories (admin-managed, hierarchical)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MaterialCategory"
+        "401":
+          description: Unauthorized
+
+  /lookup/capabilities:
+    get:
+      operationId: getCapabilities
+      tags: [lookup]
+      summary: >
+        List all active company capabilities (admin-managed).
+        Capabilities describe what a company CAN DO and are used for
+        eligibility gating and partner matching.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Capability"
+        "401":
+          description: Unauthorized
+
+  # ── Deals (M5) ──────────────────────────────────────────────────────────────
+
+  /deals/{deal_id}:
+    get:
+      operationId: getDeal
+      tags: [deals]
+      summary: Get deal details. Accessible by producer or buyer of the deal.
+      parameters:
+        - in: path
+          name: deal_id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Deal"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Not a party to this deal
+        "404":
+          description: Deal not found
+
+  /deals/{deal_id}/confirm-payment:
+    post:
+      operationId: confirmPayment
+      tags: [deals]
+      summary: >
+        Producer confirms receipt of payment.
+        Requires payment_reference (bank transfer / transaction ID).
+        For by_weight deals, actual_quantity is required to compute final_amount.
+        Transitions deal status from active → payment_confirmed.
+      parameters:
+        - in: path
+          name: deal_id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfirmPaymentBody"
+      responses:
+        "200":
+          description: Payment confirmed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Deal"
+        "400":
+          description: Missing payment_reference or invalid actual_quantity
+        "401":
+          description: Unauthorized
+        "403":
+          description: Not the producer or deal not in active state
+        "404":
+          description: Deal not found
+
+  /deals/{deal_id}/confirm-dispatch:
+    post:
+      operationId: confirmDispatch
+      tags: [deals]
+      summary: >
+        Producer confirms goods have been dispatched to the buyer.
+        Transitions deal status from payment_confirmed → dispatched.
+      parameters:
+        - in: path
+          name: deal_id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Dispatch confirmed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Deal"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Not the producer or deal not in payment_confirmed state
+        "404":
+          description: Deal not found
+
+  /deals/{deal_id}/confirm-receipt:
+    post:
+      operationId: confirmReceipt
+      tags: [deals]
+      summary: >
+        Buyer confirms receipt of goods.
+        Transitions deal status from dispatched → completed.
+      parameters:
+        - in: path
+          name: deal_id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Receipt confirmed, deal completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Deal"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Not the buyer or deal not in dispatched state
+        "404":
+          description: Deal not found
+
+  # ── Admin lookup write endpoints ─────────────────────────────────────────────
+  # Protected by X-Admin-Key header. Key must match ADMIN_API_KEY env var.
+
+  /admin/lookup/company-categories:
+    post:
+      operationId: adminCreateCompanyCategory
+      tags: [admin]
+      summary: Create a new company category (admin only)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminLookupWriteBase"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompanyCategory"
+        "400":
+          description: Missing required fields
+        "401":
+          description: Invalid or missing X-Admin-Key
+
+  /admin/lookup/company-categories/{id}:
+    put:
+      operationId: adminUpdateCompanyCategory
+      tags: [admin]
+      summary: Update a company category (admin only)
+      security: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminLookupWriteBase"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompanyCategory"
+        "401":
+          description: Invalid or missing X-Admin-Key
+        "404":
+          description: Not found
+    delete:
+      operationId: adminDeactivateCompanyCategory
+      tags: [admin]
+      summary: Deactivate a company category (sets is_active=false)
+      security: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Deactivated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDeleteResponse"
+        "401":
+          description: Invalid or missing X-Admin-Key
+        "404":
+          description: Not found
+
+  /admin/lookup/unit-options:
+    post:
+      operationId: adminCreateUnitOption
+      tags: [admin]
+      summary: Create a new unit option (admin only)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminUnitOptionWrite"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnitOption"
+        "400":
+          description: Missing required fields
+        "401":
+          description: Invalid or missing X-Admin-Key
+
+  /admin/lookup/unit-options/{id}:
+    put:
+      operationId: adminUpdateUnitOption
+      tags: [admin]
+      summary: Update a unit option (admin only)
+      security: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminUnitOptionWrite"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnitOption"
+        "401":
+          description: Invalid or missing X-Admin-Key
+        "404":
+          description: Not found
+    delete:
+      operationId: adminDeactivateUnitOption
+      tags: [admin]
+      summary: Deactivate a unit option (sets is_active=false)
+      security: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Deactivated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDeleteResponse"
+        "401":
+          description: Invalid or missing X-Admin-Key
+        "404":
+          description: Not found
+
+  /admin/lookup/material-categories:
+    post:
+      operationId: adminCreateMaterialCategory
+      tags: [admin]
+      summary: Create a new material category (admin only)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminMaterialCategoryWrite"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MaterialCategory"
+        "400":
+          description: Missing required fields
+        "401":
+          description: Invalid or missing X-Admin-Key
+
+  /admin/lookup/material-categories/{id}:
+    put:
+      operationId: adminUpdateMaterialCategory
+      tags: [admin]
+      summary: Update a material category (admin only)
+      security: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminMaterialCategoryWrite"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MaterialCategory"
+        "401":
+          description: Invalid or missing X-Admin-Key
+        "404":
+          description: Not found
+    delete:
+      operationId: adminDeactivateMaterialCategory
+      tags: [admin]
+      summary: Deactivate a material category (sets is_active=false)
+      security: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Deactivated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDeleteResponse"
+        "401":
+          description: Invalid or missing X-Admin-Key
+        "404":
+          description: Not found
+
 components:
   schemas:
     HealthStatus:
@@ -413,10 +865,21 @@ components:
         status:
           type: string
       required: [status]
+
     CompanyType:
       type: string
       enum: [producer, buyer, carrier]
       description: producer = waste producer, buyer = recycling company, carrier = transporter
+
+    LicenseStatus:
+      type: string
+      enum: [pending, approved, rejected, expired]
+      description: |
+        null = no license submitted (participates freely).
+        pending = license submitted, awaiting admin review (no restrictions yet).
+        approved = license verified.
+        rejected / expired = license not valid.
+
     Company:
       type: object
       properties:
@@ -432,10 +895,19 @@ components:
           type: string
         contactPhone:
           type: string
+        license_number:
+          type: string
+          description: Regulatory license number (e.g. MOMRA, NCBE). Optional.
+        license_status:
+          $ref: "#/components/schemas/LicenseStatus"
+        company_category_id:
+          type: string
+          description: FK to company_categories.id. Descriptive business category.
         createdAt:
           type: string
           format: date-time
       required: [id, name, type, city, contactPhone, createdAt]
+
     CreateCompanyBody:
       type: object
       properties:
@@ -456,7 +928,18 @@ components:
           type: string
           minLength: 6
           maxLength: 20
+        license_number:
+          type: string
+          maxLength: 80
+          description: Optional regulatory license number.
+        company_category_id:
+          type: string
+          description: Optional FK to company_categories.id.
+        accepted_terms:
+          type: boolean
+          description: Must be true to accept platform terms and conditions.
       required: [name, type, city, contactPhone]
+
     MeResponse:
       type: object
       properties:
@@ -470,35 +953,41 @@ components:
             - type: "null"
       required: [userId]
 
+    SaleType:
+      type: string
+      enum: [auction, direct]
+      description: |
+        auction = open bidding, all eligible buyers can submit offers.
+        direct = targeted sale; seller controls who can see and participate.
+
     WasteMaterial:
       type: string
       enum: [paper, plastic, metal, glass, electronics, organic, other]
+
     WasteUnit:
       type: string
       enum: [kg, ton]
+
     WasteListingStatus:
       type: string
       enum: [open, closed]
+
     ListingVisibility:
       type: string
       enum: [public, private]
       description: |
         Controls whether a listing appears in the public marketplace feed.
-        CURRENTLY READ-ONLY: all listings default to "public". The field is present
-        in all listing responses but is NOT accepted in CreateWasteListingBody —
-        there is no mechanism to create a private listing yet.
-        FUTURE: when a listing_invitations layer exists, producers will be able to
-        set visibility = "private" at creation time and invite specific buyer companies.
-        The GET /listings feed already filters WHERE visibility = 'public', so private
-        listings will be automatically excluded once enforcement is in place.
+        CURRENTLY READ-ONLY: all listings default to "public".
+
     PricingModel:
       type: string
       enum: [fixed, by_weight]
       description: |
         Governs how price_per_unit is interpreted and what settlement mechanics apply.
-        Immutable once a listing is published — producers must close and re-list to change model.
-        fixed: price_per_unit × quantity = agreed commercial amount (current MVP).
-        by_weight: price_per_unit is a rate; final amount settled post-weighing (future).
+        Immutable once a listing is published.
+        fixed: price_per_unit × quantity = agreed commercial amount.
+        by_weight: price_per_unit is a rate; final amount settled post-weighing.
+
     WasteListing:
       type: object
       properties:
@@ -524,14 +1013,28 @@ components:
           $ref: "#/components/schemas/WasteListingStatus"
         pricing_model:
           $ref: "#/components/schemas/PricingModel"
-          description: |
-            Immutable once published. Defaults to "fixed" for the current MVP.
+        sale_type:
+          $ref: "#/components/schemas/SaleType"
+        material_category_id:
+          type: string
+          description: FK to material_categories.id. Null for legacy listings.
+        unit_option_id:
+          type: string
+          description: FK to unit_options.id. Null for listings using legacy unit enum.
         visibility:
           $ref: "#/components/schemas/ListingVisibility"
-          description: |
-            CURRENTLY READ-ONLY. Always "public" for listings created via this API.
-            Defaults to "public". Private enforcement depends on a future listing_invitations layer.
-            This field is NOT present in CreateWasteListingBody — producers cannot set it yet.
+        my_offer_price:
+          type: number
+          description: >
+            The calling buyer's current offer price_per_unit on this listing.
+            Only included in GET /listings (marketplace) responses.
+            Null/absent if the buyer has no offer.
+        my_rank:
+          type: integer
+          description: >
+            The calling buyer's current rank among all offers (1 = highest).
+            Only included in GET /listings (marketplace) responses.
+            Null/absent if the buyer has no offer.
         created_at:
           type: string
           format: date-time
@@ -540,15 +1043,54 @@ components:
           format: date-time
         offer_count:
           type: integer
-          description: Total number of offers on this listing (included for producer my-listings and marketplace M3)
+          description: Total number of active (non-withdrawn) offers on this listing.
         highest_offer_total:
           type: number
           description: Highest offer as a total (price_per_unit × quantity). Null if no offers.
       required:
         [id, company_id, company_name, material, quantity, unit, city, status, created_at]
+
+    CreateWasteListingBody:
+      type: object
+      properties:
+        material:
+          $ref: "#/components/schemas/WasteMaterial"
+        quantity:
+          type: number
+          exclusiveMinimum: 0
+        unit:
+          $ref: "#/components/schemas/WasteUnit"
+        city:
+          type: string
+          minLength: 2
+          maxLength: 80
+        description:
+          type: string
+          maxLength: 500
+        price_hint:
+          type: number
+          minimum: 0
+        pricing_model:
+          $ref: "#/components/schemas/PricingModel"
+          description: |
+            Governs settlement mechanics. Immutable once published.
+            Defaults to "fixed" if not supplied.
+        sale_type:
+          $ref: "#/components/schemas/SaleType"
+          description: |
+            Controls offer model. Defaults to "auction" if not supplied.
+        material_category_id:
+          type: string
+          description: Optional FK to material_categories.id.
+        unit_option_id:
+          type: string
+          description: Optional FK to unit_options.id. Falls back to unit enum if absent.
+      required: [material, quantity, unit, city]
+
     OfferStatus:
       type: string
-      enum: [pending, accepted, rejected]
+      enum: [pending, accepted, rejected, withdrawn]
+
     ListingOffer:
       type: object
       properties:
@@ -571,10 +1113,10 @@ components:
           description: Reason provided by producer when rejecting. Visible to the affected buyer only.
         rank:
           type: integer
-          description: Buyer rank among all offers (1 = highest). Only included in buyer-facing responses.
+          description: Buyer rank among all active offers (1 = highest). Only included in buyer-facing responses.
         total_offers:
           type: integer
-          description: Total number of offers on this listing. Included alongside rank.
+          description: Total number of active offers on this listing. Included alongside rank.
         created_at:
           type: string
           format: date-time
@@ -584,6 +1126,11 @@ components:
         resolved_at:
           type: string
           format: date-time
+        already_top:
+          type: boolean
+          description: >
+            Returned by PUT /offers/mine (improve offer). True if the buyer was
+            already the top bidder before submitting this improvement.
       required: [id, waste_listing_id, buyer_company_id, buyer_company_name, price_per_unit, status, created_at, updated_at]
 
     SubmitOfferBody:
@@ -693,29 +1240,278 @@ components:
           listing_city, listing_status, listing_company_name, price_per_unit, status,
           created_at, updated_at ]
 
-    CreateWasteListingBody:
+    CompanyCategory:
+      type: object
+      description: Admin-managed company business category. key is the stable internal identifier.
+      properties:
+        id:
+          type: string
+        key:
+          type: string
+          description: Stable internal key (e.g. "industrial", "recycler"). Used in logic and eligibility.
+        name_ar:
+          type: string
+        name_en:
+          type: string
+        is_active:
+          type: boolean
+        sort_order:
+          type: integer
+      required: [id, key, name_ar, name_en, is_active, sort_order]
+
+    UnitOption:
+      type: object
+      description: Admin-managed unit of measurement. key is the stable internal identifier.
+      properties:
+        id:
+          type: string
+        key:
+          type: string
+          description: Stable internal key (e.g. "kg", "ton", "liter"). Used in logic and filtering.
+        name_ar:
+          type: string
+        name_en:
+          type: string
+        symbol:
+          type: string
+          description: Short display symbol (e.g. "kg", "t", "L").
+        is_active:
+          type: boolean
+        sort_order:
+          type: integer
+      required: [id, key, name_ar, name_en, symbol, is_active, sort_order]
+
+    MaterialCategory:
+      type: object
+      description: >
+        Admin-managed hierarchical material classification.
+        parent_id = null means top-level category. Used in logic, eligibility, and filtering.
+      properties:
+        id:
+          type: string
+        key:
+          type: string
+          description: Stable internal key (e.g. "paper", "metal", "safe_disposal"). Used in eligibility logic.
+        name_ar:
+          type: string
+        name_en:
+          type: string
+        parent_id:
+          type: string
+          description: FK to parent material_category. Null for top-level categories.
+        is_active:
+          type: boolean
+        sort_order:
+          type: integer
+      required: [id, key, name_ar, name_en, is_active, sort_order]
+
+    Capability:
+      type: object
+      description: >
+        Admin-managed capability descriptor. Capabilities describe what a company CAN DO
+        (e.g. recycle metal, transport waste). Used for eligibility gating and matching.
+        key is the stable internal identifier — never changes.
+      properties:
+        id:
+          type: string
+        key:
+          type: string
+          description: Stable internal key (e.g. "recycle_metal", "transport_waste"). Used in logic.
+        name_ar:
+          type: string
+        name_en:
+          type: string
+        description_ar:
+          type: string
+        description_en:
+          type: string
+        is_active:
+          type: boolean
+        sort_order:
+          type: integer
+      required: [id, key, name_ar, name_en, is_active, sort_order]
+
+    # ── Deals ────────────────────────────────────────────────────────────────
+
+    DealStatus:
+      type: string
+      enum: [active, payment_confirmed, dispatched, completed]
+
+    DealSettlementType:
+      type: string
+      enum: [fixed, by_weight]
+
+    DealCounterparty:
       type: object
       properties:
-        material:
-          $ref: "#/components/schemas/WasteMaterial"
-        quantity:
+        name:
+          type: string
+        contact_phone:
+          type: string
+      required: [name, contact_phone]
+
+    Deal:
+      type: object
+      description: >
+        Represents a confirmed agreement between producer and buyer following offer acceptance.
+        Progresses through: active → payment_confirmed → dispatched → completed.
+      properties:
+        id:
+          type: string
+        offer_id:
+          type: string
+        listing_id:
+          type: string
+        producer_company_id:
+          type: string
+        buyer_company_id:
+          type: string
+        settlement_type:
+          $ref: "#/components/schemas/DealSettlementType"
+        price_per_unit:
+          type: number
+        estimated_amount:
+          type: number
+          description: price_per_unit × listing quantity. Indicative only for by_weight deals.
+        actual_quantity:
+          type: number
+          description: Filled by producer on payment confirmation for by_weight deals.
+        final_amount:
+          type: number
+          description: price_per_unit × actual_quantity. Only set for by_weight deals after confirmation.
+        status:
+          $ref: "#/components/schemas/DealStatus"
+        counterparty:
+          $ref: "#/components/schemas/DealCounterparty"
+          description: Contact info of the other party (producer sees buyer info and vice versa).
+        payment_confirmed_at:
+          type: string
+          format: date-time
+        payment_reference:
+          type: string
+          description: Bank transfer number / transaction reference provided by producer.
+        payment_proof_url:
+          type: string
+          description: Optional URL to payment proof document/screenshot.
+        dispatched_at:
+          type: string
+          format: date-time
+        received_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+        [id, offer_id, listing_id, producer_company_id, buyer_company_id,
+         settlement_type, price_per_unit, estimated_amount, status, created_at, updated_at]
+
+    ConfirmPaymentBody:
+      type: object
+      description: >
+        Body for POST /deals/{deal_id}/confirm-payment.
+        payment_reference is always required.
+        actual_quantity is required for by_weight deals.
+      properties:
+        payment_reference:
+          type: string
+          minLength: 1
+          description: Bank transfer number or transaction reference ID.
+        payment_proof_url:
+          type: string
+          description: Optional URL to a payment screenshot or document.
+        actual_quantity:
           type: number
           exclusiveMinimum: 0
-        unit:
-          $ref: "#/components/schemas/WasteUnit"
-        city:
+          description: Actual weighed quantity. Required for by_weight deals.
+      required: [payment_reference]
+
+    # ── Admin write schemas ───────────────────────────────────────────────────
+
+    AdminLookupWriteBase:
+      type: object
+      description: Shared fields for creating/updating company categories and material categories.
+      properties:
+        key:
           type: string
-          minLength: 2
-          maxLength: 80
-        description:
+          minLength: 1
+          maxLength: 60
+          description: Stable internal key. snake_case. Cannot be changed once in use by business logic.
+        name_ar:
           type: string
-          maxLength: 500
-        price_hint:
-          type: number
+          minLength: 1
+          maxLength: 120
+        name_en:
+          type: string
+          minLength: 1
+          maxLength: 120
+        sort_order:
+          type: integer
           minimum: 0
-        pricing_model:
-          $ref: "#/components/schemas/PricingModel"
-          description: |
-            Governs settlement mechanics. Immutable once published.
-            Defaults to "fixed" if not supplied. Must not be updated after creation.
-      required: [material, quantity, unit, city]
+        is_active:
+          type: boolean
+
+    AdminUnitOptionWrite:
+      type: object
+      description: Fields for creating/updating unit options.
+      properties:
+        key:
+          type: string
+          minLength: 1
+          maxLength: 60
+        name_ar:
+          type: string
+          minLength: 1
+          maxLength: 120
+        name_en:
+          type: string
+          minLength: 1
+          maxLength: 120
+        symbol:
+          type: string
+          minLength: 1
+          maxLength: 20
+          description: Short display symbol (e.g. "kg", "t", "L").
+        sort_order:
+          type: integer
+          minimum: 0
+        is_active:
+          type: boolean
+
+    AdminMaterialCategoryWrite:
+      type: object
+      description: Fields for creating/updating material categories (supports hierarchy via parent_id).
+      properties:
+        key:
+          type: string
+          minLength: 1
+          maxLength: 60
+        name_ar:
+          type: string
+          minLength: 1
+          maxLength: 120
+        name_en:
+          type: string
+          minLength: 1
+          maxLength: 120
+        parent_id:
+          type: string
+          description: FK to parent material_category.id. Null for top-level categories.
+        sort_order:
+          type: integer
+          minimum: 0
+        is_active:
+          type: boolean
+
+    AdminDeleteResponse:
+      type: object
+      description: Response returned when an admin soft-deletes a lookup entry.
+      properties:
+        success:
+          type: boolean
+        id:
+          type: string
+      required: [success, id]

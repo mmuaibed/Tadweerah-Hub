@@ -26,4 +26,13 @@ export interface CreateCompanyBody {
    * @maxLength 20
    */
   contactPhone: string;
+  /**
+   * Optional regulatory license number.
+   * @maxLength 80
+   */
+  license_number?: string;
+  /** Optional FK to company_categories.id. */
+  company_category_id?: string;
+  /** Must be true to accept platform terms and conditions. */
+  accepted_terms?: boolean;
 }

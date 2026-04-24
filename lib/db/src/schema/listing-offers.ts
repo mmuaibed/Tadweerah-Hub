@@ -14,6 +14,7 @@ export const offerStatusEnum = pgEnum("offer_status", [
   "pending",
   "accepted",
   "rejected",
+  "withdrawn",
 ]);
 
 export const listingOffersTable = pgTable(

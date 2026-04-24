@@ -13,6 +13,8 @@ import {
  */
 export const companyCategoriesTable = pgTable("company_categories", {
   id: uuid("id").primaryKey().defaultRandom(),
+  /** Internal stable key used in logic, eligibility, and filtering. Never changes. */
+  key: text("key").notNull().unique(),
   name_ar: text("name_ar").notNull(),
   name_en: text("name_en").notNull(),
   is_active: boolean("is_active").notNull().default(true),

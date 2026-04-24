@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { PricingModel } from "./pricingModel";
+import type { SaleType } from "./saleType";
 import type { WasteMaterial } from "./wasteMaterial";
 import type { WasteUnit } from "./wasteUnit";
 
@@ -24,7 +25,14 @@ export interface CreateWasteListingBody {
   /** @minimum 0 */
   price_hint?: number;
   /** Governs settlement mechanics. Immutable once published.
-Defaults to "fixed" if not supplied. Must not be updated after creation.
+Defaults to "fixed" if not supplied.
  */
   pricing_model?: PricingModel;
+  /** Controls offer model. Defaults to "auction" if not supplied.
+   */
+  sale_type?: SaleType;
+  /** Optional FK to material_categories.id. */
+  material_category_id?: string;
+  /** Optional FK to unit_options.id. Falls back to unit enum if absent. */
+  unit_option_id?: string;
 }

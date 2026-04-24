@@ -8,13 +8,7 @@
 
 /**
  * Controls whether a listing appears in the public marketplace feed.
-CURRENTLY READ-ONLY: all listings default to "public". The field is present
-in all listing responses but is NOT accepted in CreateWasteListingBody —
-there is no mechanism to create a private listing yet.
-FUTURE: when a listing_invitations layer exists, producers will be able to
-set visibility = "private" at creation time and invite specific buyer companies.
-The GET /listings feed already filters WHERE visibility = 'public', so private
-listings will be automatically excluded once enforcement is in place.
+CURRENTLY READ-ONLY: all listings default to "public".
 
  */
 export type ListingVisibility =

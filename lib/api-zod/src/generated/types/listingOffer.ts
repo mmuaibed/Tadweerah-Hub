@@ -17,11 +17,14 @@ export interface ListingOffer {
   status: OfferStatus;
   /** Reason provided by producer when rejecting. Visible to the affected buyer only. */
   rejection_reason?: string;
-  /** Buyer rank among all offers (1 = highest). Only included in buyer-facing responses. */
+  /** Buyer rank among all active offers (1 = highest). Only included in buyer-facing responses. */
   rank?: number;
-  /** Total number of offers on this listing. Included alongside rank. */
+  /** Total number of active offers on this listing. Included alongside rank. */
   total_offers?: number;
   created_at: Date;
   updated_at: Date;
   resolved_at?: Date;
+  /** Returned by PUT /offers/mine (improve offer). True if the buyer was already the top bidder before submitting this improvement.
+   */
+  already_top?: boolean;
 }

@@ -29,7 +29,7 @@ type OfferRow = {
   buyer_company_name: string;
   price_per_unit: string;
   message: string | null;
-  status: "pending" | "accepted" | "rejected";
+  status: "pending" | "accepted" | "rejected" | "withdrawn";
   rejection_reason: string | null;
   acceptance_reason: string | null;
   created_at: Date;
@@ -37,6 +37,8 @@ type OfferRow = {
   resolved_at: Date | null;
   rank?: number;
   total_offers?: number;
+  /** True when buyer's offer was already the highest before they submitted an improvement. */
+  already_top?: boolean;
 };
 
 function serializeOffer(row: OfferRow) {
@@ -54,6 +56,7 @@ function serializeOffer(row: OfferRow) {
     resolved_at: row.resolved_at?.toISOString() ?? undefined,
     rank: row.rank,
     total_offers: row.total_offers,
+    already_top: row.already_top,
   };
 }
 
@@ -85,15 +88,20 @@ router.get(
   requireCompany(["buyer"]),
   async (req, res) => {
     const { company } = req as AuthedCompanyRequest;
+    const ALLOWED_STATUSES = ["pending", "accepted", "rejected", "withdrawn"] as const;
+    type AllowedStatus = (typeof ALLOWED_STATUSES)[number];
     const statusFilter =
       typeof req.query.status === "string" &&
-      ["pending", "accepted", "rejected"].includes(req.query.status)
-        ? (req.query.status as "pending" | "accepted" | "rejected")
+      ALLOWED_STATUSES.includes(req.query.status as AllowedStatus)
+        ? (req.query.status as AllowedStatus)
         : undefined;
 
     const conditions = [eq(listingOffersTable.buyer_company_id, company.id)];
     if (statusFilter) {
       conditions.push(eq(listingOffersTable.status, statusFilter));
+    } else {
+      // By default, hide withdrawn offers — they are not actionable
+      conditions.push(ne(listingOffersTable.status, "withdrawn"));
     }
 
     const rows = await db
@@ -397,6 +405,15 @@ router.post(
         "This listing is no longer accepting offers",
       );
     }
+    // License gate: block buyers with a rejected or expired license
+    if (company.license_status === "rejected" || company.license_status === "expired") {
+      throw new HttpError(
+        403,
+        "LicenseBlocked",
+        "Your license is not valid. Please contact support to resolve your license status.",
+      );
+    }
+
     if (listing.company_id === company.id) {
       throw new HttpError(
         403,
@@ -425,18 +442,28 @@ router.post(
           "Your previous offer was rejected. You cannot re-submit an offer on this listing.",
         );
       }
-      throw new HttpError(
-        409,
-        "OfferExists",
-        "You already have an offer on this listing. Use the improve offer endpoint.",
-      );
+      if (existing.status !== "withdrawn") {
+        // pending or accepted — cannot submit a new one
+        throw new HttpError(
+          409,
+          "OfferExists",
+          "You already have an offer on this listing. Use the improve offer endpoint.",
+        );
+      }
+      // Buyer previously withdrew — allow re-submission by updating the withdrawn row.
+      // This preserves the unique constraint on (waste_listing_id, buyer_company_id).
     }
 
-    // Price must exceed current highest offer
+    // Price must exceed current highest non-withdrawn offer
     const [summary] = await db
       .select({ highest: max(listingOffersTable.price_per_unit) })
       .from(listingOffersTable)
-      .where(eq(listingOffersTable.waste_listing_id, listingId));
+      .where(
+        and(
+          eq(listingOffersTable.waste_listing_id, listingId),
+          ne(listingOffersTable.status, "withdrawn"),
+        ),
+      );
 
     const currentMax = summary?.highest != null ? Number(summary.highest) : 0;
     if (price_per_unit <= currentMax) {
@@ -447,18 +474,36 @@ router.post(
       );
     }
 
-    const [inserted] = await db
-      .insert(listingOffersTable)
-      .values({
-        waste_listing_id: listingId,
-        buyer_company_id: company.id,
-        price_per_unit: String(price_per_unit),
-        message: message ?? null,
-      })
-      .returning();
+    let offerResult;
+    if (existing?.status === "withdrawn") {
+      // Re-activate the withdrawn offer row
+      const [updated] = await db
+        .update(listingOffersTable)
+        .set({
+          price_per_unit: String(price_per_unit),
+          message: message ?? null,
+          status: "pending",
+          resolved_at: null,
+          updated_at: new Date(),
+        })
+        .where(eq(listingOffersTable.id, existing.id))
+        .returning();
+      offerResult = updated;
+    } else {
+      const [inserted] = await db
+        .insert(listingOffersTable)
+        .values({
+          waste_listing_id: listingId,
+          buyer_company_id: company.id,
+          price_per_unit: String(price_per_unit),
+          message: message ?? null,
+        })
+        .returning();
+      offerResult = inserted;
+    }
 
     res.status(201).json(
-      serializeOffer({ ...inserted, buyer_company_name: company.name }),
+      serializeOffer({ ...offerResult, buyer_company_name: company.name }),
     );
   },
 );
@@ -557,6 +602,9 @@ router.put(
       );
     }
 
+    // Detect whether the buyer was already the top bidder before this improvement
+    const already_top = Number(myOffer.price_per_unit) >= currentMax;
+
     const [updated] = await db
       .update(listingOffersTable)
       .set({
@@ -567,7 +615,69 @@ router.put(
       .where(eq(listingOffersTable.id, myOffer.id))
       .returning();
 
-    res.json(serializeOffer({ ...updated, buyer_company_name: company.name }));
+    res.json(serializeOffer({ ...updated, buyer_company_name: company.name, already_top }));
+  },
+);
+
+/**
+ * DELETE /listings/:waste_listing_id/offers/mine
+ * Batch 2 Item 2: Buyer withdraws their own pending offer.
+ * Only pending offers can be withdrawn. Withdrawn offers:
+ *  - Are excluded from offer_count and highest_offer calculations.
+ *  - Are excluded from ranking on the listing card.
+ *  - Cannot be re-submitted if the listing is still open (buyer must submit a new offer).
+ */
+router.delete(
+  "/listings/:waste_listing_id/offers/mine",
+  requireAuth,
+  requireCompany(["buyer"]),
+  async (req, res) => {
+    const listingId = assertUuid(
+      req.params.waste_listing_id,
+      "waste_listing_id",
+    );
+    const { company } = req as AuthedCompanyRequest;
+
+    // Check if any offer exists at all first (for meaningful error messages)
+    const [anyOffer] = await db
+      .select({ id: listingOffersTable.id, status: listingOffersTable.status })
+      .from(listingOffersTable)
+      .where(
+        and(
+          eq(listingOffersTable.waste_listing_id, listingId),
+          eq(listingOffersTable.buyer_company_id, company.id),
+        ),
+      )
+      .limit(1);
+
+    if (!anyOffer) {
+      throw new HttpError(404, "NotFound", "No offer found to withdraw");
+    }
+    if (anyOffer.status !== "pending") {
+      throw new HttpError(
+        409,
+        "CannotWithdraw",
+        `Cannot withdraw an offer with status '${anyOffer.status}'. Only pending offers can be withdrawn.`,
+      );
+    }
+
+    const now = new Date();
+    await db
+      .update(listingOffersTable)
+      .set({ status: "withdrawn", updated_at: now, resolved_at: now })
+      .where(eq(listingOffersTable.id, anyOffer.id));
+
+    const [result] = await db
+      .select(offerSelect)
+      .from(listingOffersTable)
+      .innerJoin(
+        companiesTable,
+        eq(companiesTable.id, listingOffersTable.buyer_company_id),
+      )
+      .where(eq(listingOffersTable.id, anyOffer.id))
+      .limit(1);
+
+    res.json(serializeOffer(result));
   },
 );
 

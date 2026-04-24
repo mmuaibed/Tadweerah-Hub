@@ -7,6 +7,7 @@
  */
 import type { ListingVisibility } from "./listingVisibility";
 import type { PricingModel } from "./pricingModel";
+import type { SaleType } from "./saleType";
 import type { WasteListingStatus } from "./wasteListingStatus";
 import type { WasteMaterial } from "./wasteMaterial";
 import type { WasteUnit } from "./wasteUnit";
@@ -22,17 +23,22 @@ export interface WasteListing {
   description?: string;
   price_hint?: number;
   status: WasteListingStatus;
-  /** Immutable once published. Defaults to "fixed" for the current MVP.
-   */
   pricing_model?: PricingModel;
-  /** CURRENTLY READ-ONLY. Always "public" for listings created via this API.
-Defaults to "public". Private enforcement depends on a future listing_invitations layer.
-This field is NOT present in CreateWasteListingBody — producers cannot set it yet.
- */
+  sale_type?: SaleType;
+  /** FK to material_categories.id. Null for legacy listings. */
+  material_category_id?: string;
+  /** FK to unit_options.id. Null for listings using legacy unit enum. */
+  unit_option_id?: string;
   visibility?: ListingVisibility;
+  /** The calling buyer's current offer price_per_unit on this listing. Only included in GET /listings (marketplace) responses. Null/absent if the buyer has no offer.
+   */
+  my_offer_price?: number;
+  /** The calling buyer's current rank among all offers (1 = highest). Only included in GET /listings (marketplace) responses. Null/absent if the buyer has no offer.
+   */
+  my_rank?: number;
   created_at: Date;
   closed_at?: Date;
-  /** Total number of offers on this listing (included for producer my-listings and marketplace M3) */
+  /** Total number of active (non-withdrawn) offers on this listing. */
   offer_count?: number;
   /** Highest offer as a total (price_per_unit × quantity). Null if no offers. */
   highest_offer_total?: number;

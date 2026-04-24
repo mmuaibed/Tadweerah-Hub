@@ -18,19 +18,29 @@ import type {
 
 import type {
   AcceptOfferBody,
+  AdminDeleteResponse,
+  AdminLookupWriteBase,
+  AdminMaterialCategoryWrite,
+  AdminUnitOptionWrite,
+  Capability,
   Company,
+  CompanyCategory,
+  ConfirmPaymentBody,
   CreateCompanyBody,
   CreateWasteListingBody,
+  Deal,
   HealthStatus,
   ListMarketplaceListingsParams,
   ListMyListingsParams,
   ListMyOffersParams,
   ListingOffer,
+  MaterialCategory,
   MeResponse,
   MyOffer,
   OffersSummary,
   RejectOfferBody,
   SubmitOfferBody,
+  UnitOption,
   WasteListing,
 } from "./api.schemas";
 
@@ -987,6 +997,92 @@ export const useImproveOffer = <
 };
 
 /**
+ * @summary Withdraw the buyer's own pending offer on a listing. Only allowed when the offer is still in "pending" status. Withdrawn offers are excluded from ranking and highest-offer calculations.
+
+ */
+export const getWithdrawOfferUrl = (wasteListingId: string) => {
+  return `/api/listings/${wasteListingId}/offers/mine`;
+};
+
+export const withdrawOffer = async (
+  wasteListingId: string,
+  options?: RequestInit,
+): Promise<ListingOffer> => {
+  return customFetch<ListingOffer>(getWithdrawOfferUrl(wasteListingId), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getWithdrawOfferMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof withdrawOffer>>,
+    TError,
+    { wasteListingId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof withdrawOffer>>,
+  TError,
+  { wasteListingId: string },
+  TContext
+> => {
+  const mutationKey = ["withdrawOffer"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof withdrawOffer>>,
+    { wasteListingId: string }
+  > = (props) => {
+    const { wasteListingId } = props ?? {};
+
+    return withdrawOffer(wasteListingId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type WithdrawOfferMutationResult = NonNullable<
+  Awaited<ReturnType<typeof withdrawOffer>>
+>;
+
+export type WithdrawOfferMutationError = ErrorType<void>;
+
+/**
+ * @summary Withdraw the buyer's own pending offer on a listing. Only allowed when the offer is still in "pending" status. Withdrawn offers are excluded from ranking and highest-offer calculations.
+
+ */
+export const useWithdrawOffer = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof withdrawOffer>>,
+    TError,
+    { wasteListingId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof withdrawOffer>>,
+  TError,
+  { wasteListingId: string },
+  TContext
+> => {
+  return useMutation(getWithdrawOfferMutationOptions(options));
+};
+
+/**
  * @summary Get offer count and highest price (amount only, no identity). Available to all authenticated company users.
 
  */
@@ -1347,4 +1443,1427 @@ export const useRejectOffer = <
   TContext
 > => {
   return useMutation(getRejectOfferMutationOptions(options));
+};
+
+/**
+ * @summary List all active company categories (admin-managed)
+ */
+export const getGetCompanyCategoriesUrl = () => {
+  return `/api/lookup/company-categories`;
+};
+
+export const getCompanyCategories = async (
+  options?: RequestInit,
+): Promise<CompanyCategory[]> => {
+  return customFetch<CompanyCategory[]>(getGetCompanyCategoriesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetCompanyCategoriesQueryKey = () => {
+  return [`/api/lookup/company-categories`] as const;
+};
+
+export const getGetCompanyCategoriesQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCompanyCategories>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getCompanyCategories>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetCompanyCategoriesQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getCompanyCategories>>
+  > = ({ signal }) => getCompanyCategories({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getCompanyCategories>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetCompanyCategoriesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCompanyCategories>>
+>;
+export type GetCompanyCategoriesQueryError = ErrorType<void>;
+
+/**
+ * @summary List all active company categories (admin-managed)
+ */
+
+export function useGetCompanyCategories<
+  TData = Awaited<ReturnType<typeof getCompanyCategories>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getCompanyCategories>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCompanyCategoriesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List all active unit of measurement options (admin-managed)
+ */
+export const getGetUnitOptionsUrl = () => {
+  return `/api/lookup/unit-options`;
+};
+
+export const getUnitOptions = async (
+  options?: RequestInit,
+): Promise<UnitOption[]> => {
+  return customFetch<UnitOption[]>(getGetUnitOptionsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetUnitOptionsQueryKey = () => {
+  return [`/api/lookup/unit-options`] as const;
+};
+
+export const getGetUnitOptionsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getUnitOptions>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getUnitOptions>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetUnitOptionsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getUnitOptions>>> = ({
+    signal,
+  }) => getUnitOptions({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getUnitOptions>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetUnitOptionsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getUnitOptions>>
+>;
+export type GetUnitOptionsQueryError = ErrorType<void>;
+
+/**
+ * @summary List all active unit of measurement options (admin-managed)
+ */
+
+export function useGetUnitOptions<
+  TData = Awaited<ReturnType<typeof getUnitOptions>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getUnitOptions>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetUnitOptionsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List all active material categories (admin-managed, hierarchical)
+ */
+export const getGetMaterialCategoriesUrl = () => {
+  return `/api/lookup/material-categories`;
+};
+
+export const getMaterialCategories = async (
+  options?: RequestInit,
+): Promise<MaterialCategory[]> => {
+  return customFetch<MaterialCategory[]>(getGetMaterialCategoriesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetMaterialCategoriesQueryKey = () => {
+  return [`/api/lookup/material-categories`] as const;
+};
+
+export const getGetMaterialCategoriesQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMaterialCategories>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getMaterialCategories>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetMaterialCategoriesQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getMaterialCategories>>
+  > = ({ signal }) => getMaterialCategories({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getMaterialCategories>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetMaterialCategoriesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getMaterialCategories>>
+>;
+export type GetMaterialCategoriesQueryError = ErrorType<void>;
+
+/**
+ * @summary List all active material categories (admin-managed, hierarchical)
+ */
+
+export function useGetMaterialCategories<
+  TData = Awaited<ReturnType<typeof getMaterialCategories>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getMaterialCategories>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMaterialCategoriesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List all active company capabilities (admin-managed). Capabilities describe what a company CAN DO and are used for eligibility gating and partner matching.
+
+ */
+export const getGetCapabilitiesUrl = () => {
+  return `/api/lookup/capabilities`;
+};
+
+export const getCapabilities = async (
+  options?: RequestInit,
+): Promise<Capability[]> => {
+  return customFetch<Capability[]>(getGetCapabilitiesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetCapabilitiesQueryKey = () => {
+  return [`/api/lookup/capabilities`] as const;
+};
+
+export const getGetCapabilitiesQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCapabilities>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getCapabilities>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetCapabilitiesQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCapabilities>>> = ({
+    signal,
+  }) => getCapabilities({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getCapabilities>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetCapabilitiesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCapabilities>>
+>;
+export type GetCapabilitiesQueryError = ErrorType<void>;
+
+/**
+ * @summary List all active company capabilities (admin-managed). Capabilities describe what a company CAN DO and are used for eligibility gating and partner matching.
+
+ */
+
+export function useGetCapabilities<
+  TData = Awaited<ReturnType<typeof getCapabilities>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getCapabilities>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCapabilitiesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get deal details. Accessible by producer or buyer of the deal.
+ */
+export const getGetDealUrl = (dealId: string) => {
+  return `/api/deals/${dealId}`;
+};
+
+export const getDeal = async (
+  dealId: string,
+  options?: RequestInit,
+): Promise<Deal> => {
+  return customFetch<Deal>(getGetDealUrl(dealId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetDealQueryKey = (dealId: string) => {
+  return [`/api/deals/${dealId}`] as const;
+};
+
+export const getGetDealQueryOptions = <
+  TData = Awaited<ReturnType<typeof getDeal>>,
+  TError = ErrorType<void>,
+>(
+  dealId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getDeal>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetDealQueryKey(dealId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getDeal>>> = ({
+    signal,
+  }) => getDeal(dealId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!dealId,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getDeal>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type GetDealQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getDeal>>
+>;
+export type GetDealQueryError = ErrorType<void>;
+
+/**
+ * @summary Get deal details. Accessible by producer or buyer of the deal.
+ */
+
+export function useGetDeal<
+  TData = Awaited<ReturnType<typeof getDeal>>,
+  TError = ErrorType<void>,
+>(
+  dealId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getDeal>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetDealQueryOptions(dealId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Producer confirms receipt of payment. Requires payment_reference (bank transfer / transaction ID). For by_weight deals, actual_quantity is required to compute final_amount. Transitions deal status from active → payment_confirmed.
+
+ */
+export const getConfirmPaymentUrl = (dealId: string) => {
+  return `/api/deals/${dealId}/confirm-payment`;
+};
+
+export const confirmPayment = async (
+  dealId: string,
+  confirmPaymentBody: ConfirmPaymentBody,
+  options?: RequestInit,
+): Promise<Deal> => {
+  return customFetch<Deal>(getConfirmPaymentUrl(dealId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(confirmPaymentBody),
+  });
+};
+
+export const getConfirmPaymentMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof confirmPayment>>,
+    TError,
+    { dealId: string; data: BodyType<ConfirmPaymentBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof confirmPayment>>,
+  TError,
+  { dealId: string; data: BodyType<ConfirmPaymentBody> },
+  TContext
+> => {
+  const mutationKey = ["confirmPayment"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof confirmPayment>>,
+    { dealId: string; data: BodyType<ConfirmPaymentBody> }
+  > = (props) => {
+    const { dealId, data } = props ?? {};
+
+    return confirmPayment(dealId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ConfirmPaymentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof confirmPayment>>
+>;
+export type ConfirmPaymentMutationBody = BodyType<ConfirmPaymentBody>;
+export type ConfirmPaymentMutationError = ErrorType<void>;
+
+/**
+ * @summary Producer confirms receipt of payment. Requires payment_reference (bank transfer / transaction ID). For by_weight deals, actual_quantity is required to compute final_amount. Transitions deal status from active → payment_confirmed.
+
+ */
+export const useConfirmPayment = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof confirmPayment>>,
+    TError,
+    { dealId: string; data: BodyType<ConfirmPaymentBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof confirmPayment>>,
+  TError,
+  { dealId: string; data: BodyType<ConfirmPaymentBody> },
+  TContext
+> => {
+  return useMutation(getConfirmPaymentMutationOptions(options));
+};
+
+/**
+ * @summary Producer confirms goods have been dispatched to the buyer. Transitions deal status from payment_confirmed → dispatched.
+
+ */
+export const getConfirmDispatchUrl = (dealId: string) => {
+  return `/api/deals/${dealId}/confirm-dispatch`;
+};
+
+export const confirmDispatch = async (
+  dealId: string,
+  options?: RequestInit,
+): Promise<Deal> => {
+  return customFetch<Deal>(getConfirmDispatchUrl(dealId), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getConfirmDispatchMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof confirmDispatch>>,
+    TError,
+    { dealId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof confirmDispatch>>,
+  TError,
+  { dealId: string },
+  TContext
+> => {
+  const mutationKey = ["confirmDispatch"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof confirmDispatch>>,
+    { dealId: string }
+  > = (props) => {
+    const { dealId } = props ?? {};
+
+    return confirmDispatch(dealId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ConfirmDispatchMutationResult = NonNullable<
+  Awaited<ReturnType<typeof confirmDispatch>>
+>;
+
+export type ConfirmDispatchMutationError = ErrorType<void>;
+
+/**
+ * @summary Producer confirms goods have been dispatched to the buyer. Transitions deal status from payment_confirmed → dispatched.
+
+ */
+export const useConfirmDispatch = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof confirmDispatch>>,
+    TError,
+    { dealId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof confirmDispatch>>,
+  TError,
+  { dealId: string },
+  TContext
+> => {
+  return useMutation(getConfirmDispatchMutationOptions(options));
+};
+
+/**
+ * @summary Buyer confirms receipt of goods. Transitions deal status from dispatched → completed.
+
+ */
+export const getConfirmReceiptUrl = (dealId: string) => {
+  return `/api/deals/${dealId}/confirm-receipt`;
+};
+
+export const confirmReceipt = async (
+  dealId: string,
+  options?: RequestInit,
+): Promise<Deal> => {
+  return customFetch<Deal>(getConfirmReceiptUrl(dealId), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getConfirmReceiptMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof confirmReceipt>>,
+    TError,
+    { dealId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof confirmReceipt>>,
+  TError,
+  { dealId: string },
+  TContext
+> => {
+  const mutationKey = ["confirmReceipt"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof confirmReceipt>>,
+    { dealId: string }
+  > = (props) => {
+    const { dealId } = props ?? {};
+
+    return confirmReceipt(dealId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ConfirmReceiptMutationResult = NonNullable<
+  Awaited<ReturnType<typeof confirmReceipt>>
+>;
+
+export type ConfirmReceiptMutationError = ErrorType<void>;
+
+/**
+ * @summary Buyer confirms receipt of goods. Transitions deal status from dispatched → completed.
+
+ */
+export const useConfirmReceipt = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof confirmReceipt>>,
+    TError,
+    { dealId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof confirmReceipt>>,
+  TError,
+  { dealId: string },
+  TContext
+> => {
+  return useMutation(getConfirmReceiptMutationOptions(options));
+};
+
+/**
+ * @summary Create a new company category (admin only)
+ */
+export const getAdminCreateCompanyCategoryUrl = () => {
+  return `/api/admin/lookup/company-categories`;
+};
+
+export const adminCreateCompanyCategory = async (
+  adminLookupWriteBase: AdminLookupWriteBase,
+  options?: RequestInit,
+): Promise<CompanyCategory> => {
+  return customFetch<CompanyCategory>(getAdminCreateCompanyCategoryUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(adminLookupWriteBase),
+  });
+};
+
+export const getAdminCreateCompanyCategoryMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminCreateCompanyCategory>>,
+    TError,
+    { data: BodyType<AdminLookupWriteBase> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminCreateCompanyCategory>>,
+  TError,
+  { data: BodyType<AdminLookupWriteBase> },
+  TContext
+> => {
+  const mutationKey = ["adminCreateCompanyCategory"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminCreateCompanyCategory>>,
+    { data: BodyType<AdminLookupWriteBase> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminCreateCompanyCategory(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminCreateCompanyCategoryMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminCreateCompanyCategory>>
+>;
+export type AdminCreateCompanyCategoryMutationBody =
+  BodyType<AdminLookupWriteBase>;
+export type AdminCreateCompanyCategoryMutationError = ErrorType<void>;
+
+/**
+ * @summary Create a new company category (admin only)
+ */
+export const useAdminCreateCompanyCategory = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminCreateCompanyCategory>>,
+    TError,
+    { data: BodyType<AdminLookupWriteBase> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminCreateCompanyCategory>>,
+  TError,
+  { data: BodyType<AdminLookupWriteBase> },
+  TContext
+> => {
+  return useMutation(getAdminCreateCompanyCategoryMutationOptions(options));
+};
+
+/**
+ * @summary Update a company category (admin only)
+ */
+export const getAdminUpdateCompanyCategoryUrl = (id: string) => {
+  return `/api/admin/lookup/company-categories/${id}`;
+};
+
+export const adminUpdateCompanyCategory = async (
+  id: string,
+  adminLookupWriteBase: AdminLookupWriteBase,
+  options?: RequestInit,
+): Promise<CompanyCategory> => {
+  return customFetch<CompanyCategory>(getAdminUpdateCompanyCategoryUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(adminLookupWriteBase),
+  });
+};
+
+export const getAdminUpdateCompanyCategoryMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminUpdateCompanyCategory>>,
+    TError,
+    { id: string; data: BodyType<AdminLookupWriteBase> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminUpdateCompanyCategory>>,
+  TError,
+  { id: string; data: BodyType<AdminLookupWriteBase> },
+  TContext
+> => {
+  const mutationKey = ["adminUpdateCompanyCategory"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminUpdateCompanyCategory>>,
+    { id: string; data: BodyType<AdminLookupWriteBase> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return adminUpdateCompanyCategory(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminUpdateCompanyCategoryMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminUpdateCompanyCategory>>
+>;
+export type AdminUpdateCompanyCategoryMutationBody =
+  BodyType<AdminLookupWriteBase>;
+export type AdminUpdateCompanyCategoryMutationError = ErrorType<void>;
+
+/**
+ * @summary Update a company category (admin only)
+ */
+export const useAdminUpdateCompanyCategory = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminUpdateCompanyCategory>>,
+    TError,
+    { id: string; data: BodyType<AdminLookupWriteBase> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminUpdateCompanyCategory>>,
+  TError,
+  { id: string; data: BodyType<AdminLookupWriteBase> },
+  TContext
+> => {
+  return useMutation(getAdminUpdateCompanyCategoryMutationOptions(options));
+};
+
+/**
+ * @summary Deactivate a company category (sets is_active=false)
+ */
+export const getAdminDeactivateCompanyCategoryUrl = (id: string) => {
+  return `/api/admin/lookup/company-categories/${id}`;
+};
+
+export const adminDeactivateCompanyCategory = async (
+  id: string,
+  options?: RequestInit,
+): Promise<AdminDeleteResponse> => {
+  return customFetch<AdminDeleteResponse>(
+    getAdminDeactivateCompanyCategoryUrl(id),
+    {
+      ...options,
+      method: "DELETE",
+    },
+  );
+};
+
+export const getAdminDeactivateCompanyCategoryMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminDeactivateCompanyCategory>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminDeactivateCompanyCategory>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ["adminDeactivateCompanyCategory"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminDeactivateCompanyCategory>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return adminDeactivateCompanyCategory(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminDeactivateCompanyCategoryMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminDeactivateCompanyCategory>>
+>;
+
+export type AdminDeactivateCompanyCategoryMutationError = ErrorType<void>;
+
+/**
+ * @summary Deactivate a company category (sets is_active=false)
+ */
+export const useAdminDeactivateCompanyCategory = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminDeactivateCompanyCategory>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminDeactivateCompanyCategory>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  return useMutation(getAdminDeactivateCompanyCategoryMutationOptions(options));
+};
+
+/**
+ * @summary Create a new unit option (admin only)
+ */
+export const getAdminCreateUnitOptionUrl = () => {
+  return `/api/admin/lookup/unit-options`;
+};
+
+export const adminCreateUnitOption = async (
+  adminUnitOptionWrite: AdminUnitOptionWrite,
+  options?: RequestInit,
+): Promise<UnitOption> => {
+  return customFetch<UnitOption>(getAdminCreateUnitOptionUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(adminUnitOptionWrite),
+  });
+};
+
+export const getAdminCreateUnitOptionMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminCreateUnitOption>>,
+    TError,
+    { data: BodyType<AdminUnitOptionWrite> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminCreateUnitOption>>,
+  TError,
+  { data: BodyType<AdminUnitOptionWrite> },
+  TContext
+> => {
+  const mutationKey = ["adminCreateUnitOption"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminCreateUnitOption>>,
+    { data: BodyType<AdminUnitOptionWrite> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminCreateUnitOption(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminCreateUnitOptionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminCreateUnitOption>>
+>;
+export type AdminCreateUnitOptionMutationBody = BodyType<AdminUnitOptionWrite>;
+export type AdminCreateUnitOptionMutationError = ErrorType<void>;
+
+/**
+ * @summary Create a new unit option (admin only)
+ */
+export const useAdminCreateUnitOption = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminCreateUnitOption>>,
+    TError,
+    { data: BodyType<AdminUnitOptionWrite> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminCreateUnitOption>>,
+  TError,
+  { data: BodyType<AdminUnitOptionWrite> },
+  TContext
+> => {
+  return useMutation(getAdminCreateUnitOptionMutationOptions(options));
+};
+
+/**
+ * @summary Update a unit option (admin only)
+ */
+export const getAdminUpdateUnitOptionUrl = (id: string) => {
+  return `/api/admin/lookup/unit-options/${id}`;
+};
+
+export const adminUpdateUnitOption = async (
+  id: string,
+  adminUnitOptionWrite: AdminUnitOptionWrite,
+  options?: RequestInit,
+): Promise<UnitOption> => {
+  return customFetch<UnitOption>(getAdminUpdateUnitOptionUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(adminUnitOptionWrite),
+  });
+};
+
+export const getAdminUpdateUnitOptionMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminUpdateUnitOption>>,
+    TError,
+    { id: string; data: BodyType<AdminUnitOptionWrite> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminUpdateUnitOption>>,
+  TError,
+  { id: string; data: BodyType<AdminUnitOptionWrite> },
+  TContext
+> => {
+  const mutationKey = ["adminUpdateUnitOption"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminUpdateUnitOption>>,
+    { id: string; data: BodyType<AdminUnitOptionWrite> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return adminUpdateUnitOption(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminUpdateUnitOptionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminUpdateUnitOption>>
+>;
+export type AdminUpdateUnitOptionMutationBody = BodyType<AdminUnitOptionWrite>;
+export type AdminUpdateUnitOptionMutationError = ErrorType<void>;
+
+/**
+ * @summary Update a unit option (admin only)
+ */
+export const useAdminUpdateUnitOption = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminUpdateUnitOption>>,
+    TError,
+    { id: string; data: BodyType<AdminUnitOptionWrite> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminUpdateUnitOption>>,
+  TError,
+  { id: string; data: BodyType<AdminUnitOptionWrite> },
+  TContext
+> => {
+  return useMutation(getAdminUpdateUnitOptionMutationOptions(options));
+};
+
+/**
+ * @summary Deactivate a unit option (sets is_active=false)
+ */
+export const getAdminDeactivateUnitOptionUrl = (id: string) => {
+  return `/api/admin/lookup/unit-options/${id}`;
+};
+
+export const adminDeactivateUnitOption = async (
+  id: string,
+  options?: RequestInit,
+): Promise<AdminDeleteResponse> => {
+  return customFetch<AdminDeleteResponse>(getAdminDeactivateUnitOptionUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getAdminDeactivateUnitOptionMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminDeactivateUnitOption>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminDeactivateUnitOption>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ["adminDeactivateUnitOption"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminDeactivateUnitOption>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return adminDeactivateUnitOption(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminDeactivateUnitOptionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminDeactivateUnitOption>>
+>;
+
+export type AdminDeactivateUnitOptionMutationError = ErrorType<void>;
+
+/**
+ * @summary Deactivate a unit option (sets is_active=false)
+ */
+export const useAdminDeactivateUnitOption = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminDeactivateUnitOption>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminDeactivateUnitOption>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  return useMutation(getAdminDeactivateUnitOptionMutationOptions(options));
+};
+
+/**
+ * @summary Create a new material category (admin only)
+ */
+export const getAdminCreateMaterialCategoryUrl = () => {
+  return `/api/admin/lookup/material-categories`;
+};
+
+export const adminCreateMaterialCategory = async (
+  adminMaterialCategoryWrite: AdminMaterialCategoryWrite,
+  options?: RequestInit,
+): Promise<MaterialCategory> => {
+  return customFetch<MaterialCategory>(getAdminCreateMaterialCategoryUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(adminMaterialCategoryWrite),
+  });
+};
+
+export const getAdminCreateMaterialCategoryMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminCreateMaterialCategory>>,
+    TError,
+    { data: BodyType<AdminMaterialCategoryWrite> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminCreateMaterialCategory>>,
+  TError,
+  { data: BodyType<AdminMaterialCategoryWrite> },
+  TContext
+> => {
+  const mutationKey = ["adminCreateMaterialCategory"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminCreateMaterialCategory>>,
+    { data: BodyType<AdminMaterialCategoryWrite> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminCreateMaterialCategory(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminCreateMaterialCategoryMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminCreateMaterialCategory>>
+>;
+export type AdminCreateMaterialCategoryMutationBody =
+  BodyType<AdminMaterialCategoryWrite>;
+export type AdminCreateMaterialCategoryMutationError = ErrorType<void>;
+
+/**
+ * @summary Create a new material category (admin only)
+ */
+export const useAdminCreateMaterialCategory = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminCreateMaterialCategory>>,
+    TError,
+    { data: BodyType<AdminMaterialCategoryWrite> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminCreateMaterialCategory>>,
+  TError,
+  { data: BodyType<AdminMaterialCategoryWrite> },
+  TContext
+> => {
+  return useMutation(getAdminCreateMaterialCategoryMutationOptions(options));
+};
+
+/**
+ * @summary Update a material category (admin only)
+ */
+export const getAdminUpdateMaterialCategoryUrl = (id: string) => {
+  return `/api/admin/lookup/material-categories/${id}`;
+};
+
+export const adminUpdateMaterialCategory = async (
+  id: string,
+  adminMaterialCategoryWrite: AdminMaterialCategoryWrite,
+  options?: RequestInit,
+): Promise<MaterialCategory> => {
+  return customFetch<MaterialCategory>(getAdminUpdateMaterialCategoryUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(adminMaterialCategoryWrite),
+  });
+};
+
+export const getAdminUpdateMaterialCategoryMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminUpdateMaterialCategory>>,
+    TError,
+    { id: string; data: BodyType<AdminMaterialCategoryWrite> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminUpdateMaterialCategory>>,
+  TError,
+  { id: string; data: BodyType<AdminMaterialCategoryWrite> },
+  TContext
+> => {
+  const mutationKey = ["adminUpdateMaterialCategory"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminUpdateMaterialCategory>>,
+    { id: string; data: BodyType<AdminMaterialCategoryWrite> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return adminUpdateMaterialCategory(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminUpdateMaterialCategoryMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminUpdateMaterialCategory>>
+>;
+export type AdminUpdateMaterialCategoryMutationBody =
+  BodyType<AdminMaterialCategoryWrite>;
+export type AdminUpdateMaterialCategoryMutationError = ErrorType<void>;
+
+/**
+ * @summary Update a material category (admin only)
+ */
+export const useAdminUpdateMaterialCategory = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminUpdateMaterialCategory>>,
+    TError,
+    { id: string; data: BodyType<AdminMaterialCategoryWrite> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminUpdateMaterialCategory>>,
+  TError,
+  { id: string; data: BodyType<AdminMaterialCategoryWrite> },
+  TContext
+> => {
+  return useMutation(getAdminUpdateMaterialCategoryMutationOptions(options));
+};
+
+/**
+ * @summary Deactivate a material category (sets is_active=false)
+ */
+export const getAdminDeactivateMaterialCategoryUrl = (id: string) => {
+  return `/api/admin/lookup/material-categories/${id}`;
+};
+
+export const adminDeactivateMaterialCategory = async (
+  id: string,
+  options?: RequestInit,
+): Promise<AdminDeleteResponse> => {
+  return customFetch<AdminDeleteResponse>(
+    getAdminDeactivateMaterialCategoryUrl(id),
+    {
+      ...options,
+      method: "DELETE",
+    },
+  );
+};
+
+export const getAdminDeactivateMaterialCategoryMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminDeactivateMaterialCategory>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminDeactivateMaterialCategory>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ["adminDeactivateMaterialCategory"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminDeactivateMaterialCategory>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return adminDeactivateMaterialCategory(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminDeactivateMaterialCategoryMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminDeactivateMaterialCategory>>
+>;
+
+export type AdminDeactivateMaterialCategoryMutationError = ErrorType<void>;
+
+/**
+ * @summary Deactivate a material category (sets is_active=false)
+ */
+export const useAdminDeactivateMaterialCategory = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminDeactivateMaterialCategory>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminDeactivateMaterialCategory>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  return useMutation(
+    getAdminDeactivateMaterialCategoryMutationOptions(options),
+  );
 };
