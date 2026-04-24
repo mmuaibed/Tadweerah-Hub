@@ -365,6 +365,14 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
         {/* Role-based actions */}
         {deal.status !== "completed" && (
           <div className="px-4 py-3 space-y-3 border-b border-primary/10 bg-background">
+            {/* P4 — Per-stage description: tells each role what's expected */}
+            <div className={`rounded-md px-3 py-2 text-xs leading-relaxed ${
+              isMyTurn
+                ? "bg-amber-50 border border-amber-200 text-amber-800"
+                : "bg-muted/60 text-muted-foreground"
+            }`}>
+              {t(`deal.stage.action.${deal.status}.${role}`)}
+            </div>
             {/* Producer: confirm payment */}
             {role === "producer" && deal.status === "active" && (
               <div className="space-y-3">

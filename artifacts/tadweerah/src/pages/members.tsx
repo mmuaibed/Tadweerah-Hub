@@ -230,6 +230,7 @@ export function MembersPage() {
                     <Crown className="h-3.5 w-3.5" />
                     {t("members.section.owner")}
                   </p>
+                  <p className="text-xs text-amber-600/80 mt-0.5">{t("members.role.owner.desc")}</p>
                 </div>
                 <MemberRow
                   member={ownerRow}
@@ -243,16 +244,17 @@ export function MembersPage() {
 
             {/* Members section */}
             <div className="rounded-xl border border-card-border bg-card overflow-hidden">
-              <div className="px-5 py-2.5 bg-muted/30 border-b border-border flex items-center justify-between">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
-                  <Users className="h-3.5 w-3.5" />
-                  {t("members.section.members")}
-                </p>
-                {memberRows.length > 0 && (
-                  <span className="text-xs text-muted-foreground">
-                    {memberRows.length}
-                  </span>
-                )}
+              <div className="px-5 py-2.5 bg-muted/30 border-b border-border">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                    <Users className="h-3.5 w-3.5" />
+                    {t("members.section.members")}
+                  </p>
+                  {memberRows.length > 0 && (
+                    <span className="text-xs text-muted-foreground">{memberRows.length}</span>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground/80 mt-0.5">{t("members.role.member.desc")}</p>
               </div>
               {memberRows.length === 0 ? (
                 <p className="py-8 text-center text-sm text-muted-foreground">

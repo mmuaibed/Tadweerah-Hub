@@ -751,6 +751,16 @@ router.put(
     // Detect whether the buyer was already the top bidder before this improvement
     const already_top = Number(myOffer.price_per_unit) >= currentMax;
 
+    // P1 — AlreadyTopBidder gate: block silent self-improvement unless buyer
+    // explicitly confirms they intend to raise their own top offer.
+    if (already_top && req.body.explicit_self_improve !== true) {
+      throw new HttpError(
+        409,
+        "AlreadyTopBidder",
+        "You are already the top bidder. Send explicit_self_improve=true to confirm you want to raise your offer.",
+      );
+    }
+
     // Capture outbid buyer before saving (only if buyer was NOT already top)
     let outbidBuyerId: string | null = null;
     if (!already_top) {

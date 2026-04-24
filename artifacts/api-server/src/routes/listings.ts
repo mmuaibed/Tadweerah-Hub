@@ -260,8 +260,9 @@ router.get(
     //   specific_company → only the named company (or the owner)
     //   category         → companies whose category matches any of the listed categories
     const targetingFilter = or(
-      // Owner can always see their own listings in the feed
-      eq(wasteListingsTable.company_id, company.id),
+      // P6: Own listings are excluded from the marketplace feed (producers use
+      // /listings/mine for that). Removing the owner-shortcut here keeps the
+      // feed clean and prevents companies from bidding on their own waste.
       // Fully open listing
       eq(wasteListingsTable.targeting_type, "open"),
       // Direct invite to this company
@@ -285,6 +286,8 @@ router.get(
     const conditions = [
       eq(wasteListingsTable.status, "open"),
       eq(wasteListingsTable.visibility, "public"),
+      // P6: never show the viewer's own listings in the marketplace
+      ne(wasteListingsTable.company_id, company.id),
       targetingFilter,
     ];
     if (material) {
@@ -371,6 +374,8 @@ router.get(
           ),
           my_offer_price: myOffer?.price_per_unit,
           my_rank: myOffer?.rank,
+          // P3: per-unit max offer price so cards can show market context
+          highest_offer_price: maxPpu,
         };
       }),
     );

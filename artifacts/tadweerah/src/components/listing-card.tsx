@@ -44,6 +44,8 @@ export function ListingCard({
   const isRtl = lang === "ar";
   const imageUrl = (listing as WasteListing & { image_url?: string }).image_url;
   const myRank = (listing as WasteListing & { my_rank?: number }).my_rank;
+  const myOfferPrice = (listing as WasteListing & { my_offer_price?: string | number | null }).my_offer_price;
+  const highestOfferPrice = (listing as WasteListing & { highest_offer_price?: number | null }).highest_offer_price;
   const requiredServices = (listing as WasteListing & { required_services?: Array<{ id: string; name_ar: string; name_en: string; requires_license?: boolean }> }).required_services ?? [];
   const targetingType = (listing as WasteListing & { targeting_type?: string }).targeting_type ?? "open";
 
@@ -192,19 +194,49 @@ export function ListingCard({
           </div>
         )}
 
-        {/* Bid status badge — shown only when the current buyer has made an offer */}
+        {/* Bid status — shown when viewer has bid */}
         {myRank != null && (
-          <div className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium ${
+          <div className={`rounded-lg border px-3 py-2 space-y-1 ${
             myRank === 1
               ? "border-secondary/40 bg-secondary/10 text-secondary"
               : "border-muted text-muted-foreground bg-muted/30"
           }`}>
-            {myRank === 1 ? (
-              <TrendingUp className="h-4 w-4 shrink-0" />
-            ) : (
-              <TrendingDown className="h-4 w-4 shrink-0" />
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5">
+                {myRank === 1 ? (
+                  <TrendingUp className="h-4 w-4 shrink-0" />
+                ) : (
+                  <TrendingDown className="h-4 w-4 shrink-0" />
+                )}
+                <span className="text-xs font-semibold">
+                  {myRank === 1 ? t("listing.bid.top") : t("listing.bid.not_top")}
+                </span>
+              </div>
+              {myOfferPrice != null && (
+                <span className="text-xs font-medium">
+                  {t("listing.bid.mine.label")}: {Number(myOfferPrice).toLocaleString()} {t("listing.sar")}
+                </span>
+              )}
+            </div>
+            {myRank > 1 && highestOfferPrice != null && (
+              <p className="text-xs text-muted-foreground ps-5">
+                {t("listing.bid.highest.label")}:{" "}
+                <span className="font-semibold">{Number(highestOfferPrice).toLocaleString()} {t("listing.sar")}</span>
+              </p>
             )}
-            <span>{myRank === 1 ? t("listing.bid.top") : t("listing.bid.not_top")}</span>
+          </div>
+        )}
+
+        {/* Highest offer context — viewer hasn't bid but there are offers */}
+        {myRank == null && highestOfferPrice != null && (
+          <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2">
+            <TrendingUp className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            <span className="text-xs text-muted-foreground">
+              {t("listing.bid.highest.label")}:{" "}
+              <span className="font-semibold text-foreground">
+                {Number(highestOfferPrice).toLocaleString()} {t("listing.sar")}
+              </span>
+            </span>
           </div>
         )}
 

@@ -41,6 +41,7 @@ import {
   Percent,
   Lock,
   Info,
+  AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -412,10 +413,13 @@ function BuyerOfferSection({
   const { mutate: improveOffer, isPending: isImproving } = useImproveOffer();
 
   const [price, setPrice] = useState("");
+  const [priceMode, setPriceMode] = useState<"unit" | "total">("unit");
   const [message, setMessage] = useState("");
   const [showImproveForm, setShowImproveForm] = useState(false);
   const [newPrice, setNewPrice] = useState("");
+  const [newPriceMode, setNewPriceMode] = useState<"unit" | "total">("unit");
   const [newMessage, setNewMessage] = useState("");
+  const [confirmedSelfImprove, setConfirmedSelfImprove] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
   const myOffer = offers[0] as ListingOffer | undefined;
@@ -427,17 +431,24 @@ function BuyerOfferSection({
     if (code === "MissingCapability") return t("offer.error.MissingCapability");
     if (code === "LicenseRequired") return t("offer.error.LicenseRequired");
     if (code === "TargetingRestricted") return t("offer.error.TargetingRestricted");
+    if (code === "AlreadyTopBidder") return t("offer.error.AlreadyTopBidder");
     return t("offer.error.generic");
+  }
+
+  // P2 — helpers to convert between unit price and total price
+  function toUnitPrice(entered: number, mode: "unit" | "total"): number {
+    return mode === "unit" ? entered : listingQuantity > 0 ? entered / listingQuantity : entered;
   }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setFormError(null);
-    const val = parseFloat(price);
-    if (!val || val <= 0) return;
+    const entered = parseFloat(price);
+    if (!entered || entered <= 0) return;
+    const unitVal = toUnitPrice(entered, priceMode);
 
     submitOffer(
-      { wasteListingId, data: { price_per_unit: val, message: message.trim() || undefined } },
+      { wasteListingId, data: { price_per_unit: unitVal, message: message.trim() || undefined } },
       {
         onSuccess: () => {
           console.log("[tadweerah] offer submitted for listing:", wasteListingId);
@@ -454,19 +465,30 @@ function BuyerOfferSection({
   function handleImprove(e: React.FormEvent) {
     e.preventDefault();
     setFormError(null);
-    const val = parseFloat(newPrice);
-    if (!val || val <= 0) return;
+    const entered = parseFloat(newPrice);
+    if (!entered || entered <= 0) return;
+    const unitVal = toUnitPrice(entered, newPriceMode);
+
+    // P1 — pass explicit_self_improve when buyer confirms they are already top bidder
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data: any = { price_per_unit: unitVal, message: newMessage.trim() || undefined };
+    if (rank === 1 && confirmedSelfImprove) data.explicit_self_improve = true;
 
     improveOffer(
-      { wasteListingId, data: { price_per_unit: val, message: newMessage.trim() || undefined } },
+      { wasteListingId, data },
       {
         onSuccess: () => {
           console.log("[tadweerah] offer improved for listing:", wasteListingId);
-          setShowImproveForm(false); setNewPrice(""); setNewMessage(""); onSuccess();
+          setShowImproveForm(false); setNewPrice(""); setNewMessage(""); setConfirmedSelfImprove(false); onSuccess();
         },
         onError: (err: unknown) => {
           console.warn("[tadweerah] offer improve failed:", err);
-          setFormError(mapOfferError(err));
+          const code = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "";
+          if (code === "AlreadyTopBidder") {
+            setFormError(t("offer.error.AlreadyTopBidder"));
+          } else {
+            setFormError(mapOfferError(err));
+          }
         },
       },
     );
@@ -597,11 +619,25 @@ function BuyerOfferSection({
               </span>
               {showImproveForm ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </button>
-            {/* Top bidder self-bidding warning */}
-            {rank === 1 && totalOffers != null && totalOffers > 1 && showImproveForm && (
+            {/* P1: Top-bidder confirmation when rank === 1 */}
+            {rank === 1 && showImproveForm && (
               <div className="px-5 pt-3">
-                <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
-                  {t("offer.warning.already_top")}
+                <div className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 space-y-2">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                    <p className="text-xs font-medium text-amber-800">{t("offer.warning.already_top")}</p>
+                  </div>
+                  <label className="flex items-start gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={confirmedSelfImprove}
+                      onChange={(e) => setConfirmedSelfImprove(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 accent-amber-600 shrink-0"
+                    />
+                    <span className="text-xs text-amber-700 leading-relaxed">
+                      {t("offer.confirm.alreadyTop.checkbox")}
+                    </span>
+                  </label>
                 </div>
               </div>
             )}
@@ -613,9 +649,33 @@ function BuyerOfferSection({
                     {highestPrice.toLocaleString()} {t("listing.sar")}
                   </span>
                 </p>
+
+                {/* P2: Price mode toggle for improve form */}
+                <div className="flex gap-1 rounded-lg bg-muted p-0.5 w-fit">
+                  {(["unit", "total"] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => {
+                        const val = parseFloat(newPrice) || 0;
+                        if (mode !== newPriceMode && val > 0) {
+                          setNewPrice(mode === "total"
+                            ? (val * listingQuantity).toFixed(2)
+                            : listingQuantity > 0 ? (val / listingQuantity).toFixed(3) : newPrice
+                          );
+                        }
+                        setNewPriceMode(mode);
+                      }}
+                      className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${newPriceMode === mode ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                    >
+                      {t(`offer.form.mode.${mode}`)}
+                    </button>
+                  ))}
+                </div>
+
                 <div className="space-y-1">
                   <label className="text-xs font-medium text-muted-foreground">
-                    {t("offer.form.newPrice")}
+                    {newPriceMode === "unit" ? t("offer.form.unitPriceLabel") : t("offer.form.totalPriceLabel")}
                   </label>
                   <input
                     type="number"
@@ -627,6 +687,14 @@ function BuyerOfferSection({
                     className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                     placeholder={`> ${highestPrice.toLocaleString()}`}
                   />
+                  {newPrice && parseFloat(newPrice) > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      {newPriceMode === "unit"
+                        ? <>{t("offer.form.computedTotal")}: <span className="font-semibold">{(parseFloat(newPrice) * listingQuantity).toLocaleString()} {t("listing.sar")}</span></>
+                        : <>{t("offer.form.computedUnit")}: <span className="font-semibold">{listingQuantity > 0 ? (parseFloat(newPrice) / listingQuantity).toLocaleString(undefined, { maximumFractionDigits: 3 }) : "—"} {t("listing.sar")}</span></>
+                      }
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-medium text-muted-foreground">
@@ -641,7 +709,11 @@ function BuyerOfferSection({
                   />
                 </div>
                 {formError && <p className="text-xs text-destructive">{formError}</p>}
-                <Button type="submit" className="w-full" disabled={isImproving}>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={isImproving || (rank === 1 && !confirmedSelfImprove)}
+                >
                   {isImproving && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
                   {isImproving ? t("offer.form.improving") : t("offer.form.improve")}
                 </Button>
@@ -673,9 +745,31 @@ function BuyerOfferSection({
         </p>
       )}
       <form onSubmit={handleSubmit} className="space-y-3">
+        {/* P2: Price mode toggle for new offer form */}
+        <div className="flex gap-1 rounded-lg bg-muted p-0.5 w-fit">
+          {(["unit", "total"] as const).map((mode) => (
+            <button
+              key={mode}
+              type="button"
+              onClick={() => {
+                const val = parseFloat(price) || 0;
+                if (mode !== priceMode && val > 0) {
+                  setPrice(mode === "total"
+                    ? (val * listingQuantity).toFixed(2)
+                    : listingQuantity > 0 ? (val / listingQuantity).toFixed(3) : price
+                  );
+                }
+                setPriceMode(mode);
+              }}
+              className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${priceMode === mode ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              {t(`offer.form.mode.${mode}`)}
+            </button>
+          ))}
+        </div>
         <div className="space-y-1">
           <label className="text-xs font-medium text-muted-foreground">
-            {t("offer.form.price")}
+            {priceMode === "unit" ? t("offer.form.unitPriceLabel") : t("offer.form.totalPriceLabel")}
           </label>
           <input
             type="number"
@@ -689,12 +783,10 @@ function BuyerOfferSection({
           />
           {price && parseFloat(price) > 0 && (
             <p className="text-xs text-muted-foreground">
-              {t("offer.mine.total")}:{" "}
-              <span className="font-semibold">
-                {(parseFloat(price) * listingQuantity).toLocaleString()} {t("listing.sar")}
-              </span>
-              {" "}
-              <span className="text-muted-foreground/60">{t("offer.quantityDisclaimer")}</span>
+              {priceMode === "unit"
+                ? <>{t("offer.form.computedTotal")}: <span className="font-semibold">{(parseFloat(price) * listingQuantity).toLocaleString()} {t("listing.sar")}</span>{" "}<span className="text-muted-foreground/60">{t("offer.quantityDisclaimer")}</span></>
+                : <>{t("offer.form.computedUnit")}: <span className="font-semibold">{listingQuantity > 0 ? (parseFloat(price) / listingQuantity).toLocaleString(undefined, { maximumFractionDigits: 3 }) : "—"} {t("listing.sar")}</span></>
+              }
             </p>
           )}
         </div>

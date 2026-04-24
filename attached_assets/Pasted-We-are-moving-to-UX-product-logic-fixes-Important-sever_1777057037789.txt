@@ -1,0 +1,264 @@
+We are moving to UX / product-logic fixes.
+
+Important: several of these issues were already requested before, especially self-bidding protection and auction clarity. Please treat this batch with the same strictness as the charter safeguards.
+
+Before implementation:
+
+* classify each item: clear / needs clarification
+* implement clear items directly
+* stop and ask for anything ambiguous
+* do not change eligibility, permissions, visibility, or DB schema unless explicitly required and explained first
+
+---
+
+## Priority 1 — Prevent bidding against yourself
+
+Issue:
+A buyer can increase their own bid without warning or restriction.
+
+Required:
+
+* If the company is already the highest bidder:
+
+  * do NOT allow silent self-increase
+  * show clear warning/action handling
+* API must protect this, not only frontend.
+
+Expected:
+
+* A company cannot unknowingly bid against itself.
+* If there is a valid business reason to allow it, it must require explicit confirmation and be clearly explained.
+
+Please propose the safest approach before implementing if there is any ambiguity.
+
+---
+
+## Priority 2 — Auction pricing UX
+
+Issue:
+Buyer enters price per unit, but users think in total amount.
+
+Example:
+“I want to buy 9 tons for 1,000 SAR — what do I enter?”
+
+Required:
+
+* Allow buyer to enter either:
+
+  * total price
+  * or price per unit
+* Auto-calculate the other value.
+* Display both clearly before submit.
+
+Expected:
+
+* Buyer understands exactly what they are offering:
+
+  * quantity
+  * unit price
+  * total price
+
+---
+
+## Priority 3 — Auction card clarity
+
+Issue:
+Marketplace/participation cards do not show enough auction context.
+
+Required:
+
+* Show highest current offer on the card
+* Show my offer amount if I participated
+* If my offer is not highest, show:
+
+  * “عرضك ليس الأعلى”
+  * highest offer amount
+* If my offer is highest, show:
+
+  * “أنت أعلى عرض”
+
+Expected:
+User should not need to enter listing details to understand auction position.
+
+---
+
+## Priority 4 — Deal stage label/update bug
+
+Issue:
+After accepting an offer, UI says the deal is in your step but the stage label remains confusing / old, such as “تأكيد استلام الدفع”.
+
+Required:
+
+* Review deal stage labels and state updates.
+* Ensure each step shows the correct current stage.
+* Ensure UI refreshes immediately after action.
+
+Expected:
+After each action, the deal panel clearly shows:
+
+* current stage
+* whose turn it is
+* what action is required
+
+---
+
+## Priority 5 — Direct Sale targeting UX
+
+Issue:
+Specific-company targeting is not clear enough.
+
+Required:
+
+* Replace any unclear ID/manual input with searchable company selector.
+* Make targeting choices clear:
+
+  * open
+  * category
+  * specific company
+* If category targeting is currently missing from Direct Sale UI, add it or explain why it is blocked.
+
+Expected:
+Seller can clearly choose who can see the direct sale listing.
+
+---
+
+## Priority 6 — Marketplace separation
+
+Issue:
+Market shows my own listings mixed with others, which may confuse users.
+
+Please propose the best UX:
+Option A:
+
+* Marketplace only shows other companies’ listings
+* My Listings remains separate
+
+Option B:
+
+* Marketplace includes all listings but clearly marks “إعلاني”
+
+Our preference:
+
+* Marketplace should focus on opportunities from others
+* My Listings should manage my own listings
+
+Please confirm and implement the cleaner approach.
+
+---
+
+## Priority 7 — Company services/actions UX
+
+Issue:
+Company activities/services list needs better wording and grouping.
+
+Required:
+
+* Review current labels
+* Group logically:
+
+  * بيع / شراء
+  * نقل / جمع
+  * معالجة / تدوير
+  * تخلص آمن
+  * تخزين / فرز
+* Keep internal keys unchanged.
+
+Expected:
+User understands what to select during onboarding/settings.
+
+---
+
+## Priority 8 — Reports page expectation management
+
+Issue:
+Reports page looks good but may raise expectations too high.
+
+Required:
+
+* Reduce promise level
+* Clearly mark as:
+
+  * “قريبًا”
+  * or “ميزة مستقبلية حسب الاشتراك”
+* Avoid implying full reporting/certification is currently available.
+
+Expected:
+Professional page, but expectations remain controlled.
+
+---
+
+## Priority 9 — Permissions clarity on members page
+
+Issue:
+User cannot easily understand Owner vs Member permissions.
+
+Required:
+
+* Add a short explanation:
+
+  * Owner: manages company profile, members, settings
+  * Member: operational access only
+* Do not change permissions logic.
+
+Expected:
+Teams understand which role to assign.
+
+---
+
+## Priority 10 — Material category/admin editability reminder
+
+Issue:
+Material classifications must remain admin-managed and editable.
+
+Required:
+
+* Confirm current material categories come from lookup tables
+* Confirm UI uses lookup values
+* No hardcoding
+* If admin edit UI exists, confirm where
+* If not, flag as future admin task
+
+Expected:
+We can edit categories later without code changes.
+
+---
+
+## Required safeguards
+
+For this batch, please add lightweight safeguards where relevant:
+
+1. Self-bidding protection test:
+
+* company already highest bidder
+* tries to improve own offer
+* expected behavior verified
+
+2. Auction pricing calculation test:
+
+* quantity + total price calculates unit price
+* quantity + unit price calculates total price
+
+3. Deal stage label test:
+
+* after accept offer
+* after confirm payment
+* after dispatch
+* after receipt
+* labels update correctly
+
+No heavy browser automation unless explicitly approved.
+
+---
+
+## Cost control
+
+Use:
+
+* typecheck
+* targeted API checks
+* code inspection
+* lightweight validation only
+
+Do not run full browser automation or long loops.
+
+Please classify first, then proceed.

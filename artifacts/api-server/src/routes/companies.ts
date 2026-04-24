@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and } from "drizzle-orm";
+import { eq, and, ne, ilike, asc } from "drizzle-orm";
 import {
   db,
   companiesTable,
@@ -222,6 +222,38 @@ router.put(
       details: { capability_ids: capabilityIds },
     });
 
+    res.json(rows);
+  },
+);
+
+// GET /companies/search?q= — search companies by name for direct-sale targeting UI.
+// Returns up to 10 companies matching the query, excluding the viewer's own company.
+router.get(
+  "/companies/search",
+  requireAuth,
+  requireCompany(),
+  async (req, res) => {
+    const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
+    if (!q || q.length < 2) {
+      res.json([]);
+      return;
+    }
+    const { company } = req as AuthedCompanyRequest;
+    const rows = await db
+      .select({
+        id: companiesTable.id,
+        name: companiesTable.name,
+        city: companiesTable.city,
+      })
+      .from(companiesTable)
+      .where(
+        and(
+          ne(companiesTable.id, company.id),
+          ilike(companiesTable.name, `%${q}%`),
+        ),
+      )
+      .orderBy(asc(companiesTable.name))
+      .limit(10);
     res.json(rows);
   },
 );

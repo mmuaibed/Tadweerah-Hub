@@ -340,9 +340,9 @@ const translations: Record<string, Record<Language, string>> = {
   "deal.contact.title": { ar: "تواصل مع الطرف الآخر", en: "Contact Counterparty" },
   "deal.contact.phone": { ar: "رقم التواصل", en: "Phone" },
 
-  "deal.status.active": { ar: "نشطة", en: "Active" },
+  "deal.status.active": { ar: "انتظار تأكيد الدفع", en: "Awaiting Payment" },
   "deal.status.payment_confirmed": { ar: "تم تأكيد الدفع", en: "Payment Confirmed" },
-  "deal.status.dispatched": { ar: "تم الإرسال", en: "Dispatched" },
+  "deal.status.dispatched": { ar: "البضاعة في الطريق", en: "Goods in Transit" },
   "deal.status.completed": { ar: "مكتملة", en: "Completed" },
 
   "deal.settlement.fixed": { ar: "سعر ثابت", en: "Fixed Price" },
@@ -466,8 +466,8 @@ const translations: Record<string, Record<Language, string>> = {
   // Targeting form UI (create listing)
   "listing.form.targeting.label": { ar: "من يمكنه رؤية هذا الإعلان؟", en: "Who can see this listing?" },
   "listing.form.targeting.hint": {
-    ar: "في البيع المباشر يمكنك تقييد الوصول إلى شركة بعينها.",
-    en: "For Direct Sale you can restrict access to a specific company.",
+    ar: "في البيع المباشر يمكنك تقييد الوصول إلى شركة بعينها أو تصنيف معين.",
+    en: "For Direct Sale you can restrict access to a specific company or category.",
   },
   "listing.form.targeting.companyId.label": { ar: "معرّف الشركة المستهدفة", en: "Target Company ID" },
   "listing.form.targeting.companyId.placeholder": { ar: "الصق UUID الشركة هنا", en: "Paste the company UUID here" },
@@ -605,6 +605,91 @@ const translations: Record<string, Record<Language, string>> = {
   "terms.section5.body": {
     ar: "تحتفظ تدويرة بالحق في تعديل هذه الشروط في أي وقت. سيُعلَم المستخدمون بأي تغييرات جوهرية. يحق لتدويرة إنهاء أي حساب يخالف هذه الشروط.",
     en: "Tadweerah reserves the right to modify these terms at any time. Users will be notified of any material changes. Tadweerah may terminate any account that violates these terms.",
+  },
+
+  // P1 — AlreadyTopBidder confirmation
+  "offer.error.AlreadyTopBidder": {
+    ar: "أنت بالفعل أعلى مزايد. يرجى تأكيد رغبتك في رفع عرضك أولاً.",
+    en: "You are already the top bidder. Please confirm you want to raise your offer.",
+  },
+  "offer.confirm.alreadyTop.checkbox": {
+    ar: "أعلم أنني أعلى مزايد وأريد رفع عرضي بشكل مقصود",
+    en: "I know I am already the top bidder and I intentionally want to raise my offer",
+  },
+
+  // P2 — Dual price entry
+  "offer.form.mode.unit": { ar: "سعر الوحدة", en: "Per unit" },
+  "offer.form.mode.total": { ar: "الإجمالي", en: "Total" },
+  "offer.form.unitPriceLabel": { ar: "سعرك لكل وحدة (ر.س)", en: "Your price per unit (SAR)" },
+  "offer.form.totalPriceLabel": { ar: "إجمالي سعرك (ر.س)", en: "Your total price (SAR)" },
+  "offer.form.computedUnit": { ar: "يعادل لكل وحدة", en: "Equals per unit" },
+  "offer.form.computedTotal": { ar: "الإجمالي المقدّر", en: "Estimated total" },
+
+  // P3 — Offer amounts on cards
+  "listing.bid.highest.label": { ar: "أعلى عرض", en: "Highest offer" },
+  "listing.bid.mine.label": { ar: "عرضي", en: "My offer" },
+
+  // P4 — Deal stage descriptions (deal.status.active / dispatched already updated above)
+  "deal.stage.action.active.producer": {
+    ar: "أدخل رقم الحوالة وأكّد استلام الدفع من المشتري",
+    en: "Enter the transfer reference and confirm you received payment from the buyer",
+  },
+  "deal.stage.action.active.buyer": {
+    ar: "في انتظار المنتج لتأكيد استلام دفعتك",
+    en: "Waiting for the producer to confirm receipt of your payment",
+  },
+  "deal.stage.action.payment_confirmed.producer": {
+    ar: "أكّد شحن البضاعة وإرسالها للمشتري",
+    en: "Confirm the goods have been dispatched to the buyer",
+  },
+  "deal.stage.action.payment_confirmed.buyer": {
+    ar: "في انتظار المنتج لشحن البضاعة",
+    en: "Waiting for the producer to dispatch the goods",
+  },
+  "deal.stage.action.dispatched.buyer": {
+    ar: "تأكّد من استلام البضاعة ثم أكّد الاستلام",
+    en: "Verify you have received the goods then confirm receipt",
+  },
+  "deal.stage.action.dispatched.producer": {
+    ar: "في انتظار المشتري لتأكيد استلام البضاعة",
+    en: "Waiting for the buyer to confirm receipt of goods",
+  },
+
+  // P5 — Company search for direct-sale targeting
+  "listing.form.targeting.companySearch.placeholder": { ar: "اكتب اسم الشركة...", en: "Type company name..." },
+  "listing.form.targeting.companySearch.hint": {
+    ar: "ابحث باسم الشركة واختر الشركة المستهدفة من النتائج",
+    en: "Search by company name and select the target company from results",
+  },
+  "listing.form.targeting.companySearch.empty": { ar: "لا توجد نتائج", en: "No results found" },
+  "listing.form.targeting.companySearch.searching": { ar: "جاري البحث...", en: "Searching..." },
+  "listing.form.targeting.companySearch.selected": { ar: "الشركة المستهدفة", en: "Target company" },
+  "listing.form.targeting.categories.label": { ar: "التصنيفات المسموح بها", en: "Allowed categories" },
+  "listing.form.targeting.categories.hint": {
+    ar: "اختر التصنيفات التجارية التي يُسمح لها بالتقديم",
+    en: "Select the business categories allowed to submit offers",
+  },
+
+  // P7 — Capabilities group labels
+  "capabilities.group.collect_transport": { ar: "تجميع ونقل", en: "Collection & Transport" },
+  "capabilities.group.recycle": { ar: "تدوير ومعالجة", en: "Recycling & Processing" },
+  "capabilities.group.certifications": { ar: "شهادات وتصاريح", en: "Certifications & Permits" },
+
+  // P8 — Reports subscription messaging
+  "reports.subscription.badge": { ar: "ميزة مستقبلية", en: "Future Feature" },
+  "reports.subscription.desc": {
+    ar: "ستكون هذه التقارير التفصيلية متاحة ضمن باقات الاشتراك القادمة",
+    en: "These detailed reports will be available in upcoming subscription tiers",
+  },
+
+  // P9 — Members role descriptions
+  "members.role.owner.desc": {
+    ar: "يدير ملف الشركة والأعضاء والإعدادات",
+    en: "Manages company profile, members, and settings",
+  },
+  "members.role.member.desc": {
+    ar: "وصول تشغيلي — لا يمكنه تعديل إعدادات الشركة أو دعوة أعضاء",
+    en: "Operational access only — cannot modify company settings or invite members",
   },
 };
 

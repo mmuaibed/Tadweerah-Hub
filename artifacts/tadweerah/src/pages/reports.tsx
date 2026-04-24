@@ -1,4 +1,4 @@
-import { Leaf, BarChart3, Award, TrendingUp } from "lucide-react";
+import { Leaf, BarChart3, Award, TrendingUp, Lock } from "lucide-react";
 import { AppLayout } from "@/components/app-layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { useT } from "@/i18n";
@@ -46,21 +46,28 @@ export function ReportsPage() {
       {/* Metric cards (placeholder) */}
       <div className="grid gap-4 sm:grid-cols-2">
         {metrics.map(({ icon: Icon, key, colorClass }) => (
-          <Card key={key} className="border-border bg-card">
+          <Card key={key} className="border-border bg-card relative overflow-hidden">
             <CardContent className="p-5 flex items-center gap-4">
               <div
-                className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${colorClass}`}
+                className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${colorClass} opacity-60`}
               >
                 <Icon className="h-6 w-6" />
               </div>
-              <div className="space-y-0.5">
-                <p className="font-semibold text-foreground">—</p>
+              <div className="space-y-0.5 flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="font-semibold text-muted-foreground">—</p>
+                  <span className="inline-flex items-center gap-1 text-xs text-muted-foreground border border-border bg-muted/50 px-1.5 py-0.5 rounded-full">
+                    <Lock className="h-2.5 w-2.5" />
+                    {t("reports.subscription.badge")}
+                  </span>
+                </div>
                 <p className="text-xs text-muted-foreground">{t(key)}</p>
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
+      <p className="text-xs text-center text-muted-foreground mt-2">{t("reports.subscription.desc")}</p>
     </AppLayout>
   );
 }

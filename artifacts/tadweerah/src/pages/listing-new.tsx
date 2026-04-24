@@ -1,4 +1,4 @@
-import { useState, useRef, type FormEvent } from "react";
+import { useState, useRef, useEffect, type FormEvent } from "react";
 import { useAuth } from "@clerk/react";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
@@ -7,10 +7,12 @@ import {
   useGetMaterialCategories,
   useGetUnitOptions,
   useGetCapabilities,
+  useGetCompanyCategories,
   getListMyListingsQueryKey,
   type MaterialCategory,
   type UnitOption,
   type Capability,
+  type CompanyCategory,
 } from "@workspace/api-client-react";
 import { Loader2, ImagePlus, X, Scale, Tag, Gavel, ShoppingBag, Percent, Shield, Lock, Globe, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -30,7 +32,7 @@ import { useT } from "@/i18n";
 
 type PricingModel = "fixed" | "by_weight" | "revenue_share";
 type SaleType = "auction" | "direct";
-type TargetingType = "open" | "specific_company";
+type TargetingType = "open" | "category" | "specific_company";
 
 const LEGACY_MATERIAL_KEYS = new Set(["paper", "plastic", "metal", "glass", "electronics", "organic", "other"]);
 const LEGACY_UNIT_KEYS = new Set(["kg", "ton"]);
@@ -53,6 +55,7 @@ export function ListingNewPage() {
   const { data: allCategories = [] } = useGetMaterialCategories();
   const { data: unitOptions = [] } = useGetUnitOptions();
   const { data: allCapabilities = [] } = useGetCapabilities();
+  const { data: companyCategoryList = [] } = useGetCompanyCategories();
 
   const topLevel = (allCategories as MaterialCategory[]).filter((c) => !c.parent_id);
   const [materialCategoryId, setMaterialCategoryId] = useState<string>("");
@@ -76,12 +79,39 @@ export function ListingNewPage() {
   const [requiredServiceIds, setRequiredServiceIds] = useState<Set<string>>(new Set());
   const [targetingType, setTargetingType] = useState<TargetingType>("open");
   const [targetCompanyId, setTargetCompanyId] = useState("");
+  // P5 — company search (for specific_company targeting)
+  const [companySearch, setCompanySearch] = useState("");
+  const [companyResults, setCompanyResults] = useState<{ id: string; name: string; city: string }[]>([]);
+  const [companySearching, setCompanySearching] = useState(false);
+  const [selectedCompany, setSelectedCompany] = useState<{ id: string; name: string; city: string } | null>(null);
+  // P5 — category targeting (multi-select company categories)
+  const [targetCategoryIds, setTargetCategoryIds] = useState<Set<string>>(new Set());
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const { mutate, isPending } = useCreateWasteListing();
+
+  // P5 — debounced company search for specific_company targeting
+  useEffect(() => {
+    if (targetingType !== "specific_company" || companySearch.length < 2) {
+      setCompanyResults([]);
+      return;
+    }
+    setCompanySearching(true);
+    let cancelled = false;
+    getToken().then((token) =>
+      fetch(`/api/companies/search?q=${encodeURIComponent(companySearch)}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: "include",
+      })
+    ).then((r) => (r.ok ? r.json() : []))
+      .then((rows) => { if (!cancelled) setCompanyResults(rows as { id: string; name: string; city: string }[]); })
+      .catch(() => { if (!cancelled) setCompanyResults([]); })
+      .finally(() => { if (!cancelled) setCompanySearching(false); });
+    return () => { cancelled = true; };
+  }, [companySearch, targetingType, getToken]);
 
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0] ?? null;
@@ -159,8 +189,13 @@ export function ListingNewPage() {
             ? { required_service_ids: Array.from(requiredServiceIds) }
             : {}),
           ...(saleType === "direct" ? { targeting_type: targetingType } : {}),
-          ...(saleType === "direct" && targetingType === "specific_company" && targetCompanyId.trim()
+          ...(saleType === "direct" && targetingType === "specific_company" && selectedCompany
+            ? { target_company_id: selectedCompany.id }
+            : saleType === "direct" && targetingType === "specific_company" && targetCompanyId.trim()
             ? { target_company_id: targetCompanyId.trim() }
+            : {}),
+          ...(saleType === "direct" && targetingType === "category" && targetCategoryIds.size > 0
+            ? { target_category_ids: Array.from(targetCategoryIds) }
             : {}),
         } as any,
       },
@@ -308,6 +343,9 @@ export function ListingNewPage() {
                           if (pricingModel === "revenue_share") setPricingModel("fixed");
                           setTargetingType("open");
                           setTargetCompanyId("");
+                          setSelectedCompany(null);
+                          setCompanySearch("");
+                          setTargetCategoryIds(new Set());
                         }
                       }}
                       className={`flex items-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium transition-all ${
@@ -396,24 +434,34 @@ export function ListingNewPage() {
               <div className="space-y-2">
                 <Label>{t("listing.form.targeting.label")}</Label>
                 <p className="text-xs text-muted-foreground">{t("listing.form.targeting.hint")}</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {(["open", "specific_company"] as TargetingType[]).map((type) => {
+                {/* P5: 3-option targeting grid */}
+                <div className="grid grid-cols-3 gap-2">
+                  {(["open", "category", "specific_company"] as TargetingType[]).map((type) => {
                     const active = targetingType === type;
                     return (
                       <button
                         key={type}
                         type="button"
-                        onClick={() => setTargetingType(type)}
-                        className={`flex flex-col items-center gap-1.5 rounded-lg border px-3 py-3 text-sm font-medium transition-all ${
+                        onClick={() => {
+                          setTargetingType(type);
+                          setSelectedCompany(null);
+                          setCompanySearch("");
+                          setCompanyResults([]);
+                        }}
+                        className={`flex flex-col items-center gap-1.5 rounded-lg border px-2 py-3 text-sm font-medium transition-all ${
                           active
                             ? type === "open"
                               ? "border-primary bg-primary/10 text-primary"
+                              : type === "category"
+                              ? "border-secondary bg-secondary/10 text-secondary"
                               : "border-amber-500 bg-amber-50 text-amber-700"
                             : "border-border bg-background text-muted-foreground hover:border-muted-foreground/40"
                         }`}
                       >
                         {type === "open" ? (
                           <Globe className="h-4 w-4 shrink-0" />
+                        ) : type === "category" ? (
+                          <Users className="h-4 w-4 shrink-0" />
                         ) : (
                           <Lock className="h-4 w-4 shrink-0" />
                         )}
@@ -424,18 +472,97 @@ export function ListingNewPage() {
                     );
                   })}
                 </div>
+
+                {/* P5: Category multi-select */}
+                {targetingType === "category" && (
+                  <div className="space-y-2 pt-1">
+                    <Label>{t("listing.form.targeting.categories.label")}</Label>
+                    <p className="text-xs text-muted-foreground">{t("listing.form.targeting.categories.hint")}</p>
+                    <div className="grid grid-cols-1 gap-1.5 max-h-48 overflow-y-auto rounded-lg border border-border p-2">
+                      {(companyCategoryList as CompanyCategory[]).map((cat) => {
+                        const checked = targetCategoryIds.has(cat.id);
+                        return (
+                          <label
+                            key={cat.id}
+                            className={`flex items-center gap-2 rounded-md px-3 py-2 cursor-pointer transition-colors ${checked ? "bg-secondary/10 text-secondary" : "hover:bg-muted/40 text-muted-foreground"}`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => {
+                                setTargetCategoryIds((prev) => {
+                                  const next = new Set(prev);
+                                  if (next.has(cat.id)) next.delete(cat.id); else next.add(cat.id);
+                                  return next;
+                                });
+                              }}
+                              className="h-3.5 w-3.5 accent-secondary shrink-0"
+                            />
+                            <span className="text-xs font-medium">{cat.name_ar}</span>
+                            <span className="text-xs text-muted-foreground">/ {cat.name_en}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* P5: Company search instead of raw UUID input */}
                 {targetingType === "specific_company" && (
-                  <div className="space-y-1 pt-1">
-                    <Label htmlFor="targetCompanyId">{t("listing.form.targeting.companyId.label")}</Label>
-                    <Input
-                      id="targetCompanyId"
-                      type="text"
-                      value={targetCompanyId}
-                      onChange={(e) => setTargetCompanyId(e.target.value)}
-                      placeholder={t("listing.form.targeting.companyId.placeholder")}
-                      dir="ltr"
-                    />
-                    <p className="text-xs text-muted-foreground">{t("listing.form.targeting.companyId.hint")}</p>
+                  <div className="space-y-2 pt-1">
+                    <Label>{t("listing.form.targeting.companySearch.selected")}</Label>
+                    <p className="text-xs text-muted-foreground">{t("listing.form.targeting.companySearch.hint")}</p>
+                    {selectedCompany ? (
+                      <div className="flex items-center justify-between gap-2 rounded-lg border border-secondary/40 bg-secondary/10 px-3 py-2">
+                        <div>
+                          <p className="text-sm font-semibold text-secondary">{selectedCompany.name}</p>
+                          {selectedCompany.city && <p className="text-xs text-muted-foreground">{selectedCompany.city}</p>}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => { setSelectedCompany(null); setCompanySearch(""); setCompanyResults([]); }}
+                          className="text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="relative">
+                        <Input
+                          type="text"
+                          value={companySearch}
+                          onChange={(e) => setCompanySearch(e.target.value)}
+                          placeholder={t("listing.form.targeting.companySearch.placeholder")}
+                          autoComplete="off"
+                        />
+                        {(companySearching || companyResults.length > 0 || (companySearch.length >= 2 && !companySearching)) && (
+                          <div className="absolute z-10 mt-1 w-full rounded-lg border border-border bg-background shadow-lg max-h-48 overflow-y-auto">
+                            {companySearching ? (
+                              <div className="flex items-center gap-2 px-3 py-3 text-sm text-muted-foreground">
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                {t("listing.form.targeting.companySearch.searching")}
+                              </div>
+                            ) : companyResults.length === 0 ? (
+                              <p className="px-3 py-3 text-sm text-muted-foreground">{t("listing.form.targeting.companySearch.empty")}</p>
+                            ) : (
+                              companyResults.map((c) => (
+                                <button
+                                  key={c.id}
+                                  type="button"
+                                  onClick={() => { setSelectedCompany(c); setCompanySearch(""); setCompanyResults([]); }}
+                                  className="w-full flex items-start gap-2 px-3 py-2.5 text-start hover:bg-muted/50 transition-colors"
+                                >
+                                  <div>
+                                    <p className="text-sm font-medium text-foreground">{c.name}</p>
+                                    {c.city && <p className="text-xs text-muted-foreground">{c.city}</p>}
+                                  </div>
+                                </button>
+                              ))
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
