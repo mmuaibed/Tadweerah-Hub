@@ -1,10 +1,13 @@
 import { Router, type IRouter } from "express";
-import { and, desc, eq, gt, max, ne, sql } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, max, ne, sql } from "drizzle-orm";
 import {
   db,
   companiesTable,
   listingOffersTable,
   wasteListingsTable,
+  listingRequiredServicesTable,
+  capabilitiesTable,
+  companyCapabilitiesTable,
   dealsTable,
 } from "@workspace/db";
 import {
@@ -19,6 +22,13 @@ import {
 } from "../middlewares/requireCompany";
 import { HttpError, assertUuid } from "../middlewares/errorHandler";
 import { listingRef } from "../lib/listing-ref";
+import { logAudit } from "../lib/audit";
+import {
+  notifyOfferReceived,
+  notifyOutbid,
+  notifyOfferAccepted,
+  notifyOfferRejected,
+} from "../lib/notify";
 
 const router: IRouter = Router();
 
@@ -413,6 +423,52 @@ router.post(
       );
     }
 
+    // ── Item 4: Required services gate ────────────────────────────────────────
+    // Fetch any capability requirements on this listing
+    const requiredSvcs = await db
+      .select({
+        capability_id: listingRequiredServicesTable.capability_id,
+        key: capabilitiesTable.key,
+        name_en: capabilitiesTable.name_en,
+        name_ar: capabilitiesTable.name_ar,
+        requires_license: capabilitiesTable.requires_license,
+      })
+      .from(listingRequiredServicesTable)
+      .innerJoin(
+        capabilitiesTable,
+        eq(capabilitiesTable.id, listingRequiredServicesTable.capability_id),
+      )
+      .where(eq(listingRequiredServicesTable.listing_id, listingId));
+
+    if (requiredSvcs.length > 0) {
+      // Fetch buyer's declared capabilities
+      const buyerCaps = await db
+        .select({ capability_id: companyCapabilitiesTable.capability_id })
+        .from(companyCapabilitiesTable)
+        .where(eq(companyCapabilitiesTable.company_id, company.id));
+
+      const buyerCapIds = new Set(buyerCaps.map((c) => c.capability_id));
+
+      for (const svc of requiredSvcs) {
+        if (!buyerCapIds.has(svc.capability_id)) {
+          throw new HttpError(
+            403,
+            "MissingCapability",
+            `Your company does not have the required service: ${svc.name_en} (${svc.key})`,
+          );
+        }
+        // If this capability requires a license, buyer must be licensed
+        if (svc.requires_license && company.license_status !== "approved") {
+          throw new HttpError(
+            403,
+            "LicenseRequired",
+            `The required service '${svc.name_en}' requires an approved recycling license. Your current license status: ${company.license_status ?? "not submitted"}.`,
+          );
+        }
+      }
+    }
+    // ── End required services gate ────────────────────────────────────────────
+
     // Check for duplicate
     const [existing] = await db
       .select({ id: listingOffersTable.id, status: listingOffersTable.status })
@@ -465,6 +521,25 @@ router.post(
       );
     }
 
+    // Capture previous top bidder (to notify outbid) before saving new offer
+    let prevTopBidderId: string | null = null;
+    if (currentMax > 0) {
+      const [topOffer] = await db
+        .select({ buyer_company_id: listingOffersTable.buyer_company_id })
+        .from(listingOffersTable)
+        .where(
+          and(
+            eq(listingOffersTable.waste_listing_id, listingId),
+            eq(listingOffersTable.price_per_unit, String(currentMax)),
+            ne(listingOffersTable.status, "withdrawn"),
+          ),
+        )
+        .limit(1);
+      if (topOffer && topOffer.buyer_company_id !== company.id) {
+        prevTopBidderId = topOffer.buyer_company_id;
+      }
+    }
+
     let offerResult;
     if (existing?.status === "withdrawn") {
       // Re-activate the withdrawn offer row
@@ -491,6 +566,30 @@ router.post(
         })
         .returning();
       offerResult = inserted;
+    }
+
+    // Fire-and-forget: audit + notifications
+    const listingLabel = listingRef(listingId);
+    void logAudit({
+      userId: (req as AuthedCompanyRequest).userId,
+      companyId: company.id,
+      action: "offer.submitted",
+      entityType: "offer",
+      entityId: offerResult.id,
+      details: { listing_id: listingId, price_per_unit },
+    });
+    void notifyOfferReceived({
+      producerCompanyId: listing.company_id,
+      listingId,
+      listingRef: listingLabel,
+      buyerName: company.name,
+    });
+    if (prevTopBidderId) {
+      void notifyOutbid({
+        buyerCompanyId: prevTopBidderId,
+        listingId,
+        listingRef: listingLabel,
+      });
     }
 
     res.status(201).json(
@@ -596,6 +695,25 @@ router.put(
     // Detect whether the buyer was already the top bidder before this improvement
     const already_top = Number(myOffer.price_per_unit) >= currentMax;
 
+    // Capture outbid buyer before saving (only if buyer was NOT already top)
+    let outbidBuyerId: string | null = null;
+    if (!already_top) {
+      const [topOffer] = await db
+        .select({ buyer_company_id: listingOffersTable.buyer_company_id })
+        .from(listingOffersTable)
+        .where(
+          and(
+            eq(listingOffersTable.waste_listing_id, listingId),
+            eq(listingOffersTable.price_per_unit, String(currentMax)),
+            ne(listingOffersTable.status, "withdrawn"),
+          ),
+        )
+        .limit(1);
+      if (topOffer && topOffer.buyer_company_id !== company.id) {
+        outbidBuyerId = topOffer.buyer_company_id;
+      }
+    }
+
     const [updated] = await db
       .update(listingOffersTable)
       .set({
@@ -605,6 +723,22 @@ router.put(
       })
       .where(eq(listingOffersTable.id, myOffer.id))
       .returning();
+
+    void logAudit({
+      userId: (req as AuthedCompanyRequest).userId,
+      companyId: company.id,
+      action: "offer.improved",
+      entityType: "offer",
+      entityId: myOffer.id,
+      details: { listing_id: listingId, old_price: Number(myOffer.price_per_unit), new_price: price_per_unit },
+    });
+    if (outbidBuyerId) {
+      void notifyOutbid({
+        buyerCompanyId: outbidBuyerId,
+        listingId,
+        listingRef: listingRef(listingId),
+      });
+    }
 
     res.json(serializeOffer({ ...updated, buyer_company_name: company.name, already_top }));
   },
@@ -667,6 +801,15 @@ router.delete(
       )
       .where(eq(listingOffersTable.id, anyOffer.id))
       .limit(1);
+
+    void logAudit({
+      userId: (req as AuthedCompanyRequest).userId,
+      companyId: company.id,
+      action: "offer.withdrawn",
+      entityType: "offer",
+      entityId: anyOffer.id,
+      details: { listing_id: listingId },
+    });
 
     res.json(serializeOffer(result));
   },
@@ -830,6 +973,41 @@ router.post(
       .where(eq(listingOffersTable.id, offerId))
       .limit(1);
 
+    // Fetch rejected buyers (auto-rejected by this accept) and notify them
+    const rejectedOffers = await db
+      .select({ buyer_company_id: listingOffersTable.buyer_company_id })
+      .from(listingOffersTable)
+      .where(
+        and(
+          eq(listingOffersTable.waste_listing_id, offer.waste_listing_id),
+          ne(listingOffersTable.id, offerId),
+          eq(listingOffersTable.rejection_reason, "offer_accepted"),
+        ),
+      );
+
+    const labelAccept = listingRef(offer.waste_listing_id);
+    void logAudit({
+      userId: (req as AuthedCompanyRequest).userId,
+      companyId: company.id,
+      action: "offer.accepted",
+      entityType: "offer",
+      entityId: offerId,
+      details: { listing_id: offer.waste_listing_id, buyer_company_id: offer.buyer_company_id },
+    });
+    void notifyOfferAccepted({
+      buyerCompanyId: offer.buyer_company_id,
+      listingId: offer.waste_listing_id,
+      listingRef: labelAccept,
+    });
+    for (const rejected of rejectedOffers) {
+      void notifyOfferRejected({
+        buyerCompanyId: rejected.buyer_company_id,
+        listingId: offer.waste_listing_id,
+        listingRef: labelAccept,
+        reason: "Another offer was selected",
+      });
+    }
+
     res.json(serializeOffer(result));
   },
 );
@@ -917,6 +1095,21 @@ router.post(
       )
       .where(eq(listingOffersTable.id, offerId))
       .limit(1);
+
+    void logAudit({
+      userId: (req as AuthedCompanyRequest).userId,
+      companyId: company.id,
+      action: "offer.rejected",
+      entityType: "offer",
+      entityId: offerId,
+      details: { listing_id: offer.waste_listing_id, reason: fullReason },
+    });
+    void notifyOfferRejected({
+      buyerCompanyId: offer.buyer_company_id,
+      listingId: offer.waste_listing_id,
+      listingRef: listingRef(offer.waste_listing_id),
+      reason: fullReason,
+    });
 
     res.json(serializeOffer(result));
   },

@@ -144,6 +144,8 @@ export const ListingVisibility = {
 Immutable once a listing is published.
 fixed: price_per_unit × quantity = agreed commercial amount.
 by_weight: price_per_unit is a rate; final amount settled post-weighing.
+revenue_share: buyer pays a percentage of their resale revenue (direct sale only).
+  revenue_share_pct field required when this model is selected.
 
  */
 export type PricingModel = (typeof PricingModel)[keyof typeof PricingModel];
@@ -151,7 +153,22 @@ export type PricingModel = (typeof PricingModel)[keyof typeof PricingModel];
 export const PricingModel = {
   fixed: "fixed",
   by_weight: "by_weight",
+  revenue_share: "revenue_share",
 } as const;
+
+/**
+ * A capability required by a listing producer. Buyers must have this capability (and optionally a license) to submit an offer.
+
+ */
+export interface ListingRequiredService {
+  id: string;
+  /** Stable internal key matching capabilitiesTable.key. */
+  key: string;
+  name_ar: string;
+  name_en: string;
+  /** If true, the buyer must also have license_status = approved. */
+  requires_license: boolean;
+}
 
 export interface WasteListing {
   id: string;
@@ -168,8 +185,17 @@ export interface WasteListing {
   sale_type?: SaleType;
   /** FK to material_categories.id. Null for legacy listings. */
   material_category_id?: string;
+  /** FK to material_categories.id (sub-level). Null if not specified. */
+  material_subcategory_id?: string;
   /** FK to unit_options.id. Null for listings using legacy unit enum. */
   unit_option_id?: string;
+  /** Revenue sharing percentage (0–100). Only present when pricing_model = revenue_share.
+Represents the percentage of the buyer's resale revenue paid to the producer.
+ */
+  revenue_share_pct?: number;
+  /** Capabilities a buyer must have to submit an offer. Empty array means no restrictions.
+   */
+  required_services?: ListingRequiredService[];
   visibility?: ListingVisibility;
   /** The calling buyer's current offer price_per_unit on this listing. Only included in GET /listings (marketplace) responses. Null/absent if the buyer has no offer.
    */
@@ -208,8 +234,22 @@ Defaults to "fixed" if not supplied.
   sale_type?: SaleType;
   /** Optional FK to material_categories.id. */
   material_category_id?: string;
+  /** Optional FK to material_categories.id (sub-level). */
+  material_subcategory_id?: string;
   /** Optional FK to unit_options.id. Falls back to unit enum if absent. */
   unit_option_id?: string;
+  /**
+   * Required when pricing_model = revenue_share.
+Percentage of buyer's resale revenue paid to the producer. Range: 0–100.
+
+   * @minimum 0
+   * @maximum 100
+   */
+  revenue_share_pct?: number;
+  /** UUIDs of capabilities that buyers must have to submit an offer.
+Leave empty (or omit) for no restrictions.
+ */
+  required_service_ids?: string[];
 }
 
 export type OfferStatus = (typeof OfferStatus)[keyof typeof OfferStatus];
@@ -372,6 +412,8 @@ export interface Capability {
   description_en?: string;
   is_active: boolean;
   sort_order: number;
+  /** If true, companies using this capability must have license_status = approved. */
+  requires_license?: boolean;
 }
 
 /**
@@ -406,6 +448,7 @@ export type DealSettlementType =
 export const DealSettlementType = {
   fixed: "fixed",
   by_weight: "by_weight",
+  revenue_share: "revenue_share",
 } as const;
 
 export interface DealCounterparty {
@@ -553,6 +596,28 @@ export interface AdminDeleteResponse {
   id: string;
 }
 
+/**
+ * In-app notification for a company user. Created automatically by the platform on key events.
+
+ */
+export interface Notification {
+  id: string;
+  company_id: string;
+  /** Stable internal type key (e.g. offer_received, outbid, offer_accepted). */
+  type: string;
+  title_ar: string;
+  title_en: string;
+  body_ar?: string;
+  body_en?: string;
+  is_read: boolean;
+  /** Entity type the notification links to (e.g. listing, deal) */
+  related_entity_type?: string;
+  /** UUID of the related entity */
+  related_entity_id?: string;
+  created_at: string;
+  read_at?: string;
+}
+
 export type ListMarketplaceListingsParams = {
   material?: WasteMaterial;
   city?: string;
@@ -564,4 +629,15 @@ export type ListMyListingsParams = {
 
 export type ListMyOffersParams = {
   status?: OfferStatus;
+};
+
+export type GetNotificationsParams = {
+  /**
+   * If true, only returns unread notifications.
+   */
+  unread?: boolean;
+};
+
+export type MarkAllNotificationsRead200 = {
+  ok?: boolean;
 };

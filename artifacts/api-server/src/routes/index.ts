@@ -6,6 +6,7 @@ import listingsRouter from "./listings";
 import offersRouter from "./offers";
 import dealsRouter from "./deals";
 import lookupRouter from "./lookup";
+import notificationsRouter from "./notifications";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use(listingsRouter);
 router.use(offersRouter);
 router.use(dealsRouter);
 router.use(lookupRouter);
+router.use(notificationsRouter);
 
 export default router;

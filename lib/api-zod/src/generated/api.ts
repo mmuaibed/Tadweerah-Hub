@@ -193,10 +193,10 @@ export const ListMarketplaceListingsResponseItem = zod.object({
   price_hint: zod.number().optional(),
   status: zod.enum(["open", "closed"]),
   pricing_model: zod
-    .enum(["fixed", "by_weight"])
+    .enum(["fixed", "by_weight", "revenue_share"])
     .optional()
     .describe(
-      "Governs how price_per_unit is interpreted and what settlement mechanics apply.\nImmutable once a listing is published.\nfixed: price_per_unit × quantity = agreed commercial amount.\nby_weight: price_per_unit is a rate; final amount settled post-weighing.\n",
+      "Governs how price_per_unit is interpreted and what settlement mechanics apply.\nImmutable once a listing is published.\nfixed: price_per_unit × quantity = agreed commercial amount.\nby_weight: price_per_unit is a rate; final amount settled post-weighing.\nrevenue_share: buyer pays a percentage of their resale revenue (direct sale only).\n  revenue_share_pct field required when this model is selected.\n",
     ),
   sale_type: zod
     .enum(["auction", "direct"])
@@ -208,11 +208,47 @@ export const ListMarketplaceListingsResponseItem = zod.object({
     .string()
     .optional()
     .describe("FK to material_categories.id. Null for legacy listings."),
+  material_subcategory_id: zod
+    .string()
+    .optional()
+    .describe(
+      "FK to material_categories.id (sub-level). Null if not specified.",
+    ),
   unit_option_id: zod
     .string()
     .optional()
     .describe(
       "FK to unit_options.id. Null for listings using legacy unit enum.",
+    ),
+  revenue_share_pct: zod
+    .number()
+    .optional()
+    .describe(
+      "Revenue sharing percentage (0–100). Only present when pricing_model = revenue_share.\nRepresents the percentage of the buyer's resale revenue paid to the producer.\n",
+    ),
+  required_services: zod
+    .array(
+      zod
+        .object({
+          id: zod.string(),
+          key: zod
+            .string()
+            .describe("Stable internal key matching capabilitiesTable.key."),
+          name_ar: zod.string(),
+          name_en: zod.string(),
+          requires_license: zod
+            .boolean()
+            .describe(
+              "If true, the buyer must also have license_status = approved.",
+            ),
+        })
+        .describe(
+          "A capability required by a listing producer. Buyers must have this capability (and optionally a license) to submit an offer.\n",
+        ),
+    )
+    .optional()
+    .describe(
+      "Capabilities a buyer must have to submit an offer. Empty array means no restrictions.\n",
     ),
   visibility: zod
     .enum(["public", "private"])
@@ -261,6 +297,9 @@ export const createWasteListingBodyDescriptionMax = 500;
 
 export const createWasteListingBodyPriceHintMin = 0;
 
+export const createWasteListingBodyRevenueSharePctMin = 0;
+export const createWasteListingBodyRevenueSharePctMax = 100;
+
 export const CreateWasteListingBody = zod.object({
   material: zod.enum([
     "paper",
@@ -283,7 +322,7 @@ export const CreateWasteListingBody = zod.object({
     .optional(),
   price_hint: zod.number().min(createWasteListingBodyPriceHintMin).optional(),
   pricing_model: zod
-    .enum(["fixed", "by_weight"])
+    .enum(["fixed", "by_weight", "revenue_share"])
     .optional()
     .describe(
       'Governs settlement mechanics. Immutable once published.\nDefaults to \"fixed\" if not supplied.\n',
@@ -298,11 +337,29 @@ export const CreateWasteListingBody = zod.object({
     .string()
     .optional()
     .describe("Optional FK to material_categories.id."),
+  material_subcategory_id: zod
+    .string()
+    .optional()
+    .describe("Optional FK to material_categories.id (sub-level)."),
   unit_option_id: zod
     .string()
     .optional()
     .describe(
       "Optional FK to unit_options.id. Falls back to unit enum if absent.",
+    ),
+  revenue_share_pct: zod
+    .number()
+    .min(createWasteListingBodyRevenueSharePctMin)
+    .max(createWasteListingBodyRevenueSharePctMax)
+    .optional()
+    .describe(
+      "Required when pricing_model = revenue_share.\nPercentage of buyer's resale revenue paid to the producer. Range: 0–100.\n",
+    ),
+  required_service_ids: zod
+    .array(zod.string())
+    .optional()
+    .describe(
+      "UUIDs of capabilities that buyers must have to submit an offer.\nLeave empty (or omit) for no restrictions.\n",
     ),
 });
 
@@ -333,10 +390,10 @@ export const ListMyListingsResponseItem = zod.object({
   price_hint: zod.number().optional(),
   status: zod.enum(["open", "closed"]),
   pricing_model: zod
-    .enum(["fixed", "by_weight"])
+    .enum(["fixed", "by_weight", "revenue_share"])
     .optional()
     .describe(
-      "Governs how price_per_unit is interpreted and what settlement mechanics apply.\nImmutable once a listing is published.\nfixed: price_per_unit × quantity = agreed commercial amount.\nby_weight: price_per_unit is a rate; final amount settled post-weighing.\n",
+      "Governs how price_per_unit is interpreted and what settlement mechanics apply.\nImmutable once a listing is published.\nfixed: price_per_unit × quantity = agreed commercial amount.\nby_weight: price_per_unit is a rate; final amount settled post-weighing.\nrevenue_share: buyer pays a percentage of their resale revenue (direct sale only).\n  revenue_share_pct field required when this model is selected.\n",
     ),
   sale_type: zod
     .enum(["auction", "direct"])
@@ -348,11 +405,47 @@ export const ListMyListingsResponseItem = zod.object({
     .string()
     .optional()
     .describe("FK to material_categories.id. Null for legacy listings."),
+  material_subcategory_id: zod
+    .string()
+    .optional()
+    .describe(
+      "FK to material_categories.id (sub-level). Null if not specified.",
+    ),
   unit_option_id: zod
     .string()
     .optional()
     .describe(
       "FK to unit_options.id. Null for listings using legacy unit enum.",
+    ),
+  revenue_share_pct: zod
+    .number()
+    .optional()
+    .describe(
+      "Revenue sharing percentage (0–100). Only present when pricing_model = revenue_share.\nRepresents the percentage of the buyer's resale revenue paid to the producer.\n",
+    ),
+  required_services: zod
+    .array(
+      zod
+        .object({
+          id: zod.string(),
+          key: zod
+            .string()
+            .describe("Stable internal key matching capabilitiesTable.key."),
+          name_ar: zod.string(),
+          name_en: zod.string(),
+          requires_license: zod
+            .boolean()
+            .describe(
+              "If true, the buyer must also have license_status = approved.",
+            ),
+        })
+        .describe(
+          "A capability required by a listing producer. Buyers must have this capability (and optionally a license) to submit an offer.\n",
+        ),
+    )
+    .optional()
+    .describe(
+      "Capabilities a buyer must have to submit an offer. Empty array means no restrictions.\n",
     ),
   visibility: zod
     .enum(["public", "private"])
@@ -414,10 +507,10 @@ export const GetWasteListingResponse = zod.object({
   price_hint: zod.number().optional(),
   status: zod.enum(["open", "closed"]),
   pricing_model: zod
-    .enum(["fixed", "by_weight"])
+    .enum(["fixed", "by_weight", "revenue_share"])
     .optional()
     .describe(
-      "Governs how price_per_unit is interpreted and what settlement mechanics apply.\nImmutable once a listing is published.\nfixed: price_per_unit × quantity = agreed commercial amount.\nby_weight: price_per_unit is a rate; final amount settled post-weighing.\n",
+      "Governs how price_per_unit is interpreted and what settlement mechanics apply.\nImmutable once a listing is published.\nfixed: price_per_unit × quantity = agreed commercial amount.\nby_weight: price_per_unit is a rate; final amount settled post-weighing.\nrevenue_share: buyer pays a percentage of their resale revenue (direct sale only).\n  revenue_share_pct field required when this model is selected.\n",
     ),
   sale_type: zod
     .enum(["auction", "direct"])
@@ -429,11 +522,47 @@ export const GetWasteListingResponse = zod.object({
     .string()
     .optional()
     .describe("FK to material_categories.id. Null for legacy listings."),
+  material_subcategory_id: zod
+    .string()
+    .optional()
+    .describe(
+      "FK to material_categories.id (sub-level). Null if not specified.",
+    ),
   unit_option_id: zod
     .string()
     .optional()
     .describe(
       "FK to unit_options.id. Null for listings using legacy unit enum.",
+    ),
+  revenue_share_pct: zod
+    .number()
+    .optional()
+    .describe(
+      "Revenue sharing percentage (0–100). Only present when pricing_model = revenue_share.\nRepresents the percentage of the buyer's resale revenue paid to the producer.\n",
+    ),
+  required_services: zod
+    .array(
+      zod
+        .object({
+          id: zod.string(),
+          key: zod
+            .string()
+            .describe("Stable internal key matching capabilitiesTable.key."),
+          name_ar: zod.string(),
+          name_en: zod.string(),
+          requires_license: zod
+            .boolean()
+            .describe(
+              "If true, the buyer must also have license_status = approved.",
+            ),
+        })
+        .describe(
+          "A capability required by a listing producer. Buyers must have this capability (and optionally a license) to submit an offer.\n",
+        ),
+    )
+    .optional()
+    .describe(
+      "Capabilities a buyer must have to submit an offer. Empty array means no restrictions.\n",
     ),
   visibility: zod
     .enum(["public", "private"])
@@ -494,10 +623,10 @@ export const CloseWasteListingResponse = zod.object({
   price_hint: zod.number().optional(),
   status: zod.enum(["open", "closed"]),
   pricing_model: zod
-    .enum(["fixed", "by_weight"])
+    .enum(["fixed", "by_weight", "revenue_share"])
     .optional()
     .describe(
-      "Governs how price_per_unit is interpreted and what settlement mechanics apply.\nImmutable once a listing is published.\nfixed: price_per_unit × quantity = agreed commercial amount.\nby_weight: price_per_unit is a rate; final amount settled post-weighing.\n",
+      "Governs how price_per_unit is interpreted and what settlement mechanics apply.\nImmutable once a listing is published.\nfixed: price_per_unit × quantity = agreed commercial amount.\nby_weight: price_per_unit is a rate; final amount settled post-weighing.\nrevenue_share: buyer pays a percentage of their resale revenue (direct sale only).\n  revenue_share_pct field required when this model is selected.\n",
     ),
   sale_type: zod
     .enum(["auction", "direct"])
@@ -509,11 +638,47 @@ export const CloseWasteListingResponse = zod.object({
     .string()
     .optional()
     .describe("FK to material_categories.id. Null for legacy listings."),
+  material_subcategory_id: zod
+    .string()
+    .optional()
+    .describe(
+      "FK to material_categories.id (sub-level). Null if not specified.",
+    ),
   unit_option_id: zod
     .string()
     .optional()
     .describe(
       "FK to unit_options.id. Null for listings using legacy unit enum.",
+    ),
+  revenue_share_pct: zod
+    .number()
+    .optional()
+    .describe(
+      "Revenue sharing percentage (0–100). Only present when pricing_model = revenue_share.\nRepresents the percentage of the buyer's resale revenue paid to the producer.\n",
+    ),
+  required_services: zod
+    .array(
+      zod
+        .object({
+          id: zod.string(),
+          key: zod
+            .string()
+            .describe("Stable internal key matching capabilitiesTable.key."),
+          name_ar: zod.string(),
+          name_en: zod.string(),
+          requires_license: zod
+            .boolean()
+            .describe(
+              "If true, the buyer must also have license_status = approved.",
+            ),
+        })
+        .describe(
+          "A capability required by a listing producer. Buyers must have this capability (and optionally a license) to submit an offer.\n",
+        ),
+    )
+    .optional()
+    .describe(
+      "Capabilities a buyer must have to submit an offer. Empty array means no restrictions.\n",
     ),
   visibility: zod
     .enum(["public", "private"])
@@ -997,6 +1162,12 @@ export const GetCapabilitiesResponseItem = zod
     description_en: zod.string().optional(),
     is_active: zod.boolean(),
     sort_order: zod.number(),
+    requires_license: zod
+      .boolean()
+      .optional()
+      .describe(
+        "If true, companies using this capability must have license_status = approved.",
+      ),
   })
   .describe(
     "Admin-managed capability descriptor. Capabilities describe what a company CAN DO (e.g. recycle metal, transport waste). Used for eligibility gating and matching. key is the stable internal identifier — never changes.\n",
@@ -1017,7 +1188,7 @@ export const GetDealResponse = zod
     listing_id: zod.string(),
     producer_company_id: zod.string(),
     buyer_company_id: zod.string(),
-    settlement_type: zod.enum(["fixed", "by_weight"]),
+    settlement_type: zod.enum(["fixed", "by_weight", "revenue_share"]),
     price_per_unit: zod.number(),
     estimated_amount: zod
       .number()
@@ -1108,7 +1279,7 @@ export const ConfirmPaymentResponse = zod
     listing_id: zod.string(),
     producer_company_id: zod.string(),
     buyer_company_id: zod.string(),
-    settlement_type: zod.enum(["fixed", "by_weight"]),
+    settlement_type: zod.enum(["fixed", "by_weight", "revenue_share"]),
     price_per_unit: zod.number(),
     estimated_amount: zod
       .number()
@@ -1177,7 +1348,7 @@ export const ConfirmDispatchResponse = zod
     listing_id: zod.string(),
     producer_company_id: zod.string(),
     buyer_company_id: zod.string(),
-    settlement_type: zod.enum(["fixed", "by_weight"]),
+    settlement_type: zod.enum(["fixed", "by_weight", "revenue_share"]),
     price_per_unit: zod.number(),
     estimated_amount: zod
       .number()
@@ -1246,7 +1417,7 @@ export const ConfirmReceiptResponse = zod
     listing_id: zod.string(),
     producer_company_id: zod.string(),
     buyer_company_id: zod.string(),
-    settlement_type: zod.enum(["fixed", "by_weight"]),
+    settlement_type: zod.enum(["fixed", "by_weight", "revenue_share"]),
     price_per_unit: zod.number(),
     estimated_amount: zod
       .number()
@@ -1298,6 +1469,89 @@ export const ConfirmReceiptResponse = zod
   })
   .describe(
     "Represents a confirmed agreement between producer and buyer following offer acceptance. Progresses through: active → payment_confirmed → dispatched → completed.\n",
+  );
+
+/**
+ * @summary Get company notifications (newest first, max 100)
+ */
+export const GetNotificationsQueryParams = zod.object({
+  unread: zod.coerce
+    .boolean()
+    .optional()
+    .describe("If true, only returns unread notifications."),
+});
+
+export const GetNotificationsResponseItem = zod
+  .object({
+    id: zod.string(),
+    company_id: zod.string(),
+    type: zod
+      .string()
+      .describe(
+        "Stable internal type key (e.g. offer_received, outbid, offer_accepted).",
+      ),
+    title_ar: zod.string(),
+    title_en: zod.string(),
+    body_ar: zod.string().optional(),
+    body_en: zod.string().optional(),
+    is_read: zod.boolean(),
+    related_entity_type: zod
+      .string()
+      .optional()
+      .describe("Entity type the notification links to (e.g. listing, deal)"),
+    related_entity_id: zod
+      .string()
+      .optional()
+      .describe("UUID of the related entity"),
+    created_at: zod.coerce.date(),
+    read_at: zod.coerce.date().optional(),
+  })
+  .describe(
+    "In-app notification for a company user. Created automatically by the platform on key events.\n",
+  );
+export const GetNotificationsResponse = zod.array(GetNotificationsResponseItem);
+
+/**
+ * @summary Mark all company notifications as read
+ */
+export const MarkAllNotificationsReadResponse = zod.object({
+  ok: zod.boolean().optional(),
+});
+
+/**
+ * @summary Mark a single notification as read
+ */
+export const MarkNotificationReadParams = zod.object({
+  notification_id: zod.coerce.string(),
+});
+
+export const MarkNotificationReadResponse = zod
+  .object({
+    id: zod.string(),
+    company_id: zod.string(),
+    type: zod
+      .string()
+      .describe(
+        "Stable internal type key (e.g. offer_received, outbid, offer_accepted).",
+      ),
+    title_ar: zod.string(),
+    title_en: zod.string(),
+    body_ar: zod.string().optional(),
+    body_en: zod.string().optional(),
+    is_read: zod.boolean(),
+    related_entity_type: zod
+      .string()
+      .optional()
+      .describe("Entity type the notification links to (e.g. listing, deal)"),
+    related_entity_id: zod
+      .string()
+      .optional()
+      .describe("UUID of the related entity"),
+    created_at: zod.coerce.date(),
+    read_at: zod.coerce.date().optional(),
+  })
+  .describe(
+    "In-app notification for a company user. Created automatically by the platform on key events.\n",
   );
 
 /**

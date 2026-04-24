@@ -9,6 +9,7 @@ import {
 import { CreateCompanyBody } from "@workspace/api-zod";
 import { requireAuth, type AuthedRequest } from "../middlewares/requireAuth";
 import { requireCompany, type AuthedCompanyRequest } from "../middlewares/requireCompany";
+import { logAudit } from "../lib/audit";
 
 const router: IRouter = Router();
 
@@ -168,6 +169,15 @@ router.put(
           eq(capabilitiesTable.is_active, true),
         ),
       );
+    void logAudit({
+      userId: (req as AuthedCompanyRequest).userId,
+      companyId: company.id,
+      action: "company.capabilities_updated",
+      entityType: "company",
+      entityId: company.id,
+      details: { capability_ids: capabilityIds },
+    });
+
     res.json(rows);
   },
 );

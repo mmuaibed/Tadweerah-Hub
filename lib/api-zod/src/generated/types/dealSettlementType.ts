@@ -12,4 +12,5 @@ export type DealSettlementType =
 export const DealSettlementType = {
   fixed: "fixed",
   by_weight: "by_weight",
+  revenue_share: "revenue_share",
 } as const;

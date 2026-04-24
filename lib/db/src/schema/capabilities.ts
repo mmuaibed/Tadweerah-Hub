@@ -19,6 +19,11 @@ export const capabilitiesTable = pgTable("capabilities", {
   description_en: text("description_en"),
   is_active: boolean("is_active").notNull().default(true),
   sort_order: integer("sort_order").notNull().default(0),
+  /**
+   * If true, a company must have license_status = 'approved' to use this capability
+   * as a required service on listings, or to satisfy listing requirements.
+   */
+  requires_license: boolean("requires_license").notNull().default(false),
 });
 
 export type Capability = typeof capabilitiesTable.$inferSelect;

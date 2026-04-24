@@ -33,6 +33,20 @@ Defaults to "fixed" if not supplied.
   sale_type?: SaleType;
   /** Optional FK to material_categories.id. */
   material_category_id?: string;
+  /** Optional FK to material_categories.id (sub-level). */
+  material_subcategory_id?: string;
   /** Optional FK to unit_options.id. Falls back to unit enum if absent. */
   unit_option_id?: string;
+  /**
+   * Required when pricing_model = revenue_share.
+Percentage of buyer's resale revenue paid to the producer. Range: 0–100.
+
+   * @minimum 0
+   * @maximum 100
+   */
+  revenue_share_pct?: number;
+  /** UUIDs of capabilities that buyers must have to submit an offer.
+Leave empty (or omit) for no restrictions.
+ */
+  required_service_ids?: string[];
 }

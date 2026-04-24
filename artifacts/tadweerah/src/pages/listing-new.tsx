@@ -5,11 +5,13 @@ import {
   useCreateWasteListing,
   useGetMaterialCategories,
   useGetUnitOptions,
+  useGetCapabilities,
   getListMyListingsQueryKey,
   type MaterialCategory,
   type UnitOption,
+  type Capability,
 } from "@workspace/api-client-react";
-import { Loader2, ImagePlus, X, Scale, Tag, Gavel, ShoppingBag } from "lucide-react";
+import { Loader2, ImagePlus, X, Scale, Tag, Gavel, ShoppingBag, Percent, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";

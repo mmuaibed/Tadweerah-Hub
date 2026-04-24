@@ -38,7 +38,7 @@ export const wasteListingStatusEnum = pgEnum("waste_listing_status", [
  * fixed    — price_per_unit × quantity = agreed commercial amount (current MVP)
  * by_weight — price_per_unit is a rate; final amount settled post-weighing (future)
  */
-export const pricingModelEnum = pgEnum("pricing_model", ["fixed", "by_weight"]);
+export const pricingModelEnum = pgEnum("pricing_model", ["fixed", "by_weight", "revenue_share"]);
 
 /**
  * Controls whether a listing appears in the public marketplace feed.
@@ -136,6 +136,14 @@ export const wasteListingsTable = pgTable("waste_listings", {
     () => materialCategoriesTable.id,
     { onDelete: "set null" },
   ),
+
+  /**
+   * Revenue-sharing percentage applied when pricing_model = 'revenue_share'.
+   * Represents the percentage of the buyer's revenue paid to the producer.
+   * Range: 0.00–100.00. Null for other pricing models.
+   * Immutable once published — producers must close + re-list to change.
+   */
+  revenue_share_pct: numeric("revenue_share_pct", { precision: 5, scale: 2 }),
 });
 
 export type WasteListing = typeof wasteListingsTable.$inferSelect;

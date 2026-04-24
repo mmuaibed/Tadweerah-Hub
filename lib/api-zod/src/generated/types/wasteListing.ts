@@ -5,6 +5,7 @@
  * Tadweerah API
  * OpenAPI spec version: 0.1.0
  */
+import type { ListingRequiredService } from "./listingRequiredService";
 import type { ListingVisibility } from "./listingVisibility";
 import type { PricingModel } from "./pricingModel";
 import type { SaleType } from "./saleType";
@@ -27,8 +28,17 @@ export interface WasteListing {
   sale_type?: SaleType;
   /** FK to material_categories.id. Null for legacy listings. */
   material_category_id?: string;
+  /** FK to material_categories.id (sub-level). Null if not specified. */
+  material_subcategory_id?: string;
   /** FK to unit_options.id. Null for listings using legacy unit enum. */
   unit_option_id?: string;
+  /** Revenue sharing percentage (0–100). Only present when pricing_model = revenue_share.
+Represents the percentage of the buyer's resale revenue paid to the producer.
+ */
+  revenue_share_pct?: number;
+  /** Capabilities a buyer must have to submit an offer. Empty array means no restrictions.
+   */
+  required_services?: ListingRequiredService[];
   visibility?: ListingVisibility;
   /** The calling buyer's current offer price_per_unit on this listing. Only included in GET /listings (marketplace) responses. Null/absent if the buyer has no offer.
    */

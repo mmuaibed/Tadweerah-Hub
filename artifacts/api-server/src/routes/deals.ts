@@ -7,6 +7,8 @@ import {
   type AuthedCompanyRequest,
 } from "../middlewares/requireCompany";
 import { HttpError, assertUuid } from "../middlewares/errorHandler";
+import { logAudit } from "../lib/audit";
+import { notifyDealStageChange } from "../lib/notify";
 
 const router: IRouter = Router();
 
@@ -174,6 +176,24 @@ router.post(
         .where(eq(companiesTable.id, counterpartyId))
         .limit(1);
 
+      void logAudit({
+        userId: (req as AuthedCompanyRequest).userId,
+        companyId: company.id,
+        action: "deal.payment_confirmed",
+        entityType: "deal",
+        entityId: dealId,
+        details: { settlement_type: "fixed" },
+      });
+      void notifyDealStageChange({
+        companyId: updated.buyer_company_id,
+        dealId,
+        type: "deal_payment_confirmed",
+        title_ar: "تم تأكيد الدفع",
+        title_en: "Payment Confirmed",
+        body_ar: "قام المنتج بتأكيد استلام الدفع، يرجى انتظار شحن البضاعة",
+        body_en: "The producer confirmed payment receipt. Awaiting dispatch.",
+      });
+
       return res.json(serializeDeal(updated, counterparty!));
     }
 
@@ -217,6 +237,24 @@ router.post(
       .from(companiesTable)
       .where(eq(companiesTable.id, updated.buyer_company_id))
       .limit(1);
+
+    void logAudit({
+      userId: (req as AuthedCompanyRequest).userId,
+      companyId: company.id,
+      action: "deal.payment_confirmed",
+      entityType: "deal",
+      entityId: dealId,
+      details: { settlement_type: "by_weight", actual_quantity: qty, final_amount: finalAmount },
+    });
+    void notifyDealStageChange({
+      companyId: updated.buyer_company_id,
+      dealId,
+      type: "deal_payment_confirmed",
+      title_ar: "تم تأكيد الدفع",
+      title_en: "Payment Confirmed",
+      body_ar: "قام المنتج بتأكيد استلام الدفع، يرجى انتظار شحن البضاعة",
+      body_en: "The producer confirmed payment receipt. Awaiting dispatch.",
+    });
 
     return res.json(serializeDeal(updated, counterparty!));
   },
@@ -272,6 +310,23 @@ router.post(
       .where(eq(companiesTable.id, updated.buyer_company_id))
       .limit(1);
 
+    void logAudit({
+      userId: (req as AuthedCompanyRequest).userId,
+      companyId: company.id,
+      action: "deal.dispatched",
+      entityType: "deal",
+      entityId: dealId,
+    });
+    void notifyDealStageChange({
+      companyId: updated.buyer_company_id,
+      dealId,
+      type: "deal_dispatched",
+      title_ar: "تم شحن البضاعة",
+      title_en: "Goods Dispatched",
+      body_ar: "قام المنتج بتأكيد شحن البضاعة، يرجى تأكيد الاستلام عند وصولها",
+      body_en: "The producer confirmed dispatch. Please confirm receipt when goods arrive.",
+    });
+
     return res.json(serializeDeal(updated, counterparty!));
   },
 );
@@ -325,6 +380,23 @@ router.post(
       .from(companiesTable)
       .where(eq(companiesTable.id, updated.producer_company_id))
       .limit(1);
+
+    void logAudit({
+      userId: (req as AuthedCompanyRequest).userId,
+      companyId: company.id,
+      action: "deal.receipt_confirmed",
+      entityType: "deal",
+      entityId: dealId,
+    });
+    void notifyDealStageChange({
+      companyId: updated.producer_company_id,
+      dealId,
+      type: "deal_completed",
+      title_ar: "اكتملت الصفقة",
+      title_en: "Deal Completed",
+      body_ar: "أكّد المشتري استلام البضاعة. تم إتمام الصفقة بنجاح",
+      body_en: "The buyer confirmed receipt. The deal is now complete.",
+    });
 
     return res.json(serializeDeal(updated, counterparty!));
   },

@@ -670,6 +670,72 @@ paths:
         "404":
           description: Deal not found
 
+  # ── Notifications ────────────────────────────────────────────────────────────
+
+  /notifications:
+    get:
+      operationId: getNotifications
+      tags: [notifications]
+      summary: Get company notifications (newest first, max 100)
+      parameters:
+        - in: query
+          name: unread
+          schema:
+            type: boolean
+          description: If true, only returns unread notifications.
+      responses:
+        "200":
+          description: List of notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+        "401":
+          description: Unauthorized
+
+  /notifications/read-all:
+    post:
+      operationId: markAllNotificationsRead
+      tags: [notifications]
+      summary: Mark all company notifications as read
+      responses:
+        "200":
+          description: All notifications marked read
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+        "401":
+          description: Unauthorized
+
+  /notifications/{notification_id}/read:
+    patch:
+      operationId: markNotificationRead
+      tags: [notifications]
+      summary: Mark a single notification as read
+      parameters:
+        - in: path
+          name: notification_id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Notification marked as read
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notification"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Notification not found
+
   # ── Admin lookup write endpoints ─────────────────────────────────────────────
   # Protected by X-Admin-Key header. Key must match ADMIN_API_KEY env var.
 
@@ -1025,12 +1091,14 @@ components:
 
     PricingModel:
       type: string
-      enum: [fixed, by_weight]
+      enum: [fixed, by_weight, revenue_share]
       description: |
         Governs how price_per_unit is interpreted and what settlement mechanics apply.
         Immutable once a listing is published.
         fixed: price_per_unit × quantity = agreed commercial amount.
         by_weight: price_per_unit is a rate; final amount settled post-weighing.
+        revenue_share: buyer pays a percentage of their resale revenue (direct sale only).
+          revenue_share_pct field required when this model is selected.
 
     WasteListing:
       type: object
@@ -1062,9 +1130,23 @@ components:
         material_category_id:
           type: string
           description: FK to material_categories.id. Null for legacy listings.
+        material_subcategory_id:
+          type: string
+          description: FK to material_categories.id (sub-level). Null if not specified.
         unit_option_id:
           type: string
           description: FK to unit_options.id. Null for listings using legacy unit enum.
+        revenue_share_pct:
+          type: number
+          description: |
+            Revenue sharing percentage (0–100). Only present when pricing_model = revenue_share.
+            Represents the percentage of the buyer's resale revenue paid to the producer.
+        required_services:
+          type: array
+          description: >
+            Capabilities a buyer must have to submit an offer. Empty array means no restrictions.
+          items:
+            $ref: "#/components/schemas/ListingRequiredService"
         visibility:
           $ref: "#/components/schemas/ListingVisibility"
         my_offer_price:
@@ -1126,9 +1208,26 @@ components:
         material_category_id:
           type: string
           description: Optional FK to material_categories.id.
+        material_subcategory_id:
+          type: string
+          description: Optional FK to material_categories.id (sub-level).
         unit_option_id:
           type: string
           description: Optional FK to unit_options.id. Falls back to unit enum if absent.
+        revenue_share_pct:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: |
+            Required when pricing_model = revenue_share.
+            Percentage of buyer's resale revenue paid to the producer. Range: 0–100.
+        required_service_ids:
+          type: array
+          items:
+            type: string
+          description: |
+            UUIDs of capabilities that buyers must have to submit an offer.
+            Leave empty (or omit) for no restrictions.
       required: [material, quantity, unit, city]
 
     OfferStatus:
@@ -1349,6 +1448,26 @@ components:
           type: integer
       required: [id, key, name_ar, name_en, is_active, sort_order]
 
+    ListingRequiredService:
+      type: object
+      description: >
+        A capability required by a listing producer. Buyers must have this capability
+        (and optionally a license) to submit an offer.
+      properties:
+        id:
+          type: string
+        key:
+          type: string
+          description: Stable internal key matching capabilitiesTable.key.
+        name_ar:
+          type: string
+        name_en:
+          type: string
+        requires_license:
+          type: boolean
+          description: If true, the buyer must also have license_status = approved.
+      required: [id, key, name_ar, name_en, requires_license]
+
     Capability:
       type: object
       description: >
@@ -1373,6 +1492,9 @@ components:
           type: boolean
         sort_order:
           type: integer
+        requires_license:
+          type: boolean
+          description: If true, companies using this capability must have license_status = approved.
       required: [id, key, name_ar, name_en, is_active, sort_order]
 
     CompanyCapabilityRow:
@@ -1410,7 +1532,7 @@ components:
 
     DealSettlementType:
       type: string
-      enum: [fixed, by_weight]
+      enum: [fixed, by_weight, revenue_share]
 
     DealCounterparty:
       type: object
@@ -1586,3 +1708,42 @@ components:
         id:
           type: string
       required: [success, id]
+
+    # ── Notifications ────────────────────────────────────────────────────────
+
+    Notification:
+      type: object
+      description: >
+        In-app notification for a company user.
+        Created automatically by the platform on key events.
+      properties:
+        id:
+          type: string
+        company_id:
+          type: string
+        type:
+          type: string
+          description: Stable internal type key (e.g. offer_received, outbid, offer_accepted).
+        title_ar:
+          type: string
+        title_en:
+          type: string
+        body_ar:
+          type: string
+        body_en:
+          type: string
+        is_read:
+          type: boolean
+        related_entity_type:
+          type: string
+          description: "Entity type the notification links to (e.g. listing, deal)"
+        related_entity_id:
+          type: string
+          description: UUID of the related entity
+        created_at:
+          type: string
+          format: date-time
+        read_at:
+          type: string
+          format: date-time
+      required: [id, company_id, type, title_ar, title_en, is_read, created_at]

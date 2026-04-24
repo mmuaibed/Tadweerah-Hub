@@ -8,6 +8,8 @@ import {
   companiesTable,
   wasteListingsTable,
   listingOffersTable,
+  listingRequiredServicesTable,
+  capabilitiesTable,
   dealsTable,
   type WasteListing,
 } from "@workspace/db";
@@ -22,6 +24,7 @@ import {
   assertEnum,
   assertUuid,
 } from "../middlewares/errorHandler";
+import { logAudit } from "../lib/audit";
 
 // Multer storage — saves to <project-root>/public/uploads/
 const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
@@ -66,7 +69,15 @@ type Row = WasteListing & {
   deal_status?: string | null;
 };
 
-function serialize(row: Row) {
+type RequiredServiceShape = {
+  id: string;
+  key: string;
+  name_ar: string;
+  name_en: string;
+  requires_license: boolean;
+};
+
+function serialize(row: Row, requiredServices?: RequiredServiceShape[]) {
   return {
     id: row.id,
     company_id: row.company_id,
@@ -81,7 +92,11 @@ function serialize(row: Row) {
     pricing_model: row.pricing_model,
     sale_type: (row as Row & { sale_type?: string }).sale_type ?? "auction",
     material_category_id: (row as Row & { material_category_id?: string | null }).material_category_id ?? null,
+    material_subcategory_id: (row as Row & { material_subcategory_id?: string | null }).material_subcategory_id ?? null,
     unit_option_id: (row as Row & { unit_option_id?: string | null }).unit_option_id ?? null,
+    revenue_share_pct: (row as Row & { revenue_share_pct?: string | null }).revenue_share_pct != null
+      ? Number((row as Row & { revenue_share_pct?: string | null }).revenue_share_pct)
+      : undefined,
     visibility: row.visibility,
     image_url: row.image_url ?? undefined,
     created_at: row.created_at.toISOString(),
@@ -90,7 +105,48 @@ function serialize(row: Row) {
     highest_offer_total:
       row.highest_offer_total != null ? Number(row.highest_offer_total) : undefined,
     deal_status: row.deal_status ?? undefined,
+    required_services: requiredServices ?? [],
   };
+}
+
+/**
+ * Batch-fetch required services for a set of listing IDs.
+ * Returns a map: listingId → RequiredServiceShape[]
+ */
+async function fetchRequiredServicesMap(
+  listingIds: string[],
+): Promise<Map<string, RequiredServiceShape[]>> {
+  const map = new Map<string, RequiredServiceShape[]>();
+  if (listingIds.length === 0) return map;
+
+  const rows = await db
+    .select({
+      listing_id: listingRequiredServicesTable.listing_id,
+      id: capabilitiesTable.id,
+      key: capabilitiesTable.key,
+      name_ar: capabilitiesTable.name_ar,
+      name_en: capabilitiesTable.name_en,
+      requires_license: capabilitiesTable.requires_license,
+    })
+    .from(listingRequiredServicesTable)
+    .innerJoin(
+      capabilitiesTable,
+      eq(capabilitiesTable.id, listingRequiredServicesTable.capability_id),
+    )
+    .where(inArray(listingRequiredServicesTable.listing_id, listingIds));
+
+  for (const row of rows) {
+    const existing = map.get(row.listing_id) ?? [];
+    existing.push({
+      id: row.id,
+      key: row.key,
+      name_ar: row.name_ar,
+      name_en: row.name_en,
+      requires_license: row.requires_license,
+    });
+    map.set(row.listing_id, existing);
+  }
+  return map;
 }
 
 const baseSelect = {
@@ -108,6 +164,7 @@ const baseSelect = {
   material_category_id: wasteListingsTable.material_category_id,
   material_subcategory_id: wasteListingsTable.material_subcategory_id,
   unit_option_id: wasteListingsTable.unit_option_id,
+  revenue_share_pct: wasteListingsTable.revenue_share_pct,
   visibility: wasteListingsTable.visibility,
   image_url: wasteListingsTable.image_url,
   created_at: wasteListingsTable.created_at,
@@ -221,17 +278,22 @@ router.get(
       }
     }
 
+    const reqSvcMap = await fetchRequiredServicesMap(listingIds);
+
     res.json(
       rows.map((r) => {
         const qty = Number(r.quantity);
         const maxPpu = r.max_price_per_unit != null ? Number(r.max_price_per_unit) : null;
         const myOffer = myOfferMap.get(r.id);
         return {
-          ...serialize({
-            ...r,
-            offer_count: r.offer_count ?? 0,
-            highest_offer_total: maxPpu != null ? maxPpu * qty : null,
-          }),
+          ...serialize(
+            {
+              ...r,
+              offer_count: r.offer_count ?? 0,
+              highest_offer_total: maxPpu != null ? maxPpu * qty : null,
+            },
+            reqSvcMap.get(r.id) ?? [],
+          ),
           my_offer_price: myOffer?.price_per_unit,
           my_rank: myOffer?.rank,
         };
@@ -279,15 +341,21 @@ router.get(
         desc(wasteListingsTable.created_at),
       );
 
+    const mineIds = rows.map((r) => r.id);
+    const mineReqSvcMap = await fetchRequiredServicesMap(mineIds);
+
     res.json(
       rows.map((r) => {
         const qty = Number(r.quantity);
         const maxPpu = r.max_price_per_unit != null ? Number(r.max_price_per_unit) : null;
-        return serialize({
-          ...r,
-          offer_count: r.offer_count ?? 0,
-          highest_offer_total: maxPpu != null ? maxPpu * qty : null,
-        });
+        return serialize(
+          {
+            ...r,
+            offer_count: r.offer_count ?? 0,
+            highest_offer_total: maxPpu != null ? maxPpu * qty : null,
+          },
+          mineReqSvcMap.get(r.id) ?? [],
+        );
       }),
     );
   },
@@ -317,8 +385,20 @@ router.post(
     const saleType = req.body.sale_type === "direct" ? "direct" : "auction";
     const materialCategoryId: string | null =
       typeof req.body.material_category_id === "string" ? req.body.material_category_id : null;
+    const materialSubcategoryId: string | null =
+      typeof req.body.material_subcategory_id === "string" ? req.body.material_subcategory_id : null;
     const unitOptionId: string | null =
       typeof req.body.unit_option_id === "string" ? req.body.unit_option_id : null;
+    const pricingModel: string = typeof req.body.pricing_model === "string" ? req.body.pricing_model : (data.pricing_model ?? "fixed");
+    const revenueSharePct: string | null =
+      pricingModel === "revenue_share" && req.body.revenue_share_pct != null
+        ? String(Number(req.body.revenue_share_pct))
+        : null;
+
+    // required_service_ids: array of capability UUIDs
+    const requiredServiceIds: string[] = Array.isArray(req.body.required_service_ids)
+      ? (req.body.required_service_ids as unknown[]).filter((v): v is string => typeof v === "string")
+      : [];
 
     const [created] = await db
       .insert(wasteListingsTable)
@@ -330,15 +410,39 @@ router.post(
         city: data.city,
         description: data.description ?? null,
         price_hint: data.price_hint != null ? String(data.price_hint) : null,
-        pricing_model: data.pricing_model ?? "fixed",
+        pricing_model: pricingModel as "fixed" | "by_weight" | "revenue_share",
         sale_type: saleType,
         material_category_id: materialCategoryId,
+        material_subcategory_id: materialSubcategoryId,
         unit_option_id: unitOptionId,
+        revenue_share_pct: revenueSharePct,
       })
       .returning();
 
+    // Save required services
+    if (requiredServiceIds.length > 0) {
+      await db.insert(listingRequiredServicesTable).values(
+        requiredServiceIds.map((capId) => ({
+          listing_id: created.id,
+          capability_id: capId,
+        })),
+      ).onConflictDoNothing();
+    }
+
+    // Fetch the required services for the response
+    const reqSvcMap = await fetchRequiredServicesMap([created.id]);
+
+    void logAudit({
+      userId: (req as AuthedCompanyRequest).userId,
+      companyId: company.id,
+      action: "listing.created",
+      entityType: "listing",
+      entityId: created.id,
+      details: { sale_type: saleType, pricing_model: pricingModel, material: data.material },
+    });
+
     res.status(201).json(
-      serialize({ ...created, company_name: company.name }),
+      serialize({ ...created, company_name: company.name }, reqSvcMap.get(created.id) ?? []),
     );
   },
 );
@@ -412,7 +516,8 @@ router.get(
       };
     }
 
-    res.json({ ...serialize(rows[0]), deal });
+    const reqSvcMap = await fetchRequiredServicesMap([id]);
+    res.json({ ...serialize(rows[0], reqSvcMap.get(id) ?? []), deal });
   },
 );
 
@@ -476,6 +581,14 @@ router.post(
       .innerJoin(companiesTable, eq(companiesTable.id, wasteListingsTable.company_id))
       .where(eq(wasteListingsTable.id, id))
       .limit(1);
+
+    void logAudit({
+      userId: (req as AuthedCompanyRequest).userId,
+      companyId: company.id,
+      action: "listing.closed",
+      entityType: "listing",
+      entityId: id,
+    });
 
     res.json(serialize(updated!));
   },

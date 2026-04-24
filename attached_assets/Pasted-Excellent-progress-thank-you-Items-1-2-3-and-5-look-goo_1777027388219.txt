@@ -1,0 +1,115 @@
+Excellent progress — thank you. Items 1, 2, 3, and 5 look good.
+
+Here are our answers for the remaining items:
+
+---
+
+## Item 4 — Required Services Gate
+
+Required services are services needed by the listing, not general company eligibility.
+
+Example:
+
+* transport
+* safe disposal
+* sorting
+* storage
+
+Implementation direction:
+
+* Add required services to the listing as capabilities/services selected by the seller.
+* If a listing requires a service, only companies that have that capability can submit an offer.
+* If that capability has `requires_license = true`, then the company must also have `license_status = approved`.
+
+So the logic is:
+
+1. Listing requires capability/service X
+2. Buyer must have capability X
+3. If X requires license → buyer must be approved
+
+This should NOT block normal selling or normal buying unless the listing explicitly requires a service.
+
+Safe disposal should follow this model.
+
+---
+
+## Item 6 — Marketplace Card UX
+
+Target state:
+
+The buyer should understand the listing from the card without opening it.
+
+Please update marketplace cards to show:
+
+* Image thumbnail
+* Material category + subcategory from the new lookup tables
+* Quantity + unit from the new unit table
+* City/location
+* Price per unit + estimated total
+* Sale type badge: Auction / Direct
+* Required services badges if any
+* User status badge:
+
+  * “أنت أعلى عرض”
+  * “عرضك ليس الأعلى”
+  * no “مشارك في المزاد” badge
+
+If the new structured category/unit exists, show it. If missing, fallback to legacy values.
+
+No distance feature now.
+No advanced filtering now unless already easy.
+
+---
+
+## Item 7 — Audit Log + Notifications
+
+### Audit log
+
+Please log all key actions:
+
+* listing created
+* offer submitted
+* offer improved
+* offer withdrawn
+* offer accepted
+* offer rejected
+* listing closed
+* payment confirmed
+* dispatch confirmed
+* receipt confirmed
+* company capability updated
+* license status updated
+
+No UI required for audit logs now.
+
+### Notifications
+
+For this batch, start with DB + API + simple UI bell if easy.
+
+Notification events:
+
+* user is outbid
+* offer accepted
+* offer rejected
+* action required in deal stage
+* payment confirmed
+* dispatch confirmed
+* receipt confirmed
+
+If notification bell/inbox is simple, add it.
+If it adds complexity, implement DB + API only and flag the UI for the next batch.
+
+---
+
+## Additional clarification
+
+For the capabilities UI:
+Please add it in a simple Company Profile / Company Settings page.
+
+It should allow the company to select its capabilities and save them.
+
+No complex approval workflow now.
+
+---
+
+Please proceed with Items 4, 6, and 7 using the above direction.

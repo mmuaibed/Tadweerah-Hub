@@ -20,4 +20,6 @@ export interface Capability {
   description_en?: string;
   is_active: boolean;
   sort_order: number;
+  /** If true, companies using this capability must have license_status = approved. */
+  requires_license?: boolean;
 }

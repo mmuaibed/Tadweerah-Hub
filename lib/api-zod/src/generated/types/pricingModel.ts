@@ -11,6 +11,8 @@
 Immutable once a listing is published.
 fixed: price_per_unit × quantity = agreed commercial amount.
 by_weight: price_per_unit is a rate; final amount settled post-weighing.
+revenue_share: buyer pays a percentage of their resale revenue (direct sale only).
+  revenue_share_pct field required when this model is selected.
 
  */
 export type PricingModel = (typeof PricingModel)[keyof typeof PricingModel];
@@ -18,4 +20,5 @@ export type PricingModel = (typeof PricingModel)[keyof typeof PricingModel];
 export const PricingModel = {
   fixed: "fixed",
   by_weight: "by_weight",
+  revenue_share: "revenue_share",
 } as const;

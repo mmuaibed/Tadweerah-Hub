@@ -14,6 +14,7 @@ import { listingOffersTable } from "./listing-offers";
 export const dealSettlementTypeEnum = pgEnum("deal_settlement_type", [
   "fixed",
   "by_weight",
+  "revenue_share",
 ]);
 
 export const dealStatusEnum = pgEnum("deal_status", [
