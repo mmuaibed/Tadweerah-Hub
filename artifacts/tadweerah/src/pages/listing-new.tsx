@@ -11,7 +11,7 @@ import type {
   WasteMaterial as WasteMaterialT,
   WasteUnit as WasteUnitT,
 } from "@workspace/api-client-react";
-import { Loader2, ImagePlus, X, Scale, Tag } from "lucide-react";
+import { Loader2, ImagePlus, X, Scale, Tag, Gavel, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -40,6 +40,7 @@ const MATERIAL_OPTIONS: WasteMaterialT[] = [
 const UNIT_OPTIONS: WasteUnitT[] = [WasteUnit.kg, WasteUnit.ton];
 
 type PricingModel = "fixed" | "by_weight";
+type SaleType = "auction" | "direct";
 
 export function ListingNewPage() {
   const { t } = useT();
@@ -54,6 +55,7 @@ export function ListingNewPage() {
   const [description, setDescription] = useState("");
   const [priceHint, setPriceHint] = useState("");
   const [pricingModel, setPricingModel] = useState<PricingModel>("fixed");
+  const [saleType, setSaleType] = useState<SaleType>("auction");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -102,17 +104,19 @@ export function ListingNewPage() {
 
     mutate(
       {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         data: {
           material,
           unit,
           quantity: qty,
           city: city.trim(),
           pricing_model: pricingModel,
+          sale_type: saleType,
           ...(description.trim() ? { description: description.trim() } : {}),
           ...(priceNumber != null && Number.isFinite(priceNumber) && priceNumber >= 0
             ? { price_hint: priceNumber }
             : {}),
-        },
+        } as any,
       },
       {
         onSuccess: async (created) => {
@@ -207,6 +211,40 @@ export function ListingNewPage() {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            {/* Sale type toggle */}
+            <div className="space-y-2">
+              <Label>{t("listing.form.saleType")}</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {(["auction", "direct"] as SaleType[]).map((type) => {
+                  const active = saleType === type;
+                  return (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => setSaleType(type)}
+                      className={`flex items-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium transition-all ${
+                        active
+                          ? type === "auction"
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-secondary bg-secondary/10 text-secondary"
+                          : "border-border bg-background text-muted-foreground hover:border-muted-foreground/40"
+                      }`}
+                    >
+                      {type === "auction" ? (
+                        <Gavel className="h-4 w-4 shrink-0" />
+                      ) : (
+                        <ShoppingBag className="h-4 w-4 shrink-0" />
+                      )}
+                      <span>{t(`listing.sale_type.${type}`)}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {t(`listing.form.saleType.${saleType}.hint`)}
+              </p>
             </div>
 
             {/* Pricing model toggle */}

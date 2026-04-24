@@ -35,6 +35,8 @@ import {
   Medal,
   Copy,
   Check,
+  Gavel,
+  ShoppingBag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -584,6 +586,14 @@ function BuyerOfferSection({
               </span>
               {showImproveForm ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </button>
+            {/* Top bidder self-bidding warning */}
+            {rank === 1 && totalOffers != null && totalOffers > 1 && showImproveForm && (
+              <div className="px-5 pt-3">
+                <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                  {t("offer.warning.already_top")}
+                </div>
+              </div>
+            )}
             {showImproveForm && (
               <form onSubmit={handleImprove} className="px-5 pb-5 pt-2 space-y-3 border-t border-border">
                 <p className="text-xs text-muted-foreground">
@@ -1118,6 +1128,16 @@ export function ListingDetailPage() {
               value={`${listing.price_hint} ${t("listing.sar")}`}
             />
           )}
+          {(() => {
+            const saleType = (listing as typeof listing & { sale_type?: string }).sale_type ?? "auction";
+            return (
+              <DetailRow
+                icon={saleType === "auction" ? <Gavel className="h-4 w-4" /> : <ShoppingBag className="h-4 w-4" />}
+                label={t("listing.form.saleType")}
+                value={t(`listing.sale_type.${saleType}`)}
+              />
+            );
+          })()}
           <DetailRow icon={<Building2 className="h-4 w-4" />} label={t("listing.detail.publishedBy")} value={listing.company_name} />
           <DetailRow icon={<Calendar className="h-4 w-4" />} label={t("listing.publishedOn")} value={dateStr} />
         </div>

@@ -1,5 +1,6 @@
 import {
   pgTable,
+  text,
   timestamp,
   uuid,
   pgEnum,
@@ -69,6 +70,12 @@ export const dealsTable = pgTable(
       () => companiesTable.id,
       { onDelete: "restrict" },
     ),
+
+    /** Bank transfer reference number or payment transaction ID (required when confirming payment). */
+    payment_reference: text("payment_reference"),
+
+    /** URL to uploaded payment proof document / screenshot (optional). */
+    payment_proof_url: text("payment_proof_url"),
 
     dispatched_at: timestamp("dispatched_at", { withTimezone: true }),
     dispatched_by: uuid("dispatched_by").references(() => companiesTable.id, {

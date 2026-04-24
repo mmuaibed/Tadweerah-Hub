@@ -7,6 +7,8 @@ import {
   numeric,
 } from "drizzle-orm/pg-core";
 import { companiesTable } from "./companies";
+import { unitOptionsTable } from "./unit-options";
+import { materialCategoriesTable } from "./material-categories";
 
 /**
  * Material categories accepted by the marketplace.
@@ -60,6 +62,14 @@ export const listingVisibilityEnum = pgEnum("listing_visibility", [
   "private",
 ]);
 
+/**
+ * Whether the listing uses an open auction (buyers compete by price)
+ * or a direct fixed-price sale (producer names the price, buyer buys at that price).
+ * Defaults to "auction" for new listings.
+ * Immutable once published — producers must close + re-list to change model.
+ */
+export const saleTypeEnum = pgEnum("sale_type", ["auction", "direct"]);
+
 export const wasteListingsTable = pgTable("waste_listings", {
   id: uuid("id").primaryKey().defaultRandom(),
   company_id: uuid("company_id")
@@ -91,6 +101,41 @@ export const wasteListingsTable = pgTable("waste_listings", {
     .defaultNow(),
   closed_at: timestamp("closed_at", { withTimezone: true }),
   image_url: text("image_url"),
+
+  /**
+   * Auction: buyers compete, producer picks the best offer.
+   * Direct: producer names a fixed price, first buyer to accept wins.
+   * Defaults to "auction". Immutable once published.
+   */
+  sale_type: saleTypeEnum("sale_type").notNull().default("auction"),
+
+  /**
+   * Reference to admin-managed unit options table.
+   * Null for listings created before unit_options existed (they use legacy `unit` enum).
+   * New listings should populate this field instead of the legacy `unit` column.
+   */
+  unit_option_id: uuid("unit_option_id").references(() => unitOptionsTable.id, {
+    onDelete: "set null",
+  }),
+
+  /**
+   * Reference to admin-managed material category hierarchy.
+   * Null for listings created before material_categories existed.
+   * New listings should populate this for finer classification.
+   */
+  material_category_id: uuid("material_category_id").references(
+    () => materialCategoriesTable.id,
+    { onDelete: "set null" },
+  ),
+
+  /**
+   * Optional sub-category within material_category_id.
+   * Points to a materialCategoriesTable row where parent_id is non-null.
+   */
+  material_subcategory_id: uuid("material_subcategory_id").references(
+    () => materialCategoriesTable.id,
+    { onDelete: "set null" },
+  ),
 });
 
 export type WasteListing = typeof wasteListingsTable.$inferSelect;

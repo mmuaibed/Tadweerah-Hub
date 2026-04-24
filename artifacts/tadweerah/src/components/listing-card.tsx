@@ -8,6 +8,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Scale,
+  Gavel,
+  ShoppingBag,
 } from "lucide-react";
 import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
@@ -115,6 +117,27 @@ export function ListingCard({
               </span>
             </div>
           )}
+          {(() => {
+            const saleType = (listing as WasteListing & { sale_type?: string }).sale_type ?? "auction";
+            return (
+              <div className="flex items-center gap-2">
+                {saleType === "auction" ? (
+                  <Gavel className="h-4 w-4 shrink-0" />
+                ) : (
+                  <ShoppingBag className="h-4 w-4 shrink-0" />
+                )}
+                <span
+                  className={`text-xs font-medium px-1.5 py-0.5 rounded ${
+                    saleType === "auction"
+                      ? "bg-primary/10 text-primary"
+                      : "bg-secondary/15 text-secondary"
+                  }`}
+                >
+                  {t(`listing.sale_type.${saleType}`)}
+                </span>
+              </div>
+            );
+          })()}
           {showCompany && (
             <div className="flex items-center gap-2">
               <Building2 className="h-4 w-4 shrink-0" />

@@ -32,6 +32,8 @@ function serializeDeal(
       contact_phone: counterparty.contactPhone,
     },
     payment_confirmed_at: deal.payment_confirmed_at?.toISOString() ?? null,
+    payment_reference: deal.payment_reference ?? null,
+    payment_proof_url: deal.payment_proof_url ?? null,
     dispatched_at: deal.dispatched_at?.toISOString() ?? null,
     received_at: deal.received_at?.toISOString() ?? null,
     created_at: deal.created_at.toISOString(),
@@ -97,8 +99,10 @@ router.get(
 /**
  * POST /deals/:deal_id/confirm-payment
  * Producer confirms payment received.
- * For by_weight deals: actual_quantity required in body to compute final_amount.
- * For fixed deals: actual_quantity must NOT be sent.
+ * Requires `payment_reference` (bank transfer ID / transaction number) in body.
+ * Optional: `payment_proof_url` (URL of uploaded document).
+ * For by_weight deals: `actual_quantity` also required to compute final_amount.
+ * For fixed deals: `actual_quantity` must NOT be sent.
  */
 router.post(
   "/deals/:deal_id/confirm-payment",
@@ -107,6 +111,19 @@ router.post(
   async (req, res) => {
     const dealId = assertUuid(req.params.deal_id, "deal_id");
     const { company } = req as AuthedCompanyRequest;
+
+    // Validate required payment_reference
+    const payment_reference = req.body?.payment_reference;
+    if (!payment_reference || typeof payment_reference !== "string" || !payment_reference.trim()) {
+      throw new HttpError(
+        400,
+        "PaymentReferenceRequired",
+        "payment_reference (bank transfer number / transaction ID) is required",
+      );
+    }
+    const payment_proof_url = req.body?.payment_proof_url
+      ? String(req.body.payment_proof_url).trim() || null
+      : null;
 
     const [deal] = await db
       .select()
@@ -143,6 +160,8 @@ router.post(
           status: "payment_confirmed",
           payment_confirmed_at: now,
           payment_confirmed_by: company.id,
+          payment_reference: payment_reference.trim(),
+          payment_proof_url,
           updated_at: now,
         })
         .where(eq(dealsTable.id, dealId))
@@ -186,6 +205,8 @@ router.post(
         final_amount: String(finalAmount),
         payment_confirmed_at: now,
         payment_confirmed_by: company.id,
+        payment_reference: payment_reference.trim(),
+        payment_proof_url,
         updated_at: now,
       })
       .where(eq(dealsTable.id, dealId))

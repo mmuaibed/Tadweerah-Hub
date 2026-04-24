@@ -79,6 +79,9 @@ function serialize(row: Row) {
     price_hint: row.price_hint != null ? Number(row.price_hint) : undefined,
     status: row.status,
     pricing_model: row.pricing_model,
+    sale_type: (row as Row & { sale_type?: string }).sale_type ?? "auction",
+    material_category_id: (row as Row & { material_category_id?: string | null }).material_category_id ?? null,
+    unit_option_id: (row as Row & { unit_option_id?: string | null }).unit_option_id ?? null,
     visibility: row.visibility,
     image_url: row.image_url ?? undefined,
     created_at: row.created_at.toISOString(),
@@ -101,6 +104,9 @@ const baseSelect = {
   price_hint: wasteListingsTable.price_hint,
   status: wasteListingsTable.status,
   pricing_model: wasteListingsTable.pricing_model,
+  sale_type: wasteListingsTable.sale_type,
+  material_category_id: wasteListingsTable.material_category_id,
+  unit_option_id: wasteListingsTable.unit_option_id,
   visibility: wasteListingsTable.visibility,
   image_url: wasteListingsTable.image_url,
   created_at: wasteListingsTable.created_at,
@@ -250,6 +256,26 @@ router.post(
     const { company } = req as AuthedCompanyRequest;
     const data = parsed.data;
 
+    // License eligibility check: pending/rejected/expired licenses are blocked
+    if (
+      company.license_status === "pending" ||
+      company.license_status === "rejected" ||
+      company.license_status === "expired"
+    ) {
+      throw new HttpError(
+        403,
+        "LicenseIneligible",
+        `Your license is currently ${company.license_status}. You cannot create listings until your license is approved.`,
+      );
+    }
+
+    // Extra fields not in generated schema (safe to read directly from body)
+    const saleType = req.body.sale_type === "direct" ? "direct" : "auction";
+    const materialCategoryId: string | null =
+      typeof req.body.material_category_id === "string" ? req.body.material_category_id : null;
+    const unitOptionId: string | null =
+      typeof req.body.unit_option_id === "string" ? req.body.unit_option_id : null;
+
     const [created] = await db
       .insert(wasteListingsTable)
       .values({
@@ -260,8 +286,10 @@ router.post(
         city: data.city,
         description: data.description ?? null,
         price_hint: data.price_hint != null ? String(data.price_hint) : null,
-        // pricing_model is immutable once set; defaults to "fixed" at DB level
         pricing_model: data.pricing_model ?? "fixed",
+        sale_type: saleType,
+        material_category_id: materialCategoryId,
+        unit_option_id: unitOptionId,
       })
       .returning();
 

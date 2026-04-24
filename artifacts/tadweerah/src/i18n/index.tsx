@@ -331,7 +331,7 @@ const translations: Record<string, Record<Language, string>> = {
   "deal.field.final_amount": { ar: "المبلغ النهائي", en: "Final amount" },
   "deal.field.quantity.placeholder": { ar: "أدخل الكمية الفعلية", en: "Enter actual quantity" },
 
-  "deal.action.confirm_payment": { ar: "تأكيد استلام الدفع", en: "Confirm Payment Received" },
+  "deal.action.confirm_payment": { ar: "تأكيد استلام الدفع", en: "Confirm Receipt of Payment" },
   "deal.action.confirm_dispatch": { ar: "تأكيد إرسال البضاعة", en: "Confirm Dispatch" },
   "deal.action.confirm_receipt": { ar: "تأكيد استلام البضاعة", en: "Confirm Receipt" },
 
@@ -386,12 +386,116 @@ const translations: Record<string, Record<Language, string>> = {
   "deal.waiting.dispatched": { ar: "بانتظار المشتري لتأكيد استلام البضاعة", en: "Waiting for buyer to confirm receipt" },
 
   // Confirmation dialogs
-  "deal.confirm.payment.title": { ar: "تأكيد استلام الدفع", en: "Confirm Payment Received" },
+  "deal.confirm.payment.title": { ar: "تأكيد استلام الدفع", en: "Confirm Receipt of Payment" },
   "deal.confirm.payment.desc": { ar: "هل تأكدت من استلام الدفع من المشتري؟ لا يمكن التراجع عن هذه الخطوة.", en: "Have you received payment from the buyer? This step cannot be undone." },
   "deal.confirm.dispatch.title": { ar: "تأكيد إرسال البضاعة", en: "Confirm Dispatch" },
   "deal.confirm.dispatch.desc": { ar: "هل تأكدت من إرسال البضاعة للمشتري؟ لا يمكن التراجع عن هذه الخطوة.", en: "Have you dispatched the goods to the buyer? This step cannot be undone." },
   "deal.confirm.receipt.title": { ar: "تأكيد استلام البضاعة", en: "Confirm Receipt" },
   "deal.confirm.receipt.desc": { ar: "هل تأكدت من استلام البضاعة من المنتج؟ لا يمكن التراجع عن هذه الخطوة.", en: "Have you received the goods from the producer? This step cannot be undone." },
+
+  // Item 3 — Payment reference
+  "deal.field.payment_reference": { ar: "رقم الحوالة / مرجع الدفع", en: "Transfer Reference No." },
+  "deal.field.payment_reference.placeholder": { ar: "مثال: TRF-20241201-001", en: "e.g. TRF-20241201-001" },
+  "deal.field.payment_reference.hint": { ar: "أدخل رقم الحوالة البنكية أو مرجع العملية", en: "Enter bank transfer number or transaction reference" },
+  "deal.field.payment_proof_url": { ar: "إرفاق إثبات الدفع (اختياري)", en: "Attach Payment Proof (Optional)" },
+  "deal.field.payment_proof_url.placeholder": { ar: "رابط الصورة أو الوثيقة", en: "Image or document URL" },
+  "deal.error.payment_reference_required": { ar: "رقم مرجع الدفع مطلوب", en: "Payment reference is required" },
+
+  // Item 2 — Self-bidding warning
+  "offer.warning.already_top": {
+    ar: "أنت حالياً أعلى مزايد على هذا الإعلان. يمكنك رفع عرضك إذا رأيت مناسبًا.",
+    en: "You are currently the top bidder on this listing. You may raise your offer if you wish.",
+  },
+
+  // Item 6 — Sale type
+  "listing.sale_type.auction": { ar: "مزاد مفتوح", en: "Open Auction" },
+  "listing.sale_type.direct": { ar: "بيع مباشر", en: "Direct Sale" },
+  "listing.form.saleType": { ar: "نوع البيع", en: "Sale Type" },
+  "listing.form.saleType.auction.hint": {
+    ar: "يتنافس المشترون بأسعار متزايدة — المنتج يختار أفضل عرض.",
+    en: "Buyers compete with increasing prices — producer selects the best offer.",
+  },
+  "listing.form.saleType.direct.hint": {
+    ar: "يشتري المشتري بالسعر الإرشادي مباشرة دون منافسة.",
+    en: "Buyer purchases at the listed price directly without competition.",
+  },
+
+  // Item 4 — Company category
+  "onboarding.form.companyCategory": { ar: "تصنيف الشركة (اختياري)", en: "Company Category (Optional)" },
+  "onboarding.form.companyCategory.placeholder": { ar: "اختر تصنيفًا", en: "Select a category" },
+
+  // Item 8 — Terms & Conditions
+  "onboarding.terms.label": {
+    ar: "أوافق على شروط الاستخدام وسياسة الخصوصية",
+    en: "I agree to the Terms of Use and Privacy Policy",
+  },
+  "onboarding.terms.link": { ar: "اقرأ الشروط والأحكام", en: "Read Terms & Conditions" },
+  "onboarding.terms.required": { ar: "يجب الموافقة على الشروط للمتابعة", en: "You must agree to the terms to continue" },
+
+  // Item 11 — License fields in onboarding
+  "onboarding.form.license_number": { ar: "رقم الترخيص (اختياري)", en: "License Number (Optional)" },
+  "onboarding.form.license_number.hint": {
+    ar: "رقم ترخيص مزاولة النشاط (من الجهة المانحة مثل هيئة المناطق أو البلديات)",
+    en: "Activity license number from the issuing authority (e.g. Municipalities, MOMRA)",
+  },
+  "onboarding.form.license_pending": {
+    ar: "سيتم مراجعة الترخيص من قِبل فريق تدويرة قبل تفعيل حسابك بالكامل.",
+    en: "Your license will be reviewed by the Tadweerah team before your account is fully activated.",
+  },
+
+  // License status labels
+  "license.status.pending": { ar: "قيد المراجعة", en: "Under Review" },
+  "license.status.approved": { ar: "معتمد", en: "Approved" },
+  "license.status.rejected": { ar: "مرفوض", en: "Rejected" },
+  "license.status.expired": { ar: "منتهي الصلاحية", en: "Expired" },
+  "license.blocked.title": { ar: "حسابك قيد المراجعة", en: "Account Under Review" },
+  "license.blocked.desc": {
+    ar: "يتطلب هذا الإجراء موافقة الترخيص. سيتواصل معك الفريق قريباً.",
+    en: "This action requires license approval. Our team will be in touch shortly.",
+  },
+
+  // Item 10 — Reports page
+  "reports.title": { ar: "التقارير والاستدامة", en: "Reports & Sustainability" },
+  "reports.subtitle": { ar: "تتبع أثرك البيئي وإنجازاتك على منصة تدويرة", en: "Track your environmental impact and achievements on Tadweerah" },
+  "reports.coming.title": { ar: "قريباً — تقارير الاستدامة", en: "Coming Soon — Sustainability Reports" },
+  "reports.coming.desc": {
+    ar: "ستتمكن قريباً من تتبع كمية المواد المعاد تدويرها، والانبعاثات الكربونية الموفَّرة، وعدد الصفقات المكتملة.",
+    en: "Soon you'll be able to track recycled material volumes, saved carbon emissions, and completed deal counts.",
+  },
+  "reports.metric.co2": { ar: "طن CO₂ موفَّر", en: "CO₂ Tonnes Saved" },
+  "reports.metric.weight": { ar: "كجم مواد مُعاد تدويرها", en: "Kg Materials Recycled" },
+  "reports.metric.deals": { ar: "صفقات مكتملة", en: "Deals Completed" },
+  "reports.metric.growth": { ar: "نمو شهري", en: "Monthly Growth" },
+
+  // Item 8 — Terms page content
+  "terms.title": { ar: "الشروط والأحكام", en: "Terms & Conditions" },
+  "terms.subtitle": { ar: "يرجى قراءة هذه الشروط بعناية قبل استخدام المنصة", en: "Please read these terms carefully before using the platform" },
+  "terms.lastUpdated": { ar: "آخر تحديث: أبريل 2026 — نسخة أولية للمراجعة", en: "Last updated: April 2026 — Draft for review" },
+  "terms.section1.title": { ar: "١. القبول والموافقة", en: "1. Acceptance" },
+  "terms.section1.body": {
+    ar: "باستخدامك لمنصة تدويرة، فإنك توافق على الالتزام بهذه الشروط والأحكام. إذا كنت لا توافق على أي من هذه الشروط، فلا يحق لك استخدام المنصة.",
+    en: "By using Tadweerah, you agree to be bound by these terms and conditions. If you do not agree to any of these terms, you may not use the platform.",
+  },
+  "terms.section2.title": { ar: "٢. الأهلية والترخيص", en: "2. Eligibility & Licensing" },
+  "terms.section2.body": {
+    ar: "يجب أن تكون شركة أو مؤسسة مرخّصة قانونياً في المملكة العربية السعودية لاستخدام المنصة. تحتفظ تدويرة بالحق في التحقق من صحة التراخيص وتعليق الحسابات غير الممتثلة.",
+    en: "You must be a legally registered company or entity in Saudi Arabia to use the platform. Tadweerah reserves the right to verify licenses and suspend non-compliant accounts.",
+  },
+  "terms.section3.title": { ar: "٣. المعاملات والصفقات", en: "3. Transactions & Deals" },
+  "terms.section3.body": {
+    ar: "تدويرة منصة وسيطة تسهّل الصفقات بين الأطراف. المنصة غير مسؤولة عن جودة البضاعة أو سلامة المعاملة المالية بين الطرفين. يتحمل كل طرف مسؤولية التحقق من هوية الطرف الآخر.",
+    en: "Tadweerah is an intermediary platform that facilitates transactions between parties. The platform is not responsible for goods quality or the financial transaction between parties. Each party is responsible for verifying the other's identity.",
+  },
+  "terms.section4.title": { ar: "٤. الخصوصية والبيانات", en: "4. Privacy & Data" },
+  "terms.section4.body": {
+    ar: "نلتزم بحماية بياناتك وفقاً للأنظمة السعودية ذات الصلة. لن تُشارَك بياناتك مع أطراف ثالثة دون إذنك، باستثناء ما تقتضيه المتطلبات القانونية.",
+    en: "We are committed to protecting your data in accordance with relevant Saudi regulations. Your data will not be shared with third parties without your consent, except as required by law.",
+  },
+  "terms.section5.title": { ar: "٥. التعديلات والإنهاء", en: "5. Amendments & Termination" },
+  "terms.section5.body": {
+    ar: "تحتفظ تدويرة بالحق في تعديل هذه الشروط في أي وقت. سيُعلَم المستخدمون بأي تغييرات جوهرية. يحق لتدويرة إنهاء أي حساب يخالف هذه الشروط.",
+    en: "Tadweerah reserves the right to modify these terms at any time. Users will be notified of any material changes. Tadweerah may terminate any account that violates these terms.",
+  },
 };
 
 export const I18nProvider: React.FC<{

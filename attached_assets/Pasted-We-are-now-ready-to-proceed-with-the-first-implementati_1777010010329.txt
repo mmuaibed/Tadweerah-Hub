@@ -1,0 +1,235 @@
+We are now ready to proceed with the first implementation batch based on the items we have fully agreed on.
+
+Important:
+This batch includes only low-risk, confirmed items.
+Please do NOT implement anything outside this scope.
+If any item introduces unexpected complexity or dependencies, stop and explain before proceeding.
+
+---
+
+## 1) Navigation Labels (Important Foundation)
+
+At this stage, we are NOT finalizing the naming of tabs and sections.
+
+Please ensure:
+
+* All labels are decoupled from logic (routing, conditions, API usage)
+* Use internal keys (e.g. "my_listings") separate from display labels
+* Labels can be changed later without affecting system behavior
+* Labels should NOT be stored as functional values in the database
+* Do NOT use display labels as identifiers in any logic or queries
+
+Labels must remain purely presentational and easily replaceable at any time.
+
+---
+
+## 2) Prevent Self-Bidding
+
+If a user is currently the highest bidder:
+
+* Show a clear warning before allowing them to increase their own offer
+
+Additionally:
+
+* Add backend validation to prevent submitting a new offer if the user is already the highest bidder
+
+---
+
+## 3) Payment Confirmation Stage
+
+Update the stage name to:
+**Confirm Receipt of Payment**
+
+Add confirmation message:
+"You are confirming that you have received the payment from the buyer. This action cannot be reversed."
+
+Add:
+
+* Transfer reference number (required)
+* Payment proof image:
+
+  * If easy to implement → include it
+  * If not → make it optional or explain constraints before proceeding
+
+---
+
+## 4) Company Classification (Admin Managed)
+
+Create an Admin-managed table for company types:
+
+* Manufacturer
+* Recycling company
+* Scrap trader
+* Collector / Transporter
+* Contractor
+* Commercial entity
+* Government entity
+* Non-profit organization
+* Other (with required description)
+
+Features:
+
+* Enable / disable
+* Ordering
+* No hardcoding
+
+---
+
+## 5) Units of Measurement (Admin Managed)
+
+Create an Admin-managed table for units:
+
+* kg
+* ton
+* liter
+* cubic meter
+* piece / unit
+* container
+* bale
+* barrel
+* Other (with required description)
+
+No hardcoding.
+
+---
+
+## 6) Sales Model (Basic Only)
+
+Implement:
+
+* Auction
+* Direct sale
+
+Do NOT implement private/restricted listings at this stage.
+
+Keep:
+
+* Sales type separate from pricing model
+
+---
+
+## 7) Material Classification (Basic Structure)
+
+Implement:
+
+* Main category
+* Subcategory (linked to main)
+
+Features:
+
+* Admin-managed
+* Enable / disable
+* Ordering
+* "Other" with required description
+
+No advanced logic required at this stage.
+
+---
+
+## 8) Terms & Conditions (Foundation Only)
+
+* Create a standalone Terms & Conditions page
+* Add required checkbox during registration/onboarding
+
+Content:
+
+* Use placeholder content for now
+* We will replace it later with legally reviewed text
+
+---
+
+## 9) Error Messages (Documentation Only)
+
+Do NOT implement changes yet.
+
+Instead, provide a structured list of:
+
+* Error scenario
+* Current message
+* Cause
+* Suggested improved message (optional)
+
+We will review and finalize them in one pass later.
+
+---
+
+## 10) Reports & Sustainability (Placeholder Only)
+
+* Add a visible section/page for:
+
+  * Reports
+  * Sustainability
+
+* No backend logic required
+
+* The page can simply indicate:
+  "Data and features depend on subscription level"
+
+---
+
+## 11) Eligibility & Licensing (Controlled Participation)
+
+During company registration or profile setup:
+
+Collect:
+
+* License number
+* License document (image)
+
+Add status field:
+
+* Pending (under review)
+* Approved (eligible)
+* Rejected (not eligible)
+* Expired (license expired)
+
+Behavior:
+
+* All users can view the marketplace
+
+* Only Approved users can:
+
+  * Submit offers
+  * Create listings
+
+* Pending / Rejected / Expired:
+
+  * Can view
+  * Cannot participate
+
+Display:
+
+* Clear color indicator:
+
+  * Green = Approved
+  * Yellow = Pending
+  * Red = Rejected
+  * Orange = Expired
+
+Important:
+
+* Approval is manual (handled by us)
+* No automation required
+
+---
+
+## General Notes
+
+* Avoid over-engineering
+* Keep implementation simple and extensible
+* Do not introduce dependencies on future features
+* If any item conflicts with upcoming architecture decisions, pause and discuss
+
+---
+
+After this batch:
+
+We will:
+
+* Review the implementation
+* Fix any issues
+* Then proceed to the next set of more complex features
+
+---
+
+Please confirm once you start, and notify us if any item needs clarification.

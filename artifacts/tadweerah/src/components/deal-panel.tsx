@@ -31,6 +31,8 @@ export interface DealInfo {
     contact_phone: string;
   } | null;
   payment_confirmed_at: string | null;
+  payment_reference: string | null;
+  payment_proof_url: string | null;
   dispatched_at: string | null;
   received_at: string | null;
   created_at: string;
@@ -86,6 +88,8 @@ export function DealPanel({ deal, role, unit, onUpdate }: DealPanelProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [actualQty, setActualQty] = useState("");
+  const [paymentRef, setPaymentRef] = useState("");
+  const [paymentProofUrl, setPaymentProofUrl] = useState("");
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
 
   const currentStepIndex = STATUS_STEPS.indexOf(deal.status);
@@ -108,6 +112,10 @@ export function DealPanel({ deal, role, unit, onUpdate }: DealPanelProps) {
   }
 
   function requestConfirmPayment() {
+    if (!paymentRef.trim()) {
+      setError(t("deal.error.payment_reference_required"));
+      return;
+    }
     if (deal.settlement_type === "by_weight") {
       const qty = parseFloat(actualQty);
       if (!actualQty || isNaN(qty) || qty <= 0) {
@@ -122,11 +130,16 @@ export function DealPanel({ deal, role, unit, onUpdate }: DealPanelProps) {
   function handleConfirmed() {
     if (!pendingAction) return;
     if (pendingAction === "confirm-payment") {
-      if (deal.settlement_type === "by_weight") {
-        executeAction("confirm-payment", { actual_quantity: parseFloat(actualQty) });
-      } else {
-        executeAction("confirm-payment");
+      const body: Record<string, unknown> = {
+        payment_reference: paymentRef.trim(),
+      };
+      if (paymentProofUrl.trim()) {
+        body.payment_proof_url = paymentProofUrl.trim();
       }
+      if (deal.settlement_type === "by_weight") {
+        body.actual_quantity = parseFloat(actualQty);
+      }
+      executeAction("confirm-payment", body);
     } else {
       executeAction(pendingAction);
     }
@@ -334,7 +347,40 @@ export function DealPanel({ deal, role, unit, onUpdate }: DealPanelProps) {
           <div className="px-4 py-3 space-y-3 border-b border-primary/10 bg-background">
             {/* Producer: confirm payment */}
             {role === "producer" && deal.status === "active" && (
-              <div className="space-y-2">
+              <div className="space-y-3">
+                {/* Payment reference (required) */}
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-foreground">
+                    {t("deal.field.payment_reference")} *
+                  </label>
+                  <input
+                    type="text"
+                    value={paymentRef}
+                    onChange={(e) => { setPaymentRef(e.target.value); setError(null); }}
+                    placeholder={t("deal.field.payment_reference.placeholder")}
+                    className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                    dir="ltr"
+                    autoComplete="off"
+                  />
+                  <p className="text-xs text-muted-foreground">{t("deal.field.payment_reference.hint")}</p>
+                </div>
+
+                {/* Payment proof URL (optional) */}
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-muted-foreground">
+                    {t("deal.field.payment_proof_url")}
+                  </label>
+                  <input
+                    type="url"
+                    value={paymentProofUrl}
+                    onChange={(e) => setPaymentProofUrl(e.target.value)}
+                    placeholder={t("deal.field.payment_proof_url.placeholder")}
+                    className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                    dir="ltr"
+                  />
+                </div>
+
+                {/* Actual quantity (by_weight only) */}
                 {deal.settlement_type === "by_weight" && (
                   <div className="flex items-center gap-2">
                     <input
@@ -350,6 +396,7 @@ export function DealPanel({ deal, role, unit, onUpdate }: DealPanelProps) {
                     <span className="text-sm text-muted-foreground shrink-0">{unit}</span>
                   </div>
                 )}
+
                 <Button
                   className="w-full"
                   onClick={requestConfirmPayment}
@@ -406,11 +453,18 @@ export function DealPanel({ deal, role, unit, onUpdate }: DealPanelProps) {
         {(deal.payment_confirmed_at || deal.dispatched_at || deal.received_at) && (
           <div className="px-4 py-3 space-y-1.5 bg-muted/30">
             {deal.payment_confirmed_at && (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />
-                <span>
-                  {t("deal.timestamp.payment_confirmed")}: {formatDate(deal.payment_confirmed_at, lang)}
-                </span>
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />
+                  <span>
+                    {t("deal.timestamp.payment_confirmed")}: {formatDate(deal.payment_confirmed_at, lang)}
+                  </span>
+                </div>
+                {deal.payment_reference && (
+                  <div className="ms-5 text-xs text-muted-foreground">
+                    {t("deal.field.payment_reference")}: <span className="font-mono font-medium text-foreground" dir="ltr">{deal.payment_reference}</span>
+                  </div>
+                )}
               </div>
             )}
             {deal.dispatched_at && (

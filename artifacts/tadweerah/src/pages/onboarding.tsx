@@ -1,5 +1,5 @@
-import { useState, type FormEvent } from "react";
-import { useLocation } from "wouter";
+import { useEffect, useState, type FormEvent } from "react";
+import { Link, useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useCreateCompany,
@@ -28,8 +28,14 @@ const TYPE_OPTIONS: Array<{
   { value: "carrier", icon: Truck, titleKey: "type.carrier", descKey: "type.carrier.desc" },
 ];
 
+interface CompanyCategoryOption {
+  id: string;
+  name_ar: string;
+  name_en: string;
+}
+
 export function OnboardingPage() {
-  const { t } = useT();
+  const { t, lang } = useT();
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const [type, setType] = useState<CompanyType>("producer");
@@ -37,14 +43,31 @@ export function OnboardingPage() {
   const [city, setCity] = useState("");
   const [commercialRegistration, setCr] = useState("");
   const [contactPhone, setPhone] = useState("");
+  const [licenseNumber, setLicenseNumber] = useState("");
+  const [companyCategoryId, setCompanyCategoryId] = useState("");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [categories, setCategories] = useState<CompanyCategoryOption[]>([]);
+
+  useEffect(() => {
+    fetch("/api/lookup/company-categories")
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) setCategories(data as CompanyCategoryOption[]);
+      })
+      .catch(() => {});
+  }, []);
 
   const { mutate, isPending } = useCreateCompany();
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     setError(null);
-    const body: CreateCompanyBody = {
+    if (!acceptedTerms) {
+      setError(t("onboarding.terms.required"));
+      return;
+    }
+    const body: CreateCompanyBody & Record<string, unknown> = {
       name: name.trim(),
       type,
       city: city.trim(),
@@ -52,6 +75,9 @@ export function OnboardingPage() {
       ...(commercialRegistration.trim()
         ? { commercialRegistration: commercialRegistration.trim() }
         : {}),
+      accepted_terms: true,
+      ...(licenseNumber.trim() ? { license_number: licenseNumber.trim() } : {}),
+      ...(companyCategoryId ? { company_category_id: companyCategoryId } : {}),
     };
     mutate(
       { data: body },
@@ -160,8 +186,67 @@ export function OnboardingPage() {
                 onChange={(e) => setCr(e.target.value)}
               />
             </div>
+
+            {/* Company category */}
+            {categories.length > 0 && (
+              <div className="space-y-2">
+                <Label htmlFor="category">{t("onboarding.form.companyCategory")}</Label>
+                <select
+                  id="category"
+                  value={companyCategoryId}
+                  onChange={(e) => setCompanyCategoryId(e.target.value)}
+                  className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="">{t("onboarding.form.companyCategory.placeholder")}</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {lang === "ar" ? cat.name_ar : cat.name_en}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* License number */}
+            <div className="space-y-2">
+              <Label htmlFor="license">{t("onboarding.form.license_number")}</Label>
+              <Input
+                id="license"
+                maxLength={60}
+                dir="ltr"
+                value={licenseNumber}
+                onChange={(e) => setLicenseNumber(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">{t("onboarding.form.license_number.hint")}</p>
+              {licenseNumber.trim() && (
+                <p className="text-xs text-amber-600 font-medium">{t("onboarding.form.license_pending")}</p>
+              )}
+            </div>
           </CardContent>
         </Card>
+
+        {/* Terms & Conditions */}
+        <div className="rounded-lg border border-border bg-card p-4">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={acceptedTerms}
+              onChange={(e) => { setAcceptedTerms(e.target.checked); setError(null); }}
+              className="mt-0.5 h-4 w-4 rounded border-input accent-primary shrink-0"
+            />
+            <span className="text-sm text-foreground leading-relaxed">
+              {t("onboarding.terms.label")}{" "}
+              <Link
+                href="/terms"
+                target="_blank"
+                className="text-primary underline underline-offset-2 hover:text-primary/80"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {t("onboarding.terms.link")}
+              </Link>
+            </span>
+          </label>
+        </div>
 
         {error && (
           <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
@@ -169,7 +254,7 @@ export function OnboardingPage() {
           </div>
         )}
 
-        <Button type="submit" size="lg" className="w-full gap-2" disabled={isPending}>
+        <Button type="submit" size="lg" className="w-full gap-2" disabled={isPending || !acceptedTerms}>
           {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
           {isPending ? t("onboarding.form.saving") : t("onboarding.form.submit")}
         </Button>
