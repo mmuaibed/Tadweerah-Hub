@@ -1,0 +1,102 @@
+Please run a final pre-demo validation pass.
+
+Goal:
+Catch issues before we manually test with a partner.
+
+Rules:
+
+* No heavy browser automation
+* No repeated loops
+* Keep it cost-aware
+* Use lightweight API/DB checks where possible
+* Browser/manual checks only where UI behavior cannot be verified otherwise
+* If any check becomes heavy, stop and ask first
+
+Please validate these critical flows:
+
+## 1) Auction flow
+
+* create auction listing
+* submit offer from another company
+* confirm highest offer appears
+* confirm offer count/value summary is correct
+
+## 2) Self-bid protection
+
+* company already highest bidder tries to increase its own offer
+* confirm API/UI prevents silent self-bidding or requires explicit warning/confirmation
+
+## 3) Pricing UX
+
+* enter total price → unit price calculated correctly
+* enter unit price → total calculated correctly
+* both values are clear before submit
+
+## 4) Required service eligibility
+
+* listing requires capability/service
+* company without capability is blocked
+* company with capability but unapproved license is blocked if service requires license
+* approved company with capability is allowed
+
+## 5) Direct sale targeting
+
+* open direct sale visible to all
+* category-targeted visible only to matching category
+* specific-company visible only to target company
+* non-targeted company cannot see or submit
+
+## 6) Revenue sharing
+
+* appears only for Direct Sale
+* percentage required when selected
+* rejected for Auction
+* visible in card, details, and deal panel
+
+## 7) Deal flow
+
+* accept offer
+* confirm payment
+* dispatch
+* receipt
+* confirm stage labels, timeline, and turn indicators update correctly
+
+## 8) Value layer
+
+* deal value summary works
+* governance timeline works
+* printable report includes required fields
+* dashboard stats handle empty and non-empty states
+* reports page wording stays estimated / operational only
+
+## 9) Members
+
+* owner can invite/remove
+* member cannot manage members/settings
+* records remain company-owned
+
+## 10) Trust / UX issues
+
+* no “email not verified” warning appears in demo flow unless necessary
+* no confusing system messages
+* no broken loading states
+* no undefined/null values shown
+
+## 11) Charter safeguards
+
+Confirm:
+
+* no license/eligibility gate on POST /listings
+* eligibility only at POST /offers
+* no role-based company.type logic
+* no label-based logic
+* no hardcoded UUIDs
+
+Deliver:
+
+* pass/fail report by section
+* any bugs found
+* what you fixed
+* what remains for manual validation
+
+Please keep this efficient and cost-controlled.

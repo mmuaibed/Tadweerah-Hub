@@ -163,6 +163,14 @@ export function ListingNewPage() {
       return;
     }
 
+    if (pricingModel === "revenue_share") {
+      const pctNum = Number(revenueSharePct);
+      if (!revenueSharePct.trim() || !Number.isFinite(pctNum) || pctNum <= 0 || pctNum > 100) {
+        setError(t("listing.form.error.revenue_share_pct_required"));
+        return;
+      }
+    }
+
     const priceNumber = priceHint.trim() ? Number(priceHint) : undefined;
 
     mutate(

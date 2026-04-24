@@ -488,6 +488,18 @@ router.post(
         "revenue_share pricing is only allowed for Direct Sale listings (sale_type=direct)",
       );
     }
+    // revenue_share_pct is required (and must be 1–100) when pricing_model=revenue_share.
+    if (pricingModel === "revenue_share") {
+      const rawPct = req.body.revenue_share_pct;
+      const pctNum = rawPct != null ? Number(rawPct) : NaN;
+      if (!Number.isFinite(pctNum) || pctNum <= 0 || pctNum > 100) {
+        throw new HttpError(
+          400,
+          "ValidationError",
+          "revenue_share_pct is required and must be a number between 1 and 100 when pricing_model=revenue_share",
+        );
+      }
+    }
     const revenueSharePct: string | null =
       pricingModel === "revenue_share" && req.body.revenue_share_pct != null
         ? String(Number(req.body.revenue_share_pct))
