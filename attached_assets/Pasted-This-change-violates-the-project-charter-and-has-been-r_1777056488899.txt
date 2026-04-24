@@ -1,0 +1,74 @@
+This change violates the project charter and has been reintroduced after being explicitly removed multiple times.
+
+You added a license gate to `POST /listings` again.
+
+This is a **hard violation** of the core rule:
+
+* Listing creation must ALWAYS be allowed
+* No license, capability, or eligibility checks are allowed on `POST /listings`
+* Eligibility is enforced ONLY on `POST /offers`
+
+This is not a minor issue — it affects core product behavior and user access.
+
+### Required actions (immediate)
+
+1. **Revert**
+
+* Remove the `LicenseInvalid` check from `POST /listings`
+* Remove any related frontend error mapping for listing creation
+
+2. **Confirm state**
+
+* `POST /listings` has ONLY auth/company existence checks
+* No eligibility logic exists outside `POST /offers`
+
+---
+
+### Prevent recurrence (must implement)
+
+Add an automated safeguard:
+
+* **Test**: a simple API test that asserts:
+
+  * any authenticated company can create a listing regardless of `license_status`
+  * request returns success (not 403) for all license states
+
+* **Static guard**:
+
+  * search rule / lint check to block adding any of:
+
+    * `license_status` checks inside `POST /listings`
+    * capability/eligibility logic inside listing creation
+
+* **PR checklist update**:
+
+  * “Does this change introduce any eligibility gate outside POST /offers?” → must be explicitly answered
+
+---
+
+### Compensation for regression
+
+Since this rule has been broken more than once and required rework:
+
+Please include, at no extra cost:
+
+* the above safeguard (test + static check)
+* one additional lightweight API validation pass covering:
+
+  * listing creation (no gate)
+  * offer eligibility (all three cases)
+* a brief report confirming these pass
+
+---
+
+### Process reinforcement
+
+Any change affecting:
+
+* eligibility
+* permissions
+* visibility
+
+must be **explained before implementation** and mapped to the charter.
+
+Confirm when the revert is done and the safeguards are in place.

@@ -460,18 +460,9 @@ router.post(
     const { company } = req as AuthedCompanyRequest;
     const data = parsed.data;
 
-    // License eligibility: producers with a rejected or expired license cannot post new listings.
-    // null / undefined = no license submitted → free to participate (MVP open mode)
-    // pending          = awaiting review → allow (producer submitted in good faith)
-    // approved         = valid → allow
-    // rejected/expired = blocked
-    if (company.license_status === "rejected" || company.license_status === "expired") {
-      throw new HttpError(
-        403,
-        "LicenseInvalid",
-        `Your company's license is '${company.license_status}'. A valid or pending license is required to post listings. Please contact support.`,
-      );
-    }
+    // CHARTER RULE: POST /listings is always allowed for any authenticated company.
+    // No eligibility checks (license, capability, category) are permitted here.
+    // All eligibility enforcement lives exclusively in POST /offers.
 
     // Extra fields not in generated schema (safe to read directly from body)
     const saleType: "auction" | "direct" = req.body.sale_type === "direct" ? "direct" : "auction";
