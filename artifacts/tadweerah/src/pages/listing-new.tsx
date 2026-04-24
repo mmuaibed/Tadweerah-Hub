@@ -27,7 +27,7 @@ import {
 import { AppLayout } from "@/components/app-layout";
 import { useT } from "@/i18n";
 
-type PricingModel = "fixed" | "by_weight";
+type PricingModel = "fixed" | "by_weight" | "revenue_share";
 type SaleType = "auction" | "direct";
 
 const LEGACY_MATERIAL_KEYS = new Set(["paper", "plastic", "metal", "glass", "electronics", "organic", "other"]);
@@ -49,6 +49,7 @@ export function ListingNewPage() {
 
   const { data: allCategories = [] } = useGetMaterialCategories();
   const { data: unitOptions = [] } = useGetUnitOptions();
+  const { data: allCapabilities = [] } = useGetCapabilities();
 
   const topLevel = (allCategories as MaterialCategory[]).filter((c) => !c.parent_id);
   const [materialCategoryId, setMaterialCategoryId] = useState<string>("");
@@ -68,6 +69,8 @@ export function ListingNewPage() {
   const [priceHint, setPriceHint] = useState("");
   const [pricingModel, setPricingModel] = useState<PricingModel>("fixed");
   const [saleType, setSaleType] = useState<SaleType>("auction");
+  const [revenueSharePct, setRevenueSharePct] = useState("");
+  const [requiredServiceIds, setRequiredServiceIds] = useState<Set<string>>(new Set());
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -141,6 +144,12 @@ export function ListingNewPage() {
           ...(description.trim() ? { description: description.trim() } : {}),
           ...(priceNumber != null && Number.isFinite(priceNumber) && priceNumber >= 0
             ? { price_hint: priceNumber }
+            : {}),
+          ...(pricingModel === "revenue_share" && revenueSharePct.trim()
+            ? { revenue_share_pct: Number(revenueSharePct) }
+            : {}),
+          ...(requiredServiceIds.size > 0
+            ? { required_service_ids: Array.from(requiredServiceIds) }
             : {}),
         } as any,
       },
@@ -276,7 +285,12 @@ export function ListingNewPage() {
                     <button
                       key={type}
                       type="button"
-                      onClick={() => setSaleType(type)}
+                      onClick={() => {
+                        setSaleType(type);
+                        if (type === "auction" && pricingModel === "revenue_share") {
+                          setPricingModel("fixed");
+                        }
+                      }}
                       className={`flex items-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium transition-all ${
                         active
                           ? type === "auction"
@@ -303,28 +317,32 @@ export function ListingNewPage() {
             {/* Pricing model toggle */}
             <div className="space-y-2">
               <Label>{t("listing.form.pricingModel")}</Label>
-              <div className="grid grid-cols-2 gap-2">
-                {(["fixed", "by_weight"] as PricingModel[]).map((model) => {
+              <div className={`grid gap-2 ${saleType === "direct" ? "grid-cols-3" : "grid-cols-2"}`}>
+                {(["fixed", "by_weight", ...(saleType === "direct" ? ["revenue_share"] : [])] as PricingModel[]).map((model) => {
                   const active = pricingModel === model;
+                  const modelColor =
+                    model === "fixed"
+                      ? "border-secondary bg-secondary/10 text-secondary"
+                      : model === "by_weight"
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-emerald-500 bg-emerald-50 text-emerald-700";
                   return (
                     <button
                       key={model}
                       type="button"
                       onClick={() => setPricingModel(model)}
-                      className={`flex items-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium transition-all ${
-                        active
-                          ? model === "fixed"
-                            ? "border-secondary bg-secondary/10 text-secondary"
-                            : "border-primary bg-primary/10 text-primary"
-                          : "border-border bg-background text-muted-foreground hover:border-muted-foreground/40"
+                      className={`flex flex-col items-center gap-1.5 rounded-lg border px-3 py-3 text-sm font-medium transition-all ${
+                        active ? modelColor : "border-border bg-background text-muted-foreground hover:border-muted-foreground/40"
                       }`}
                     >
                       {model === "fixed" ? (
                         <Tag className="h-4 w-4 shrink-0" />
-                      ) : (
+                      ) : model === "by_weight" ? (
                         <Scale className="h-4 w-4 shrink-0" />
+                      ) : (
+                        <Percent className="h-4 w-4 shrink-0" />
                       )}
-                      <span>{t(`listing.pricing_model.${model}`)}</span>
+                      <span className="text-center text-xs leading-tight">{t(`listing.pricing_model.${model}`)}</span>
                     </button>
                   );
                 })}
@@ -333,6 +351,26 @@ export function ListingNewPage() {
                 {t(`listing.form.pricingModel.${pricingModel}.hint`)}
               </p>
             </div>
+
+            {/* Revenue share percentage — shown only when revenue_share is selected */}
+            {pricingModel === "revenue_share" && (
+              <div className="space-y-2">
+                <Label htmlFor="revenueSharePct">{t("listing.form.revenue_share_pct")}</Label>
+                <Input
+                  id="revenueSharePct"
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  max={100}
+                  step="0.1"
+                  value={revenueSharePct}
+                  onChange={(e) => setRevenueSharePct(e.target.value)}
+                  placeholder="e.g. 15"
+                  dir="ltr"
+                />
+                <p className="text-xs text-muted-foreground">{t("listing.form.revenue_share_pct.hint")}</p>
+              </div>
+            )}
 
             {/* Price hint */}
             <div className="space-y-2">
@@ -347,6 +385,53 @@ export function ListingNewPage() {
                 onChange={(e) => setPriceHint(e.target.value)}
               />
             </div>
+
+            {/* Required services */}
+            {(allCapabilities as Capability[]).length > 0 && (
+              <div className="space-y-2">
+                <Label>{t("listing.form.requiredServices")}</Label>
+                <p className="text-xs text-muted-foreground">{t("listing.form.requiredServices.hint")}</p>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {(allCapabilities as Capability[]).map((cap) => {
+                    const checked = requiredServiceIds.has(cap.id);
+                    return (
+                      <label
+                        key={cap.id}
+                        className={`flex cursor-pointer items-start gap-2.5 rounded-lg border p-3 text-sm transition-colors ${
+                          checked
+                            ? "border-primary bg-primary/5 text-foreground"
+                            : "border-border bg-background text-muted-foreground hover:border-muted-foreground/40"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          className="mt-0.5 h-4 w-4 shrink-0 rounded accent-primary"
+                          checked={checked}
+                          onChange={() => {
+                            setRequiredServiceIds((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(cap.id)) next.delete(cap.id);
+                              else next.add(cap.id);
+                              return next;
+                            });
+                          }}
+                        />
+                        <div className="flex flex-col gap-0.5">
+                          <span className="font-medium text-foreground">{cap.name_ar}</span>
+                          <span className="text-xs text-muted-foreground">{cap.name_en}</span>
+                          {cap.requires_license && (
+                            <span className="mt-0.5 inline-flex items-center gap-1 text-xs text-amber-600">
+                              <Shield className="h-3 w-3" />
+                              {t("license.status.approved")}
+                            </span>
+                          )}
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Description */}
             <div className="space-y-2">

@@ -10,6 +10,9 @@ import {
   Scale,
   Gavel,
   ShoppingBag,
+  Shield,
+  TrendingUp,
+  TrendingDown,
 } from "lucide-react";
 import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
@@ -39,6 +42,8 @@ export function ListingCard({
   const isOpen = listing.status === "open";
   const isRtl = lang === "ar";
   const imageUrl = (listing as WasteListing & { image_url?: string }).image_url;
+  const myRank = (listing as WasteListing & { my_rank?: number }).my_rank;
+  const requiredServices = (listing as WasteListing & { required_services?: Array<{ id: string; name_ar: string; name_en: string; requires_license?: boolean }> }).required_services ?? [];
 
   const dateStr = new Date(listing.created_at).toLocaleDateString(
     lang === "ar" ? "ar-SA" : "en-US",
@@ -154,6 +159,38 @@ export function ListingCard({
           <p className="line-clamp-3 border-t border-border pt-3 text-sm text-muted-foreground">
             {listing.description}
           </p>
+        )}
+
+        {/* Required services badges */}
+        {requiredServices.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 border-t border-border pt-3">
+            <span className="text-xs text-muted-foreground me-1 self-center">{t("listing.required_services.label")}:</span>
+            {requiredServices.map((svc) => (
+              <span
+                key={svc.id}
+                className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700"
+              >
+                {svc.requires_license && <Shield className="h-3 w-3" />}
+                {lang === "ar" ? svc.name_ar : svc.name_en}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Bid status badge — shown only when the current buyer has made an offer */}
+        {myRank != null && (
+          <div className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium ${
+            myRank === 1
+              ? "border-secondary/40 bg-secondary/10 text-secondary"
+              : "border-muted text-muted-foreground bg-muted/30"
+          }`}>
+            {myRank === 1 ? (
+              <TrendingUp className="h-4 w-4 shrink-0" />
+            ) : (
+              <TrendingDown className="h-4 w-4 shrink-0" />
+            )}
+            <span>{myRank === 1 ? t("listing.bid.top") : t("listing.bid.not_top")}</span>
+          </div>
         )}
 
         {/* Footer actions (e.g. Close listing button) — stop propagation so card link doesn't fire */}

@@ -27,6 +27,7 @@ const translations: Record<string, Record<Language, string>> = {
   "action.getstarted": { ar: "ابدأ الآن", en: "Get Started" },
   "action.cancel": { ar: "إلغاء", en: "Cancel" },
   "action.back": { ar: "رجوع", en: "Back" },
+  "action.save": { ar: "حفظ", en: "Save" },
 
   "home.feature1.title": { ar: "للمنتجين", en: "For Producers" },
   "home.feature1.desc": {
@@ -378,6 +379,29 @@ const translations: Record<string, Record<Language, string>> = {
   // Pricing model labels
   "listing.pricing_model.fixed": { ar: "سعر ثابت", en: "Fixed price" },
   "listing.pricing_model.by_weight": { ar: "سعر بالوزن", en: "Price by weight" },
+  "listing.pricing_model.revenue_share": { ar: "مشاركة الإيرادات", en: "Revenue Share" },
+  "listing.form.pricingModel.revenue_share.hint": {
+    ar: "يحصل المنتج على نسبة مئوية من إيرادات المشتري بدلاً من سعر ثابت.",
+    en: "Producer receives a percentage of the buyer's revenue instead of a fixed price.",
+  },
+  "listing.form.revenue_share_pct": { ar: "نسبة مشاركة الإيرادات (%)", en: "Revenue Share %" },
+  "listing.form.revenue_share_pct.hint": {
+    ar: "النسبة المئوية التقديرية للمنتج من إيرادات المشتري (للعرض فقط).",
+    en: "Indicative percentage of buyer revenue for the producer (display only).",
+  },
+  "listing.form.requiredServices": { ar: "الخدمات المطلوبة (اختياري)", en: "Required Services (Optional)" },
+  "listing.form.requiredServices.hint": {
+    ar: "حدد الخدمات أو الشهادات التي يجب أن يمتلكها المشتري للتقديم.",
+    en: "Select services or certifications the buyer must hold to submit an offer.",
+  },
+  "listing.bid.top": { ar: "أنت أعلى عرض", en: "You're top bidder" },
+  "listing.bid.not_top": { ar: "عرضك ليس الأعلى", en: "Not the top offer" },
+  "listing.required_services.label": { ar: "خدمات مطلوبة", en: "Required services" },
+  "notification.title": { ar: "الإشعارات", en: "Notifications" },
+  "notification.bell.label": { ar: "الإشعارات", en: "Notifications" },
+  "notification.empty": { ar: "لا توجد إشعارات", en: "No notifications" },
+  "notification.mark_all_read": { ar: "تحديد الكل كمقروء", en: "Mark all as read" },
+  "notification.unread": { ar: "غير مقروء", en: "Unread" },
 
   // Deal stepper section title
   "deal.stepper.title": { ar: "مراحل الصفقة", en: "Deal stages" },

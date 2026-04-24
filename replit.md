@@ -151,6 +151,15 @@ A Saudi B2B MVP connecting waste producers, recycling buyers, and transport carr
 - i18n: added `offer.status.withdrawn`, withdraw confirm dialog keys, `unit.*` keys for all 9 unit options, `listing.form.subcategory` keys, `capabilities.*` keys
 - Fixed pre-existing TS errors: `deal-panel.tsx` type narrowing cast, `reports.tsx` invalid `width` prop
 
+**Batch 2A — Frontend Phase (April 2026)**
+- `listing-new.tsx`: Revenue Share pricing model option (only visible under Direct Sale); `revenue_share_pct` numeric input shown when selected; required services multi-select (checkboxes from `/lookup/capabilities`); both fields passed to POST /listings
+- `listing-card.tsx`: Required services badges (amber, shield icon if `requires_license`); bid status badge (top bidder = green / not top = muted); `my_rank` and `required_services` fields read from API response via cast
+- `topbar.tsx`: Notification bell with unread count badge (red dot); Popover showing up to 8 recent notifications; bilingual title/body display; mark-all-read and per-notification mark-read; queries `/api/notifications?unread=true` for badge count
+- `company-capabilities.tsx`: New page at `/company/capabilities`; fetches all capabilities and company's current capabilities; checkbox grid for selection; Save button with saving/saved/error feedback; accessible from Dashboard card for all roles
+- `dashboard.tsx`: Added "Company Capabilities" card for all three roles (producer, buyer, carrier)
+- `App.tsx`: `/company/capabilities` route added (all roles)
+- i18n: Added keys for `listing.pricing_model.revenue_share`, `listing.form.pricingModel.revenue_share.hint`, `listing.form.revenue_share_pct`, `listing.form.requiredServices`, `listing.bid.top`, `listing.bid.not_top`, `listing.required_services.label`, `notification.*` (title, bell, empty, mark_all_read, unread), `action.save`
+
 ### M2 — known technical limitations (non-blocking)
 - City filter updated to ILIKE partial-match (was exact-match — now fixed).
 - No DB indexes on `waste_listings.company_id` / `status` (acceptable at MVP volume).

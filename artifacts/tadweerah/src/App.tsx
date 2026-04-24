@@ -24,6 +24,7 @@ import { ListingDetailPage } from "@/pages/listing-detail";
 import { ParticipationsPage } from "@/pages/participations";
 import { TermsPage } from "@/pages/terms";
 import { ReportsPage } from "@/pages/reports";
+import { CompanyCapabilitiesPage } from "@/pages/company-capabilities";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -149,6 +150,14 @@ function ReportsRoute() {
   return (
     <SignedInRoleRoute allow={["producer", "buyer", "carrier"]}>
       <ReportsPage />
+    </SignedInRoleRoute>
+  );
+}
+
+function CompanyCapabilitiesRoute() {
+  return (
+    <SignedInRoleRoute allow={["producer", "buyer", "carrier"]}>
+      <CompanyCapabilitiesPage />
     </SignedInRoleRoute>
   );
 }
@@ -282,6 +291,7 @@ function ClerkProviderWithRoutes() {
             <Route path="/marketplace" component={MarketplaceRoute} />
             <Route path="/participations" component={ParticipationsRoute} />
             <Route path="/reports" component={ReportsRoute} />
+            <Route path="/company/capabilities" component={CompanyCapabilitiesRoute} />
             <Route path="/terms" component={TermsPage} />
             <Route component={NotFound} />
           </Switch>

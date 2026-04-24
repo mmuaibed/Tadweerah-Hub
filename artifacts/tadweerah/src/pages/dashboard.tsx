@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { useGetMe } from "@workspace/api-client-react";
 import type { CompanyType } from "@workspace/api-client-react";
-import { Recycle, ShoppingBag, Truck, TrendingUp, Loader2, ArrowLeft, ArrowRight } from "lucide-react";
+import { Recycle, ShoppingBag, Truck, TrendingUp, Loader2, ArrowLeft, ArrowRight, Settings } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AppLayout } from "@/components/app-layout";
@@ -30,12 +30,15 @@ const ROLE_CARDS: Record<CompanyType, RoleCard[]> = {
   producer: [
     { titleKey: "listing.new.title", descKey: "listing.new.subtitle", icon: Recycle, href: "/listings/new" },
     { titleKey: "myListings.title", descKey: "myListings.subtitle", icon: ShoppingBag, href: "/listings/mine" },
+    { titleKey: "capabilities.title", descKey: "capabilities.subtitle", icon: Settings, href: "/company/capabilities" },
   ],
   buyer: [
     { titleKey: "marketplace.title", descKey: "marketplace.subtitle", icon: ShoppingBag, href: "/marketplace" },
     { titleKey: "participations.title", descKey: "participations.subtitle", icon: TrendingUp, href: "/participations" },
+    { titleKey: "capabilities.title", descKey: "capabilities.subtitle", icon: Settings, href: "/company/capabilities" },
   ],
   carrier: [
+    { titleKey: "capabilities.title", descKey: "capabilities.subtitle", icon: Settings, href: "/company/capabilities" },
     { titleKey: "dashboard.role.carrier", descKey: "dashboard.comingsoon", icon: Truck },
   ],
 };
