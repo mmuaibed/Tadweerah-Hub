@@ -528,25 +528,6 @@ router.post(
       ? (req.body.required_service_ids as unknown[]).filter((v): v is string => typeof v === "string")
       : [];
 
-    // ── Sensitive-material license gate ──────────────────────────────────────
-    // If the chosen material category is marked is_sensitive=true, the producer
-    // company must have an approved license before listing it.
-    if (materialCategoryId) {
-      const [cat] = await db
-        .select({ is_sensitive: materialCategoriesTable.is_sensitive })
-        .from(materialCategoriesTable)
-        .where(eq(materialCategoriesTable.id, materialCategoryId))
-        .limit(1);
-
-      if (cat?.is_sensitive && company.license_status !== "approved") {
-        throw new HttpError(
-          403,
-          "LicenseRequired",
-          "An approved license is required to list materials in this category",
-        );
-      }
-    }
-
     const [created] = await db
       .insert(wasteListingsTable)
       .values({
