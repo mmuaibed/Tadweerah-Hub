@@ -1,0 +1,159 @@
+You are right — here is the actual Batch 2 item list.
+
+Please first classify each item as:
+
+* Clear → implement directly
+* Ambiguous / risky → explain concern + suggest alternative before implementation
+
+Also apply the project charter rule:
+User-facing labels must never be used as DB values, logic keys, routes, or conditions. Use internal keys only; labels must stay changeable later without code impact.
+
+---
+
+## Batch 2 Items
+
+### 0) API Client Regeneration
+
+Regenerate the API client first so all new fields are properly typed.
+
+### 1) Marketplace Listing Card UX
+
+Improve listing cards so buyers can decide quickly:
+
+* material
+* quantity/unit
+* city
+* price/unit + total
+* sale type
+* image thumbnail
+* badges:
+
+  * “أنت أعلى عرض”
+  * “عرضك ليس الأعلى”
+    No “مشارك في المزاد” badge.
+
+### 2) Withdraw Offer
+
+Allow buyer to withdraw offer before acceptance only.
+Withdrawn offers should not count in ranking/highest offer.
+
+### 3) Direct Sale Targeting
+
+For Direct Sale only, seller can choose:
+
+* everyone
+* selected company categories
+* one specific buyer
+
+### 4) Revenue Sharing
+
+Revenue Sharing appears only under Direct Sale.
+Store percentage only.
+No accounting/calculation logic now.
+
+### 5) Capabilities
+
+Companies can select capabilities:
+
+* sell
+* buy
+* transport/collect
+* recycle/process
+* safe disposal
+* sorting/aggregation
+* storage
+
+Capabilities are Admin-managed and each capability can have:
+
+* requires_license = true/false
+
+### 6) Eligibility Logic
+
+No blanket restriction on selling or buying.
+
+Eligibility applies only when:
+
+* capability requires license
+  or
+* material is sensitive
+
+If eligibility is required, only Approved companies can participate.
+
+### 7) Required Services in Listings
+
+Listings can require services such as:
+
+* transport
+* safe disposal
+
+Safe disposal is both:
+
+* a capability
+* a required service
+
+### 8) Safe Disposal
+
+Treat safe disposal as a sensitive service/capability.
+It requires Approved eligibility.
+Payment direction should remain flexible and handled by agreement, not hardcoded.
+
+### 9) Audit Log
+
+Create audit log table only, no UI.
+Track key actions:
+
+* create listing
+* submit offer
+* withdraw offer
+* accept offer
+* confirm payment
+* license update
+* eligibility status change
+
+### 10) In-App Notifications
+
+Basic notifications only, no email/SMS now.
+Events:
+
+* outbid
+* offer accepted
+* action required
+
+### 11) Multi-User Company Foundation
+
+Company supports multiple users:
+
+* Owner
+* Member
+
+Owner:
+
+* edit company profile
+* manage users
+* view all company activity
+
+Member:
+
+* create listings
+* submit offers
+* manage assigned/own activity
+
+No advanced RBAC now.
+
+### 12) Reports Data Readiness
+
+No real reports now.
+Ensure future reporting fields are preserved:
+
+* quantity
+* actual/final quantity when available
+* price
+* deal model
+* revenue sharing percentage
+* parties
+* dates
+* material/category
+
+---
+
+Please classify first, then proceed only with clear items.
