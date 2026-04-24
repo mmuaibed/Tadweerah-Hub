@@ -1,0 +1,205 @@
+Before manual browser testing, please run an expanded lightweight validation pass.
+
+Important:
+
+* No browser automation
+* No repeated end-to-end loops
+* No heavy Agent testing
+* Use typecheck, static audit, DB queries, and targeted API/curl checks only
+
+The goal is to catch high-risk issues early with low cost.
+
+---
+
+## 1) Build / Type Safety
+
+Please confirm:
+
+* API builds clean
+* Frontend compiles clean
+* TypeScript typecheck passes
+* No new console/build warnings from recent changes
+
+---
+
+## 2) Charter Rules Audit
+
+Please explicitly confirm:
+
+* No license gate exists on `POST /listings`
+* No eligibility gate exists on listing creation
+* Eligibility exists only at participation / offer stage
+* No `requireCompany(["producer"])`, `requireCompany(["buyer"])`, or old role-gated checks remain
+* No logic branches on `company.type`
+* No logic branches on `name_ar` or `name_en`
+* No hardcoded UUIDs in business logic
+* No display labels are used as DB values, route values, API keys, or conditions
+
+---
+
+## 3) Visibility / Eligibility / Creation Separation
+
+Please confirm by code inspection:
+
+* Creation = always allowed
+* Visibility = handled only by targeting filters
+* Eligibility = handled only when submitting offers
+* Targeting does not block because of license
+* Eligibility does not hide listings
+* Actions do not drive permissions
+* Capabilities / required services drive eligibility only
+
+---
+
+## 4) Lookup / Onboarding Readiness
+
+Please confirm:
+
+* `/api/lookup/company-actions` returns 200 publicly
+* `/api/lookup/company-categories` returns 200 publicly
+* material categories and unit options return data correctly
+* all lookup tables have stable internal `key`
+* no duplicate keys
+* company actions are seeded
+* capabilities are seeded
+* onboarding will not stay in infinite loading if a lookup fails
+* onboarding has error, retry, and empty states
+
+---
+
+## 5) Company Creation / Onboarding Backend
+
+Please confirm:
+
+* company creation no longer requires old `type`
+* company creation accepts `action_ids`
+* selected actions are saved correctly
+* license fields are optional
+* T&C acceptance timestamp is saved
+* company category is descriptive only
+* company actions do not affect eligibility
+
+---
+
+## 6) Capabilities / Required Services
+
+Please confirm:
+
+* company capabilities are saved and loaded correctly
+* listing required services are saved and returned correctly
+* required services use capability IDs / internal keys, not labels
+* service badges render from lookup data
+* safe disposal is treated as a required service/capability, not hardcoded as a separate flow
+
+---
+
+## 7) Offer / Eligibility Logic
+
+Please confirm using code inspection or minimal targeted API checks:
+
+* normal offer on normal listing is allowed
+* offer is blocked if buyer lacks a required capability
+* offer is blocked if required capability requires license and buyer is not approved
+* offer is blocked if material is sensitive and buyer is not approved
+* withdrawn offers are excluded from ranking
+* already_top logic still works
+* self-bidding warning logic was not broken
+
+---
+
+## 8) Direct Sale / Targeting / Private Deal
+
+Please confirm:
+
+* Auction listings are open visibility
+* Direct Sale targeting supports:
+
+  * open
+  * category
+  * specific company
+* non-targeted companies do not see targeted listings
+* targeted visibility does not depend on license
+* private/specific-company listings show the correct badge/banner
+* single-company targeting does not reintroduce old role logic
+
+---
+
+## 9) Revenue Sharing
+
+Please confirm:
+
+* Revenue Sharing appears only under Direct Sale
+* revenue share percentage is required only when Revenue Sharing is selected
+* percentage is stored correctly
+* visible in listing card, listing detail, and deal panel
+* no calculation or settlement logic exists yet
+
+---
+
+## 10) Multi-User / Members
+
+Please confirm:
+
+* `company_members` is seeded for existing owners
+* `requireCompany()` resolves company through membership
+* owner can manage members
+* member cannot manage members or company settings
+* all records remain company-owned (`company_id`)
+* users are actors only, not owners of business records
+* no company-type role assumptions remain
+
+---
+
+## 11) Notifications / Audit
+
+Please confirm:
+
+* notification routes compile
+* notification bell does not break when there are zero notifications
+* notifications link to listing wherever possible
+* no dead-end notification links
+* audit log writes do not break core flows
+* audit actions use internal keys
+
+---
+
+## 12) Raw Fetch / Auth Token Safety
+
+Please confirm all raw fetch/manual API calls include auth where needed:
+
+* deal actions
+* onboarding company creation
+* listing image upload
+* member actions
+* any remaining manual fetch calls
+
+Public lookup endpoints should remain public.
+
+---
+
+## 13) Defensive UI / Fallbacks
+
+Please confirm:
+
+* no undefined/null breaks listing cards
+* missing category/unit/company name has fallback
+* empty states exist where needed
+* error states exist where needed
+* no infinite loading states remain
+
+---
+
+## 14) Cost Control
+
+Please keep this validation lightweight.
+
+Do not run:
+
+* browser automation
+* full flow testing
+* repeated loops
+* long-running Agent validation
+
+If any check becomes heavy, stop and tell us before running it.
+
+Please provide a concise pass/fail report by section and list any issues found.
