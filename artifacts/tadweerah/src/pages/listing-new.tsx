@@ -184,7 +184,12 @@ export function ListingNewPage() {
         },
         onError: (err) => {
           console.warn("[tadweerah] listing creation failed:", err);
-          setError(t("listing.form.error"));
+          const code = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "";
+          if (code === "LicenseInvalid") {
+            setError(t("listing.form.error.license_invalid"));
+          } else {
+            setError(t("listing.form.error"));
+          }
         },
       },
     );
