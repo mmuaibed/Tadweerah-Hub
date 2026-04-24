@@ -256,19 +256,6 @@ router.post(
     const { company } = req as AuthedCompanyRequest;
     const data = parsed.data;
 
-    // License eligibility check: pending/rejected/expired licenses are blocked
-    if (
-      company.license_status === "pending" ||
-      company.license_status === "rejected" ||
-      company.license_status === "expired"
-    ) {
-      throw new HttpError(
-        403,
-        "LicenseIneligible",
-        `Your license is currently ${company.license_status}. You cannot create listings until your license is approved.`,
-      );
-    }
-
     // Extra fields not in generated schema (safe to read directly from body)
     const saleType = req.body.sale_type === "direct" ? "direct" : "auction";
     const materialCategoryId: string | null =
