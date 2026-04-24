@@ -472,7 +472,8 @@ function BuyerOfferSection({
     // P1 — pass explicit_self_improve when buyer confirms they are already top bidder
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data: any = { price_per_unit: unitVal, message: newMessage.trim() || undefined };
-    if (rank === 1 && confirmedSelfImprove) data.explicit_self_improve = true;
+    const myRank = (myOffer as unknown as { rank?: number })?.rank;
+    if (myRank === 1 && confirmedSelfImprove) data.explicit_self_improve = true;
 
     improveOffer(
       { wasteListingId, data },

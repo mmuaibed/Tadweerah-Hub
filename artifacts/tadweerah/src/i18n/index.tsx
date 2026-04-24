@@ -750,8 +750,8 @@ const translations: Record<string, Record<Language, string>> = {
   },
 
   // V6 — Compliance / trust signal
-  "deal.compliance.badge": { ar: "صفقة موثقة عبر تدويرة", en: "Deal certified by Tadweerah" },
-  "deal.compliance.tagline": { ar: "قابلة للتتبع والتوثيق", en: "Traceable and documented" },
+  "deal.compliance.badge": { ar: "صفقة موثقة عبر تدويرة", en: "Deal documented on Tadweerah" },
+  "deal.compliance.tagline": { ar: "قابلة للتتبع والتوثيق", en: "Traceable and recorded" },
   "deal.compliance.ref": { ar: "مرجع:", en: "Ref:" },
 
   // V7 — Impact summary on reports page
@@ -766,8 +766,8 @@ const translations: Record<string, Record<Language, string>> = {
     en: "Figures are estimates for operational monitoring purposes",
   },
   "reports.impact.certified": {
-    ar: "الأرقام موثقة عبر منصة تدويرة",
-    en: "Figures certified via Tadweerah platform",
+    ar: "الأرقام مسجلة عبر منصة تدويرة",
+    en: "Figures recorded via Tadweerah platform",
   },
 };
 
