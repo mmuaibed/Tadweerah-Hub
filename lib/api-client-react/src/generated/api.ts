@@ -26,12 +26,14 @@ import type {
   Company,
   CompanyCapabilityRow,
   CompanyCategory,
+  CompanyMember,
   ConfirmPaymentBody,
   CreateCompanyBody,
   CreateWasteListingBody,
   Deal,
   GetNotificationsParams,
   HealthStatus,
+  InviteCompanyMemberBody,
   ListMarketplaceListingsParams,
   ListMyListingsParams,
   ListMyOffersParams,
@@ -43,6 +45,7 @@ import type {
   Notification,
   OffersSummary,
   RejectOfferBody,
+  RemoveCompanyMember200,
   SubmitOfferBody,
   UnitOption,
   UpdateCapabilitiesBody,
@@ -441,6 +444,254 @@ export const useUpdateMyCapabilities = <
   TContext
 > => {
   return useMutation(getUpdateMyCapabilitiesMutationOptions(options));
+};
+
+/**
+ * @summary List all members of the caller's company
+ */
+export const getGetCompanyMembersUrl = () => {
+  return `/api/companies/members`;
+};
+
+export const getCompanyMembers = async (
+  options?: RequestInit,
+): Promise<CompanyMember[]> => {
+  return customFetch<CompanyMember[]>(getGetCompanyMembersUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetCompanyMembersQueryKey = () => {
+  return [`/api/companies/members`] as const;
+};
+
+export const getGetCompanyMembersQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCompanyMembers>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getCompanyMembers>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetCompanyMembersQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getCompanyMembers>>
+  > = ({ signal }) => getCompanyMembers({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getCompanyMembers>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetCompanyMembersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCompanyMembers>>
+>;
+export type GetCompanyMembersQueryError = ErrorType<void>;
+
+/**
+ * @summary List all members of the caller's company
+ */
+
+export function useGetCompanyMembers<
+  TData = Awaited<ReturnType<typeof getCompanyMembers>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getCompanyMembers>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCompanyMembersQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Invite a user to join the caller's company (owner only)
+ */
+export const getInviteCompanyMemberUrl = () => {
+  return `/api/companies/members`;
+};
+
+export const inviteCompanyMember = async (
+  inviteCompanyMemberBody: InviteCompanyMemberBody,
+  options?: RequestInit,
+): Promise<CompanyMember> => {
+  return customFetch<CompanyMember>(getInviteCompanyMemberUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(inviteCompanyMemberBody),
+  });
+};
+
+export const getInviteCompanyMemberMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof inviteCompanyMember>>,
+    TError,
+    { data: BodyType<InviteCompanyMemberBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof inviteCompanyMember>>,
+  TError,
+  { data: BodyType<InviteCompanyMemberBody> },
+  TContext
+> => {
+  const mutationKey = ["inviteCompanyMember"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof inviteCompanyMember>>,
+    { data: BodyType<InviteCompanyMemberBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return inviteCompanyMember(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type InviteCompanyMemberMutationResult = NonNullable<
+  Awaited<ReturnType<typeof inviteCompanyMember>>
+>;
+export type InviteCompanyMemberMutationBody = BodyType<InviteCompanyMemberBody>;
+export type InviteCompanyMemberMutationError = ErrorType<void>;
+
+/**
+ * @summary Invite a user to join the caller's company (owner only)
+ */
+export const useInviteCompanyMember = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof inviteCompanyMember>>,
+    TError,
+    { data: BodyType<InviteCompanyMemberBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof inviteCompanyMember>>,
+  TError,
+  { data: BodyType<InviteCompanyMemberBody> },
+  TContext
+> => {
+  return useMutation(getInviteCompanyMemberMutationOptions(options));
+};
+
+/**
+ * @summary Remove a member from the caller's company (owner only)
+ */
+export const getRemoveCompanyMemberUrl = (userId: string) => {
+  return `/api/companies/members/${userId}`;
+};
+
+export const removeCompanyMember = async (
+  userId: string,
+  options?: RequestInit,
+): Promise<RemoveCompanyMember200> => {
+  return customFetch<RemoveCompanyMember200>(
+    getRemoveCompanyMemberUrl(userId),
+    {
+      ...options,
+      method: "DELETE",
+    },
+  );
+};
+
+export const getRemoveCompanyMemberMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof removeCompanyMember>>,
+    TError,
+    { userId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof removeCompanyMember>>,
+  TError,
+  { userId: string },
+  TContext
+> => {
+  const mutationKey = ["removeCompanyMember"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof removeCompanyMember>>,
+    { userId: string }
+  > = (props) => {
+    const { userId } = props ?? {};
+
+    return removeCompanyMember(userId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RemoveCompanyMemberMutationResult = NonNullable<
+  Awaited<ReturnType<typeof removeCompanyMember>>
+>;
+
+export type RemoveCompanyMemberMutationError = ErrorType<void>;
+
+/**
+ * @summary Remove a member from the caller's company (owner only)
+ */
+export const useRemoveCompanyMember = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof removeCompanyMember>>,
+    TError,
+    { userId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof removeCompanyMember>>,
+  TError,
+  { userId: string },
+  TContext
+> => {
+  return useMutation(getRemoveCompanyMemberMutationOptions(options));
 };
 
 /**

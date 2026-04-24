@@ -156,6 +156,36 @@ export const UpdateMyCapabilitiesResponse = zod.array(
 );
 
 /**
+ * @summary List all members of the caller's company
+ */
+export const GetCompanyMembersResponseItem = zod.object({
+  user_id: zod.string(),
+  role: zod.enum(["owner", "member"]),
+  created_at: zod.coerce.date(),
+});
+export const GetCompanyMembersResponse = zod.array(
+  GetCompanyMembersResponseItem,
+);
+
+/**
+ * @summary Invite a user to join the caller's company (owner only)
+ */
+export const InviteCompanyMemberBody = zod.object({
+  user_id: zod.string().describe("Clerk user ID of the person to invite"),
+});
+
+/**
+ * @summary Remove a member from the caller's company (owner only)
+ */
+export const RemoveCompanyMemberParams = zod.object({
+  user_id: zod.coerce.string(),
+});
+
+export const RemoveCompanyMemberResponse = zod.object({
+  success: zod.boolean().optional(),
+});
+
+/**
  * @summary Public marketplace listings (open status only). Buyers browse here.
  */
 export const ListMarketplaceListingsQueryParams = zod.object({

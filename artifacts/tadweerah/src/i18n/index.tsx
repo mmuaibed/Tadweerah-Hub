@@ -534,6 +534,26 @@ const translations: Record<string, Record<Language, string>> = {
   "reports.metric.deals": { ar: "صفقات مكتملة", en: "Deals Completed" },
   "reports.metric.growth": { ar: "نمو شهري", en: "Monthly Growth" },
 
+  // Team Members
+  "members.title": { ar: "أعضاء الشركة", en: "Team Members" },
+  "members.subtitle": { ar: "أضف زملاءك إلى حساب شركتك وأدِر فريقك", en: "Add colleagues to your company account and manage your team" },
+  "members.empty": { ar: "لا يوجد أعضاء بعد", en: "No members yet" },
+  "members.role.owner": { ar: "مالك الحساب", en: "Account Owner" },
+  "members.role.member": { ar: "عضو", en: "Member" },
+  "members.role.you": { ar: "أنت", en: "you" },
+  "members.invite.title": { ar: "دعوة عضو جديد", en: "Invite a New Member" },
+  "members.invite.hint": { ar: "أدخل معرّف المستخدم (Clerk User ID) للشخص الذي تريد إضافته. يجب ألّا يكون منتسباً لشركة أخرى.", en: "Enter the Clerk User ID of the person you want to add. They must not already belong to another company." },
+  "members.invite.placeholder": { ar: "user_2....", en: "user_2...." },
+  "members.invite.cta": { ar: "إضافة", en: "Add" },
+  "members.invite.success": { ar: "تمت إضافة العضو بنجاح", en: "Member added successfully" },
+  "members.invite.error.empty": { ar: "يرجى إدخال معرّف المستخدم", en: "Please enter a user ID" },
+  "members.invite.error.generic": { ar: "حدث خطأ. يرجى المحاولة مجدداً", en: "Something went wrong. Please try again" },
+  "members.remove.cta": { ar: "إزالة العضو", en: "Remove Member" },
+  "members.remove.confirm.title": { ar: "تأكيد إزالة العضو", en: "Confirm Member Removal" },
+  "members.remove.confirm.desc": { ar: "هل أنت متأكد من إزالة هذا العضو من شركتك؟ لن يتمكن بعد ذلك من الوصول إلى أي من بياناتها.", en: "Are you sure you want to remove this member from your company? They will no longer have access to any company data." },
+  "members.dashboard.title": { ar: "أعضاء الفريق", en: "Team Members" },
+  "members.dashboard.subtitle": { ar: "أضف زملاءك وادر فريق شركتك على المنصة", en: "Add colleagues and manage your company team on the platform" },
+
   // Capabilities
   "capabilities.title": { ar: "خدمات الشركة", en: "Company Capabilities" },
   "capabilities.subtitle": { ar: "حدد ما تستطيع شركتك تقديمه", en: "Select what your company can offer" },

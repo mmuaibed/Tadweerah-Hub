@@ -11,6 +11,7 @@ import {
   Settings,
   FileText,
   BarChart2,
+  Users,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { AppLayout } from "@/components/app-layout";
@@ -59,6 +60,12 @@ const PLATFORM_CARDS: PlatformCard[] = [
     descKey: "reports.subtitle",
     icon: BarChart2,
     href: "/reports",
+  },
+  {
+    titleKey: "members.dashboard.title",
+    descKey: "members.dashboard.subtitle",
+    icon: Users,
+    href: "/company/members",
   },
 ];
 

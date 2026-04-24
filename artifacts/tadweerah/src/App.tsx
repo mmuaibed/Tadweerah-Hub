@@ -24,6 +24,7 @@ import { ParticipationsPage } from "@/pages/participations";
 import { TermsPage } from "@/pages/terms";
 import { ReportsPage } from "@/pages/reports";
 import { CompanyCapabilitiesPage } from "@/pages/company-capabilities";
+import { MembersPage } from "@/pages/members";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -230,6 +231,9 @@ function ClerkProviderWithRoutes() {
             </Route>
             <Route path="/company/capabilities">
               <CompanyRoute><CompanyCapabilitiesPage /></CompanyRoute>
+            </Route>
+            <Route path="/company/members">
+              <CompanyRoute><MembersPage /></CompanyRoute>
             </Route>
             <Route component={NotFound} />
           </Switch>

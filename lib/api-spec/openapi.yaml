@@ -118,6 +118,80 @@ paths:
         "403":
           description: Company required
 
+  /companies/members:
+    get:
+      operationId: getCompanyMembers
+      tags: [companies]
+      summary: List all members of the caller's company
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CompanyMember"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Company required
+    post:
+      operationId: inviteCompanyMember
+      tags: [companies]
+      summary: Invite a user to join the caller's company (owner only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InviteCompanyMemberBody"
+      responses:
+        "201":
+          description: Member added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompanyMember"
+        "400":
+          description: Validation error
+        "401":
+          description: Unauthorized
+        "403":
+          description: Company required or not owner
+        "409":
+          description: User already belongs to a company
+
+  /companies/members/{user_id}:
+    delete:
+      operationId: removeCompanyMember
+      tags: [companies]
+      summary: Remove a member from the caller's company (owner only)
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        "400":
+          description: Cannot remove self
+        "401":
+          description: Unauthorized
+        "403":
+          description: Company required or not owner
+        "404":
+          description: Member not found
+
   /listings:
     get:
       operationId: listMarketplaceListings
@@ -989,6 +1063,27 @@ components:
         pending = license submitted, awaiting admin review (no restrictions yet).
         approved = license verified.
         rejected / expired = license not valid.
+
+    CompanyMember:
+      type: object
+      properties:
+        user_id:
+          type: string
+        role:
+          type: string
+          enum: [owner, member]
+        created_at:
+          type: string
+          format: date-time
+      required: [user_id, role, created_at]
+
+    InviteCompanyMemberBody:
+      type: object
+      properties:
+        user_id:
+          type: string
+          description: Clerk user ID of the person to invite
+      required: [user_id]
 
     Company:
       type: object

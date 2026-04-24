@@ -36,6 +36,25 @@ export const LicenseStatus = {
   expired: "expired",
 } as const;
 
+export type CompanyMemberRole =
+  (typeof CompanyMemberRole)[keyof typeof CompanyMemberRole];
+
+export const CompanyMemberRole = {
+  owner: "owner",
+  member: "member",
+} as const;
+
+export interface CompanyMember {
+  user_id: string;
+  role: CompanyMemberRole;
+  created_at: string;
+}
+
+export interface InviteCompanyMemberBody {
+  /** Clerk user ID of the person to invite */
+  user_id: string;
+}
+
 export interface Company {
   id: string;
   name: string;
@@ -617,6 +636,10 @@ export interface Notification {
   created_at: string;
   read_at?: string;
 }
+
+export type RemoveCompanyMember200 = {
+  success?: boolean;
+};
 
 export type ListMarketplaceListingsParams = {
   material?: WasteMaterial;

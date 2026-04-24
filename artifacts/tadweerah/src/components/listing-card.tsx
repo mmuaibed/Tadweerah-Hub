@@ -13,6 +13,7 @@ import {
   Shield,
   TrendingUp,
   TrendingDown,
+  Lock,
 } from "lucide-react";
 import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
@@ -44,6 +45,7 @@ export function ListingCard({
   const imageUrl = (listing as WasteListing & { image_url?: string }).image_url;
   const myRank = (listing as WasteListing & { my_rank?: number }).my_rank;
   const requiredServices = (listing as WasteListing & { required_services?: Array<{ id: string; name_ar: string; name_en: string; requires_license?: boolean }> }).required_services ?? [];
+  const targetingType = (listing as WasteListing & { targeting_type?: string }).targeting_type ?? "open";
 
   const dateStr = new Date(listing.created_at).toLocaleDateString(
     lang === "ar" ? "ar-SA" : "en-US",
@@ -83,9 +85,17 @@ export function ListingCard({
               </span>
             </div>
           </div>
-          <Badge variant={isOpen ? "secondary" : "outline"} className="shrink-0">
-            {t(`status.${listing.status}`)}
-          </Badge>
+          <div className="flex flex-col items-end gap-1 shrink-0">
+            <Badge variant={isOpen ? "secondary" : "outline"}>
+              {t(`status.${listing.status}`)}
+            </Badge>
+            {targetingType !== "open" && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700">
+                <Lock className="h-2.5 w-2.5" />
+                {t(`listing.targeting.${targetingType}`)}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Details grid */}

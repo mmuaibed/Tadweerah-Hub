@@ -7,6 +7,7 @@ import {
   companyCapabilitiesTable,
   companyActionsTable,
   companyActionSelectionsTable,
+  companyMembersTable,
 } from "@workspace/db";
 import { CreateCompanyBody } from "@workspace/api-zod";
 import { requireAuth, type AuthedRequest } from "../middlewares/requireAuth";
@@ -36,10 +37,11 @@ router.post("/companies", requireAuth, async (req, res) => {
     return;
   }
 
+  // Check via company_members — a user can only belong to one company
   const existing = await db
-    .select({ id: companiesTable.id })
-    .from(companiesTable)
-    .where(eq(companiesTable.ownerUserId, userId))
+    .select({ company_id: companyMembersTable.company_id })
+    .from(companyMembersTable)
+    .where(eq(companyMembersTable.user_id, userId))
     .limit(1);
 
   if (existing.length > 0) {
@@ -83,6 +85,13 @@ router.post("/companies", requireAuth, async (req, res) => {
       accepted_terms_at: acceptedTerms ? new Date() : null,
     })
     .returning();
+
+  // Add the creating user as the company owner in company_members
+  await db.insert(companyMembersTable).values({
+    company_id: created.id,
+    user_id: userId,
+    role: "owner",
+  }).onConflictDoNothing();
 
   // Insert selected actions
   if (actionIds.length > 0) {
