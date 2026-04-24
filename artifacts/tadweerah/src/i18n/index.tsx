@@ -127,6 +127,7 @@ const translations: Record<string, Record<Language, string>> = {
   "listing.form.saving": { ar: "جاري النشر...", en: "Publishing..." },
   "listing.form.uploading": { ar: "جاري رفع الصورة...", en: "Uploading image..." },
   "listing.form.error": { ar: "تعذر نشر العرض. تأكد من البيانات وحاول مرة أخرى.", en: "Could not publish the listing. Check your inputs and try again." },
+  "listing.form.error.license_invalid": { ar: "لا يمكن نشر عرض جديد. الترخيص الحالي لشركتك غير صالح. تواصل مع الدعم.", en: "Cannot post a new listing. Your company's license has been rejected or expired. Please contact support." },
 
   // Producer — my listings
   "myListings.title": { ar: "عروضي", en: "My Listings" },

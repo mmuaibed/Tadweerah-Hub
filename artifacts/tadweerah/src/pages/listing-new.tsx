@@ -168,7 +168,14 @@ export function ListingNewPage() {
           queryClient.invalidateQueries({ queryKey: getListMyListingsQueryKey() });
           setLocation("/listings/mine");
         },
-        onError: () => setError(t("listing.form.error")),
+        onError: (err: unknown) => {
+          const msg = (err as Error)?.message ?? "";
+          setError(
+            msg.includes("LicenseInvalid") || msg.includes("license")
+              ? t("listing.form.error.license_invalid")
+              : t("listing.form.error"),
+          );
+        },
       },
     );
   };

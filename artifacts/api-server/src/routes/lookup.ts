@@ -54,7 +54,6 @@ function requireAdminKey(req: Request, res: Response, next: NextFunction): void 
 router.get(
   "/lookup/company-categories",
   requireAuth,
-  requireCompany(),
   async (_req, res) => {
     const rows = await db
       .select()
