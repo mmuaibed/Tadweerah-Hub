@@ -17,6 +17,30 @@ I prefer concise and clear communication. When implementing features, prioritize
 - **Quality still mandatory:** flag risky or critical paths, recommend the right level of testing, but protect the project budget.
 - **Act as a cost-aware CTO:** build fast, build well, protect budget.
 
+## Project Charter — Non-Negotiable System Rules
+
+These rules are **final and permanent**. They override any assumption or prior implementation.
+
+### 1. Listing Creation
+- POST /listings MUST always be allowed
+- No license gate, no eligibility gate, for ANY material (including sensitive)
+
+### 2. Eligibility Enforcement
+- Eligibility MUST be enforced ONLY at POST /offers
+- Applies when: material is sensitive OR required services need a license
+
+### 3. Separation of Concerns
+- Visibility (targeting) ≠ Eligibility ≠ Creation
+- Never mix these three under any condition
+
+### Process Rule
+Before adding any gate or restriction, explicitly state:
+- Which endpoint the gate is on
+- Why it belongs there per the rules above
+If it violates any rule → do NOT implement it.
+
+---
+
 ## Risk-Based Testing Classification
 
 | Risk | Examples | Approach |
