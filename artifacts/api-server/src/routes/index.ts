@@ -8,6 +8,7 @@ import offersRouter from "./offers";
 import dealsRouter from "./deals";
 import lookupRouter from "./lookup";
 import notificationsRouter from "./notifications";
+import statsRouter from "./stats";
 
 const router: IRouter = Router();
 
@@ -20,5 +21,6 @@ router.use(offersRouter);
 router.use(dealsRouter);
 router.use(lookupRouter);
 router.use(notificationsRouter);
+router.use(statsRouter);
 
 export default router;

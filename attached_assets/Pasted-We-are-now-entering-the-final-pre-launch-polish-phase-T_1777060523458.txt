@@ -1,0 +1,163 @@
+We are now entering the final pre-launch polish phase.
+
+The system is technically solid. The next step is not adding features, but making the value clearly visible to customers.
+
+This batch is a **Value Layer** — lightweight, no new complex logic, no changes to eligibility/permissions/schema.
+
+Goal:
+Make customers immediately see financial, operational, and compliance value.
+
+Before implementing:
+
+* confirm understanding of each item
+* implement directly if clear
+* do not introduce any new eligibility logic or DB schema changes
+
+---
+
+## 1) Deal Value Summary (High Priority)
+
+In the deal panel (or listing detail after offers):
+
+Display:
+
+* number of offers
+* highest offer vs first offer
+* difference (value gained)
+
+Example:
+"تم استلام 3 عروض. ارتفع السعر من 800 إلى 1050 ريال. القيمة الإضافية: 250 ريال"
+
+This must be computed from existing offers — no external data.
+
+---
+
+## 2) Governance Timeline
+
+In the deal panel:
+
+Add a simple timeline:
+
+* offer accepted
+* payment confirmed
+* dispatched
+* received
+
+Each step shows:
+
+* label
+* timestamp
+
+No new states — just display existing ones clearly.
+
+---
+
+## 3) Printable Deal Report
+
+Add a button:
+"طباعة / تحميل تقرير الصفقة"
+
+Report can be a simple printable page (no need for full PDF engine yet):
+
+Must include:
+
+* deal id
+* companies
+* material
+* quantity
+* unit + total price
+* current status
+* timeline
+
+Footer:
+"تمت عبر منصة تدويرة"
+
+---
+
+## 4) Mini Dashboard (Company View)
+
+On dashboard page:
+
+Add a simple metrics section:
+
+* number of listings
+* number of offers
+* number of completed deals
+* total quantity
+* total deal value
+
+No heavy aggregation — simple DB queries are enough.
+
+---
+
+## 5) Smart Value Messages
+
+Replace generic messages with value-aware messages:
+
+Examples:
+
+* "لديك 4 عروض — المنافسة قد تساعدك على تحسين السعر"
+* "تم توثيق الصفقة — يمكنك متابعة الخطوات التالية"
+* "تم إغلاق الصفقة — تمت إضافتها إلى سجل الأداء"
+
+No logic changes — just message improvements.
+
+---
+
+## 6) Compliance / Trust Signal
+
+Add a simple badge or label where appropriate:
+
+"صفقة موثقة عبر تدويرة"
+
+or
+
+"قابلة للتتبع والتوثيق"
+
+This should appear on completed deals and reports.
+
+---
+
+## 7) Impact Summary (Light)
+
+On reports page:
+
+Do NOT overpromise.
+
+Show:
+
+* total material volume processed
+* total deals
+* total offers
+* total value
+
+Add note:
+"الأرقام تقديرية لأغراض المتابعة التشغيلية"
+
+---
+
+## Constraints
+
+* No changes to:
+
+  * eligibility rules
+  * POST /listings behavior
+  * DB schema
+* No heavy testing or browser automation
+* Keep everything lightweight and fast
+
+---
+
+## Expected Outcome
+
+After this batch:
+
+* a partner should clearly see:
+
+  * financial benefit
+  * operational structure
+  * compliance support
+
+This is the final step before presenting to a strategic partner.
+
+Please confirm understanding, then proceed.

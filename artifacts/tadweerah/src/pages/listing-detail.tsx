@@ -1321,6 +1321,10 @@ export function ListingDetailPage() {
             onUpdate={(updated) => setDealOverride(updated)}
             pricingModel={(listing as typeof listing & { pricing_model?: string }).pricing_model}
             revenueSharePct={(listing as typeof listing & { revenue_share_pct?: number | null }).revenue_share_pct}
+            listingRef={ref}
+            listingMaterial={materialLabel}
+            listingQuantity={quantity}
+            myCompanyName={me?.company?.name}
           />
         )}
 

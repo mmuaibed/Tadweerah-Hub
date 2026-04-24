@@ -1,4 +1,6 @@
 import { Link } from "wouter";
+import { useAuth } from "@clerk/react";
+import { useQuery } from "@tanstack/react-query";
 import { useGetMe } from "@workspace/api-client-react";
 import {
   Recycle,
@@ -12,6 +14,8 @@ import {
   FileText,
   BarChart2,
   Users,
+  Package,
+  Handshake,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { AppLayout } from "@/components/app-layout";
@@ -25,54 +29,55 @@ interface PlatformCard {
 }
 
 const PLATFORM_CARDS: PlatformCard[] = [
-  {
-    titleKey: "listing.new.title",
-    descKey: "listing.new.subtitle",
-    icon: Recycle,
-    href: "/listings/new",
-  },
-  {
-    titleKey: "myListings.title",
-    descKey: "myListings.subtitle",
-    icon: FileText,
-    href: "/listings/mine",
-  },
-  {
-    titleKey: "marketplace.title",
-    descKey: "marketplace.subtitle",
-    icon: ShoppingBag,
-    href: "/marketplace",
-  },
-  {
-    titleKey: "participations.title",
-    descKey: "participations.subtitle",
-    icon: TrendingUp,
-    href: "/participations",
-  },
-  {
-    titleKey: "capabilities.title",
-    descKey: "capabilities.subtitle",
-    icon: Settings,
-    href: "/company/capabilities",
-  },
-  {
-    titleKey: "reports.title",
-    descKey: "reports.subtitle",
-    icon: BarChart2,
-    href: "/reports",
-  },
-  {
-    titleKey: "members.dashboard.title",
-    descKey: "members.dashboard.subtitle",
-    icon: Users,
-    href: "/company/members",
-  },
+  { titleKey: "listing.new.title", descKey: "listing.new.subtitle", icon: Recycle, href: "/listings/new" },
+  { titleKey: "myListings.title", descKey: "myListings.subtitle", icon: FileText, href: "/listings/mine" },
+  { titleKey: "marketplace.title", descKey: "marketplace.subtitle", icon: ShoppingBag, href: "/marketplace" },
+  { titleKey: "participations.title", descKey: "participations.subtitle", icon: TrendingUp, href: "/participations" },
+  { titleKey: "capabilities.title", descKey: "capabilities.subtitle", icon: Settings, href: "/company/capabilities" },
+  { titleKey: "reports.title", descKey: "reports.subtitle", icon: BarChart2, href: "/reports" },
+  { titleKey: "members.dashboard.title", descKey: "members.dashboard.subtitle", icon: Users, href: "/company/members" },
 ];
+
+interface DashboardStats {
+  listings_count: number;
+  offers_received_count: number;
+  offers_made_count: number;
+  completed_deals_count: number;
+  total_deal_value: number;
+}
+
+function useDashboardStats() {
+  const { getToken } = useAuth();
+  return useQuery<DashboardStats>({
+    queryKey: ["dashboard-stats"],
+    queryFn: async () => {
+      const token = await getToken();
+      const res = await fetch("/api/dashboard/stats", {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("stats fetch failed");
+      return res.json() as Promise<DashboardStats>;
+    },
+    staleTime: 60_000,
+  });
+}
+
+function StatPill({ icon: Icon, label, value }: { icon: typeof Recycle; label: string; value: number | string }) {
+  return (
+    <div className="flex flex-col items-center gap-1 rounded-xl border border-border bg-card px-4 py-3 min-w-0">
+      <Icon className="h-4 w-4 text-primary shrink-0" />
+      <span className="text-lg font-bold text-foreground leading-none">{value}</span>
+      <span className="text-[10px] text-muted-foreground text-center leading-tight">{label}</span>
+    </div>
+  );
+}
 
 export function DashboardPage() {
   const { t, lang } = useT();
   const Arrow = lang === "ar" ? ArrowLeft : ArrowRight;
   const { data: me, isLoading } = useGetMe();
+  const { data: stats } = useDashboardStats();
 
   if (isLoading || !me?.company) {
     return (
@@ -88,7 +93,7 @@ export function DashboardPage() {
 
   return (
     <AppLayout showSignOut>
-      <div className="mb-10">
+      <div className="mb-6">
         <p className="text-sm text-muted-foreground">{t("dashboard.welcome")}</p>
         <h1 className="mt-1 text-3xl font-bold text-foreground sm:text-4xl">{company.name}</h1>
         <p className="mt-2 flex items-center gap-1.5 text-sm text-muted-foreground">
@@ -96,6 +101,26 @@ export function DashboardPage() {
           {company.city}
         </p>
       </div>
+
+      {/* V4 — Activity stats strip */}
+      {stats && (
+        <div className="mb-8">
+          <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">{t("dashboard.stats.title")}</p>
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+            <StatPill icon={FileText}    label={t("dashboard.stats.listings")}         value={stats.listings_count} />
+            <StatPill icon={TrendingUp}  label={t("dashboard.stats.offers_received")}  value={stats.offers_received_count} />
+            <StatPill icon={Package}     label={t("dashboard.stats.offers_made")}      value={stats.offers_made_count} />
+            <StatPill icon={Handshake}   label={t("dashboard.stats.completed_deals")}  value={stats.completed_deals_count} />
+            <StatPill
+              icon={BarChart2}
+              label={t("dashboard.stats.total_value")}
+              value={stats.total_deal_value > 0
+                ? stats.total_deal_value.toLocaleString(lang === "ar" ? "ar-SA" : "en-US", { maximumFractionDigits: 0 })
+                : "—"}
+            />
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 sm:gap-6">
         {PLATFORM_CARDS.map(({ titleKey, descKey, icon: Icon, href }) => (

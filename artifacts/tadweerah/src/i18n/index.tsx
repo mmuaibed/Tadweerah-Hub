@@ -691,6 +691,84 @@ const translations: Record<string, Record<Language, string>> = {
     ar: "وصول تشغيلي — لا يمكنه تعديل إعدادات الشركة أو دعوة أعضاء",
     en: "Operational access only — cannot modify company settings or invite members",
   },
+
+  // ── Value Layer ──────────────────────────────────────────────────────────────
+
+  // V1 — Deal value summary (financial impact of auction competition)
+  "deal.value_summary.title": { ar: "القيمة المالية من المنافسة", en: "Auction Value Gained" },
+  "deal.value_summary.offers_count": { ar: "عروض مستلمة", en: "offers received" },
+  "deal.value_summary.first_price": { ar: "أول عرض", en: "First offer" },
+  "deal.value_summary.accepted_price": { ar: "السعر المقبول", en: "Accepted price" },
+  "deal.value_summary.value_gained": { ar: "القيمة الإضافية", en: "Value gained" },
+  "deal.value_summary.no_change": { ar: "لم يتغير السعر منذ أول عرض", en: "Price unchanged from first offer" },
+  "deal.value_summary.competition_note": { ar: "المنافسة بين المشترين رفعت السعر لصالحك", en: "Buyer competition drove the price up in your favour" },
+  "deal.value_summary.sar": { ar: "ريال", en: "SAR" },
+
+  // V2 — Governance timeline
+  "deal.timeline.title": { ar: "سجل حوكمة الصفقة", en: "Deal Governance Timeline" },
+  "deal.timeline.offer_accepted": { ar: "قُبل العرض", en: "Offer accepted" },
+  "deal.timeline.payment_confirmed": { ar: "تأكيد الدفع", en: "Payment confirmed" },
+  "deal.timeline.dispatched": { ar: "شُحنت البضاعة", en: "Goods dispatched" },
+  "deal.timeline.received": { ar: "استُلمت البضاعة", en: "Goods received" },
+  "deal.timeline.pending_label": { ar: "قيد الانتظار", en: "Pending" },
+
+  // V3 — Printable deal report
+  "deal.print.button": { ar: "طباعة / تحميل تقرير الصفقة", en: "Print / Download Deal Report" },
+  "deal.print.footer": { ar: "تمت عبر منصة تدويرة", en: "Processed via Tadweerah platform" },
+  "deal.print.title": { ar: "تقرير الصفقة", en: "Deal Report" },
+  "deal.print.deal_id": { ar: "رقم الصفقة", en: "Deal ID" },
+  "deal.print.producer": { ar: "المنتج", en: "Producer" },
+  "deal.print.buyer": { ar: "المشتري", en: "Buyer" },
+  "deal.print.material": { ar: "المادة", en: "Material" },
+  "deal.print.quantity": { ar: "الكمية", en: "Quantity" },
+  "deal.print.price_per_unit": { ar: "السعر لكل وحدة", en: "Price / unit" },
+  "deal.print.total_value": { ar: "القيمة الإجمالية", en: "Total value" },
+  "deal.print.status": { ar: "حالة الصفقة", en: "Deal status" },
+  "deal.print.timeline": { ar: "الجدول الزمني", en: "Timeline" },
+  "deal.print.generated_at": { ar: "تاريخ التقرير", en: "Report generated" },
+
+  // V4 — Dashboard stats strip
+  "dashboard.stats.title": { ar: "ملخص نشاطك", en: "Activity Summary" },
+  "dashboard.stats.listings": { ar: "إعلانات", en: "Listings" },
+  "dashboard.stats.offers_received": { ar: "عروض مستلمة", en: "Offers received" },
+  "dashboard.stats.offers_made": { ar: "عروض مقدمة", en: "Offers made" },
+  "dashboard.stats.completed_deals": { ar: "صفقات مكتملة", en: "Completed deals" },
+  "dashboard.stats.total_value": { ar: "قيمة الصفقات (ريال)", en: "Deal value (SAR)" },
+
+  // V5 — Smart value messages (contextual)
+  "deal.smart.auction_competition": {
+    ar: "لديك {count} عروض — المنافسة قد تساعدك على تحسين السعر",
+    en: "You have {count} offers — competition could help improve your price",
+  },
+  "deal.smart.deal_documented": {
+    ar: "تم توثيق الصفقة — يمكنك متابعة الخطوات التالية",
+    en: "Deal is documented — you can follow the next steps",
+  },
+  "deal.smart.deal_completed": {
+    ar: "تم إغلاق الصفقة — تمت إضافتها إلى سجل الأداء",
+    en: "Deal closed — it has been added to your performance record",
+  },
+
+  // V6 — Compliance / trust signal
+  "deal.compliance.badge": { ar: "صفقة موثقة عبر تدويرة", en: "Deal certified by Tadweerah" },
+  "deal.compliance.tagline": { ar: "قابلة للتتبع والتوثيق", en: "Traceable and documented" },
+  "deal.compliance.ref": { ar: "مرجع:", en: "Ref:" },
+
+  // V7 — Impact summary on reports page
+  "reports.impact.title": { ar: "ملخص الأثر التشغيلي", en: "Operational Impact Summary" },
+  "reports.impact.listings": { ar: "إعلانات نشرتها", en: "Listings published" },
+  "reports.impact.offers_received": { ar: "عروض استلمتها", en: "Offers received" },
+  "reports.impact.offers_made": { ar: "عروض قدّمتها", en: "Offers submitted" },
+  "reports.impact.completed_deals": { ar: "صفقات مكتملة", en: "Completed deals" },
+  "reports.impact.total_value": { ar: "إجمالي قيمة الصفقات (ريال)", en: "Total deal value (SAR)" },
+  "reports.impact.disclaimer": {
+    ar: "الأرقام تقديرية لأغراض المتابعة التشغيلية",
+    en: "Figures are estimates for operational monitoring purposes",
+  },
+  "reports.impact.certified": {
+    ar: "الأرقام موثقة عبر منصة تدويرة",
+    en: "Figures certified via Tadweerah platform",
+  },
 };
 
 export const I18nProvider: React.FC<{
