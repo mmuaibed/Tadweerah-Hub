@@ -376,19 +376,6 @@ router.post(
     }
     const { price_per_unit, message } = parsed.data;
 
-    // License eligibility check for buyers
-    if (
-      company.license_status === "pending" ||
-      company.license_status === "rejected" ||
-      company.license_status === "expired"
-    ) {
-      throw new HttpError(
-        403,
-        "LicenseIneligible",
-        `Your license is currently ${company.license_status}. You cannot submit offers until your license is approved.`,
-      );
-    }
-
     const [listing] = await db
       .select({
         id: wasteListingsTable.id,
