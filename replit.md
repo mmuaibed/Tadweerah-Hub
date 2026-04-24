@@ -19,13 +19,15 @@ I prefer concise and clear communication. When implementing features, prioritize
 
 ## Risk-Based Testing Classification
 
-Classify every change before deciding on validation depth:
+| Risk | Examples | Approach |
+|------|----------|----------|
+| **Low** | UI display, badges, i18n, error messages, showing existing data | Implement directly → light typecheck/build |
+| **Medium** | API changes, visibility rules, eligibility, notifications | Quick current-state review → state risk briefly → implement if clear → targeted checks only |
+| **High** | Auth, multi-user, payments, deal lifecycle, permissions, data migration | Stop → explain risk + proposed approach → wait for confirmation before implementing |
 
-| Risk | Examples | Validation |
-|------|----------|------------|
-| **Low** | UI tweaks, label changes, simple fields | build + light checks only |
-| **Medium** | New endpoints, business logic changes | targeted validation only (no full flows) |
-| **High** | Auth, payments, deal lifecycle, eligibility logic | propose test approach before running anything heavy |
+Testing:
+- Lightweight checks during development (typecheck, build, targeted curl).
+- Heavier testing only for critical flows or at end of a feature batch — justify cost before running.
 
 # System Architecture
 
