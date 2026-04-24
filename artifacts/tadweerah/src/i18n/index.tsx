@@ -339,6 +339,7 @@ const translations: Record<string, Record<Language, string>> = {
 
   "deal.settlement.fixed": { ar: "سعر ثابت", en: "Fixed Price" },
   "deal.settlement.by_weight": { ar: "حسب الوزن الفعلي", en: "By Actual Weight" },
+  "deal.settlement.revenue_share": { ar: "مشاركة الإيرادات", en: "Revenue Share" },
   "deal.settlement.label": { ar: "نوع التسوية", en: "Settlement Type" },
   "deal.field.price_per_unit": { ar: "السعر لكل وحدة", en: "Price per unit" },
   "deal.field.estimated_amount": { ar: "المبلغ التقديري *", en: "Estimated amount *" },

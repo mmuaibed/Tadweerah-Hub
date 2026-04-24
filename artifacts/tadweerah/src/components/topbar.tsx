@@ -1,6 +1,7 @@
 import { useClerk, Show } from "@clerk/react";
 import { Link, useLocation } from "wouter";
 import { LogOut, Bell } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { LanguageToggle } from "@/components/language-toggle";
 import { useT } from "@/i18n";
@@ -23,6 +24,8 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 function NotificationBell() {
   const { t, lang } = useT();
   const queryClient = useQueryClient();
+  const [, navigate] = useLocation();
+  const [open, setOpen] = useState(false);
 
   const { data: unreadData = [] } = useGetNotifications({ unread: true });
   const { data: allData = [] } = useGetNotifications({});
@@ -46,8 +49,16 @@ function NotificationBell() {
     },
   });
 
+  function handleNotificationClick(n: Notification) {
+    if (!n.is_read) markOneRead({ notificationId: n.id });
+    if (n.related_entity_type === "listing" && n.related_entity_id) {
+      setOpen(false);
+      navigate(`/listings/${n.related_entity_id}`);
+    }
+  }
+
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
           aria-label={t("notification.bell.label")}
@@ -94,32 +105,33 @@ function NotificationBell() {
             </p>
           ) : (
             <ul className="divide-y divide-border">
-              {notifications.map((n) => (
-                <li key={n.id}>
-                  <button
-                    className={`w-full px-4 py-3 text-start transition-colors hover:bg-muted/50 ${
-                      !n.is_read ? "bg-primary/5" : ""
-                    }`}
-                    onClick={() => {
-                      if (!n.is_read) markOneRead({ notificationId: n.id });
-                    }}
-                  >
-                    <p className={`text-sm leading-snug ${!n.is_read ? "font-semibold text-foreground" : "text-muted-foreground"}`}>
-                      {lang === "ar" ? n.title_ar : n.title_en}
-                    </p>
-                    {(n.body_ar ?? n.body_en) && (
-                      <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">
-                        {lang === "ar" ? (n.body_ar ?? n.body_en) : (n.body_en ?? n.body_ar)}
+              {notifications.map((n) => {
+                const isNavigable = n.related_entity_type === "listing" && !!n.related_entity_id;
+                return (
+                  <li key={n.id}>
+                    <button
+                      className={`w-full px-4 py-3 text-start transition-colors hover:bg-muted/50 ${
+                        !n.is_read ? "bg-primary/5" : ""
+                      } ${isNavigable ? "cursor-pointer" : ""}`}
+                      onClick={() => handleNotificationClick(n)}
+                    >
+                      <p className={`text-sm leading-snug ${!n.is_read ? "font-semibold text-foreground" : "text-muted-foreground"}`}>
+                        {lang === "ar" ? n.title_ar : n.title_en}
                       </p>
-                    )}
-                    {!n.is_read && (
-                      <span className="mt-1 inline-block text-xs text-primary">
-                        {t("notification.unread")}
-                      </span>
-                    )}
-                  </button>
-                </li>
-              ))}
+                      {(n.body_ar ?? n.body_en) && (
+                        <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">
+                          {lang === "ar" ? (n.body_ar ?? n.body_en) : (n.body_en ?? n.body_ar)}
+                        </p>
+                      )}
+                      {!n.is_read && (
+                        <span className="mt-1 inline-block text-xs text-primary">
+                          {t("notification.unread")}
+                        </span>
+                      )}
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>

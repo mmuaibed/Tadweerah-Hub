@@ -187,6 +187,7 @@ router.post(
       void notifyDealStageChange({
         companyId: updated.buyer_company_id,
         dealId,
+        listingId: updated.listing_id,
         type: "deal_payment_confirmed",
         title_ar: "تم تأكيد الدفع",
         title_en: "Payment Confirmed",
@@ -249,6 +250,7 @@ router.post(
     void notifyDealStageChange({
       companyId: updated.buyer_company_id,
       dealId,
+      listingId: updated.listing_id,
       type: "deal_payment_confirmed",
       title_ar: "تم تأكيد الدفع",
       title_en: "Payment Confirmed",
@@ -320,6 +322,7 @@ router.post(
     void notifyDealStageChange({
       companyId: updated.buyer_company_id,
       dealId,
+      listingId: updated.listing_id,
       type: "deal_dispatched",
       title_ar: "تم شحن البضاعة",
       title_en: "Goods Dispatched",
@@ -391,6 +394,7 @@ router.post(
     void notifyDealStageChange({
       companyId: updated.producer_company_id,
       dealId,
+      listingId: updated.listing_id,
       type: "deal_completed",
       title_ar: "اكتملت الصفقة",
       title_en: "Deal Completed",

@@ -129,6 +129,7 @@ export async function notifyOfferRejected({
 export async function notifyDealStageChange({
   companyId,
   dealId,
+  listingId,
   type,
   title_ar,
   title_en,
@@ -137,6 +138,7 @@ export async function notifyDealStageChange({
 }: {
   companyId: string;
   dealId: string;
+  listingId?: string;
   type: string;
   title_ar: string;
   title_en: string;
@@ -150,7 +152,7 @@ export async function notifyDealStageChange({
     title_en,
     body_ar,
     body_en,
-    relatedEntityType: "deal",
-    relatedEntityId: dealId,
+    relatedEntityType: listingId ? "listing" : "deal",
+    relatedEntityId: listingId ?? dealId,
   });
 }

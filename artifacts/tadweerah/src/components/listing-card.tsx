@@ -120,6 +120,11 @@ export function ListingCard({
               >
                 {t(`listing.pricing_model.${listing.pricing_model}`)}
               </span>
+              {listing.pricing_model === "revenue_share" && listing.revenue_share_pct != null && (
+                <span className="text-xs text-muted-foreground">
+                  {listing.revenue_share_pct}%
+                </span>
+              )}
             </div>
           )}
           {(() => {

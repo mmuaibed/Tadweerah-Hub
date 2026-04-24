@@ -37,6 +37,8 @@ import {
   Check,
   Gavel,
   ShoppingBag,
+  Scale,
+  Percent,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -1138,6 +1140,20 @@ export function ListingDetailPage() {
               />
             );
           })()}
+          {listing.pricing_model && listing.pricing_model !== "fixed" && (
+            <DetailRow
+              icon={<Scale className="h-4 w-4" />}
+              label={t("listing.form.pricingModel")}
+              value={t(`listing.pricing_model.${listing.pricing_model}`)}
+            />
+          )}
+          {listing.pricing_model === "revenue_share" && listing.revenue_share_pct != null && (
+            <DetailRow
+              icon={<Percent className="h-4 w-4" />}
+              label={t("listing.form.revenue_share_pct")}
+              value={`${listing.revenue_share_pct}%`}
+            />
+          )}
           <DetailRow icon={<Building2 className="h-4 w-4" />} label={t("listing.detail.publishedBy")} value={listing.company_name} />
           <DetailRow icon={<Calendar className="h-4 w-4" />} label={t("listing.publishedOn")} value={dateStr} />
         </div>
