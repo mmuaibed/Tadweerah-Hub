@@ -1365,6 +1365,7 @@ export function ListingDetailPage() {
             listingCategory={categoryLabel ?? undefined}
             listingQuantity={quantity}
             myCompanyName={me?.company?.name}
+            myPhone={(me as { company?: { contactPhone?: string } } | undefined)?.company?.contactPhone}
           />
         )}
 

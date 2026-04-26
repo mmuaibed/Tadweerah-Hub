@@ -96,6 +96,7 @@ function serialize(
     material_category_name_en?: string | null;
     material_subcategory_id?: string | null;
     unit_option_id?: string | null;
+    unit_notes?: string | null;
     revenue_share_pct?: string | null;
     targeting_type?: string | null;
     target_company_id?: string | null;
@@ -118,6 +119,7 @@ function serialize(
     material_category_name_en: r.material_category_name_en ?? null,
     material_subcategory_id: r.material_subcategory_id ?? null,
     unit_option_id: r.unit_option_id ?? null,
+    unit_notes: r.unit_notes ?? null,
     revenue_share_pct: r.revenue_share_pct != null ? Number(r.revenue_share_pct) : undefined,
     visibility: row.visibility,
     targeting_type: r.targeting_type ?? "open",
@@ -217,6 +219,7 @@ const baseSelect = {
   material_category_name_en: materialCategoriesTable.name_en,
   material_subcategory_id: wasteListingsTable.material_subcategory_id,
   unit_option_id: wasteListingsTable.unit_option_id,
+  unit_notes: wasteListingsTable.unit_notes,
   revenue_share_pct: wasteListingsTable.revenue_share_pct,
   visibility: wasteListingsTable.visibility,
   targeting_type: wasteListingsTable.targeting_type,
@@ -491,6 +494,10 @@ router.post(
       typeof req.body.material_subcategory_id === "string" ? req.body.material_subcategory_id : null;
     const unitOptionId: string | null =
       typeof req.body.unit_option_id === "string" ? req.body.unit_option_id : null;
+    const unitNotes: string | null =
+      typeof req.body.unit_notes === "string" && req.body.unit_notes.trim()
+        ? req.body.unit_notes.trim()
+        : null;
     const pricingModel: string = typeof req.body.pricing_model === "string" ? req.body.pricing_model : (data.pricing_model ?? "fixed");
 
     // ── Revenue-share validation ───────────────────────────────────────────────
@@ -578,6 +585,7 @@ router.post(
         material_category_id: materialCategoryId,
         material_subcategory_id: materialSubcategoryId,
         unit_option_id: unitOptionId,
+        unit_notes: unitNotes,
         revenue_share_pct: revenueSharePct,
         targeting_type: targetingType,
         target_company_id: targetCompanyId,

@@ -67,7 +67,10 @@ export function ListingNewPage() {
 
   const defaultUnitId = (unitOptions as UnitOption[])[0]?.id ?? "";
   const [unitOptionId, setUnitOptionId] = useState<string>("");
+  const [unitNotes, setUnitNotes] = useState<string>("");
   const resolvedUnitId = unitOptionId || defaultUnitId;
+  const selectedUnitForDisplay = (unitOptions as UnitOption[]).find((u) => u.id === resolvedUnitId);
+  const isOtherUnit = selectedUnitForDisplay?.key === "other";
 
   const [quantity, setQuantity] = useState("");
   const [city, setCity] = useState("");
@@ -186,6 +189,7 @@ export function ListingNewPage() {
           material_category_id: materialCategoryId,
           ...(materialSubcategoryId ? { material_subcategory_id: materialSubcategoryId } : {}),
           unit_option_id: resolvedUnitId,
+          ...(isOtherUnit && unitNotes.trim() ? { unit_notes: unitNotes.trim() } : {}),
           ...(description.trim() ? { description: description.trim() } : {}),
           ...(priceNumber != null && Number.isFinite(priceNumber) && priceNumber >= 0
             ? { price_hint: priceNumber }
@@ -334,6 +338,19 @@ export function ListingNewPage() {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* "Other" unit — free-text description */}
+            {isOtherUnit && (
+              <div className="space-y-2">
+                <Label htmlFor="unit_notes">{t("listing.form.unit_notes")}</Label>
+                <Input
+                  id="unit_notes"
+                  placeholder={t("listing.form.unit_notes.placeholder")}
+                  value={unitNotes}
+                  onChange={(e) => setUnitNotes(e.target.value)}
+                />
+              </div>
+            )}
 
             {/* Sale type toggle */}
             <div className="space-y-2">

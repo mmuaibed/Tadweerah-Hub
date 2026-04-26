@@ -13,6 +13,8 @@ import {
   Printer,
   TrendingUp,
   Shield,
+  Copy,
+  Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -65,6 +67,8 @@ interface DealPanelProps {
   myCompanyName?: string;
   /** Material category name (localised) for display and print */
   listingCategory?: string;
+  /** Authenticated user's company phone (for print report) */
+  myPhone?: string;
 }
 
 type PendingAction = "confirm-payment" | "confirm-dispatch" | "confirm-receipt" | null;
@@ -264,14 +268,21 @@ function printDealReport(
     listingCategory?: string;
     listingQuantity?: number;
     myCompanyName?: string;
+    myPhone?: string;
   },
 ) {
   const producerName = role === "producer"
     ? (opts.myCompanyName ?? "—")
     : (deal.counterparty?.name ?? "—");
+  const producerPhone = role === "producer"
+    ? (opts.myPhone ?? "")
+    : (deal.counterparty?.contact_phone ?? "");
   const buyerName = role === "buyer"
     ? (opts.myCompanyName ?? "—")
     : (deal.counterparty?.name ?? "—");
+  const buyerPhone = role === "buyer"
+    ? (opts.myPhone ?? "")
+    : (deal.counterparty?.contact_phone ?? "");
 
   const statusMap: Record<DealStatus, string> = {
     active: lang === "ar" ? "انتظار تأكيد الدفع" : "Awaiting payment",
@@ -296,6 +307,7 @@ function printDealReport(
       : t("deal.timeline.pending_label");
 
   const dir = lang === "ar" ? "rtl" : "ltr";
+  const marginStart = dir === "rtl" ? "margin-right" : "margin-left";
   const totalValue = (deal.final_amount ?? deal.estimated_amount).toLocaleString();
   const ref = dealRef(deal.id, deal.created_at);
 
@@ -303,54 +315,108 @@ function printDealReport(
 <html dir="${dir}" lang="${lang}">
 <head>
   <meta charset="utf-8"/>
-  <title>${t("deal.print.title")} — ${opts.listingRef ?? deal.id.slice(0, 8)}</title>
+  <title>${lang === "ar" ? "سجل العملية التجارية" : "Transaction Record"} — ${ref}</title>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:Tajawal,Arial,sans-serif;color:#111;padding:32px;direction:${dir};font-size:13px}
-    h1{font-size:20px;font-weight:700;margin-bottom:4px}
-    .sub{color:#555;font-size:12px;margin-bottom:24px}
+    body{font-family:Tajawal,Arial,sans-serif;color:#111;padding:36px;direction:${dir};font-size:13px;background:#fff}
+    .header{display:flex;align-items:center;gap:16px;margin-bottom:24px;padding-bottom:20px;border-bottom:3px solid #16a34a}
+    .logo-icon{width:48px;height:48px;background:linear-gradient(135deg,#1e40af,#16a34a);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;font-weight:700;flex-shrink:0;text-align:center;line-height:48px}
+    .logo-name{font-size:22px;font-weight:700;color:#1e40af}
+    .logo-tag{font-size:11px;color:#6b7280}
+    .ref-box{${marginStart}:auto;text-align:${dir === "rtl" ? "right" : "left"}}
+    .ref-label{font-size:10px;color:#6b7280}
+    .ref-value{font-size:16px;font-weight:700;color:#1e40af;font-family:monospace;direction:ltr;display:block}
+    .doc-note{background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:10px 14px;margin-bottom:20px;font-size:11px;color:#1d4ed8}
+    .total-box{background:#f0fdf4;border:2px solid #16a34a;border-radius:10px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .total-label{font-size:11px;color:#4b7a58;margin-bottom:2px}
+    .total-value{font-size:26px;font-weight:700;color:#1e40af}
+    .total-status{display:inline-block;background:#dcfce7;border:1px solid #86efac;color:#166534;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600}
     table{width:100%;border-collapse:collapse;margin-bottom:20px}
-    td{padding:6px 8px;border:1px solid #ddd;vertical-align:top}
-    td:first-child{font-weight:600;background:#f5f5f5;width:38%}
-    h2{font-size:14px;font-weight:700;margin:20px 0 8px;border-bottom:1px solid #ddd;padding-bottom:4px}
-    .timeline-row{display:flex;gap:12px;margin-bottom:8px}
-    .tl-dot{width:10px;height:10px;border-radius:50%;background:#2563eb;margin-top:3px;flex-shrink:0}
-    .tl-dot.pending{background:#ccc}
+    td{padding:8px 10px;border:1px solid #e5e7eb;vertical-align:top}
+    td:first-child{font-weight:600;background:#f9fafb;width:36%;color:#374151}
+    .phone-cell{font-family:monospace;font-size:14px;direction:ltr;color:#1e40af;font-weight:700;display:block;margin-top:2px}
+    h2{font-size:12px;font-weight:700;color:#1e40af;margin:20px 0 8px;border-bottom:2px solid #dbeafe;padding-bottom:4px;text-transform:uppercase;letter-spacing:0.05em}
+    .timeline-row{display:flex;gap:12px;margin-bottom:8px;align-items:flex-start}
+    .tl-dot{width:10px;height:10px;border-radius:50%;background:#1e40af;margin-top:3px;flex-shrink:0}
+    .tl-dot.pending{background:#d1d5db}
     .tl-label{font-size:12px;font-weight:600}
-    .tl-ts{font-size:11px;color:#555}
-    .footer{margin-top:32px;border-top:1px solid #ddd;padding-top:12px;text-align:center;font-size:11px;color:#777}
-    .badge{display:inline-block;background:#dcfce7;border:1px solid #86efac;color:#166534;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600}
-    @media print{body{padding:16px}}
+    .tl-ts{font-size:11px;color:#6b7280}
+    .footer{margin-top:32px;border-top:1px solid #e5e7eb;padding-top:14px;text-align:center;font-size:11px;color:#9ca3af}
+    .footer strong{color:#6b7280}
+    @media print{body{padding:20px}}
   </style>
 </head>
 <body>
-  <h1>${t("deal.print.title")}</h1>
-  <p class="sub">${t("deal.print.deal_id")}: <strong>${ref}</strong>${opts.listingRef ? ` &nbsp;|&nbsp; ${opts.listingRef}` : ""}</p>
-  <h2>${lang === "ar" ? "أطراف الصفقة" : "Parties"}</h2>
+
+  <div class="header">
+    <div class="logo-icon">ت</div>
+    <div>
+      <div class="logo-name">تدويرة</div>
+      <div class="logo-tag">Tadweerah · منصة إدارة المواد القابلة للتدوير</div>
+    </div>
+    <div class="ref-box">
+      <div class="ref-label">${lang === "ar" ? "رقم مرجع الصفقة" : "Deal Reference"}</div>
+      <span class="ref-value">${ref}</span>
+      ${opts.listingRef ? `<div class="ref-label" style="margin-top:4px">${opts.listingRef}</div>` : ""}
+    </div>
+  </div>
+
+  <div class="doc-note">
+    ${lang === "ar"
+      ? `هذه الوثيقة سجل للعملية التجارية تم توثيقها عبر منصة تدويرة. تاريخ إنشاء الصفقة: ${formatTs(deal.created_at)}`
+      : `This document is a transaction record documented via Tadweerah platform. Deal created: ${formatTs(deal.created_at)}`}
+  </div>
+
+  <div class="total-box">
+    <div>
+      <div class="total-label">${lang === "ar" ? "القيمة الإجمالية للصفقة" : "Total Deal Value"}</div>
+      <div class="total-value">${totalValue} ${lang === "ar" ? "ريال" : "SAR"}</div>
+    </div>
+    <div><span class="total-status">${statusMap[deal.status]}</span></div>
+  </div>
+
+  <h2>${lang === "ar" ? "أطراف الصفقة والتواصل" : "Parties & Contact"}</h2>
   <table>
-    <tr><td>${t("deal.print.producer")}</td><td>${producerName}</td></tr>
-    <tr><td>${t("deal.print.buyer")}</td><td>${buyerName}</td></tr>
+    <tr>
+      <td>${t("deal.print.producer")}</td>
+      <td>
+        <span style="font-weight:600">${producerName}</span>
+        ${producerPhone ? `<span class="phone-cell">${producerPhone}</span>` : ""}
+      </td>
+    </tr>
+    <tr>
+      <td>${t("deal.print.buyer")}</td>
+      <td>
+        <span style="font-weight:600">${buyerName}</span>
+        ${buyerPhone ? `<span class="phone-cell">${buyerPhone}</span>` : ""}
+      </td>
+    </tr>
   </table>
+
   <h2>${lang === "ar" ? "تفاصيل المادة والسعر" : "Material & Price"}</h2>
   <table>
     ${opts.listingCategory ? `<tr><td>${lang === "ar" ? "الفئة" : "Category"}</td><td>${opts.listingCategory}</td></tr>` : ""}
     ${opts.listingMaterial ? `<tr><td>${t("deal.print.material")}</td><td>${opts.listingMaterial}</td></tr>` : ""}
     ${opts.listingQuantity != null ? `<tr><td>${t("deal.print.quantity")}</td><td>${opts.listingQuantity.toLocaleString()} ${unit}</td></tr>` : ""}
     <tr><td>${t("deal.print.price_per_unit")}</td><td>${deal.price_per_unit.toLocaleString()} ${lang === "ar" ? "ريال" : "SAR"} / ${unit}</td></tr>
-    <tr><td>${t("deal.print.total_value")}</td><td><strong>${totalValue} ${lang === "ar" ? "ريال" : "SAR"}</strong></td></tr>
-    <tr><td>${t("deal.print.status")}</td><td>${statusMap[deal.status]}</td></tr>
+    <tr><td>${t("deal.print.total_value")}</td><td style="font-weight:700;color:#1e40af">${totalValue} ${lang === "ar" ? "ريال" : "SAR"}</td></tr>
+    ${deal.payment_reference ? `<tr><td>${lang === "ar" ? "رقم الدفعة" : "Payment Reference"}</td><td>${deal.payment_reference}</td></tr>` : ""}
   </table>
+
   <h2>${t("deal.print.timeline")}</h2>
-  <div>
+  <div style="margin-bottom:20px">
     ${timelineRows.map((row) => `
     <div class="timeline-row">
       <div class="tl-dot${row.ts ? "" : " pending"}"></div>
       <div><div class="tl-label">${row.label}</div><div class="tl-ts">${formatTs(row.ts)}</div></div>
     </div>`).join("")}
   </div>
-  ${deal.status === "completed" ? `<p style="margin-top:12px"><span class="badge">✓ ${t("deal.compliance.badge")}</span></p>` : ""}
+  ${deal.status === "completed" ? `<p style="margin-bottom:16px"><span class="total-status">✓ ${t("deal.compliance.badge")}</span></p>` : ""}
+
   <div class="footer">
-    ${t("deal.print.footer")} &nbsp;|&nbsp; ${t("deal.print.generated_at")}: ${new Date().toLocaleString(lang === "ar" ? "ar-SA" : "en-US")}
+    <strong>تدويرة — Tadweerah</strong>
+    &nbsp;·&nbsp; ${lang === "ar" ? "وُثِّقت عبر المنصة" : "Documented via platform"}
+    &nbsp;|&nbsp; ${t("deal.print.generated_at")}: ${new Date().toLocaleString(lang === "ar" ? "ar-SA" : "en-US")}
   </div>
   <script>window.onload=function(){window.print()}<\/script>
 </body>
@@ -363,7 +429,7 @@ function printDealReport(
   }
 }
 
-export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSharePct, listingRef, listingMaterial, listingQuantity, myCompanyName, listingCategory }: DealPanelProps) {
+export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSharePct, listingRef, listingMaterial, listingQuantity, myCompanyName, listingCategory, myPhone }: DealPanelProps) {
   const { t, lang } = useT();
   const { getToken } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -372,6 +438,14 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
   const [paymentRef, setPaymentRef] = useState("");
   const [paymentProofUrl, setPaymentProofUrl] = useState("");
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
+  const [copied, setCopied] = useState(false);
+
+  function copyDealRef() {
+    const ref = dealRef(deal.id, deal.created_at);
+    navigator.clipboard.writeText(ref).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
 
   const currentStepIndex = STATUS_STEPS.indexOf(deal.status);
 
@@ -483,11 +557,31 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
         {/* Header */}
         <div className="px-4 py-3 bg-primary/10 space-y-2">
           <div className="flex items-center justify-between">
-            <div>
+            <div className="min-w-0 flex-1">
               <span className="font-semibold text-primary text-sm">{t("deal.panel.title")}</span>
-              <p className="text-[10px] font-mono text-primary/50 mt-0.5" dir="ltr">{dealRef(deal.id, deal.created_at)}</p>
+              {(listingMaterial || deal.counterparty?.name) && (
+                <p className="text-xs text-primary/70 mt-0.5 truncate">
+                  {[listingMaterial, deal.counterparty?.name].filter(Boolean).join(" · ")}
+                </p>
+              )}
+              <div className="flex items-center gap-2 mt-1.5">
+                <span className="text-sm font-bold font-mono text-primary tracking-wider" dir="ltr">
+                  {dealRef(deal.id, deal.created_at)}
+                </span>
+                <button
+                  type="button"
+                  onClick={copyDealRef}
+                  className="flex items-center gap-1 text-primary/60 hover:text-primary transition-colors"
+                  aria-label={t("deal.ref.copy")}
+                >
+                  {copied
+                    ? <Check className="h-3.5 w-3.5 text-green-600" />
+                    : <Copy className="h-3.5 w-3.5" />}
+                  {copied && <span className="text-[10px] text-green-600 font-medium">{t("deal.ref.copied")}</span>}
+                </button>
+              </div>
             </div>
-            <Badge variant={statusBadgeVariant(deal.status)}>
+            <Badge variant={statusBadgeVariant(deal.status)} className="shrink-0">
               {statusLabel(deal.status)}
             </Badge>
           </div>
@@ -543,22 +637,31 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
           </div>
         )}
 
-        {/* Contact */}
+        {/* Contact — prominent congratulations card */}
         {deal.counterparty && (
-          <div className="px-4 py-3 flex items-center gap-3 bg-background border-b border-primary/10">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 shrink-0">
-              <Phone className="h-4 w-4 text-primary" />
+          <div className="border-b border-green-200">
+            <div className="px-4 py-3 flex items-start gap-3 bg-green-50">
+              <CheckCircle2 className="h-5 w-5 text-green-700 shrink-0 mt-0.5" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold text-green-900">{t("deal.contact.congratulations")}</p>
+                <p className="text-xs text-green-700 mt-0.5">{t("deal.contact.can_now_contact")}</p>
+              </div>
             </div>
-            <div className="min-w-0">
-              <p className="text-xs text-muted-foreground">{t("deal.contact.title")}</p>
-              <p className="font-semibold text-sm truncate">{deal.counterparty.name}</p>
-              <a
-                href={`tel:${deal.counterparty.contact_phone}`}
-                dir="ltr"
-                className="text-sm text-primary font-mono hover:underline"
-              >
-                {deal.counterparty.contact_phone}
-              </a>
+            <div className="px-4 py-3 bg-background">
+              <p className="text-[11px] font-medium text-muted-foreground mb-1.5">{t("deal.contact.counterparty_label")}</p>
+              <p className="font-bold text-base text-foreground leading-tight">{deal.counterparty.name}</p>
+              {deal.counterparty.contact_phone ? (
+                <a
+                  href={`tel:${deal.counterparty.contact_phone}`}
+                  dir="ltr"
+                  className="inline-flex items-center gap-2 mt-2 text-primary font-bold text-lg hover:underline"
+                >
+                  <Phone className="h-4 w-4 shrink-0" />
+                  {deal.counterparty.contact_phone}
+                </a>
+              ) : (
+                <p className="text-sm text-muted-foreground mt-1">{t("deal.contact.phone")} —</p>
+              )}
             </div>
           </div>
         )}
@@ -598,6 +701,13 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
                 </span>
               </>
             )}
+
+            <span className="text-muted-foreground">{t("deal.created_on")}</span>
+            <span className="font-medium text-end text-xs">
+              {new Date(deal.created_at).toLocaleDateString(lang === "ar" ? "ar-SA" : "en-US", {
+                year: "numeric", month: "short", day: "numeric",
+              })}
+            </span>
           </div>
           {deal.settlement_type === "by_weight" && deal.final_amount == null && (
             <p className="text-xs text-muted-foreground">{t("deal.disclaimer")}</p>
@@ -785,6 +895,7 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
                 listingCategory,
                 listingQuantity,
                 myCompanyName,
+                myPhone,
               })
             }
             className="flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-background px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"

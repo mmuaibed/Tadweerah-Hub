@@ -132,6 +132,12 @@ export const wasteListingsTable = pgTable("waste_listings", {
   }),
 
   /**
+   * Free-text unit description used when unit_option has key = 'other'.
+   * Nullable; only populated when the producer selects "Other" unit.
+   */
+  unit_notes: text("unit_notes"),
+
+  /**
    * Reference to admin-managed material category hierarchy.
    * Null for listings created before material_categories existed.
    * New listings should populate this for finer classification.
