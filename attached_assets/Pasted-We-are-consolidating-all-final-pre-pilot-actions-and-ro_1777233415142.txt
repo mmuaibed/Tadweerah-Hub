@@ -1,0 +1,254 @@
+We are consolidating all final pre-pilot actions and roadmap refinements into one aligned package.
+
+This is a **final alignment + validation step** before inviting pilot users.
+
+Please review as **CTO + Product Manager**, confirm correctness, and flag any risks.
+
+---
+
+# Part 1 — Final Pre-Pilot Fixes (Execute Now)
+
+## 1) Terms Page (Blocking)
+
+* Remove any wording such as:
+
+  * “Draft”
+  * “Draft for review”
+* Keep only:
+  “Last updated: April 2026”
+
+Reason:
+Users already accept these terms during onboarding. The page must not appear unfinished.
+
+---
+
+## 2) Support Contact (Visibility Only)
+
+Use:
+[info@tadweerah.com](mailto:info@tadweerah.com)
+
+Placement must be exactly:
+
+* Header (top-right): “Support”
+* Deal panel (under contact section):
+  “If you face any issue, contact us at [info@tadweerah.com](mailto:info@tadweerah.com)”
+* Terms page footer
+
+No ticketing system. No new flows.
+
+---
+
+## 3) Clerk Readiness
+
+Please confirm:
+
+* Production keys are active
+* No dev warnings visible
+* No MAU / usage limits will block pilot users
+
+Flag immediately if anything is uncertain.
+
+---
+
+## 4) Home Screen — Minimal Trust Enhancement
+
+No landing page. Only refine the existing home.
+
+### A) Hero
+
+Clear operational sentence (already implemented, confirm wording consistency)
+
+---
+
+### B) Trust Line (Required)
+
+“Limited pilot — no long-term commitment — direct support from the Tadweerah team”
+
+Arabic equivalent also present
+
+---
+
+### C) “What it solves” (max 3 bullets)
+
+Must:
+
+* reflect current product only
+* avoid feature promises
+* stay problem-oriented
+
+No additional sections.
+
+---
+
+## 5) Definition Standardization
+
+A deal is considered “completed” only when:
+
+* payment is confirmed
+* AND dispatch is confirmed
+* AND receipt is confirmed
+
+This definition must be consistent across UI, reports, and metrics.
+
+---
+
+# Part 2 — Roadmap Refinement (Aligned with External Review)
+
+We are incorporating the following structural updates:
+
+---
+
+## 1) Trust Layer Adjustment
+
+* Move:
+
+  * structured deal records
+  * documentation clarity
+    into Phase 2
+
+* Keep in Phase 4:
+
+  * verification indicators
+  * auditability layer
+
+Goal:
+Trust is established early, not introduced late.
+
+---
+
+## 2) Metrics Strengthening
+
+Add across all phases:
+
+### Core Metric
+
+* Time-to-Deal:
+  listing → completed deal
+
+---
+
+### Phase 1–2 Tracking
+
+* % assisted vs independent transactions
+* number of support touchpoints per deal
+* qualitative tracking of off-platform interactions:
+  (calls, WhatsApp, email)
+
+---
+
+## 3) Off-Platform Behavior (New Visibility Layer)
+
+Explicitly acknowledge:
+
+Users may complete parts of the workflow outside the platform.
+
+We will track this as a signal, not treat it as noise.
+
+---
+
+## 4) Pilot Risk Controls
+
+### A) Pilot Fatigue
+
+* Exit criteria are **flexible thresholds**
+* Progression based on learning quality, not only counts
+
+---
+
+### B) Assisted vs Independent
+
+* Tag every deal:
+
+  * assisted
+  * independent
+
+---
+
+### C) Regulatory Framing
+
+We will clearly communicate:
+
+* Tadweerah records are **operational transaction records**
+* Not regulatory or certified documents
+
+This must be reflected in:
+
+* onboarding communication
+* report wording
+
+---
+
+## 5) Cross-Phase Rule Update
+
+Replace:
+
+“No assumptions — only validated learning”
+
+With:
+
+“All assumptions must be explicitly identified and tested within one phase”
+
+---
+
+## 6) Feedback Loop Clarification
+
+Issue reporting should capture:
+
+* technical problems
+* usability confusion (“this step was unclear”)
+
+---
+
+# Part 3 — Final Validation Request
+
+Before we proceed with pilot invitations, please confirm:
+
+---
+
+## 1) Implementation Safety
+
+* No unintended side effects introduced
+* No performance or UI regressions
+* No hidden dependency between changes
+
+---
+
+## 2) Workflow Integrity
+
+* All user flows still lead to correct final states
+* No edge case breaks the deal lifecycle
+* Definitions (especially “completed deal”) are consistent
+
+---
+
+## 3) Trust & Clarity
+
+* No misleading wording
+* No implied regulatory claims
+* Messaging aligns fully with current capabilities
+
+---
+
+## 4) Readiness Classification
+
+Please provide a final classification:
+
+A) Ready for pilot — no concerns
+B) Ready for pilot — minor risks acceptable
+C) Not ready — blocking issue exists
+
+---
+
+# Goal
+
+Achieve:
+
+* high confidence in launch
+* no unnecessary complexity
+* clear alignment between product, operations, and roadmap
+
+before exposing the platform to real users.
+
+---
+
+Please review thoroughly and flag anything that should be addressed before pilot.

@@ -632,7 +632,13 @@ const translations: Record<string, Record<Language, string>> = {
   // Item 8 — Terms page content
   "terms.title": { ar: "الشروط والأحكام", en: "Terms & Conditions" },
   "terms.subtitle": { ar: "يرجى قراءة هذه الشروط بعناية قبل استخدام المنصة", en: "Please read these terms carefully before using the platform" },
-  "terms.lastUpdated": { ar: "آخر تحديث: أبريل 2026 — نسخة أولية للمراجعة", en: "Last updated: April 2026 — Draft for review" },
+  "terms.lastUpdated": { ar: "آخر تحديث: أبريل 2026", en: "Last updated: April 2026" },
+  "terms.support": { ar: "للتواصل والدعم: info@tadweerah.com", en: "For support: info@tadweerah.com" },
+  "support.label": { ar: "الدعم", en: "Support" },
+  "support.deal_panel": {
+    ar: "إذا واجهت أي مشكلة، تواصل معنا على info@tadweerah.com",
+    en: "If you face any issue, contact us at info@tadweerah.com",
+  },
   "terms.section1.title": { ar: "١. القبول والموافقة", en: "1. Acceptance" },
   "terms.section1.body": {
     ar: "باستخدامك لمنصة تدويرة، فإنك توافق على الالتزام بهذه الشروط والأحكام. إذا كنت لا توافق على أي من هذه الشروط، فلا يحق لك استخدام المنصة.",

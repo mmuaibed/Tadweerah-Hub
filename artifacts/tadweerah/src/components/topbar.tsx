@@ -162,6 +162,12 @@ export function Topbar({ showSignOut = false }: { showSignOut?: boolean }) {
         </Link>
 
         <div className="flex items-center gap-2">
+          <a
+            href="mailto:info@tadweerah.com"
+            className="hidden sm:inline-flex items-center text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1"
+          >
+            {t("support.label")}
+          </a>
           <LanguageToggle />
           <Show when="signed-in">
             {!isPublicPage && (

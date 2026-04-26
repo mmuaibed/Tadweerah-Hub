@@ -670,6 +670,11 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
                   {t("deal.contact.phone_missing")}
                 </p>
               )}
+              <p className="text-[10px] text-muted-foreground/60 mt-3 border-t border-border pt-2">
+                <a href="mailto:info@tadweerah.com" className="hover:text-primary transition-colors">
+                  {t("support.deal_panel")}
+                </a>
+              </p>
             </div>
           </div>
         )}

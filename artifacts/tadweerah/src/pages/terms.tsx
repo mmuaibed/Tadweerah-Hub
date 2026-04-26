@@ -35,9 +35,14 @@ export function TermsPage() {
           <p className="text-muted-foreground leading-relaxed">{t("terms.section5.body")}</p>
         </section>
 
-        <p className="text-xs text-muted-foreground border-t border-border pt-4">
-          {t("terms.lastUpdated")}
-        </p>
+        <div className="border-t border-border pt-4 flex flex-col gap-1">
+          <p className="text-xs text-muted-foreground">{t("terms.lastUpdated")}</p>
+          <p className="text-xs text-muted-foreground">
+            <a href="mailto:info@tadweerah.com" className="text-primary hover:underline">
+              {t("terms.support")}
+            </a>
+          </p>
+        </div>
       </div>
     </AppLayout>
   );
