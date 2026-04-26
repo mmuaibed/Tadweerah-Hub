@@ -166,6 +166,11 @@ export function ListingNewPage() {
       return;
     }
 
+    if (isOtherUnit && !unitNotes.trim()) {
+      setError(t("listing.form.unit_notes.required"));
+      return;
+    }
+
     if (pricingModel === "revenue_share") {
       const pctNum = Number(revenueSharePct);
       if (!revenueSharePct.trim() || !Number.isFinite(pctNum) || pctNum <= 0 || pctNum > 100) {
@@ -342,7 +347,9 @@ export function ListingNewPage() {
             {/* "Other" unit — free-text description */}
             {isOtherUnit && (
               <div className="space-y-2">
-                <Label htmlFor="unit_notes">{t("listing.form.unit_notes")}</Label>
+                <Label htmlFor="unit_notes">
+                  {isOtherUnit ? t("listing.form.unit_notes.required_label") : t("listing.form.unit_notes")}
+                </Label>
                 <Input
                   id="unit_notes"
                   placeholder={t("listing.form.unit_notes.placeholder")}

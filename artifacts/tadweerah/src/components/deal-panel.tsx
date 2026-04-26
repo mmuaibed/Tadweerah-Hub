@@ -381,14 +381,18 @@ function printDealReport(
       <td>${t("deal.print.producer")}</td>
       <td>
         <span style="font-weight:600">${producerName}</span>
-        ${producerPhone ? `<span class="phone-cell">${producerPhone}</span>` : ""}
+        ${producerPhone
+          ? `<span class="phone-cell">${producerPhone}</span>`
+          : `<span style="color:#9ca3af;font-size:12px;display:block;margin-top:2px">${lang === "ar" ? "رقم التواصل غير متاح" : "Contact number not available"}</span>`}
       </td>
     </tr>
     <tr>
       <td>${t("deal.print.buyer")}</td>
       <td>
         <span style="font-weight:600">${buyerName}</span>
-        ${buyerPhone ? `<span class="phone-cell">${buyerPhone}</span>` : ""}
+        ${buyerPhone
+          ? `<span class="phone-cell">${buyerPhone}</span>`
+          : `<span style="color:#9ca3af;font-size:12px;display:block;margin-top:2px">${lang === "ar" ? "رقم التواصل غير متاح" : "Contact number not available"}</span>`}
       </td>
     </tr>
   </table>
@@ -660,7 +664,10 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
                   {deal.counterparty.contact_phone}
                 </a>
               ) : (
-                <p className="text-sm text-muted-foreground mt-1">{t("deal.contact.phone")} —</p>
+                <p className="text-sm text-amber-700 font-medium mt-2 flex items-center gap-1.5">
+                  <Phone className="h-3.5 w-3.5 shrink-0 opacity-60" />
+                  {t("deal.contact.phone_missing")}
+                </p>
               )}
             </div>
           </div>

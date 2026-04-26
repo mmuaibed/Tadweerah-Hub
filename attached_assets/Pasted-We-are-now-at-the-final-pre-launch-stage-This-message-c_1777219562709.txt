@@ -1,0 +1,277 @@
+We are now at the final pre-launch stage.
+
+This message combines:
+
+* validation of what has been implemented
+* remaining critical fixes
+* additional checks
+* strict execution rules
+
+This is NOT exploratory — this is controlled finalization.
+
+---
+
+## 1) Current Status (Validated)
+
+The following are confirmed working:
+
+* Issue reporting feature (DB + API + UI)
+* Phone validation during onboarding
+* Deal flow (listing → offer → accept → deal)
+* TDW reference exists
+* Report generation exists
+* No TypeScript errors
+
+This is a strong base.
+
+---
+
+## 2) Critical Final Fixes (Execute Now — No Debate)
+
+These are small, high-impact, and safe.
+
+---
+
+### A) Contact Phone — Reliability & Visibility
+
+We want to eliminate ANY risk of missing or unusable phone numbers.
+
+#### Required:
+
+1. Database integrity check:
+
+* Find companies where:
+
+  * phone = '' OR NULL
+  * or clearly invalid (length < 7)
+
+2. Normalize:
+
+* convert empty strings → NULL
+
+3. Ensure:
+
+* No deal can exist without a valid phone going forward
+
+4. UI clarity:
+
+* In deal panel:
+
+  * phone must always render as:
+
+    * visible
+    * clickable (tel:)
+    * not small or hidden
+
+5. Report:
+
+* Must include:
+
+  * producer phone
+  * buyer phone
+
+6. Fallback:
+
+* If phone missing (edge case):
+
+  * show explicit text:
+    "Contact number not available"
+  * never leave empty
+
+---
+
+### B) TDW Reference — Make It Operational
+
+Current state: visible but still weak as a working tool.
+
+#### Required:
+
+1. Display as a clear block:
+
+Example:
+
+TDW-2026-AB12CD
+
+2. Must include:
+
+* strong contrast
+* readable size
+* monospace font
+
+3. Add:
+
+* copy button (already exists → verify behavior)
+
+4. Ensure:
+
+* correct value copied (no hidden chars)
+
+---
+
+### C) Printed Report — Must Look Like a Real Document
+
+This is the most important customer-facing output.
+
+#### Required structure:
+
+1. Header:
+
+* Tadweerah logo
+* Transaction Record title
+* TDW reference (prominent)
+
+2. Sections:
+
+* Parties (with phones)
+* Material details
+* Quantity + unit
+* Total value (highlighted)
+* Status
+* Timeline (if exists)
+
+3. Visual rules:
+
+* clear spacing
+* readable typography
+* no dense tables
+* use brand colors lightly (no overload)
+
+4. Footer:
+
+* "Documented via Tadweerah platform"
+
+---
+
+### D) Unit = “Other” — Data Integrity
+
+#### Required:
+
+* If unit = 'other':
+
+  * unit_notes must NOT be empty
+
+Behavior:
+
+* block submission OR show validation error
+
+Goal:
+No listing with meaningless unit.
+
+---
+
+## 3) Issue Reporting — Validation (Already Built)
+
+Add only:
+
+* create 1 test record via API
+* confirm it is stored
+* confirm status = 'open'
+* confirm user_id is correct
+
+Return sample row.
+
+---
+
+## 4) System-Level Validation (No Browser)
+
+Use:
+
+* DB queries
+* logs
+* code inspection
+
+Do NOT:
+
+* open browser
+* run UI automation
+* take screenshots
+
+---
+
+### Required checks:
+
+1. Deals:
+
+* pick 1 deal
+* confirm:
+
+  * both phones exist
+  * TDW exists
+  * report includes all fields
+
+2. Listings:
+
+* pick 1 listing with unit=other
+* confirm validation
+
+3. Issue reports:
+
+* confirm insert + retrieval
+
+---
+
+## 5) Customer Journey Sanity Check
+
+Evaluate logically (no UI testing):
+
+Flow:
+onboarding → listing → offer → accept → deal → contact → report
+
+Answer:
+
+* any step unclear?
+* any missing data?
+* any trust-breaking point?
+
+Only report REAL issues.
+
+---
+
+## 6) Do NOT Do
+
+* no new features
+* no workflow changes
+* no schema expansion (unless absolutely required)
+* no over-engineering
+* no performance optimization now
+
+---
+
+## 7) Optional (Only if trivial — <15 min)
+
+* show deal creation date clearly in deal panel
+* improve deal title readability
+
+If more than trivial → skip
+
+---
+
+## 8) Output Required
+
+Return a concise report:
+
+1. Phone audit results (before/after)
+2. TDW verification
+3. Report structure validation
+4. Unit validation behavior
+5. Issue report sample
+6. Any risks found (if any)
+7. Final statement:
+
+"System is ready for pilot" OR "Blocking issue exists"
+
+---
+
+## Goal
+
+We are not improving the product anymore.
+
+We are ensuring:
+
+* reliability
+* clarity
+* trust
+
+before exposing to real users.
+
+Proceed carefully.

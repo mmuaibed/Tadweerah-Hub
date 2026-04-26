@@ -344,6 +344,7 @@ const translations: Record<string, Record<Language, string>> = {
   "deal.panel.title": { ar: "تفاصيل الصفقة", en: "Deal Details" },
   "deal.contact.title": { ar: "تواصل مع الطرف الآخر", en: "Contact Counterparty" },
   "deal.contact.phone": { ar: "رقم التواصل", en: "Phone" },
+  "deal.contact.phone_missing": { ar: "رقم التواصل غير متاح", en: "Contact number not available" },
   "deal.contact.congratulations": { ar: "تهانينا — تم إنشاء الصفقة", en: "Congratulations — deal created" },
   "deal.contact.can_now_contact": { ar: "يمكنك التواصل الآن مع الطرف الآخر لترتيب الدفع والاستلام", en: "You can now contact the other party to arrange payment and collection" },
   "deal.contact.counterparty_label": { ar: "بيانات التواصل", en: "Contact Details" },
@@ -352,6 +353,8 @@ const translations: Record<string, Record<Language, string>> = {
   "deal.ref.copied": { ar: "تم النسخ", en: "Copied" },
   "deal.created_on": { ar: "تاريخ الصفقة", en: "Deal date" },
   "listing.form.unit_notes": { ar: "وصف الوحدة (اختياري)", en: "Unit description (optional)" },
+  "listing.form.unit_notes.required_label": { ar: "وصف الوحدة *", en: "Unit description *" },
+  "listing.form.unit_notes.required": { ar: "يجب تحديد وصف الوحدة عند اختيار 'أخرى'", en: "Unit description is required when 'Other' is selected" },
   "listing.form.unit_notes.placeholder": { ar: "مثال: جولة، شحنة، رحلة...", en: "e.g. journey, shipment, trip..." },
 
   "deal.status.active": { ar: "انتظار تأكيد الدفع", en: "Awaiting Payment" },

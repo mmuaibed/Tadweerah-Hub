@@ -13,6 +13,7 @@ import {
   materialCategoriesTable,
   capabilitiesTable,
   dealsTable,
+  unitOptionsTable,
   type WasteListing,
 } from "@workspace/db";
 import { CreateWasteListingBody } from "@workspace/api-zod";
@@ -498,6 +499,23 @@ router.post(
       typeof req.body.unit_notes === "string" && req.body.unit_notes.trim()
         ? req.body.unit_notes.trim()
         : null;
+
+    // unit_notes is required when the selected unit_option has key='other'
+    if (unitOptionId) {
+      const [uo] = await db
+        .select({ key: unitOptionsTable.key })
+        .from(unitOptionsTable)
+        .where(eq(unitOptionsTable.id, unitOptionId))
+        .limit(1);
+      if (uo?.key === "other" && !unitNotes) {
+        res.status(400).json({
+          error: "ValidationError",
+          message: "unit_notes is required when unit is 'Other'",
+        });
+        return;
+      }
+    }
+
     const pricingModel: string = typeof req.body.pricing_model === "string" ? req.body.pricing_model : (data.pricing_model ?? "fixed");
 
     // ── Revenue-share validation ───────────────────────────────────────────────
