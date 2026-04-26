@@ -48,6 +48,9 @@ export function ListingCard({
   const highestOfferPrice = (listing as WasteListing & { highest_offer_price?: number | null }).highest_offer_price;
   const requiredServices = (listing as WasteListing & { required_services?: Array<{ id: string; name_ar: string; name_en: string; requires_license?: boolean }> }).required_services ?? [];
   const targetingType = (listing as WasteListing & { targeting_type?: string }).targeting_type ?? "open";
+  const materialCategoryNameAr = (listing as WasteListing & { material_category_name_ar?: string | null }).material_category_name_ar;
+  const materialCategoryNameEn = (listing as WasteListing & { material_category_name_en?: string | null }).material_category_name_en;
+  const materialCategoryName = lang === "ar" ? materialCategoryNameAr : materialCategoryNameEn;
 
   const dateStr = new Date(listing.created_at).toLocaleDateString(
     lang === "ar" ? "ar-SA" : "en-US",
@@ -106,6 +109,14 @@ export function ListingCard({
 
         {/* Details grid */}
         <div className="grid gap-2 text-sm text-muted-foreground">
+          {materialCategoryName && (
+            <div className="flex items-center gap-2">
+              <Recycle className="h-4 w-4 shrink-0 text-secondary/70" />
+              <span className="text-xs font-medium text-secondary/80 bg-secondary/10 px-2 py-0.5 rounded-full">
+                {materialCategoryName}
+              </span>
+            </div>
+          )}
           <div className="flex items-center gap-2">
             <Package className="h-4 w-4 shrink-0" />
             <span>

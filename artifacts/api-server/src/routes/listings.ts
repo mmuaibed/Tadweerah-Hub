@@ -68,6 +68,8 @@ const router: IRouter = Router();
 
 type Row = WasteListing & {
   company_name: string;
+  material_category_name_ar?: string | null;
+  material_category_name_en?: string | null;
   offer_count?: number;
   highest_offer_total?: number | null;
   highest_offer_price?: number | null;
@@ -90,6 +92,8 @@ function serialize(
   const r = row as Row & {
     sale_type?: string;
     material_category_id?: string | null;
+    material_category_name_ar?: string | null;
+    material_category_name_en?: string | null;
     material_subcategory_id?: string | null;
     unit_option_id?: string | null;
     revenue_share_pct?: string | null;
@@ -110,6 +114,8 @@ function serialize(
     pricing_model: row.pricing_model,
     sale_type: r.sale_type ?? "auction",
     material_category_id: r.material_category_id ?? null,
+    material_category_name_ar: r.material_category_name_ar ?? null,
+    material_category_name_en: r.material_category_name_en ?? null,
     material_subcategory_id: r.material_subcategory_id ?? null,
     unit_option_id: r.unit_option_id ?? null,
     revenue_share_pct: r.revenue_share_pct != null ? Number(r.revenue_share_pct) : undefined,
@@ -207,6 +213,8 @@ const baseSelect = {
   pricing_model: wasteListingsTable.pricing_model,
   sale_type: wasteListingsTable.sale_type,
   material_category_id: wasteListingsTable.material_category_id,
+  material_category_name_ar: materialCategoriesTable.name_ar,
+  material_category_name_en: materialCategoriesTable.name_en,
   material_subcategory_id: wasteListingsTable.material_subcategory_id,
   unit_option_id: wasteListingsTable.unit_option_id,
   revenue_share_pct: wasteListingsTable.revenue_share_pct,
@@ -308,6 +316,7 @@ router.get(
       })
       .from(wasteListingsTable)
       .innerJoin(companiesTable, eq(companiesTable.id, wasteListingsTable.company_id))
+      .leftJoin(materialCategoriesTable, eq(materialCategoriesTable.id, wasteListingsTable.material_category_id))
       .leftJoin(offerAgg, eq(offerAgg.waste_listing_id, wasteListingsTable.id))
       .where(and(...conditions))
       .orderBy(desc(wasteListingsTable.created_at))
@@ -412,6 +421,7 @@ router.get(
       })
       .from(wasteListingsTable)
       .innerJoin(companiesTable, eq(companiesTable.id, wasteListingsTable.company_id))
+      .leftJoin(materialCategoriesTable, eq(materialCategoriesTable.id, wasteListingsTable.material_category_id))
       .leftJoin(offerAgg, eq(offerAgg.waste_listing_id, wasteListingsTable.id))
       .leftJoin(dealsTable, eq(dealsTable.listing_id, wasteListingsTable.id))
       .where(and(...conditions))
@@ -650,6 +660,7 @@ router.get(
       .select(baseSelect)
       .from(wasteListingsTable)
       .innerJoin(companiesTable, eq(companiesTable.id, wasteListingsTable.company_id))
+      .leftJoin(materialCategoriesTable, eq(materialCategoriesTable.id, wasteListingsTable.material_category_id))
       .where(eq(wasteListingsTable.id, id))
       .limit(1);
 
@@ -800,6 +811,7 @@ router.post(
       .select(baseSelect)
       .from(wasteListingsTable)
       .innerJoin(companiesTable, eq(companiesTable.id, wasteListingsTable.company_id))
+      .leftJoin(materialCategoriesTable, eq(materialCategoriesTable.id, wasteListingsTable.material_category_id))
       .where(eq(wasteListingsTable.id, id))
       .limit(1);
 

@@ -158,6 +158,7 @@ const translations: Record<string, Record<Language, string>> = {
   "marketplace.stats.priced":    { ar: "بسعر إرشادي", en: "With price guide" },
 
   // Listing card / detail
+  "listing.category": { ar: "الفئة", en: "Category" },
   "listing.quantity": { ar: "الكمية", en: "Quantity" },
   "listing.city": { ar: "المدينة", en: "City" },
   "listing.priceHint": { ar: "السعر الإرشادي", en: "Price Hint" },

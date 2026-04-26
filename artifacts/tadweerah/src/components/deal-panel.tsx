@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { useT } from "@/i18n";
+import { dealRef } from "@/lib/listing-ref";
 import { useGetListingOffers, useGetOffersSummary } from "@workspace/api-client-react";
 import type { ListingOffer } from "@workspace/api-client-react";
 
@@ -62,6 +63,8 @@ interface DealPanelProps {
   listingQuantity?: number;
   /** Authenticated company name (for print report) */
   myCompanyName?: string;
+  /** Material category name (localised) for display and print */
+  listingCategory?: string;
 }
 
 type PendingAction = "confirm-payment" | "confirm-dispatch" | "confirm-receipt" | null;
@@ -258,6 +261,7 @@ function printDealReport(
   opts: {
     listingRef?: string;
     listingMaterial?: string;
+    listingCategory?: string;
     listingQuantity?: number;
     myCompanyName?: string;
   },
@@ -293,6 +297,7 @@ function printDealReport(
 
   const dir = lang === "ar" ? "rtl" : "ltr";
   const totalValue = (deal.final_amount ?? deal.estimated_amount).toLocaleString();
+  const ref = dealRef(deal.id, deal.created_at);
 
   const html = `<!DOCTYPE html>
 <html dir="${dir}" lang="${lang}">
@@ -320,7 +325,7 @@ function printDealReport(
 </head>
 <body>
   <h1>${t("deal.print.title")}</h1>
-  <p class="sub">${opts.listingRef ? `${t("deal.print.deal_id")}: ${opts.listingRef}` : `${t("deal.print.deal_id")}: ${deal.id.slice(0, 13)}...`}</p>
+  <p class="sub">${t("deal.print.deal_id")}: <strong>${ref}</strong>${opts.listingRef ? ` &nbsp;|&nbsp; ${opts.listingRef}` : ""}</p>
   <h2>${lang === "ar" ? "أطراف الصفقة" : "Parties"}</h2>
   <table>
     <tr><td>${t("deal.print.producer")}</td><td>${producerName}</td></tr>
@@ -328,6 +333,7 @@ function printDealReport(
   </table>
   <h2>${lang === "ar" ? "تفاصيل المادة والسعر" : "Material & Price"}</h2>
   <table>
+    ${opts.listingCategory ? `<tr><td>${lang === "ar" ? "الفئة" : "Category"}</td><td>${opts.listingCategory}</td></tr>` : ""}
     ${opts.listingMaterial ? `<tr><td>${t("deal.print.material")}</td><td>${opts.listingMaterial}</td></tr>` : ""}
     ${opts.listingQuantity != null ? `<tr><td>${t("deal.print.quantity")}</td><td>${opts.listingQuantity.toLocaleString()} ${unit}</td></tr>` : ""}
     <tr><td>${t("deal.print.price_per_unit")}</td><td>${deal.price_per_unit.toLocaleString()} ${lang === "ar" ? "ريال" : "SAR"} / ${unit}</td></tr>
@@ -357,7 +363,7 @@ function printDealReport(
   }
 }
 
-export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSharePct, listingRef, listingMaterial, listingQuantity, myCompanyName }: DealPanelProps) {
+export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSharePct, listingRef, listingMaterial, listingQuantity, myCompanyName, listingCategory }: DealPanelProps) {
   const { t, lang } = useT();
   const { getToken } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -477,7 +483,10 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
         {/* Header */}
         <div className="px-4 py-3 bg-primary/10 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="font-semibold text-primary text-sm">{t("deal.panel.title")}</span>
+            <div>
+              <span className="font-semibold text-primary text-sm">{t("deal.panel.title")}</span>
+              <p className="text-[10px] font-mono text-primary/50 mt-0.5" dir="ltr">{dealRef(deal.id, deal.created_at)}</p>
+            </div>
             <Badge variant={statusBadgeVariant(deal.status)}>
               {statusLabel(deal.status)}
             </Badge>
@@ -773,6 +782,7 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
               printDealReport(deal, role, unit, lang, t, {
                 listingRef,
                 listingMaterial,
+                listingCategory,
                 listingQuantity,
                 myCompanyName,
               })

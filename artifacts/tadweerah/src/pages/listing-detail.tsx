@@ -1171,6 +1171,9 @@ export function ListingDetailPage() {
   const ref = listingRef(listing.id);
   const materialLabel = t(`material.${listing.material}`);
   const quantity = Number(listing.quantity);
+  const categoryNameAr = (listing as typeof listing & { material_category_name_ar?: string | null }).material_category_name_ar;
+  const categoryNameEn = (listing as typeof listing & { material_category_name_en?: string | null }).material_category_name_en;
+  const categoryLabel = lang === "ar" ? (categoryNameAr ?? categoryNameEn) : (categoryNameEn ?? categoryNameAr);
 
   // F1: Build close dialog description with pending count
   const closeDialogDesc = isOwner && pendingOfferCount > 0
@@ -1276,6 +1279,13 @@ export function ListingDetailPage() {
 
         {/* Details */}
         <div className="rounded-xl border border-border bg-card px-5 divide-y divide-border">
+          {categoryLabel && (
+            <DetailRow
+              icon={<Recycle className="h-4 w-4 text-secondary/70" />}
+              label={t("listing.category")}
+              value={categoryLabel}
+            />
+          )}
           <DetailRow
             icon={<Package className="h-4 w-4" />}
             label={t("listing.quantity")}
@@ -1352,6 +1362,7 @@ export function ListingDetailPage() {
             revenueSharePct={(listing as typeof listing & { revenue_share_pct?: number | null }).revenue_share_pct}
             listingRef={ref}
             listingMaterial={materialLabel}
+            listingCategory={categoryLabel ?? undefined}
             listingQuantity={quantity}
             myCompanyName={me?.company?.name}
           />
