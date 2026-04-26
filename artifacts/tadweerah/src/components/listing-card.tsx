@@ -14,6 +14,7 @@ import {
   TrendingUp,
   TrendingDown,
   Lock,
+  MessageSquare,
 } from "lucide-react";
 import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
@@ -51,6 +52,7 @@ export function ListingCard({
   const materialCategoryNameAr = (listing as WasteListing & { material_category_name_ar?: string | null }).material_category_name_ar;
   const materialCategoryNameEn = (listing as WasteListing & { material_category_name_en?: string | null }).material_category_name_en;
   const materialCategoryName = lang === "ar" ? materialCategoryNameAr : materialCategoryNameEn;
+  const offersCount = (listing as WasteListing & { offer_count?: number }).offer_count ?? 0;
 
   const dateStr = new Date(listing.created_at).toLocaleDateString(
     lang === "ar" ? "ar-SA" : "en-US",
@@ -185,6 +187,16 @@ export function ListingCard({
             <Calendar className="h-4 w-4 shrink-0" />
             <span>{dateStr}</span>
           </div>
+          {isOpen && (
+            <div className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4 shrink-0" />
+              <span>
+                {offersCount > 0
+                  ? `${offersCount} ${t("listing.card.offers_count")}`
+                  : t("listing.card.no_offers")}
+              </span>
+            </div>
+          )}
         </div>
 
         {listing.description && (

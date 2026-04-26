@@ -649,6 +649,7 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-bold text-green-900">{t("deal.contact.congratulations")}</p>
                 <p className="text-xs text-green-700 mt-0.5">{t("deal.contact.can_now_contact")}</p>
+                <p className="text-xs text-green-600 mt-1 font-medium">{t("deal.contact.recorded_hint")}</p>
               </div>
             </div>
             <div className="px-4 py-3 bg-background">

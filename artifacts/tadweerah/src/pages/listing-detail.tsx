@@ -587,6 +587,14 @@ function BuyerOfferSection({
       <>
       <div className="space-y-4">
         <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+          {/* Submitted confirmation banner */}
+          <div className="flex items-center gap-2 rounded-md border border-primary/20 bg-primary/5 px-3 py-2">
+            <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" />
+            <div>
+              <p className="text-xs font-semibold text-primary">{t("offer.mine.submitted_confirmation")}</p>
+              <p className="text-[11px] text-muted-foreground">{t("offer.mine.waiting_response")}</p>
+            </div>
+          </div>
           <div className="flex items-center justify-between flex-wrap gap-2">
             <span className="text-sm font-medium text-muted-foreground">
               {t("offer.mine.title")}
@@ -755,6 +763,7 @@ function BuyerOfferSection({
           {t("listing.offer.cta")}
         </span>
       </div>
+      <p className="text-xs text-muted-foreground -mt-1">{t("offer.form.intro")}</p>
       {highestPrice > 0 && (
         <p className="text-xs text-muted-foreground">
           {t("offer.form.mustExceed")}:{" "}

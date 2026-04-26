@@ -107,8 +107,8 @@ const translations: Record<string, Record<Language, string>> = {
   // Producer — new listing
   "listing.new.title": { ar: "إضافة عرض نفايات", en: "Add Waste Listing" },
   "listing.new.subtitle": {
-    ar: "اعرض نفاياتك ليطّلع عليها المشترون",
-    en: "Make your waste available for buyers to discover",
+    ar: "حدّد نوع المادة والكمية والوحدة لعرض نفاياتك في السوق",
+    en: "Specify the material type, quantity, and unit to list your waste in the marketplace",
   },
   "listing.form.material": { ar: "تصنيف المادة", en: "Material Category" },
   "listing.form.subcategory": { ar: "التصنيف الفرعي (اختياري)", en: "Subcategory (Optional)" },
@@ -201,6 +201,10 @@ const translations: Record<string, Record<Language, string>> = {
   "offer.summary.perUnit": { ar: "ر.س/وحدة", en: "SAR/unit" },
 
   "offer.form.price": { ar: "سعرك لكل وحدة (ر.س)", en: "Your price per unit (SAR)" },
+  "offer.form.intro": {
+    ar: "أدخل سعرك — يمكنك اختيار إدخاله لكل وحدة أو كإجمالي",
+    en: "Enter your price — you can enter it per unit or as a total",
+  },
   "offer.form.message": { ar: "ملاحظة للمنتج (اختياري)", en: "Note to producer (optional)" },
   "offer.form.submit": { ar: "إرسال العرض", en: "Submit Offer" },
   "offer.form.submitting": { ar: "جاري الإرسال...", en: "Submitting..." },
@@ -210,6 +214,8 @@ const translations: Record<string, Record<Language, string>> = {
   "offer.form.mustExceed": { ar: "يجب أن يتجاوز أعلى عرض حالي", en: "Must exceed the current highest offer" },
 
   "offer.mine.title": { ar: "عرضي الحالي", en: "My Current Offer" },
+  "offer.mine.submitted_confirmation": { ar: "تم إرسال عرضك", en: "Your offer has been submitted" },
+  "offer.mine.waiting_response": { ar: "بانتظار رد المنتج", en: "Waiting for response" },
   "offer.mine.pending": { ar: "في انتظار رد المنتج", en: "Awaiting producer response" },
   "offer.mine.accepted": { ar: "تهانينا! تم قبول عرضك", en: "Congratulations! Your offer was accepted" },
   "offer.mine.rejected": { ar: "تم رفض عرضك", en: "Your offer was rejected" },
@@ -347,6 +353,7 @@ const translations: Record<string, Record<Language, string>> = {
   "deal.contact.phone_missing": { ar: "رقم التواصل غير متاح", en: "Contact number not available" },
   "deal.contact.congratulations": { ar: "تهانينا — تم إنشاء الصفقة", en: "Congratulations — deal created" },
   "deal.contact.can_now_contact": { ar: "يمكنك التواصل الآن مع الطرف الآخر لترتيب الدفع والاستلام", en: "You can now contact the other party to arrange payment and collection" },
+  "deal.contact.recorded_hint": { ar: "هذه الصفقة مسجّلة الآن في تدويرة", en: "This deal is now recorded in Tadweerah" },
   "deal.contact.counterparty_label": { ar: "بيانات التواصل", en: "Contact Details" },
   "deal.ref.label": { ar: "مرجع الصفقة", en: "Deal Reference" },
   "deal.ref.copy": { ar: "نسخ الرقم", en: "Copy reference" },
@@ -674,6 +681,8 @@ const translations: Record<string, Record<Language, string>> = {
   // P3 — Offer amounts on cards
   "listing.bid.highest.label": { ar: "أعلى عرض", en: "Highest offer" },
   "listing.bid.mine.label": { ar: "عرضي", en: "My offer" },
+  "listing.card.offers_count": { ar: "عروض", en: "offers" },
+  "listing.card.no_offers": { ar: "لا توجد عروض بعد", en: "No offers yet" },
 
   // P4 — Deal stage descriptions (deal.status.active / dispatched already updated above)
   "deal.stage.action.active.producer": {
