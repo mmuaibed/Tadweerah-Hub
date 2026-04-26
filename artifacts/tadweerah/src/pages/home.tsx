@@ -1,5 +1,5 @@
 import { SignInButton, SignUpButton } from "@clerk/react";
-import { Recycle, ShoppingBag, Truck, ArrowLeft, ArrowRight } from "lucide-react";
+import { Recycle, ShoppingBag, Truck, ArrowLeft, ArrowRight, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { AppLayout } from "@/components/app-layout";
@@ -17,10 +17,16 @@ export function HomePage() {
     { icon: Truck, title: t("home.feature3.title"), desc: t("home.feature3.desc") },
   ];
 
+  const solves = [
+    t("home.solves.1"),
+    t("home.solves.2"),
+    t("home.solves.3"),
+  ];
+
   return (
     <AppLayout>
       {/* Hero */}
-      <section className="flex flex-col items-center pt-12 pb-16 text-center sm:pt-20 sm:pb-24">
+      <section className="flex flex-col items-center pt-12 pb-10 text-center sm:pt-20 sm:pb-14">
         <span className="mb-10 inline-flex items-center gap-2 rounded-full border border-border bg-card px-5 py-2 text-xs font-medium text-muted-foreground tracking-wide">
           {t("app.tagline")}
         </span>
@@ -49,6 +55,26 @@ export function HomePage() {
             </Button>
           </SignInButton>
         </div>
+
+        {/* Trust line */}
+        <p className="mt-5 text-xs text-muted-foreground/70 tracking-wide">
+          {t("home.trust_line")}
+        </p>
+      </section>
+
+      {/* What it solves */}
+      <section className="mb-10 rounded-xl border border-border bg-card px-6 py-6 sm:px-8">
+        <h2 className="mb-4 text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+          {t("home.solves.title")}
+        </h2>
+        <ul className="space-y-3">
+          {solves.map((text, i) => (
+            <li key={i} className="flex items-start gap-3 text-sm text-foreground leading-relaxed">
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-secondary" />
+              <span>{text}</span>
+            </li>
+          ))}
+        </ul>
       </section>
 
       {/* Feature cards */}

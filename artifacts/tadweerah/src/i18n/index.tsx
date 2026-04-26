@@ -17,8 +17,25 @@ const translations: Record<string, Record<Language, string>> = {
     en: "A Saudi platform connecting waste producers, recyclers, and carriers",
   },
   "app.description": {
-    ar: "أعد تدوير نفاياتك بكفاءة. نوصل منتجي النفايات بشركات التدوير وشركات النقل في مكان واحد.",
-    en: "Recycle your waste efficiently. We connect waste producers with recycling buyers and transport carriers — all in one place.",
+    ar: "منصة B2B لعرض المواد القابلة للتدوير والفائضة، وتلقّي العروض الموثّقة، ومتابعة الصفقات حتى الإغلاق.",
+    en: "A structured marketplace for companies to list recyclable or surplus materials, receive documented offers, and track deals through to a formal close.",
+  },
+  "home.trust_line": {
+    ar: "تجربة محدودة — بدون التزام طويل الأمد — دعم مباشر من فريق تدويرة",
+    en: "Limited pilot — no long-term commitment — direct support from the Tadweerah team",
+  },
+  "home.solves.title": { ar: "ماذا تحل تدويرة؟", en: "What it solves" },
+  "home.solves.1": {
+    ar: "لا يوجد مكان منظم لعرض المواد الفائضة — نشر الإعلانات وتلقّي عروض موثّقة بتواريخها",
+    en: "No structured place to list surplus or recyclable materials — post a listing and receive timestamped, documented offers",
+  },
+  "home.solves.2": {
+    ar: "العروض تصل شفهياً بلا سجل — كل عرض وسعره وقراره مسجّل في المنصة بشكل واضح",
+    en: "Offers arrive informally with no written record — every offer, price, and decision is recorded on the platform",
+  },
+  "home.solves.3": {
+    ar: "لا يوجد توثيق رسمي عند إغلاق الصفقة — تدويرة تُنشئ سجل صفقة قابلاً للطباعة لكلا الطرفين",
+    en: "No formal document when a deal closes — Tadweerah generates a printable deal record for both parties",
   },
   "nav.language": { ar: "English", en: "العربية" },
   "action.signin": { ar: "تسجيل الدخول", en: "Sign In" },
