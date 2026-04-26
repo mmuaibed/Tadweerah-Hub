@@ -1,0 +1,204 @@
+We want to run a final pre-launch review before making any more changes.
+
+Important:
+This is NOT an instruction to start implementation yet.
+Please review, analyze, and recommend first.
+
+---
+
+## 1) Product Direction
+
+Our current direction remains unchanged:
+
+Tadweerah is now a simple operational MVP marketplace that supports:
+
+* company onboarding
+* listing creation
+* marketplace browsing
+* offers / bidding
+* direct sale targeting
+* deal lifecycle
+* timeline
+* reporting
+* dashboard
+* notifications
+
+We do NOT want to rebuild the product or turn it now into a complex regulatory/compliance platform.
+
+Long term, Tadweerah may evolve into a traceability and data platform supporting the circular economy, but the current goal is:
+
+→ launch a practical MVP that can support real transactions with real customers.
+
+---
+
+## 2) What Must Stay Stable
+
+Please assume the following should not be changed unless there is a critical reason:
+
+* listing creation flow
+* marketplace flow
+* offer submission
+* deal flow
+* timeline
+* reports
+* dashboard
+* notification structure
+* email-ready infrastructure
+* project charter rules
+
+No rebuild.
+No major new flows.
+No compliance/regulatory logic.
+No unnecessary schema-heavy changes.
+
+---
+
+## 3) Items We Are Considering
+
+We are considering a few lightweight improvements before launch:
+
+### A) Deal reference display
+
+There is already an internal deal/process ID.
+
+We do NOT want a new ID system.
+
+We only want a customer-facing formatted reference such as:
+
+TDW-2026-0001
+
+Please evaluate whether this can be derived from existing data without adding unnecessary complexity.
+
+---
+
+### B) Material category visibility
+
+Material categories already exist.
+
+Please evaluate whether they are clearly visible enough in:
+
+* listing cards
+* listing detail
+* deal panel
+* printable report
+* reports/dashboard where relevant
+
+---
+
+### C) Simple pickup location details
+
+We want simple location clarity, not maps.
+
+Potential fields:
+
+* city
+* district / industrial area
+* optional pickup notes
+
+Please evaluate if this is valuable now and whether it requires schema changes or can be handled lightly.
+
+---
+
+### D) Visual deal timeline
+
+The timeline exists.
+
+We are considering a simple progress bar above it.
+
+No new states.
+No new logic.
+Display improvement only.
+
+---
+
+### E) Minimum Admin Control
+
+We need your assessment on a lightweight admin layer.
+
+Not a full admin system yet.
+
+Minimum needs:
+
+* view companies/users
+* view listings
+* view deals
+* see basic growth/activity metrics
+* manage lookup tables without code changes:
+
+  * unit options
+  * material categories
+  * company categories
+  * company actions/capabilities if appropriate
+
+Goal:
+Allow us to operate and adjust the MVP without needing engineering changes for every small data update.
+
+---
+
+## 4) What We Need From You
+
+Please respond as both:
+
+* CTO
+* Product Manager
+
+For each item above, classify it as:
+
+1. Already implemented fully
+2. Partially implemented and needs light improvement
+3. Worth implementing now
+4. Better postponed
+5. Not recommended
+
+For each item, include:
+
+* customer value
+* implementation effort: low / medium / high
+* risk level
+* whether it affects schema, API, or UI only
+* your recommendation
+
+---
+
+## 5) End-to-End Workflow Review
+
+Please also review the current customer journey:
+
+onboarding → dashboard → create listing → marketplace → submit offer → accept offer → deal flow → completion → report
+
+Tell us:
+
+* Is the journey coherent?
+* Any missing steps?
+* Any confusing points?
+* Any issue that could reduce customer trust during launch?
+
+---
+
+## 6) Final Recommendation
+
+At the end, please provide:
+
+### Top 3–5 changes you recommend before launch
+
+Only high-impact, low-effort items.
+
+### Items to postpone
+
+Anything useful but not needed before launch.
+
+### Items to avoid
+
+Anything that may create complexity, delay, or false expectations.
+
+---
+
+## Constraints
+
+* Do not implement anything yet
+* Do not run heavy testing
+* Do not change code
+* This is analysis only
+
+Goal:
+Make a smart launch decision with minimal complexity, high customer value, and full alignment with the project charter.
