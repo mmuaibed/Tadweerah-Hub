@@ -26,6 +26,7 @@ const translations: Record<string, Record<Language, string>> = {
   "action.signout": { ar: "تسجيل الخروج", en: "Sign Out" },
   "action.getstarted": { ar: "ابدأ الآن", en: "Get Started" },
   "action.cancel": { ar: "إلغاء", en: "Cancel" },
+  "action.close": { ar: "إغلاق", en: "Close" },
   "action.back": { ar: "رجوع", en: "Back" },
   "action.save": { ar: "حفظ", en: "Save" },
 
@@ -69,6 +70,8 @@ const translations: Record<string, Record<Language, string>> = {
   "onboarding.form.license_section": { ar: "معلومات الترخيص", en: "License Information" },
   "onboarding.form.license_section.hint": { ar: "إن كان لديك رقم ترخيص نشاط، يمكنك إدخاله هنا. سيتم مراجعته لاحقًا من قِبَل فريقنا.", en: "If you have an activity license number, you may enter it here. It will be reviewed by our team." },
   "onboarding.form.license.required_badge": { ar: "يتطلب ترخيصًا", en: "License required" },
+  "onboarding.form.phone.required": { ar: "رقم التواصل مطلوب", en: "Contact phone is required" },
+  "onboarding.form.phone.invalid": { ar: "رقم الهاتف غير صحيح، تأكد من الصيغة", en: "Invalid phone number — please check the format" },
   "onboarding.form.submit": { ar: "حفظ ومتابعة", en: "Save & Continue" },
   "onboarding.form.saving": { ar: "جاري الحفظ...", en: "Saving..." },
   "onboarding.error.generic": {
@@ -417,6 +420,16 @@ const translations: Record<string, Record<Language, string>> = {
   "listing.bid.top": { ar: "أنت أعلى عرض", en: "You're top bidder" },
   "listing.bid.not_top": { ar: "عرضك ليس الأعلى", en: "Not the top offer" },
   "listing.required_services.label": { ar: "خدمات مطلوبة", en: "Required services" },
+  "report.button": { ar: "الإبلاغ عن مشكلة", en: "Report Issue" },
+  "report.modal.title": { ar: "الإبلاغ عن مشكلة", en: "Report an Issue" },
+  "report.modal.description": { ar: "صف المشكلة التي واجهتها وسنتابعها في أقرب وقت.", en: "Describe the issue you encountered and we will follow up shortly." },
+  "report.modal.placeholder": { ar: "صف المشكلة بإيجاز...", en: "Describe the issue briefly..." },
+  "report.modal.submit": { ar: "إرسال", en: "Send" },
+  "report.modal.sending": { ar: "جاري الإرسال...", en: "Sending..." },
+  "report.modal.success": { ar: "شكراً! تم استلام بلاغك وسنتواصل معك قريباً.", en: "Thank you! Your report has been received." },
+  "report.modal.error": { ar: "تعذّر الإرسال. حاول مرة أخرى.", en: "Could not send. Please try again." },
+  "report.modal.min_length": { ar: "يجب أن يكون الوصف 5 أحرف على الأقل", en: "Description must be at least 5 characters" },
+
   "notification.title": { ar: "الإشعارات", en: "Notifications" },
   "notification.bell.label": { ar: "الإشعارات", en: "Notifications" },
   "notification.empty": { ar: "لا توجد إشعارات", en: "No notifications" },

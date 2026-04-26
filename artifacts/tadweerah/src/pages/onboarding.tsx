@@ -111,6 +111,18 @@ export function OnboardingPage() {
       return;
     }
 
+    const phoneVal = contactPhone.trim();
+    if (!phoneVal) {
+      setError(t("onboarding.form.phone.required"));
+      return;
+    }
+    // Strip formatting characters then check it looks like a real phone number
+    const phoneClean = phoneVal.replace(/[\s\-().+]/g, "");
+    if (!/^\d{7,15}$/.test(phoneClean)) {
+      setError(t("onboarding.form.phone.invalid"));
+      return;
+    }
+
     setIsPending(true);
     try {
       const body: Record<string, unknown> = {

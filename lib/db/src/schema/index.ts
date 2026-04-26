@@ -14,3 +14,4 @@ export * from "./listing-offers";
 export * from "./deals";
 export * from "./audit-log";
 export * from "./notifications";
+export * from "./issue-reports";

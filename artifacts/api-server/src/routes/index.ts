@@ -9,6 +9,7 @@ import dealsRouter from "./deals";
 import lookupRouter from "./lookup";
 import notificationsRouter from "./notifications";
 import statsRouter from "./stats";
+import issueReportsRouter from "./issue-reports";
 
 const router: IRouter = Router();
 
@@ -22,5 +23,6 @@ router.use(dealsRouter);
 router.use(lookupRouter);
 router.use(notificationsRouter);
 router.use(statsRouter);
+router.use(issueReportsRouter);
 
 export default router;

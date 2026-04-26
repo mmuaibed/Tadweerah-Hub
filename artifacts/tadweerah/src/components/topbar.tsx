@@ -1,7 +1,8 @@
 import { useClerk, Show } from "@clerk/react";
 import { Link, useLocation } from "wouter";
-import { LogOut, Bell } from "lucide-react";
+import { LogOut, Bell, MessageSquareWarning } from "lucide-react";
 import { useState } from "react";
+import { ReportIssueModal } from "@/components/report-issue-modal";
 import { Button } from "@/components/ui/button";
 import { LanguageToggle } from "@/components/language-toggle";
 import { useT } from "@/i18n";
@@ -144,10 +145,12 @@ export function Topbar({ showSignOut = false }: { showSignOut?: boolean }) {
   const { signOut } = useClerk();
   const { t } = useT();
   const [location] = useLocation();
+  const [reportOpen, setReportOpen] = useState(false);
 
   const isPublicPage = location === "/" || location === "/sign-in" || location === "/sign-up" || location === "/terms";
 
   return (
+    <>
     <header className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-6">
         <Link to="/" className="flex items-center" aria-label={t("app.name")}>
@@ -161,7 +164,19 @@ export function Topbar({ showSignOut = false }: { showSignOut?: boolean }) {
         <div className="flex items-center gap-2">
           <LanguageToggle />
           <Show when="signed-in">
-            {!isPublicPage && <NotificationBell />}
+            {!isPublicPage && (
+              <>
+                <button
+                  aria-label={t("report.button")}
+                  title={t("report.button")}
+                  onClick={() => setReportOpen(true)}
+                  className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-amber-600 focus:outline-none"
+                >
+                  <MessageSquareWarning className="h-5 w-5" />
+                </button>
+                <NotificationBell />
+              </>
+            )}
             {showSignOut && (
               <Button
                 variant="ghost"
@@ -178,5 +193,7 @@ export function Topbar({ showSignOut = false }: { showSignOut?: boolean }) {
         </div>
       </div>
     </header>
+    <ReportIssueModal open={reportOpen} onOpenChange={setReportOpen} />
+    </>
   );
 }
