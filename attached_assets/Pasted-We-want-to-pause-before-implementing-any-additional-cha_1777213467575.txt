@@ -1,0 +1,267 @@
+We want to pause before implementing any additional changes and run a final structured pre-launch review.
+
+Important:
+This is NOT a request to start development yet.
+This is a combined product, technical, and operational evaluation step.
+
+---
+
+## 1) Strategic Direction
+
+We are aligned that:
+
+Tadweerah is currently a simple operational MVP marketplace that supports:
+
+onboarding → listings → marketplace → offers → deal → timeline → report → dashboard
+
+We are NOT:
+
+* rebuilding the product
+* introducing complex flows
+* turning this into a regulatory or compliance platform
+
+Long-term, Tadweerah may evolve into a traceability and data layer supporting the circular economy.
+
+But for now:
+→ the goal is a simple, reliable system that supports real transactions.
+
+---
+
+## 2) What Must Remain Stable
+
+We want to preserve:
+
+* listing creation flow
+* marketplace browsing
+* offer submission and selection
+* deal lifecycle and timeline
+* dashboard and notifications
+* email-ready infrastructure
+* project charter rules
+* overall simplicity of the user journey
+
+No rebuild.
+No major new flows.
+No compliance logic.
+No unnecessary schema-heavy changes.
+
+---
+
+## 3) Current Understanding (Needs Your Validation)
+
+From our review, the platform already includes:
+
+* material categories (in DB, but not clearly visible in UI)
+* unit + quantity logic
+* deal timeline
+* deal summary and printable report
+* dashboard metrics
+* notifications (in-app + email-ready)
+* onboarding CTA
+* company profile
+
+We need you to confirm:
+
+* what is fully implemented
+* what is partially implemented
+* what is redundant
+
+---
+
+## 4) Key Gaps Identified (Critical)
+
+Based on our combined review:
+
+### A) Contact visibility in deal flow
+
+Contact data already exists in the API, but is not visible in the UI.
+
+This creates a critical operational gap:
+after a deal is accepted, parties cannot easily contact each other.
+
+→ This is a priority issue affecting real-world usability.
+
+---
+
+### B) Material category visibility
+
+Categories exist in the system but are not visible in:
+
+* listing cards
+* listing detail
+* deal panel
+* reports
+
+→ This affects decision-making for buyers.
+
+---
+
+### C) Deal reference (customer-facing)
+
+We do NOT want a new ID system.
+
+We want a formatted reference derived from existing data, such as:
+
+TDW-2026-A3F2C1
+
+→ For communication, tracking, and professionalism.
+
+---
+
+## 5) Lightweight Enhancements Under Consideration
+
+We are only considering small, high-impact improvements:
+
+* visual progress bar for deal timeline (UI only)
+* simple location details:
+
+  * district / industrial area
+  * optional notes
+    (no maps, no geolocation)
+
+---
+
+## 6) Operational Challenge (Important)
+
+We want to highlight a real concern before launch:
+
+During the pilot phase, we will work closely with real customers.
+
+We need to:
+
+* understand what is happening inside the platform
+* diagnose issues quickly
+* support users in real time
+
+Without this, we will be effectively “blind” during live usage.
+
+---
+
+## 7) What We Are NOT Asking For
+
+We are NOT asking for:
+
+* a full admin system
+* complex roles/permissions
+* a full analytics platform
+
+---
+
+## 8) What We Actually Need (Your Recommendation)
+
+We need your advice on the simplest way to achieve:
+
+### Minimum operational visibility and control
+
+Such as:
+
+* basic platform stats:
+
+  * total companies
+  * total users
+  * total listings
+  * total deals
+
+* ability to inspect:
+
+  * companies
+  * listings
+  * deals
+
+* ability to manage lookup tables without code:
+
+  * unit options
+  * material categories
+  * company categories
+  * other similar data
+
+---
+
+## 9) What We Need From You
+
+Please respond as:
+
+CTO + Product Manager + Operator
+
+---
+
+### A) Validation
+
+For each item above, classify:
+
+1. already implemented
+2. partially implemented
+3. worth implementing now
+4. better postponed
+5. not recommended
+
+---
+
+### B) Risk & Complexity
+
+For each item:
+
+* implementation effort (low / medium / high)
+* risk level
+* whether it affects schema / API / UI
+
+---
+
+### C) Recommendation
+
+If you were preparing this for launch:
+
+* what are the TOP 3–5 items to implement now?
+* what should be postponed?
+* what should be avoided completely?
+
+---
+
+### D) Workflow Integrity
+
+Review the full journey:
+
+onboarding → dashboard → create listing → marketplace → submit offer → accept offer → deal → completion → report
+
+Tell us:
+
+* any gaps?
+* any confusing steps?
+* anything that could reduce trust?
+
+---
+
+### E) Operational Solution (Key Question)
+
+What is the simplest way to give us:
+
+* visibility
+* debugging capability
+* minimal control
+
+WITHOUT building a full admin system?
+
+---
+
+## 10) Constraints
+
+* no rebuild
+* no major new flows
+* no compliance/regulatory logic
+* no heavy schema changes unless critical
+
+---
+
+## Goal
+
+Move from:
+“working MVP”
+
+to:
+“trusted, usable, real-world system”
+
+with minimal complexity and maximum clarity.
+
+---
+
+Please treat this as a final pre-launch decision review.
