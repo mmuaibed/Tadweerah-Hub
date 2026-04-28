@@ -45,6 +45,7 @@ const translations: Record<string, Record<Language, string>> = {
   "action.cancel": { ar: "إلغاء", en: "Cancel" },
   "action.close": { ar: "إغلاق", en: "Close" },
   "action.back": { ar: "رجوع", en: "Back" },
+  "action.next": { ar: "التالي", en: "Next" },
   "action.save": { ar: "حفظ", en: "Save" },
 
   "home.feature1.title": { ar: "للمنتجين", en: "For Producers" },

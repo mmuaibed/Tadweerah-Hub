@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, type FormEvent } from "react";
+import { useState, useRef, useEffect, Fragment, type FormEvent } from "react";
 import { useAuth } from "@clerk/react";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
@@ -14,18 +14,17 @@ import {
   type Capability,
   type CompanyCategory,
 } from "@workspace/api-client-react";
-import { Loader2, ImagePlus, X, Scale, Tag, Gavel, ShoppingBag, Percent, Shield, Lock, Globe, Users } from "lucide-react";
+import {
+  Loader2, ImagePlus, X, Scale, Tag, Gavel, ShoppingBag, Percent,
+  Shield, Lock, Globe, Users, Check, ChevronRight,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { AppLayout } from "@/components/app-layout";
 import { useT } from "@/i18n";
@@ -40,9 +39,42 @@ const LEGACY_UNIT_KEYS = new Set(["kg", "ton"]);
 function toLegacyMaterial(key: string): string {
   return LEGACY_MATERIAL_KEYS.has(key) ? key : "other";
 }
-
 function toLegacyUnit(key: string): string {
   return LEGACY_UNIT_KEYS.has(key) ? key : "kg";
+}
+
+const TOTAL_STEPS = 3;
+
+function StepIndicator({ current, labels }: { current: number; labels: string[] }) {
+  return (
+    <div className="flex items-center mb-4">
+      {labels.map((label, i) => (
+        <Fragment key={label}>
+          <div className="flex flex-col items-center gap-1 shrink-0">
+            <div className={`h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors border-2 ${
+              i < current
+                ? "bg-primary border-primary text-primary-foreground"
+                : i === current
+                  ? "bg-primary border-primary text-primary-foreground ring-2 ring-primary/25"
+                  : "bg-background border-muted-foreground/30 text-muted-foreground"
+            }`}>
+              {i < current ? <Check className="h-3.5 w-3.5" /> : i + 1}
+            </div>
+            <span className={`text-[10px] text-center leading-tight max-w-[64px] ${
+              i === current ? "text-primary font-semibold" : "text-muted-foreground"
+            }`}>
+              {label}
+            </span>
+          </div>
+          {i < labels.length - 1 && (
+            <div className={`h-0.5 flex-1 mx-2 mb-4 rounded-full transition-colors ${
+              i < current ? "bg-primary" : "bg-muted-foreground/20"
+            }`} />
+          )}
+        </Fragment>
+      ))}
+    </div>
+  );
 }
 
 export function ListingNewPage() {
@@ -82,21 +114,19 @@ export function ListingNewPage() {
   const [requiredServiceIds, setRequiredServiceIds] = useState<Set<string>>(new Set());
   const [targetingType, setTargetingType] = useState<TargetingType>("open");
   const [targetCompanyId, setTargetCompanyId] = useState("");
-  // P5 — company search (for specific_company targeting)
   const [companySearch, setCompanySearch] = useState("");
   const [companyResults, setCompanyResults] = useState<{ id: string; name: string; city: string }[]>([]);
   const [companySearching, setCompanySearching] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<{ id: string; name: string; city: string } | null>(null);
-  // P5 — category targeting (multi-select company categories)
   const [targetCategoryIds, setTargetCategoryIds] = useState<Set<string>>(new Set());
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentStep, setCurrentStep] = useState(0);
 
   const { mutate, isPending } = useCreateWasteListing();
 
-  // P5 — debounced company search for specific_company targeting
   useEffect(() => {
     if (targetingType !== "specific_company" || companySearch.length < 2) {
       setCompanyResults([]);
@@ -145,32 +175,46 @@ export function ListingNewPage() {
     if (!res.ok) throw new Error("Image upload failed");
   }
 
+  function advanceStep() {
+    setError(null);
+    if (currentStep === 0) {
+      if (!materialCategoryId) {
+        setError(t("listing.form.error"));
+        return;
+      }
+      const qty = Number(quantity);
+      if (!Number.isFinite(qty) || qty <= 0) {
+        setError(t("listing.form.error"));
+        return;
+      }
+      if (isOtherUnit && !unitNotes.trim()) {
+        setError(t("listing.form.unit_notes.required"));
+        return;
+      }
+    } else if (currentStep === 1) {
+      if (pricingModel === "revenue_share") {
+        const pctNum = Number(revenueSharePct);
+        if (!revenueSharePct.trim() || !Number.isFinite(pctNum) || pctNum <= 0 || pctNum > 100) {
+          setError(t("listing.form.error.revenue_share_pct_required"));
+          return;
+        }
+      }
+    }
+    setCurrentStep((c) => c + 1);
+  }
+
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    if (!materialCategoryId) {
-      setError(t("listing.form.error"));
-      return;
-    }
-
+    if (!materialCategoryId) { setError(t("listing.form.error")); return; }
     const selectedCategory = (allCategories as MaterialCategory[]).find((c) => c.id === materialCategoryId);
     const selectedUnit = (unitOptions as UnitOption[]).find((u) => u.id === resolvedUnitId);
-
     const legacyMaterial = selectedCategory ? toLegacyMaterial(selectedCategory.key) : "other";
     const legacyUnit = selectedUnit ? toLegacyUnit(selectedUnit.key) : "kg";
-
     const qty = Number(quantity);
-    if (!Number.isFinite(qty) || qty <= 0) {
-      setError(t("listing.form.error"));
-      return;
-    }
-
-    if (isOtherUnit && !unitNotes.trim()) {
-      setError(t("listing.form.unit_notes.required"));
-      return;
-    }
-
+    if (!Number.isFinite(qty) || qty <= 0) { setError(t("listing.form.error")); return; }
+    if (isOtherUnit && !unitNotes.trim()) { setError(t("listing.form.unit_notes.required")); return; }
     if (pricingModel === "revenue_share") {
       const pctNum = Number(revenueSharePct);
       if (!revenueSharePct.trim() || !Number.isFinite(pctNum) || pctNum <= 0 || pctNum > 100) {
@@ -183,7 +227,6 @@ export function ListingNewPage() {
 
     mutate(
       {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         data: {
           material: legacyMaterial as any,
           unit: legacyUnit as any,
@@ -219,30 +262,25 @@ export function ListingNewPage() {
       {
         onSuccess: async (created) => {
           const listingId = (created as { id: string }).id;
-          console.log("[tadweerah] listing created:", listingId);
           if (imageFile && listingId) {
             setIsUploading(true);
-            try {
-              await uploadImage(listingId);
-              console.log("[tadweerah] listing image uploaded:", listingId);
-            } catch (e) {
-              console.warn("[tadweerah] listing image upload failed (non-fatal):", e);
-            } finally {
-              setIsUploading(false);
-            }
+            try { await uploadImage(listingId); } catch (e) { console.warn("image upload failed:", e); } finally { setIsUploading(false); }
           }
           queryClient.invalidateQueries({ queryKey: getListMyListingsQueryKey() });
           setLocation("/listings/mine");
         },
-        onError: (err) => {
-          console.warn("[tadweerah] listing creation failed:", err);
-          setError(t("listing.form.error"));
-        },
+        onError: () => setError(t("listing.form.error")),
       },
     );
   };
 
   const isBusy = isPending || isUploading;
+
+  const stepLabels = [
+    t("listing.form.section.material"),
+    t("listing.form.section.pricing"),
+    t("listing.form.section.details"),
+  ];
 
   return (
     <AppLayout
@@ -251,26 +289,22 @@ export function ListingNewPage() {
       title={t("listing.new.title")}
       subtitle={t("listing.new.subtitle")}
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-3">
 
-        {/* ── Section A: Material & Location ── */}
-        <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground px-0.5">
-            {t("listing.form.section.material")}
-          </p>
+        {/* Step indicator */}
+        <StepIndicator current={currentStep} labels={stepLabels} />
+
+        {/* ── Step 0: Material & Location ── */}
+        {currentStep === 0 && (
           <Card className="border-card-border bg-card">
-            <CardContent className="space-y-4 p-4 sm:p-5">
+            <CardContent className="space-y-3 p-4">
 
-              {/* Material + Subcategory — side by side when subcategory available */}
-              <div className={`grid gap-4 ${subcategories.length > 0 ? "sm:grid-cols-2" : ""}`}>
+              <div className={`grid gap-3 ${subcategories.length > 0 ? "sm:grid-cols-2" : ""}`}>
                 <div className="space-y-1.5">
                   <Label htmlFor="material">{t("listing.form.material")}</Label>
                   <Select
                     value={materialCategoryId}
-                    onValueChange={(v) => {
-                      setMaterialCategoryId(v);
-                      setMaterialSubcategoryId("");
-                    }}
+                    onValueChange={(v) => { setMaterialCategoryId(v); setMaterialSubcategoryId(""); }}
                   >
                     <SelectTrigger id="material">
                       <SelectValue placeholder={t("listing.form.material")} />
@@ -303,8 +337,7 @@ export function ListingNewPage() {
                 )}
               </div>
 
-              {/* City + Quantity */}
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label htmlFor="city">{t("listing.form.city")}</Label>
                   <Input id="city" required minLength={2} maxLength={80} value={city} onChange={(e) => setCity(e.target.value)} />
@@ -315,8 +348,7 @@ export function ListingNewPage() {
                 </div>
               </div>
 
-              {/* Unit + Unit notes — side by side when "other" unit selected */}
-              <div className={`grid gap-4 ${isOtherUnit ? "sm:grid-cols-2" : ""}`}>
+              <div className={`grid gap-3 ${isOtherUnit ? "sm:grid-cols-2" : ""}`}>
                 <div className="space-y-1.5">
                   <Label htmlFor="unit">{t("listing.form.unit")}</Label>
                   <Select value={resolvedUnitId} onValueChange={setUnitOptionId}>
@@ -346,17 +378,13 @@ export function ListingNewPage() {
 
             </CardContent>
           </Card>
-        </div>
+        )}
 
-        {/* ── Section B: Pricing & Settings ── */}
-        <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground px-0.5">
-            {t("listing.form.section.pricing")}
-          </p>
+        {/* ── Step 1: Pricing & Settings ── */}
+        {currentStep === 1 && (
           <Card className="border-card-border bg-card">
-            <CardContent className="space-y-4 p-4 sm:p-5">
+            <CardContent className="space-y-3 p-4">
 
-              {/* Sale type */}
               <div className="space-y-1.5">
                 <Label>{t("listing.form.saleType")}</Label>
                 <div className="grid grid-cols-2 gap-2">
@@ -394,7 +422,6 @@ export function ListingNewPage() {
                 <p className="text-xs text-muted-foreground">{t(`listing.form.saleType.${saleType}.hint`)}</p>
               </div>
 
-              {/* Pricing model */}
               <div className="space-y-1.5">
                 <Label>{t("listing.form.pricingModel")}</Label>
                 <div className={`grid gap-2 ${saleType === "direct" ? "grid-cols-3" : "grid-cols-2"}`}>
@@ -424,7 +451,6 @@ export function ListingNewPage() {
                 <p className="text-xs text-muted-foreground">{t(`listing.form.pricingModel.${pricingModel}.hint`)}</p>
               </div>
 
-              {/* Revenue share percentage — shown only when revenue_share is selected */}
               {pricingModel === "revenue_share" && (
                 <div className="space-y-1.5">
                   <Label htmlFor="revenueSharePct">{t("listing.form.revenue_share_pct")}</Label>
@@ -444,8 +470,7 @@ export function ListingNewPage() {
                 </div>
               )}
 
-              {/* Price hint + Targeting — side by side on desktop for direct sale */}
-              <div className={`grid gap-4 ${saleType === "direct" ? "sm:grid-cols-2" : ""}`}>
+              <div className={`grid gap-3 ${saleType === "direct" ? "sm:grid-cols-2" : ""}`}>
                 <div className="space-y-1.5">
                   <Label htmlFor="priceHint">{t("listing.form.priceHint")}</Label>
                   <Input
@@ -476,7 +501,7 @@ export function ListingNewPage() {
                               setCompanySearch("");
                               setCompanyResults([]);
                             }}
-                            className={`flex flex-col items-center gap-1.5 rounded-lg border px-2 py-2.5 text-sm font-medium transition-all ${
+                            className={`flex flex-col items-center gap-1.5 rounded-lg border px-2 py-2 text-sm font-medium transition-all ${
                               active
                                 ? type === "open"
                                   ? "border-primary bg-primary/10 text-primary"
@@ -496,18 +521,17 @@ export function ListingNewPage() {
                 )}
               </div>
 
-              {/* Category multi-select (direct + category targeting) */}
               {saleType === "direct" && targetingType === "category" && (
                 <div className="space-y-1.5">
                   <Label>{t("listing.form.targeting.categories.label")}</Label>
                   <p className="text-xs text-muted-foreground">{t("listing.form.targeting.categories.hint")}</p>
-                  <div className="grid grid-cols-1 gap-1.5 max-h-48 overflow-y-auto rounded-lg border border-border p-2">
+                  <div className="grid grid-cols-1 gap-1 max-h-40 overflow-y-auto rounded-lg border border-border p-2">
                     {(companyCategoryList as CompanyCategory[]).map((cat) => {
                       const checked = targetCategoryIds.has(cat.id);
                       return (
                         <label
                           key={cat.id}
-                          className={`flex items-center gap-2 rounded-md px-3 py-2 cursor-pointer transition-colors ${checked ? "bg-secondary/10 text-secondary" : "hover:bg-muted/40 text-muted-foreground"}`}
+                          className={`flex items-center gap-2 rounded-md px-3 py-1.5 cursor-pointer transition-colors ${checked ? "bg-secondary/10 text-secondary" : "hover:bg-muted/40 text-muted-foreground"}`}
                         >
                           <input
                             type="checkbox"
@@ -530,7 +554,6 @@ export function ListingNewPage() {
                 </div>
               )}
 
-              {/* Company search (direct + specific_company targeting) */}
               {saleType === "direct" && targetingType === "specific_company" && (
                 <div className="space-y-1.5">
                   <Label>{t("listing.form.targeting.companySearch.selected")}</Label>
@@ -557,7 +580,7 @@ export function ListingNewPage() {
                         autoComplete="off"
                       />
                       {(companySearching || companyResults.length > 0 || (companySearch.length >= 2 && !companySearching)) && (
-                        <div className="absolute z-10 mt-1 w-full rounded-lg border border-border bg-background shadow-lg max-h-48 overflow-y-auto">
+                        <div className="absolute z-10 mt-1 w-full rounded-lg border border-border bg-background shadow-lg max-h-40 overflow-y-auto">
                           {companySearching ? (
                             <div className="flex items-center gap-2 px-3 py-3 text-sm text-muted-foreground">
                               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -571,7 +594,7 @@ export function ListingNewPage() {
                                 key={c.id}
                                 type="button"
                                 onClick={() => { setSelectedCompany(c); setCompanySearch(""); setCompanyResults([]); }}
-                                className="w-full flex items-start gap-2 px-3 py-2.5 text-start hover:bg-muted/50 transition-colors"
+                                className="w-full flex items-start gap-2 px-3 py-2 text-start hover:bg-muted/50 transition-colors"
                               >
                                 <div>
                                   <p className="text-sm font-medium text-foreground">{c.name}</p>
@@ -587,18 +610,17 @@ export function ListingNewPage() {
                 </div>
               )}
 
-              {/* Required services */}
               {(allCapabilities as Capability[]).length > 0 && (
                 <div className="space-y-1.5">
                   <Label>{t("listing.form.requiredServices")}</Label>
                   <p className="text-xs text-muted-foreground">{t("listing.form.requiredServices.hint")}</p>
-                  <div className="grid gap-2 sm:grid-cols-2">
+                  <div className="grid gap-1.5 sm:grid-cols-2">
                     {(allCapabilities as Capability[]).map((cap) => {
                       const checked = requiredServiceIds.has(cap.id);
                       return (
                         <label
                           key={cap.id}
-                          className={`flex cursor-pointer items-start gap-2.5 rounded-lg border p-3 text-sm transition-colors ${
+                          className={`flex cursor-pointer items-start gap-2.5 rounded-lg border p-2.5 text-sm transition-colors ${
                             checked ? "border-primary bg-primary/5 text-foreground" : "border-border bg-background text-muted-foreground hover:border-muted-foreground/40"
                           }`}
                         >
@@ -615,11 +637,11 @@ export function ListingNewPage() {
                             }}
                           />
                           <div className="flex flex-col gap-0.5">
-                            <span className="font-medium text-foreground">{cap.name_ar}</span>
-                            <span className="text-xs text-muted-foreground">{cap.name_en}</span>
+                            <span className="font-medium text-foreground text-xs">{cap.name_ar}</span>
+                            <span className="text-[10px] text-muted-foreground">{cap.name_en}</span>
                             {cap.requires_license && (
-                              <span className="mt-0.5 inline-flex items-center gap-1 text-xs text-amber-600">
-                                <Shield className="h-3 w-3" />
+                              <span className="mt-0.5 inline-flex items-center gap-1 text-[10px] text-amber-600">
+                                <Shield className="h-2.5 w-2.5" />
                                 {t("capability.requires_license")}
                               </span>
                             )}
@@ -633,22 +655,19 @@ export function ListingNewPage() {
 
             </CardContent>
           </Card>
-        </div>
+        )}
 
-        {/* ── Section C: Details & Media ── */}
-        <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground px-0.5">
-            {t("listing.form.section.details")}
-          </p>
+        {/* ── Step 2: Details & Media ── */}
+        {currentStep === 2 && (
           <Card className="border-card-border bg-card">
-            <CardContent className="p-4 sm:p-5">
-              <div className="grid gap-4 sm:grid-cols-2">
+            <CardContent className="p-4">
+              <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label htmlFor="description">{t("listing.form.description")}</Label>
                   <Textarea
                     id="description"
                     maxLength={500}
-                    rows={5}
+                    rows={4}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     className="resize-none"
@@ -658,7 +677,7 @@ export function ListingNewPage() {
                   <Label>{t("listing.form.image")}</Label>
                   {imagePreview ? (
                     <div className="relative w-full overflow-hidden rounded-lg border border-border">
-                      <img src={imagePreview} alt="Preview" className="h-36 w-full object-cover sm:h-full sm:max-h-[10rem]" />
+                      <img src={imagePreview} alt="Preview" className="h-32 w-full object-cover sm:h-full sm:max-h-[9rem]" />
                       <button
                         type="button"
                         onClick={clearImage}
@@ -671,9 +690,9 @@ export function ListingNewPage() {
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="flex w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-muted/30 py-6 text-muted-foreground transition-colors hover:border-primary/50 hover:bg-primary/5 sm:h-full sm:min-h-[9.5rem]"
+                      className="flex w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-muted/30 py-5 text-muted-foreground transition-colors hover:border-primary/50 hover:bg-primary/5 sm:h-full sm:min-h-[8.5rem]"
                     >
-                      <ImagePlus className="h-7 w-7" />
+                      <ImagePlus className="h-6 w-6" />
                       <span className="text-sm">{t("listing.form.image.prompt")}</span>
                       <span className="text-xs opacity-70">{t("listing.form.image.hint")}</span>
                     </button>
@@ -683,7 +702,7 @@ export function ListingNewPage() {
               </div>
             </CardContent>
           </Card>
-        </div>
+        )}
 
         {error && (
           <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
@@ -691,18 +710,38 @@ export function ListingNewPage() {
           </div>
         )}
 
-        <div className="flex gap-3">
-          <Button type="button" variant="outline" onClick={() => setLocation("/dashboard")} disabled={isBusy}>
-            {t("action.cancel")}
-          </Button>
-          <Button type="submit" className="flex-1 gap-2" disabled={isBusy || !materialCategoryId}>
-            {isBusy && <Loader2 className="h-4 w-4 animate-spin" />}
-            {isUploading
-              ? t("listing.form.uploading")
-              : isPending
-                ? t("listing.form.saving")
-                : t("listing.form.submit")}
-          </Button>
+        {/* Navigation buttons */}
+        <div className="flex gap-2.5 pt-1">
+          {currentStep === 0 ? (
+            <Button type="button" variant="outline" onClick={() => setLocation("/dashboard")} disabled={isBusy}>
+              {t("action.cancel")}
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => { setCurrentStep((c) => c - 1); setError(null); }}
+              disabled={isBusy}
+            >
+              {t("action.back")}
+            </Button>
+          )}
+
+          {currentStep < TOTAL_STEPS - 1 ? (
+            <Button type="button" className="flex-1 gap-2" onClick={advanceStep}>
+              {t("action.next")}
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          ) : (
+            <Button type="submit" className="flex-1 gap-2" disabled={isBusy || !materialCategoryId}>
+              {isBusy && <Loader2 className="h-4 w-4 animate-spin" />}
+              {isUploading
+                ? t("listing.form.uploading")
+                : isPending
+                  ? t("listing.form.saving")
+                  : t("listing.form.submit")}
+            </Button>
+          )}
         </div>
       </form>
     </AppLayout>

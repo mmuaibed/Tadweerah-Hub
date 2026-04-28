@@ -27,7 +27,6 @@ import { ConfirmDialog } from "@/components/confirm-dialog";
 import { useT } from "@/i18n";
 
 type Tab = "all" | "pending" | "accepted" | "rejected";
-
 const TABS: Tab[] = ["all", "pending", "accepted", "rejected"];
 
 function translateRejectionReason(code: string | undefined, t: (k: string) => string): string {
@@ -69,12 +68,11 @@ function OfferCard({ offer }: { offer: MyOffer }) {
 
   const rejectionReason = translateRejectionReason(offer.rejection_reason, t);
   const estimatedTotal = offer.price_per_unit * offer.listing_quantity;
-
   const isCompleted = isAccepted && dealStatus === "completed";
 
   return (
     <div
-      className={`rounded-xl border p-5 space-y-4 transition-shadow hover:shadow-sm ${
+      className={`rounded-xl border p-4 space-y-3 transition-shadow hover:shadow-sm ${
         isCompleted
           ? "border-green-400 bg-green-50/60 dark:border-green-600 dark:bg-green-950/40"
           : isAccepted
@@ -84,11 +82,11 @@ function OfferCard({ offer }: { offer: MyOffer }) {
               : "border-border bg-card"
       }`}
     >
-      {/* Top: material + listing status */}
+      {/* Top: material + status badges */}
       <div className="flex items-start justify-between gap-3">
         <div className="space-y-0.5 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-base font-bold text-foreground truncate">
+            <span className="text-sm font-bold text-foreground truncate">
               {t(`material.${offer.listing_material}`)}
             </span>
             <Badge
@@ -100,11 +98,8 @@ function OfferCard({ offer }: { offer: MyOffer }) {
           </div>
           <span className="text-xs text-muted-foreground">{offer.listing_ref}</span>
         </div>
-        {/* Offer status badge */}
         <Badge
-          variant={
-            isAccepted ? "default" : isRejected ? "outline" : "secondary"
-          }
+          variant={isAccepted ? "default" : isRejected ? "outline" : "secondary"}
           className="shrink-0"
         >
           {isAccepted && <CheckCircle2 className="me-1 h-3 w-3" />}
@@ -114,28 +109,28 @@ function OfferCard({ offer }: { offer: MyOffer }) {
         </Badge>
       </div>
 
-      {/* Listing meta */}
-      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+      {/* Listing meta — compact */}
+      <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
         <span className="flex items-center gap-1">
-          <Package className="h-3.5 w-3.5" />
+          <Package className="h-3 w-3" />
           {offer.listing_quantity.toLocaleString()} {t(`unit.${offer.listing_unit}`)}
         </span>
         <span className="flex items-center gap-1">
-          <MapPin className="h-3.5 w-3.5" />
+          <MapPin className="h-3 w-3" />
           {offer.listing_city}
         </span>
         <span className="flex items-center gap-1">
-          <Building2 className="h-3.5 w-3.5" />
+          <Building2 className="h-3 w-3" />
           {offer.listing_company_name}
         </span>
       </div>
 
-      {/* Accepted: winner banner + deal stage */}
+      {/* Accepted: winner banner */}
       {isAccepted && (
-        <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2.5 dark:border-green-800 dark:bg-green-950 space-y-1.5">
+        <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 dark:border-green-800 dark:bg-green-950 space-y-1">
           <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
-            <CheckCircle2 className="h-4 w-4 shrink-0" />
-            <span className="text-sm font-semibold">{t("participations.winner.label")}</span>
+            <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+            <span className="text-xs font-semibold">{t("participations.winner.label")}</span>
           </div>
           {dealStatus && (
             <div className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full ${
@@ -152,10 +147,10 @@ function OfferCard({ offer }: { offer: MyOffer }) {
         </div>
       )}
 
-      {/* Offer price + estimated total */}
-      <div className="space-y-1">
+      {/* Price */}
+      <div className="space-y-0.5">
         <div className="flex items-baseline gap-1">
-          <span className="text-xl font-bold text-foreground">
+          <span className="text-lg font-bold text-foreground">
             {offer.price_per_unit.toLocaleString()}
           </span>
           <span className="text-xs text-muted-foreground">
@@ -172,27 +167,23 @@ function OfferCard({ offer }: { offer: MyOffer }) {
         </div>
       </div>
 
-      {/* F6 rank — only for pending offers when total_offers > 1 */}
+      {/* Rank */}
       {isPending && offer.rank != null && offer.total_offers != null && offer.total_offers > 1 && (
-        <div
-          className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium ${
-            offer.rank === 1
-              ? "bg-amber-50 text-amber-700 border border-amber-200"
-              : "bg-muted text-muted-foreground border border-border"
-          }`}
-        >
+        <div className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium ${
+          offer.rank === 1
+            ? "bg-amber-50 text-amber-700 border border-amber-200"
+            : "bg-muted text-muted-foreground border border-border"
+        }`}>
           <Medal className="h-3 w-3" />
           {offer.rank === 1 ? (
             <span>{t("offer.rank.top")}</span>
           ) : (
-            <span>
-              {t("offer.rank.label")}: {offer.rank} {t("offer.rank.of")} {offer.total_offers}
-            </span>
+            <span>{t("offer.rank.label")}: {offer.rank} {t("offer.rank.of")} {offer.total_offers}</span>
           )}
         </div>
       )}
 
-      {/* Rejected: show reason */}
+      {/* Rejected reason */}
       {isRejected && rejectionReason && (
         <div className="text-xs text-muted-foreground border-t border-border pt-2">
           <span className="font-medium">{t("participations.rejected.reason")}</span>{" "}
@@ -200,9 +191,8 @@ function OfferCard({ offer }: { offer: MyOffer }) {
         </div>
       )}
 
-      {/* Rejected on closed listing: show accepted total */}
       {isRejected && offer.listing_status === "closed" && offer.listing_accepted_total != null && (
-        <div className="rounded-lg bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+        <div className="rounded-lg bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground">
           {t("participations.listing.acceptedTotal")}:{" "}
           <span className="font-semibold text-foreground">
             {offer.listing_accepted_total.toLocaleString()} {t("listing.sar")}
@@ -210,14 +200,13 @@ function OfferCard({ offer }: { offer: MyOffer }) {
         </div>
       )}
 
-      {/* Closed date */}
       {closedDateStr && (
         <div className="text-xs text-muted-foreground">
           {t("participations.listing.closedAt")}: {closedDateStr}
         </div>
       )}
 
-      {/* Withdraw — only for pending offers on open listings */}
+      {/* Withdraw */}
       {isPending && offer.listing_status === "open" && (
         <>
           <ConfirmDialog
@@ -233,7 +222,7 @@ function OfferCard({ offer }: { offer: MyOffer }) {
           <Button
             variant="outline"
             size="sm"
-            className="w-full mt-1 border-destructive/40 text-destructive hover:bg-destructive/10"
+            className="w-full border-destructive/40 text-destructive hover:bg-destructive/10"
             disabled={isWithdrawing}
             onClick={() => setWithdrawOpen(true)}
           >
@@ -243,9 +232,8 @@ function OfferCard({ offer }: { offer: MyOffer }) {
         </>
       )}
 
-      {/* Action: view listing detail */}
       <Link to={`/listings/${offer.waste_listing_id}?from=participations`}>
-        <Button variant="outline" size="sm" className="w-full mt-1">
+        <Button variant="outline" size="sm" className="w-full">
           {t("listing.viewDetail")}
         </Button>
       </Link>
@@ -255,7 +243,7 @@ function OfferCard({ offer }: { offer: MyOffer }) {
 
 type AugOffer = MyOffer & { deal_status?: string };
 
-function StatCard({ value, label, urgent = false, onClick }: {
+function StatPill({ value, label, urgent = false, onClick }: {
   value: number;
   label: string;
   urgent?: boolean;
@@ -267,17 +255,17 @@ function StatCard({ value, label, urgent = false, onClick }: {
       type="button"
       onClick={onClick}
       disabled={!onClick}
-      className={`rounded-xl border px-4 py-3 text-start space-y-1 transition-shadow hover:shadow-sm w-full disabled:cursor-default ${
+      className={`rounded-lg border px-3 py-2 text-start space-y-0.5 transition-shadow hover:shadow-sm w-full disabled:cursor-default ${
         active
           ? "border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/50"
           : "border-border bg-card"
       }`}
     >
-      <div className={`text-2xl font-bold ${active ? "text-amber-700 dark:text-amber-300" : "text-foreground"}`}>
+      <div className={`text-xl font-bold leading-none ${active ? "text-amber-700 dark:text-amber-300" : "text-foreground"}`}>
         {value}
       </div>
-      <div className={`text-xs flex items-center gap-1 ${active ? "text-amber-700 dark:text-amber-400 font-medium" : "text-muted-foreground"}`}>
-        {active && <AlertCircle className="h-3 w-3 shrink-0" />}
+      <div className={`text-[10px] flex items-center gap-1 ${active ? "text-amber-700 dark:text-amber-400 font-medium" : "text-muted-foreground"}`}>
+        {active && <AlertCircle className="h-2.5 w-2.5 shrink-0" />}
         {label}
       </div>
     </button>
@@ -288,15 +276,13 @@ export function ParticipationsPage() {
   const { t } = useT();
   const [tab, setTab] = useState<Tab>("all");
 
-  // Always fetch all offers — used both for stats and filtered display
   const { data: allData = [], isLoading, isError } = useListMyOffers();
   const offers = allData as AugOffer[];
   const data = tab === "all" ? offers : offers.filter((o) => o.status === tab);
 
-  // Stats
-  const statPending  = offers.filter(o => o.status === "pending").length;
-  const statActive   = offers.filter(o => o.status === "accepted" && o.deal_status && ["active","payment_confirmed","dispatched"].includes(o.deal_status)).length;
-  const statMyTurn   = offers.filter(o => o.status === "accepted" && o.deal_status === "dispatched").length;
+  const statPending   = offers.filter(o => o.status === "pending").length;
+  const statActive    = offers.filter(o => o.status === "accepted" && o.deal_status && ["active","payment_confirmed","dispatched"].includes(o.deal_status)).length;
+  const statMyTurn    = offers.filter(o => o.status === "accepted" && o.deal_status === "dispatched").length;
   const statCompleted = offers.filter(o => o.status === "accepted" && o.deal_status === "completed").length;
 
   return (
@@ -305,24 +291,24 @@ export function ParticipationsPage() {
       title={t("participations.title")}
       subtitle={t("participations.subtitle")}
     >
-      {/* Summary stats bar */}
+      {/* Compact stats row */}
       {!isLoading && !isError && offers.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-          <StatCard value={statPending}   label={t("stats.pending_offers")} />
-          <StatCard value={statActive}    label={t("stats.active_deals")} />
-          <StatCard value={statMyTurn}    label={t("stats.my_turn")} urgent onClick={() => setTab("accepted")} />
-          <StatCard value={statCompleted} label={t("stats.completed")} />
+        <div className="grid grid-cols-4 gap-2 mb-3">
+          <StatPill value={statPending}   label={t("stats.pending_offers")} />
+          <StatPill value={statActive}    label={t("stats.active_deals")} />
+          <StatPill value={statMyTurn}    label={t("stats.my_turn")} urgent onClick={() => setTab("accepted")} />
+          <StatPill value={statCompleted} label={t("stats.completed")} />
         </div>
       )}
 
       {/* Status tabs */}
-      <div className="mb-6 flex gap-1 rounded-lg border border-border bg-muted/30 p-1 w-fit flex-wrap">
+      <div className="mb-3 flex gap-1 rounded-lg border border-border bg-muted/30 p-1 w-fit flex-wrap">
         {TABS.map((tabKey) => (
           <button
             key={tabKey}
             type="button"
             onClick={() => setTab(tabKey)}
-            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+            className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
               tab === tabKey
                 ? "bg-background shadow-sm text-foreground"
                 : "text-muted-foreground hover:text-foreground"
@@ -334,17 +320,13 @@ export function ParticipationsPage() {
       </div>
 
       {isLoading && (
-        <div className="flex h-48 items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="flex h-40 items-center justify-center">
+          <Loader2 className="h-7 w-7 animate-spin text-primary" />
         </div>
       )}
 
       {!isLoading && isError && (
-        <EmptyState
-          icon={ShoppingBag}
-          title={t("error.loading")}
-          description={t("error.generic")}
-        />
+        <EmptyState icon={ShoppingBag} title={t("error.loading")} description={t("error.generic")} />
       )}
 
       {!isLoading && !isError && data && data.length === 0 && (
@@ -361,7 +343,7 @@ export function ParticipationsPage() {
       )}
 
       {!isLoading && !isError && data && data.length > 0 && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {data.map((offer) => (
             <OfferCard key={offer.id} offer={offer} />
           ))}

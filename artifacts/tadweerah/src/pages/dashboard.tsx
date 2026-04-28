@@ -68,9 +68,9 @@ function useDashboardStats() {
 
 function StatPill({ icon: Icon, label, value }: { icon: typeof Recycle; label: string; value: number | string }) {
   return (
-    <div className="flex flex-col items-center gap-1 rounded-xl border border-border bg-card px-4 py-3 min-w-0">
-      <Icon className="h-4 w-4 text-primary shrink-0" />
-      <span className="text-lg font-bold text-foreground leading-none">{value}</span>
+    <div className="flex flex-col items-center gap-0.5 rounded-lg border border-border bg-card px-3 py-2 min-w-0">
+      <Icon className="h-3.5 w-3.5 text-primary shrink-0" />
+      <span className="text-base font-bold text-foreground leading-none">{value}</span>
       <span className="text-[10px] text-muted-foreground text-center leading-tight">{label}</span>
     </div>
   );
@@ -96,20 +96,23 @@ export function DashboardPage() {
 
   return (
     <AppLayout showSignOut>
-      <div className="mb-4">
-        <p className="text-sm text-muted-foreground">{t("dashboard.welcome")}</p>
-        <h1 className="mt-1 text-2xl font-bold text-foreground sm:text-3xl">{company.name}</h1>
-        <p className="mt-1.5 flex items-center gap-1.5 text-sm text-muted-foreground">
-          <Truck className="h-3.5 w-3.5" />
-          {company.city}
-        </p>
+      {/* Compact company header */}
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs text-muted-foreground">{t("dashboard.welcome")}</p>
+          <h1 className="text-xl font-bold text-foreground sm:text-2xl truncate">{company.name}</h1>
+          <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+            <Truck className="h-3 w-3 shrink-0" />
+            {company.city}
+          </p>
+        </div>
       </div>
 
-      {/* V4 — Activity stats strip */}
+      {/* Activity stats strip */}
       {stats && (
-        <div className="mb-5">
-          <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">{t("dashboard.stats.title")}</p>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
+        <div className="mb-3">
+          <p className="text-[10px] font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">{t("dashboard.stats.title")}</p>
+          <div className="grid grid-cols-3 gap-2 md:grid-cols-5">
             <StatPill icon={FileText}    label={t("dashboard.stats.listings")}         value={stats.listings_count} />
             <StatPill icon={TrendingUp}  label={t("dashboard.stats.offers_received")}  value={stats.offers_received_count} />
             <StatPill icon={Package}     label={t("dashboard.stats.offers_made")}      value={stats.offers_made_count} />
@@ -125,19 +128,19 @@ export function DashboardPage() {
         </div>
       )}
 
-      {/* Onboarding CTA — shown only to new accounts with no activity yet */}
+      {/* Onboarding CTA */}
       {stats && stats.listings_count === 0 && stats.offers_received_count === 0 && stats.offers_made_count === 0 && (
-        <div className="mb-5 rounded-xl border border-primary/20 bg-primary/5 p-4 sm:p-5">
-          <div className="flex items-start gap-3">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <Sparkles className="h-4 w-4" />
+        <div className="mb-3 rounded-xl border border-primary/20 bg-primary/5 p-3 sm:p-4">
+          <div className="flex items-start gap-2.5">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <Sparkles className="h-3.5 w-3.5" />
             </span>
             <div className="flex-1 min-w-0">
-              <h2 className="text-base font-semibold text-foreground">{t("dashboard.onboarding.title")}</h2>
-              <p className="mt-1 text-sm text-muted-foreground leading-relaxed">{t("dashboard.onboarding.desc")}</p>
+              <h2 className="text-sm font-semibold text-foreground">{t("dashboard.onboarding.title")}</h2>
+              <p className="mt-0.5 text-xs text-muted-foreground leading-relaxed">{t("dashboard.onboarding.desc")}</p>
               <Link to="/listings/new">
-                <button className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors">
-                  <Recycle className="h-4 w-4" />
+                <button className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors">
+                  <Recycle className="h-3.5 w-3.5" />
                   {t("dashboard.onboarding.cta")}
                 </button>
               </Link>
@@ -146,21 +149,22 @@ export function DashboardPage() {
         </div>
       )}
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 sm:gap-4">
+      {/* Nav grid — 4-col on desktop = 2 rows for 8 cards */}
+      <div className="grid gap-2 grid-cols-2 lg:grid-cols-4 sm:gap-2.5">
         {PLATFORM_CARDS.map(({ titleKey, descKey, icon: Icon, href }) => (
           <Link key={titleKey} to={href}>
             <Card className="group h-full border-card-border bg-card transition-all cursor-pointer hover:-translate-y-0.5 hover:shadow-md">
-              <CardContent className="flex h-full flex-col items-start gap-3 p-4 sm:p-5">
-                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <Icon className="h-4 w-4" />
+              <CardContent className="flex h-full flex-col items-start gap-2 p-3 sm:p-3.5">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <Icon className="h-3.5 w-3.5" />
                 </span>
                 <div className="flex-1">
-                  <h3 className="text-base font-semibold text-card-foreground">{t(titleKey)}</h3>
-                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{t(descKey)}</p>
+                  <h3 className="text-sm font-semibold text-card-foreground">{t(titleKey)}</h3>
+                  <p className="mt-0.5 text-xs leading-snug text-muted-foreground line-clamp-2">{t(descKey)}</p>
                 </div>
-                <span className="inline-flex items-center gap-1 text-sm font-medium text-primary">
+                <span className="inline-flex items-center gap-1 text-xs font-medium text-primary">
                   {t("action.getstarted")}
-                  <Arrow className="h-3.5 w-3.5" />
+                  <Arrow className="h-3 w-3" />
                 </span>
               </CardContent>
             </Card>
