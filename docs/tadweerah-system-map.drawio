@@ -1,0 +1,472 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="3300" pageHeight="2100" math="0" shadow="0">
+  <root>
+    <mxCell id="0"/>
+    <mxCell id="1" parent="0"/>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- TITLE                                                           -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <mxCell id="2" value="&lt;b style='font-size:15px'&gt;Tadweerah — As-Is System Map (April 2026)&lt;/b&gt;&lt;br/&gt;Marketplace Track · Clerk Auth · React + Vite · Express API · Drizzle ORM · PostgreSQL · No Contract Track implemented yet" style="text;html=1;strokeColor=#1e4d78;fillColor=#1e4d78;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#FFFFFF;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="10" y="10" width="3280" height="50" as="geometry"/>
+    </mxCell>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- LEGEND                                                          -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <mxCell id="3" value="&lt;b&gt;Actors &amp; Shapes:&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontStyle=1;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="10" y="70" width="120" height="28" as="geometry"/>
+    </mxCell>
+    <mxCell id="4" value="🏭 Producer / Seller" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=9;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="135" y="70" width="145" height="28" as="geometry"/>
+    </mxCell>
+    <mxCell id="5" value="🛒 Buyer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="290" y="70" width="115" height="28" as="geometry"/>
+    </mxCell>
+    <mxCell id="6" value="🔐 Admin" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=9;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="415" y="70" width="105" height="28" as="geometry"/>
+    </mxCell>
+    <mxCell id="7" value="⚙️ System / Job" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d6b656;fontSize=9;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="530" y="70" width="120" height="28" as="geometry"/>
+    </mxCell>
+    <mxCell id="8" value="📋 Database Table" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=9;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="660" y="70" width="130" height="28" as="geometry"/>
+    </mxCell>
+    <mxCell id="9" value="🔔 Notification / Event" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="800" y="70" width="145" height="28" as="geometry"/>
+    </mxCell>
+    <mxCell id="9b" value="⚠ Known Gap (alignment audit)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=9;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="955" y="70" width="185" height="28" as="geometry"/>
+    </mxCell>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- LEFT COLUMN BACKGROUND                                          -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <mxCell id="10" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#cccccc;" vertex="1" parent="1">
+      <mxGeometry x="10" y="108" width="640" height="1750" as="geometry"/>
+    </mxCell>
+
+    <!-- ─── AUTH & IDENTITY ─── -->
+    <mxCell id="20" value="&lt;b&gt;AUTH &amp; IDENTITY&lt;/b&gt;" style="text;html=1;strokeColor=#999999;fillColor=#e0e0e0;align=center;fontStyle=1;fontSize=10;rounded=0;" vertex="1" parent="1">
+      <mxGeometry x="10" y="108" width="640" height="28" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="21" value="&lt;b&gt;Clerk Auth&lt;/b&gt;&lt;br/&gt;External identity provider&lt;br/&gt;JWT-based sessions&lt;br/&gt;Sign-in / Sign-up hosted pages&lt;br/&gt;User webhook sync" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=9;" vertex="1" parent="1">
+      <mxGeometry x="20" y="145" width="195" height="90" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="22" value="&lt;b&gt;requireAuth&lt;/b&gt;&lt;br/&gt;Validates Clerk JWT&lt;br/&gt;Extracts userId from token&lt;br/&gt;Sets req.auth.userId" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=9;" vertex="1" parent="1">
+      <mxGeometry x="230" y="145" width="190" height="80" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="23" value="&lt;b&gt;requireCompany()&lt;/b&gt;&lt;br/&gt;Loads company_members row by userId&lt;br/&gt;Loads companies row by company_id&lt;br/&gt;Sets req.company, req.member&lt;br/&gt;→ 403 if no company found" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=9;" vertex="1" parent="1">
+      <mxGeometry x="435" y="140" width="205" height="90" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="24" value="&lt;b&gt;requireAdminKey&lt;/b&gt;&lt;br/&gt;Validates X-Admin-Key header&lt;br/&gt;Protects all /admin/* routes" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=9;" vertex="1" parent="1">
+      <mxGeometry x="435" y="240" width="205" height="65" as="geometry"/>
+    </mxCell>
+
+    <!-- ─── COMPANY MANAGEMENT ─── -->
+    <mxCell id="30" value="&lt;b&gt;COMPANY MANAGEMENT (WF-01, WF-02, WF-03)&lt;/b&gt;" style="text;html=1;strokeColor=#999999;fillColor=#e0e0e0;align=center;fontStyle=1;fontSize=10;rounded=0;" vertex="1" parent="1">
+      <mxGeometry x="10" y="318" width="640" height="28" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="31" value="&lt;b&gt;companies&lt;/b&gt;&lt;br/&gt;────────────────────&lt;br/&gt;id (uuid PK)&lt;br/&gt;owner_user_id (UNIQUE text)&lt;br/&gt;name (text, not null)&lt;br/&gt;type: producer | buyer | carrier&lt;br/&gt;city, contact_phone&lt;br/&gt;commercial_registration&lt;br/&gt;company_category_id (FK)&lt;br/&gt;license_number&lt;br/&gt;license_document_url&lt;br/&gt;license_status: pending | approved | rejected | expired&lt;br/&gt;accepted_terms_at (timestamp)&lt;br/&gt;created_at" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=9;align=left;spacingLeft=4;" vertex="1" parent="1">
+      <mxGeometry x="20" y="355" width="230" height="240" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="32" value="&lt;b&gt;company_members&lt;/b&gt;&lt;br/&gt;────────────────&lt;br/&gt;user_id (UNIQUE — 1 company per user)&lt;br/&gt;company_id (FK → companies)&lt;br/&gt;role: owner | member" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=9;align=left;spacingLeft=4;" vertex="1" parent="1">
+      <mxGeometry x="265" y="355" width="240" height="100" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="33" value="&lt;b&gt;company_capabilities&lt;/b&gt;&lt;br/&gt;company_id (FK)&lt;br/&gt;capability_id (FK → capabilities)&lt;br/&gt;[many-to-many join]" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=9;align=left;spacingLeft=4;" vertex="1" parent="1">
+      <mxGeometry x="265" y="468" width="240" height="80" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="34" value="&lt;b&gt;company_action_selections&lt;/b&gt;&lt;br/&gt;company_id (FK)&lt;br/&gt;company_action_id (FK)&lt;br/&gt;[many-to-many join]" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=9;align=left;spacingLeft=4;" vertex="1" parent="1">
+      <mxGeometry x="265" y="560" width="240" height="75" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="35" value="&lt;b&gt;Company API Routes&lt;/b&gt;&lt;br/&gt;POST /companies (onboarding — create)&lt;br/&gt;GET  /companies/mine&lt;br/&gt;PUT  /companies/mine&lt;br/&gt;GET  /companies/mine/capabilities&lt;br/&gt;PUT  /companies/mine/capabilities&lt;br/&gt;GET  /companies/search (direct-sale targeting)&lt;br/&gt;GET  /companies/members&lt;br/&gt;POST /companies/members&lt;br/&gt;DELETE /companies/members/:user_id" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=9;align=left;spacingLeft=4;" vertex="1" parent="1">
+      <mxGeometry x="20" y="610" width="610" height="155" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="36" value="&lt;b&gt;GET /me&lt;/b&gt; (requireAuth only)&lt;br/&gt;Returns current user + company context" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=9;align=left;spacingLeft=4;" vertex="1" parent="1">
+      <mxGeometry x="20" y="775" width="610" height="40" as="geometry"/>
+    </mxCell>
+
+    <!-- ─── LOOKUP TABLES ─── -->
+    <mxCell id="40" value="&lt;b&gt;LOOKUP TABLES — Admin Managed (WF-15)&lt;/b&gt;" style="text;html=1;strokeColor=#999999;fillColor=#e0e0e0;align=center;fontStyle=1;fontSize=10;rounded=0;" vertex="1" parent="1">
+      <mxGeometry x="10" y="828" width="640" height="28" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="41" value="&lt;b&gt;material_categories&lt;/b&gt;&lt;br/&gt;id, key (UNIQUE)&lt;br/&gt;name_ar, name_en&lt;br/&gt;parent_id (self-ref FK — hierarchical)&lt;br/&gt;is_active, sort_order, is_sensitive" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=9;align=left;spacingLeft=4;" vertex="1" parent="1">
+      <mxGeometry x="20" y="865" width="300" height="105" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="42" value="&lt;b&gt;unit_options&lt;/b&gt;&lt;br/&gt;id, key (UNIQUE)&lt;br/&gt;name_ar, name_en, symbol&lt;br/&gt;is_active, sort_order" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=9;align=left;spacingLeft=4;" vertex="1" parent="1">
+      <mxGeometry x="330" y="865" width="310" height="105" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="43" value="&lt;b&gt;company_categories&lt;/b&gt;&lt;br/&gt;id, key (UNIQUE)&lt;br/&gt;name_ar, name_en&lt;br/&gt;is_active, sort_order" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=9;align=left;spacingLeft=4;" vertex="1" parent="1">
+      <mxGeometry x="20" y="980" width="300" height="95" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="44" value="&lt;b&gt;capabilities&lt;/b&gt;&lt;br/&gt;id, key (UNIQUE)&lt;br/&gt;name_ar, name_en&lt;br/&gt;requires_license, is_active" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=9;align=left;spacingLeft=4;" vertex="1" parent="1">
+      <mxGeometry x="330" y="980" width="310" height="95" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="45" value="&lt;b&gt;company_actions&lt;/b&gt;&lt;br/&gt;id, key (UNIQUE), name_ar, name_en&lt;br/&gt;description_ar, description_en&lt;br/&gt;requires_license, is_active, sort_order" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=9;align=left;spacingLeft=4;" vertex="1" parent="1">
+      <mxGeometry x="20" y="1085" width="620" height="85" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="46" value="Public lookup endpoints:&lt;br/&gt;GET /lookup/company-categories&lt;br/&gt;GET /lookup/company-actions&lt;br/&gt;GET /lookup/unit-options (auth required)&lt;br/&gt;GET /lookup/material-categories (auth required)&lt;br/&gt;GET /lookup/capabilities (auth required)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=9;align=left;spacingLeft=4;" vertex="1" parent="1">
+      <mxGeometry x="20" y="1180" width="620" height="100" as="geometry"/>
+    </mxCell>
+
+    <!-- ─── FRONTEND ROUTES ─── -->
+    <mxCell id="47" value="&lt;b&gt;FRONTEND ROUTES — React + Vite + Wouter&lt;/b&gt;" style="text;html=1;strokeColor=#999999;fillColor=#e0e0e0;align=center;fontStyle=1;fontSize=10;rounded=0;" vertex="1" parent="1">
+      <mxGeometry x="10" y="1295" width="640" height="28" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="48" value="/ → HomeRedirect (→ /dashboard or HomePage)&lt;br/&gt;/sign-in, /sign-up (Clerk hosted pages)&lt;br/&gt;/onboarding/company (CompanyRoute guard)&lt;br/&gt;/dashboard (stats, quick actions)&lt;br/&gt;/marketplace (listing feed + search)&lt;br/&gt;/listings/new (producer listing form)&lt;br/&gt;/listings/mine (producer own listings)&lt;br/&gt;/listings/:id (detail — producer or buyer view)&lt;br/&gt;/participations (buyer: track own offers)&lt;br/&gt;/reports (completed deals, read-only)&lt;br/&gt;/company/capabilities (manage capabilities)&lt;br/&gt;/company/members (manage members)&lt;br/&gt;/company/profile (edit profile)&lt;br/&gt;/terms (T&amp;C page)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=9;align=left;spacingLeft=4;" vertex="1" parent="1">
+      <mxGeometry x="20" y="1332" width="620" height="230" as="geometry"/>
+    </mxCell>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- CENTER COLUMN BACKGROUND                                        -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <mxCell id="50" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#cccccc;" vertex="1" parent="1">
+      <mxGeometry x="660" y="108" width="1390" height="1750" as="geometry"/>
+    </mxCell>
+
+    <!-- ─── LISTING CREATION ─── -->
+    <mxCell id="51" value="&lt;b&gt;LISTING CREATION — WF-04&lt;/b&gt;" style="text;html=1;strokeColor=#999999;fillColor=#e0e0e0;align=center;fontStyle=1;fontSize=10;rounded=0;" vertex="1" parent="1">
+      <mxGeometry x="660" y="108" width="1390" height="28" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="52" value="&lt;b&gt;Producer: POST /listings&lt;/b&gt;&lt;br/&gt;requireAuth + requireCompany&lt;br/&gt;No eligibility checks at creation&lt;br/&gt;(eligibility enforced at POST /offers)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=9;" vertex="1" parent="1">
+      <mxGeometry x="670" y="148" width="220" height="80" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="53" value="&lt;b&gt;waste_listings&lt;/b&gt;&lt;br/&gt;────────────────────────────&lt;br/&gt;id (uuid PK)&lt;br/&gt;company_id (FK → companies, cascade)&lt;br/&gt;material (legacy enum — pre-lookup)&lt;br/&gt;quantity (numeric, not null)&lt;br/&gt;unit (legacy enum — pre-lookup)&lt;br/&gt;city (text, not null)&lt;br/&gt;description (text)&lt;br/&gt;price_hint (numeric)&lt;br/&gt;status: open | closed&lt;br/&gt;pricing_model: fixed | by_weight | revenue_share&lt;br/&gt;visibility: public | private&lt;br/&gt;sale_type: auction | direct&lt;br/&gt;targeting_type: open | category | specific_company&lt;br/&gt;target_company_id (FK → companies)&lt;br/&gt;unit_option_id (FK → unit_options)&lt;br/&gt;material_category_id (FK → material_categories)&lt;br/&gt;material_subcategory_id (FK → material_categories)&lt;br/&gt;revenue_share_pct (numeric)&lt;br/&gt;image_url (text)&lt;br/&gt;created_at, closed_at" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=9;align=left;spacingLeft=4;" vertex="1" parent="1">
+      <mxGeometry x="910" y="140" width="300" height="355" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="54" value="&lt;b&gt;listing_target_categories&lt;/b&gt;&lt;br/&gt;listing_id (FK)&lt;br/&gt;company_category_id (FK)&lt;br/&gt;Used when targeting_type = category" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=9;align=left;spacingLeft=4;" vertex="1" parent="1">
+      <mxGeometry x="1230" y="140" width="265" height="90" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="55" value="&lt;b&gt;listing_required_services&lt;/b&gt;&lt;br/&gt;listing_id (FK)&lt;br/&gt;capability_id (FK → capabilities)&lt;br/&gt;Producer-required buyer capabilities" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=9;align=left;spacingLeft=4;" vertex="1" parent="1">
+      <mxGeometry x="1230" y="245" width="265" height="90" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="56" value="&lt;b&gt;POST /listings/upload-image&lt;/b&gt;&lt;br/&gt;Multer middleware (multipart/form-data)&lt;br/&gt;→ Object Storage (FIX-04 pending)&lt;br/&gt;Sets listing.image_url" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=9;" vertex="1" parent="1">
+      <mxGeometry x="1510" y="140" width="230" height="80" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="57" value="Producer listing actions:&lt;br/&gt;GET /listings/mine&lt;br/&gt;GET /listings/:id&lt;br/&gt;POST /listings/:id/close (+ 2-step pending-offer confirmation — WF-06 close flow)&lt;br/&gt;DELETE /listings/:id (only if no offers placed)&lt;br/&gt;&lt;br/&gt;Buyer listing actions:&lt;br/&gt;GET /listings (marketplace feed, filtered by targeting)&lt;br/&gt;GET /listings/:id" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=9;align=left;spacingLeft=4;" vertex="1" parent="1">
+      <mxGeometry x="670" y="250" width="225" height="245" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="58" value="GET /listings/:id/offers/summary&lt;br/&gt;Returns offer count for listing&lt;br/&gt;⚠ G-11: currently includes withdrawn offers" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=9;" vertex="1" parent="1">
+      <mxGeometry x="1510" y="240" width="230" height="65" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="59" value="Targeting logic:&lt;br/&gt;open → any authenticated buyer&lt;br/&gt;category → buyer in listing_target_categories&lt;br/&gt;specific_company → buyer = target_company_id&lt;br/&gt;private listings → notifyPrivateDealInvitation" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9;align=left;spacingLeft=4;" vertex="1" parent="1">
+      <mxGeometry x="1230" y="355" width="510" height="90" as="geometry"/>
+    </mxCell>
+
+    <!-- ─── OFFER SECTION ─── -->
+    <mxCell id="60" value="&lt;b&gt;OFFER SUBMISSION &amp; MANAGEMENT — WF-05, WF-06, WF-07, WF-08&lt;/b&gt;" style="text;html=1;strokeColor=#999999;fillColor=#e0e0e0;align=center;fontStyle=1;fontSize=10;rounded=0;" vertex="1" parent="1">
+      <mxGeometry x="660" y="508" width="1390" height="28" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="61" value="&lt;b&gt;Eligibility Gates — POST /listings/:id/offers&lt;/b&gt;&lt;br/&gt;───────────────────────────────────────────────────────&lt;br/&gt;① requireAuth + requireCompany() → 403 if no company&lt;br/&gt;② Listing must be open (status=open, closed_at=null) → 409 ListingClosed&lt;br/&gt;③ Not own listing (buyer_company_id ≠ listing.company_id) → 403 Forbidden&lt;br/&gt;④ accepted_terms_at NOT NULL → 403 TermsRequired&lt;br/&gt;⑤ license_status = approved → 403 LicenseRequired&lt;br/&gt;⑥ Targeting gate (open | category | specific_company) → 403 NotTargeted&lt;br/&gt;⑦ No existing offer (UNIQUE constraint) → 409 AlreadyBid" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9;align=left;spacingLeft=4;" vertex="1" parent="1">
+      <mxGeometry x="670" y="546" width="430" height="185" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="62" value="&lt;b&gt;listing_offers&lt;/b&gt;&lt;br/&gt;─────────────────────────&lt;br/&gt;id (uuid PK)&lt;br/&gt;waste_listing_id (FK, cascade)&lt;br/&gt;buyer_company_id (FK, cascade)&lt;br/&gt;price_per_unit (numeric, not null)&lt;br/&gt;message (text)&lt;br/&gt;status: pending | accepted | rejected | withdrawn&lt;br/&gt;rejection_reason (text)&lt;br/&gt;acceptance_reason (text)&lt;br/&gt;created_at, updated_at, resolved_at&lt;br/&gt;UNIQUE (waste_listing_id, buyer_company_id)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=9;align=left;spacingLeft=4;" vertex="1" parent="1">
+      <mxGeometry x="1115" y="540" width="310" height="225" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="63" value="&lt;b&gt;Offer State Machine&lt;/b&gt;&lt;br/&gt;────────────────────────────────────────────────────&lt;br/&gt;[pending]&lt;br/&gt;  → BUYER: POST /offers/:id/improve&lt;br/&gt;     price_per_unit updated (must be higher)&lt;br/&gt;     Self-bid guard: requires explicit_self_improve=true → 409 if missing&lt;br/&gt;     → notifyOutbid (to previously top buyer)&lt;br/&gt;  → BUYER: POST /offers/:id/withdraw → [withdrawn]&lt;br/&gt;  → PRODUCER: POST /offers/:id/reject → [rejected]&lt;br/&gt;     rejection_reason stored&lt;br/&gt;     → notifyOfferRejected (to buyer)&lt;br/&gt;  → PRODUCER: POST /offers/:id/accept → [accepted]&lt;br/&gt;     acceptance_reason stored&lt;br/&gt;     All other pending offers auto-rejected&lt;br/&gt;     Listing closed (closed_at = now)&lt;br/&gt;     → notifyOfferAccepted (to buyer)&lt;br/&gt;     → CREATE deal row" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=9;align=left;spacingLeft=4;" vertex="1" parent="1">
+      <mxGeometry x="1440" y="536" width="460" height="300" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="64" value="GET /offers/mine&lt;br/&gt;(Buyer — participations view)&lt;br/&gt;Returns all offers by this company" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;" vertex="1" parent="1">
+      <mxGeometry x="670" y="745" width="430" height="55" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="65" value="GET /listings/:id/offers&lt;br/&gt;(Producer — all offers on own listing)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=9;" vertex="1" parent="1">
+      <mxGeometry x="1115" y="780" width="310" height="50" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="66" value="Offer event notifications (fire-and-forget):&lt;br/&gt;notifyOfferReceived → producer&lt;br/&gt;notifyOutbid → previously top buyer&lt;br/&gt;notifyOfferAccepted → buyer&lt;br/&gt;notifyOfferRejected → buyer&lt;br/&gt;notifyPrivateDealInvitation → targeted buyer (on private listing create)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9;align=left;spacingLeft=4;" vertex="1" parent="1">
+      <mxGeometry x="1440" y="850" width="460" height="115" as="geometry"/>
+    </mxCell>
+
+    <!-- ─── DEAL LIFECYCLE ─── -->
+    <mxCell id="70" value="&lt;b&gt;DEAL LIFECYCLE — WF-09, WF-10, WF-11, WF-12&lt;/b&gt;" style="text;html=1;strokeColor=#999999;fillColor=#e0e0e0;align=center;fontStyle=1;fontSize=10;rounded=0;" vertex="1" parent="1">
+      <mxGeometry x="660" y="840" width="1390" height="28" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="71" value="&lt;b&gt;Deal Created&lt;/b&gt;&lt;br/&gt;on POST /offers/:id/accept" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=9;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="670" y="880" width="185" height="55" as="geometry"/>
+    </mxCell>
+
+    <!-- deals table -->
+    <mxCell id="72" value="&lt;b&gt;deals&lt;/b&gt;&lt;br/&gt;──────────────────────────────&lt;br/&gt;id (uuid PK)&lt;br/&gt;offer_id (UNIQUE FK → listing_offers)&lt;br/&gt;listing_id (FK → waste_listings)&lt;br/&gt;producer_company_id (FK → companies)&lt;br/&gt;buyer_company_id (FK → companies)&lt;br/&gt;settlement_type (deal_settlement_type enum)&lt;br/&gt;price_per_unit (numeric)&lt;br/&gt;estimated_amount (numeric)&lt;br/&gt;actual_quantity (numeric)&lt;br/&gt;final_amount (numeric)&lt;br/&gt;status: active | payment_confirmed | dispatched | completed | expired&lt;br/&gt;payment_confirmed_at (timestamp)&lt;br/&gt;payment_confirmed_by (FK → companies)&lt;br/&gt;payment_reference (text) ← required at confirmation&lt;br/&gt;payment_proof_url (text) ← optional&lt;br/&gt;dispatched_at (timestamp)&lt;br/&gt;dispatched_by (FK → companies)&lt;br/&gt;received_at (timestamp) ← completion timestamp (not completed_at)&lt;br/&gt;received_by (FK → companies)&lt;br/&gt;created_at, updated_at&lt;br/&gt;&lt;br/&gt;⚠ G-04: accepted_below_highest field absent" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=9;align=left;spacingLeft=4;" vertex="1" parent="1">
+      <mxGeometry x="1115" y="875" width="350" height="420" as="geometry"/>
+    </mxCell>
+
+    <!-- Deal state: ACTIVE -->
+    <mxCell id="73" value="&lt;b&gt;STATUS: active&lt;/b&gt;&lt;br/&gt;SLA: 31 days from created_at&lt;br/&gt;Contact info unlocked (producer ↔ buyer)" style="rounded=1;arcSize=25;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="670" y="950" width="220" height="75" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="74" value="&lt;b&gt;Producer: POST /deals/:id/confirm-payment&lt;/b&gt;&lt;br/&gt;requireAuth + requireCompany&lt;br/&gt;Body: { payment_reference (required), payment_proof_url (optional) }&lt;br/&gt;→ 422 if payment_reference missing&lt;br/&gt;Sets: payment_confirmed_at, payment_confirmed_by&lt;br/&gt;→ notifyDealStageChange (buyer)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=9;align=left;spacingLeft=4;" vertex="1" parent="1">
+      <mxGeometry x="670" y="1045" width="420" height="100" as="geometry"/>
+    </mxCell>
+
+    <!-- Deal state: PAYMENT_CONFIRMED -->
+    <mxCell id="75" value="&lt;b&gt;STATUS: payment_confirmed&lt;/b&gt;&lt;br/&gt;SLA: 8 days from payment_confirmed_at" style="rounded=1;arcSize=25;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=9;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="670" y="1163" width="220" height="65" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="76" value="&lt;b&gt;Producer: POST /deals/:id/confirm-dispatch&lt;/b&gt;&lt;br/&gt;requireAuth + requireCompany&lt;br/&gt;Sets: dispatched_at, dispatched_by&lt;br/&gt;→ notifyDealStageChange (buyer)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=9;align=left;spacingLeft=4;" vertex="1" parent="1">
+      <mxGeometry x="670" y="1248" width="420" height="80" as="geometry"/>
+    </mxCell>
+
+    <!-- Deal state: DISPATCHED -->
+    <mxCell id="77" value="&lt;b&gt;STATUS: dispatched&lt;/b&gt;&lt;br/&gt;SLA: 72 hours from dispatched_at" style="rounded=1;arcSize=25;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d6b656;fontSize=9;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="670" y="1348" width="220" height="65" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="78" value="&lt;b&gt;BUYER: POST /deals/:id/confirm-receipt&lt;/b&gt;&lt;br/&gt;requireAuth + requireCompany&lt;br/&gt;Actor: buyer_company only (enforced in handler)&lt;br/&gt;Sets: received_at, received_by&lt;br/&gt;Audit: deal.receipt_confirmed (severity: info)&lt;br/&gt;→ notifyDealStageChange (producer)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;align=left;spacingLeft=4;" vertex="1" parent="1">
+      <mxGeometry x="670" y="1433" width="420" height="105" as="geometry"/>
+    </mxCell>
+
+    <!-- Deal state: COMPLETED -->
+    <mxCell id="79" value="&lt;b&gt;STATUS: completed&lt;/b&gt;&lt;br/&gt;TERMINAL — irreversible&lt;br/&gt;received_at recorded" style="rounded=1;arcSize=25;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="670" y="1555" width="220" height="80" as="geometry"/>
+    </mxCell>
+
+    <!-- Deal state: EXPIRED -->
+    <mxCell id="80" value="&lt;b&gt;STATUS: expired&lt;/b&gt;&lt;br/&gt;TERMINAL — set by expiry job&lt;br/&gt;Audit: deal.expired (severity: warn)" style="rounded=1;arcSize=25;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=9;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="920" y="1555" width="220" height="80" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="81" value="GET /deals/:id&lt;br/&gt;requireAuth + requireCompany&lt;br/&gt;Accessible by both deal parties&lt;br/&gt;Returns: deal + listing + offer data" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=9;align=left;spacingLeft=4;" vertex="1" parent="1">
+      <mxGeometry x="1480" y="885" width="280" height="75" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="82" value="Deal event notifications (fire-and-forget):&lt;br/&gt;notifyDealStageChange(buyer) ← payment_confirmed&lt;br/&gt;notifyDealStageChange(buyer) ← dispatched&lt;br/&gt;notifyDealStageChange(producer) ← receipt confirmed&lt;br/&gt;notifyDealStageChange(producer+buyer) ← deal expired" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9;align=left;spacingLeft=4;" vertex="1" parent="1">
+      <mxGeometry x="1480" y="1100" width="460" height="105" as="geometry"/>
+    </mxCell>
+
+    <!-- ─── REPORTING ─── -->
+    <mxCell id="85" value="&lt;b&gt;REPORTING &amp; DASHBOARD — WF-13, WF-14&lt;/b&gt;" style="text;html=1;strokeColor=#999999;fillColor=#e0e0e0;align=center;fontStyle=1;fontSize=10;rounded=0;" vertex="1" parent="1">
+      <mxGeometry x="660" y="1660" width="1390" height="28" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="86" value="&lt;b&gt;GET /dashboard/stats&lt;/b&gt;&lt;br/&gt;requireAuth + requireCompany&lt;br/&gt;Returns: listing counts, offer counts,&lt;br/&gt;deal counts by status, revenue metrics" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=9;align=left;spacingLeft=4;" vertex="1" parent="1">
+      <mxGeometry x="670" y="1700" width="380" height="100" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="87" value="Reports page (/reports):&lt;br/&gt;Read-only completed deal snapshots&lt;br/&gt;Transaction history for both parties" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=9;align=left;spacingLeft=4;" vertex="1" parent="1">
+      <mxGeometry x="1070" y="1700" width="380" height="100" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="88" value="POST /issue-reports (user-facing)&lt;br/&gt;requireAuth only (no requireCompany)&lt;br/&gt;Creates issue_reports row" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=9;align=left;spacingLeft=4;" vertex="1" parent="1">
+      <mxGeometry x="1470" y="1700" width="380" height="100" as="geometry"/>
+    </mxCell>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- RIGHT COLUMN BACKGROUND                                         -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <mxCell id="90" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#cccccc;" vertex="1" parent="1">
+      <mxGeometry x="2060" y="108" width="530" height="1750" as="geometry"/>
+    </mxCell>
+
+    <!-- ─── BACKGROUND JOB ─── -->
+    <mxCell id="91" value="&lt;b&gt;BACKGROUND JOB — Deal Expiry&lt;/b&gt;" style="text;html=1;strokeColor=#d6b656;fillColor=#ffe6cc;align=center;fontStyle=1;fontSize=10;rounded=0;" vertex="1" parent="1">
+      <mxGeometry x="2060" y="108" width="530" height="28" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="92" value="&lt;b&gt;expireStaleDeals()&lt;/b&gt;&lt;br/&gt;File: jobs/expire-deals.ts&lt;br/&gt;────────────────────────────────────────&lt;br/&gt;Schedule: setInterval every 1 hour&lt;br/&gt;Also runs immediately on server startup&lt;br/&gt;────────────────────────────────────────&lt;br/&gt;SLA thresholds:&lt;br/&gt;  active → created_at older than 31 days&lt;br/&gt;  payment_confirmed → payment_confirmed_at older than 8 days&lt;br/&gt;  dispatched → dispatched_at older than 72 hours&lt;br/&gt;────────────────────────────────────────&lt;br/&gt;For each expired deal:&lt;br/&gt;  UPDATE deals SET status = 'expired', updated_at = now&lt;br/&gt;  logAudit(deal.expired, severity: WARN)&lt;br/&gt;  notifyDealStageChange(producer_company_id, type: deal_expired)&lt;br/&gt;  notifyDealStageChange(buyer_company_id, type: deal_expired)&lt;br/&gt;  (bilingual AR + EN messages)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d6b656;fontSize=9;align=left;spacingLeft=4;" vertex="1" parent="1">
+      <mxGeometry x="2070" y="145" width="510" height="330" as="geometry"/>
+    </mxCell>
+
+    <!-- ─── NOTIFICATION SYSTEM ─── -->
+    <mxCell id="100" value="&lt;b&gt;NOTIFICATION SYSTEM&lt;/b&gt;" style="text;html=1;strokeColor=#d6b656;fillColor=#fff2cc;align=center;fontStyle=1;fontSize=10;rounded=0;" vertex="1" parent="1">
+      <mxGeometry x="2060" y="490" width="530" height="28" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="101" value="&lt;b&gt;notify.ts — Event Triggers&lt;/b&gt;&lt;br/&gt;─────────────────────────────────────&lt;br/&gt;notifyOfferReceived(listingId) → producer&lt;br/&gt;notifyOutbid(listingId, offerId) → prev top buyer&lt;br/&gt;notifyOfferAccepted(offerId) → buyer&lt;br/&gt;notifyOfferRejected(offerId) → buyer&lt;br/&gt;notifyPrivateDealInvitation(listingId) → targeted buyer&lt;br/&gt;notifyDealStageChange(companyId, dealId, ...) → deal party&lt;br/&gt;─────────────────────────────────────&lt;br/&gt;Pattern: fire-and-forget via void operator&lt;br/&gt;Non-blocking — does not delay API response&lt;br/&gt;Always writes to notifications table&lt;br/&gt;Also triggers email.ts → Resend API" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9;align=left;spacingLeft=4;" vertex="1" parent="1">
+      <mxGeometry x="2070" y="527" width="510" height="240" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="102" value="&lt;b&gt;notifications&lt;/b&gt;&lt;br/&gt;────────────────&lt;br/&gt;id (uuid PK)&lt;br/&gt;company_id (FK)&lt;br/&gt;type (enum)&lt;br/&gt;title_ar, title_en&lt;br/&gt;body_ar, body_en&lt;br/&gt;is_read (boolean)&lt;br/&gt;created_at" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=9;align=left;spacingLeft=4;" vertex="1" parent="1">
+      <mxGeometry x="2070" y="778" width="240" height="175" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="103" value="&lt;b&gt;email.ts → Resend API&lt;/b&gt;&lt;br/&gt;Bilingual HTML emails (AR + EN)&lt;br/&gt;Sent to company owner's email&lt;br/&gt;(looked up via company_members)&lt;br/&gt;Pattern: fire-and-forget" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9;align=left;spacingLeft=4;" vertex="1" parent="1">
+      <mxGeometry x="2325" y="778" width="255" height="175" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="104" value="Notification API routes:&lt;br/&gt;GET /notifications (requireAuth + requireCompany)&lt;br/&gt;PATCH /notifications/:id/read&lt;br/&gt;POST /notifications/read-all" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;align=left;spacingLeft=4;" vertex="1" parent="1">
+      <mxGeometry x="2070" y="965" width="510" height="75" as="geometry"/>
+    </mxCell>
+
+    <!-- ─── ADMIN LAYER ─── -->
+    <mxCell id="110" value="&lt;b&gt;ADMIN LAYER — WF-15, WF-16&lt;/b&gt;" style="text;html=1;strokeColor=#9673a6;fillColor=#e1d5e7;align=center;fontStyle=1;fontSize=10;rounded=0;" vertex="1" parent="1">
+      <mxGeometry x="2060" y="1055" width="530" height="28" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="111" value="Protected by: X-Admin-Key header (requireAdminKey middleware)" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=9;fontStyle=2;" vertex="1" parent="1">
+      <mxGeometry x="2070" y="1088" width="510" height="22" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="112" value="&lt;b&gt;Company / License:&lt;/b&gt;&lt;br/&gt;GET /admin/companies (list all + filters)&lt;br/&gt;PATCH /admin/companies/:id/license&lt;br/&gt;  → sets companies.license_status&lt;br/&gt;  ⚠ G-09: audit logs company.license_updated (should be company.license_status_changed)&lt;br/&gt;  ⚠ G-10: URL is /license (baseline says /license-status)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=9;align=left;spacingLeft=4;" vertex="1" parent="1">
+      <mxGeometry x="2070" y="1115" width="510" height="115" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="113" value="&lt;b&gt;Issue Reports:&lt;/b&gt;&lt;br/&gt;GET /admin/issue-reports&lt;br/&gt;PATCH /admin/issue-reports/:id&lt;br/&gt;  → status: open | resolved&lt;br/&gt;  ⚠ G-06: in_review state not implemented" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=9;align=left;spacingLeft=4;" vertex="1" parent="1">
+      <mxGeometry x="2070" y="1240" width="510" height="100" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="114" value="&lt;b&gt;Audit Log:&lt;/b&gt;&lt;br/&gt;GET /admin/audit-log (read-only)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=9;align=left;spacingLeft=4;" vertex="1" parent="1">
+      <mxGeometry x="2070" y="1350" width="510" height="50" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="115" value="&lt;b&gt;Lookup Table CRUD:&lt;/b&gt;&lt;br/&gt;POST/PUT/DELETE /admin/lookup/company-categories&lt;br/&gt;POST/PUT/DELETE /admin/lookup/unit-options&lt;br/&gt;POST/PUT/DELETE /admin/lookup/material-categories" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=9;align=left;spacingLeft=4;" vertex="1" parent="1">
+      <mxGeometry x="2070" y="1410" width="510" height="90" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="116" value="&lt;b&gt;audit_log&lt;/b&gt;&lt;br/&gt;────────────────────&lt;br/&gt;id (uuid PK)&lt;br/&gt;action (text — e.g. deal.expired)&lt;br/&gt;severity: info | warn | error&lt;br/&gt;entity_type (text)&lt;br/&gt;entity_id (uuid)&lt;br/&gt;user_id (text)&lt;br/&gt;company_id (uuid)&lt;br/&gt;metadata (jsonb)&lt;br/&gt;created_at" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=9;align=left;spacingLeft=4;" vertex="1" parent="1">
+      <mxGeometry x="2070" y="1512" width="245" height="200" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="117" value="&lt;b&gt;issue_reports&lt;/b&gt;&lt;br/&gt;────────────────────&lt;br/&gt;id (uuid PK)&lt;br/&gt;deal_id (FK → deals)&lt;br/&gt;reporter_company_id (FK)&lt;br/&gt;company_id (FK)&lt;br/&gt;description (text)&lt;br/&gt;status: open | resolved&lt;br/&gt;⚠ G-06: in_review missing&lt;br/&gt;created_at" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=9;align=left;spacingLeft=4;" vertex="1" parent="1">
+      <mxGeometry x="2335" y="1512" width="245" height="200" as="geometry"/>
+    </mxCell>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- KNOWN GAPS FOOTER                                               -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <mxCell id="130" value="&lt;b&gt;Open Alignment Gaps (from audit — not yet implemented):&lt;/b&gt;  G-04: accepted_below_highest field absent from deals (medium risk — before pilot)  ·  G-06: issue_reports.status missing in_review state (low risk — before pilot)  ·  G-09: Admin audit action name/severity wrong (low risk — before pilot)  ·  G-10: /admin/companies/:id/license URL vs /license-status (low — defer)  ·  G-11: offer summary count includes withdrawn (low-medium — before pilot)  ·  G-13: companies.logo_url absent — blocked by FIX-04 Object Storage (low — defer)  ·  G-15: self-bid returns 409, baseline says warning response — code behavior accepted, doc update only" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=9;align=left;spacingLeft=6;" vertex="1" parent="1">
+      <mxGeometry x="10" y="1875" width="2580" height="55" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="131" value="&lt;b&gt;Not Yet Implemented:&lt;/b&gt;&lt;br/&gt;Contract Track (WF-18) — deferred&lt;br/&gt;Carrier role (type enum exists, no carrier routes)&lt;br/&gt;FIX-04 Object Storage (image/doc uploads pending)&lt;br/&gt;companies.logo_url (G-13, blocked by FIX-04)&lt;br/&gt;Clerk pk_live_ keys (FIX-01 — production secret not set)&lt;br/&gt;ADMIN_API_KEY (production secret not set)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=9;align=left;spacingLeft=4;" vertex="1" parent="1">
+      <mxGeometry x="2600" y="1875" width="690" height="130" as="geometry"/>
+    </mxCell>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- ARROWS                                                          -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+
+    <!-- Auth chain -->
+    <mxCell id="200" value="" style="edgeStyle=orthogonalEdgeStyle;fontSize=9;" edge="1" source="21" target="22" parent="1">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="201" value="" style="edgeStyle=orthogonalEdgeStyle;fontSize=9;" edge="1" source="22" target="23" parent="1">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+
+    <!-- Listing creation -->
+    <mxCell id="202" value="creates" style="edgeStyle=orthogonalEdgeStyle;fontSize=9;" edge="1" source="52" target="53" parent="1">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+
+    <!-- Offer eligibility gates → listing_offers -->
+    <mxCell id="203" value="POST /offers" style="edgeStyle=orthogonalEdgeStyle;fontSize=9;" edge="1" source="61" target="62" parent="1">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+
+    <!-- Offer accept → deal created -->
+    <mxCell id="204" value="accept → creates" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#6c8ebf;fontStyle=1;fontSize=9;" edge="1" source="63" target="71" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <Array as="points">
+          <mxPoint x="1670" y="910"/>
+          <mxPoint x="765" y="910"/>
+        </Array>
+      </mxGeometry>
+    </mxCell>
+
+    <!-- Deal created → active -->
+    <mxCell id="205" value="" style="edgeStyle=orthogonalEdgeStyle;fontSize=9;" edge="1" source="71" target="73" parent="1">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+
+    <!-- Deal state transitions (vertical chain) -->
+    <mxCell id="206" value="" style="edgeStyle=orthogonalEdgeStyle;fontSize=9;" edge="1" source="73" target="74" parent="1">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="207" value="" style="edgeStyle=orthogonalEdgeStyle;fontSize=9;" edge="1" source="74" target="75" parent="1">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="208" value="" style="edgeStyle=orthogonalEdgeStyle;fontSize=9;" edge="1" source="75" target="76" parent="1">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="209" value="" style="edgeStyle=orthogonalEdgeStyle;fontSize=9;" edge="1" source="76" target="77" parent="1">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="210" value="" style="edgeStyle=orthogonalEdgeStyle;fontSize=9;" edge="1" source="77" target="78" parent="1">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="211" value="" style="edgeStyle=orthogonalEdgeStyle;fontSize=9;" edge="1" source="78" target="79" parent="1">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+
+    <!-- Expiry job → expired state -->
+    <mxCell id="212" value="bulk UPDATE" style="edgeStyle=orthogonalEdgeStyle;dashed=1;strokeColor=#b85450;fontSize=9;fontColor=#b85450;" edge="1" source="92" target="80" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <Array as="points">
+          <mxPoint x="1820" y="1595"/>
+          <mxPoint x="1030" y="1595"/>
+        </Array>
+      </mxGeometry>
+    </mxCell>
+
+    <!-- Notifications → notifications table -->
+    <mxCell id="213" value="writes" style="edgeStyle=orthogonalEdgeStyle;dashed=1;strokeColor=#d6b656;fontSize=9;" edge="1" source="101" target="102" parent="1">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="214" value="triggers" style="edgeStyle=orthogonalEdgeStyle;dashed=1;strokeColor=#d6b656;fontSize=9;" edge="1" source="101" target="103" parent="1">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+
+    <!-- Deal notifications → notify.ts -->
+    <mxCell id="215" value="" style="edgeStyle=orthogonalEdgeStyle;dashed=1;strokeColor=#d6b656;fontSize=9;" edge="1" source="82" target="101" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <Array as="points">
+          <mxPoint x="1960" y="1152"/>
+          <mxPoint x="2000" y="1152"/>
+          <mxPoint x="2000" y="647"/>
+          <mxPoint x="2070" y="647"/>
+        </Array>
+      </mxGeometry>
+    </mxCell>
+
+    <!-- Offer notifications → notify.ts -->
+    <mxCell id="216" value="" style="edgeStyle=orthogonalEdgeStyle;dashed=1;strokeColor=#d6b656;fontSize=9;" edge="1" source="66" target="101" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <Array as="points">
+          <mxPoint x="1960" y="907"/>
+          <mxPoint x="2000" y="907"/>
+          <mxPoint x="2000" y="647"/>
+          <mxPoint x="2070" y="647"/>
+        </Array>
+      </mxGeometry>
+    </mxCell>
+
+    <!-- Expiry job → notify.ts -->
+    <mxCell id="217" value="notifyDealStageChange" style="edgeStyle=orthogonalEdgeStyle;dashed=1;strokeColor=#d6b656;fontSize=8;" edge="1" source="92" target="101" parent="1">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+
+  </root>
+</mxGraphModel>

@@ -30,3 +30,9 @@ id = "9a71dy3O5PErx_lxtMtAA"
 uri = "file://docs/tadweerah-workflow-baseline-v2.md"
 type = "text"
 title = "Tadweerah — Final 18-Workflow Baseline v2"
+
+[[outputs]]
+id = "cQLZ-IZ8Hby17nVZud19P"
+uri = "file://docs/tadweerah-system-map.zip"
+type = "unspecified"
+title = "Tadweerah — As-Is System Map (draw.io)"
