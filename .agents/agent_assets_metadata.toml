@@ -6,3 +6,9 @@ id = "GnX8fm0vbqYByosMyOTKh"
 uri = "file://tadweerah-workflows.zip"
 type = "unspecified"
 title = "Tadweerah Workflow Diagrams (draw.io)"
+
+[[outputs]]
+id = "13EBoGU618GZtluWfurre"
+uri = "file://tadweerah-workflows-v2.zip"
+type = "unspecified"
+title = "Tadweerah Complete Workflow Blueprint (draw.io)"

@@ -1,0 +1,118 @@
+We want all Tadweerah workflows documented in one draw.io file.
+
+Please create a complete draw.io workflow file with BOTH levels:
+
+---
+
+## Level 1 — Master System Map
+
+Create one master diagram that shows the full Tadweerah ecosystem end-to-end.
+
+It should include:
+
+- Producer
+- Buyer / Recycler
+- Transporter
+- Admin
+- Regulator / Compliance viewer
+
+And connect the full journey:
+
+Sign up → onboarding → company setup → listing → targeting → marketplace/private visibility → offers → bidding/selection → deal → transport → payment → dispatch → completion → report → compliance/data layer → admin oversight
+
+Goal:
+Show the full big picture of Tadweerah as an operating system for waste and recycling transactions.
+
+---
+
+## Level 2 — Detailed Workflow Pages
+
+Create separate draw.io pages/tabs for each workflow:
+
+1) User Onboarding  
+2) Company Profile / Permissions  
+3) Create Listing  
+4) Company Targeting / Visibility  
+5) Marketplace Browsing  
+6) Submit Offer  
+7) Bidding / Offer Competition  
+8) Accept / Reject Offer  
+9) Deal Lifecycle  
+10) Payment Confirmation  
+11) Transport Flow  
+12) Completion / Receipt Confirmation  
+13) Reporting / Transaction Record  
+14) Compliance-Ready Reporting  
+15) Admin Oversight  
+16) Issue Reporting  
+17) Edge Cases:
+   - no offers
+   - rejected offers
+   - withdrawn offers
+   - duplicate offers
+   - failed/inactive deals
+   - user stops mid-flow
+
+---
+
+## Diagram Requirements
+
+For every workflow page, show:
+
+- Actor
+- User action
+- System response
+- Data/state created or updated
+- Next possible state
+- Edge cases
+- Notifications triggered, if any
+
+---
+
+## Format
+
+Please use draw.io / diagrams.net format.
+
+Preferred output:
+- one .drawio file
+- multiple pages/tabs inside the same file
+- clear naming for each page
+- simple professional layout
+- no over-design
+
+---
+
+## Important
+
+This is NOT an implementation task.
+
+This is product architecture documentation.
+
+We want to use it to:
+- review the full journey
+- identify missing steps
+- check flow consistency
+- decide what belongs to MVP vs later phases
+
+---
+
+## Please also include labels for phase readiness:
+
+For each flow, mark it as:
+
+- MVP / Built
+- Pilot Enhancement
+- Future Phase
+- Needs Decision
+
+---
+
+## Final output required
+
+Please provide:
+1) the draw.io file  
+2) a short summary of what is included  
+3) any gaps or risks you noticed while mapping
+
+Goal:
+Have one complete Tadweerah workflow blueprint covering the full product vision and detailed service flows.
