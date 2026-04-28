@@ -168,7 +168,7 @@ export function Topbar({ showSignOut = false }: { showSignOut?: boolean }) {
         {/* Brand slogan — centered, home page only, large screens only */}
         {location === "/" && (
           <span className="pointer-events-none absolute inset-0 hidden items-center justify-center lg:flex">
-            <span className="text-[11px] font-semibold italic tracking-widest text-muted-foreground/55 select-none">
+            <span className="text-xs font-semibold italic tracking-widest text-muted-foreground/75 select-none">
               كل قيمة تستحق أن تعود
             </span>
           </span>

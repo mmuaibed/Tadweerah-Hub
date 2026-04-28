@@ -55,18 +55,18 @@ export function HomePage() {
   return (
     <AppLayout>
       {/* ── Hero ── */}
-      <section className="flex flex-col items-center pt-6 pb-5 text-center sm:pt-8">
+      <section className="flex flex-col items-center pt-4 pb-4 text-center sm:pt-5">
 
-        {/* Saudi badge — stronger green, larger pill */}
-        <span className="mb-5 inline-flex items-center rounded-full border-2 border-green-300 bg-green-100 px-5 py-2 text-xs font-bold text-green-900 tracking-wide">
+        {/* Saudi badge — closer to top, strong green */}
+        <span className="mb-3 inline-flex items-center rounded-full border-2 border-green-300 bg-green-100 px-5 py-2 text-xs font-bold text-green-900 tracking-wide">
           {t("home.badge")}
         </span>
 
-        {/* Logo — primary visual anchor, +40–50% */}
+        {/* Logo — primary visual anchor */}
         <img
           src={`${basePath}/logo.png`}
           alt="Tadweerah | تدويرة"
-          className="mb-6 w-[9rem] max-w-[60vw] h-auto sm:w-[13rem] md:w-[15rem]"
+          className="mb-4 w-[9rem] max-w-[60vw] h-auto sm:w-[13rem] md:w-[15rem]"
           style={{ mixBlendMode: "multiply" }}
         />
 
@@ -75,13 +75,8 @@ export function HomePage() {
           {t("home.headline")}
         </h1>
 
-        {/* B2B description — one line, strong contrast */}
-        <p className="mt-2 max-w-lg text-sm font-medium text-foreground/80">
-          {t("home.description")}
-        </p>
-
-        {/* CTAs */}
-        <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+        {/* CTAs — directly under headline */}
+        <div className="mt-2.5 flex flex-col gap-2 sm:flex-row">
           <SignUpButton mode="modal">
             <Button size="lg" className="gap-2 px-7">
               {t("action.getstarted")}
@@ -94,10 +89,15 @@ export function HomePage() {
             </Button>
           </SignInButton>
         </div>
+
+        {/* B2B description — supporting detail below CTA */}
+        <p className="mt-2 max-w-lg text-sm font-medium text-foreground/75">
+          {t("home.description")}
+        </p>
       </section>
 
-      {/* ── 2-column: Why + For ── pushed slightly lower ── */}
-      <section className="mt-2 grid gap-5 pb-5 lg:grid-cols-2">
+      {/* ── 2-column: Why + For ── */}
+      <section className="mt-1 grid gap-5 pb-4 lg:grid-cols-2">
 
         {/* Column 1 → visual RIGHT in Arabic RTL — "Why Tadweerah?" */}
         <div className="flex flex-col gap-2.5">
