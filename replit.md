@@ -17,12 +17,22 @@ The project is built as a pnpm workspace monorepo using TypeScript (v5.9) and No
 - **API Codegen:** Orval (from OpenAPI spec).
 - **Build Tool:** esbuild.
 
-**Design Principles & UI/UX:**
+**Design Principles & UI/UX (LOCKED — applies to ALL pages):**
 - **Branding:** Primary blue (`hsl(223, 67%, 50%)`), secondary green (`hsl(125, 47%, 45%)`).
 - **Typography:** Tajawal font for both Arabic and English.
 - **Layout:** Consistent `<AppLayout>` for authenticated pages.
 - **Error Handling:** Bilingual, user-facing messages via `i18n/index.tsx`; raw API errors are never exposed.
 - **Bilingual Support:** Arabic default with English toggle, supporting RTL/LTR.
+
+**Global UI Theme (FINAL — LOCKED):**
+- **Visual Style:** Clean, minimal, no clutter. Generous whitespace. No heavy shadows or gradients. Cards with soft borders only (`border border-border`).
+- **Typography Hierarchy:** Page headline — bold, max 2 lines. Section titles — medium-bold (`font-semibold`). Body text — clean, readable. Supporting text — `text-muted-foreground`.
+- **Colors:** Primary blue for buttons (main actions only). Green (`text-secondary`) for identity/highlights. Text: dark gray (`text-foreground`). Secondary text: `text-muted-foreground`. Borders: `border-border` (light gray).
+- **Layout Rules:** Fit above the fold when possible. Avoid unnecessary scroll. Max 2 main columns per section. Clear section spacing.
+- **Cards:** `rounded-xl border border-border bg-card` everywhere. Consistent `p-4` or `px-4 py-3` padding. No shadows unless hover state (`hover:shadow-sm`). No variant card styles.
+- **Buttons:** Primary = filled blue, one per view. Secondary = outline (`variant="outline"`), never compete with primary. Add `border-gray-400 hover:border-primary/60 hover:bg-muted/50` to secondary buttons for contrast.
+- **Spacing:** Consistent vertical rhythm. Clear separation: header → content → actions. No crowded sections.
+- **UX Principle:** Every page answers "What can I do here?" and "What is the next action?" within 3 seconds. One clear primary action per page.
 
 **Technical Implementations & Features:**
 - **Naming Conventions:** `snake_case` for DB columns/JSON API keys; `camelCase`/`PascalCase` for TypeScript.
