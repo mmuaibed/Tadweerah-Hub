@@ -76,7 +76,7 @@ export function HomePage() {
         </h1>
 
         {/* CTAs — clearly separated from headline */}
-        <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+        <div className="mt-8 flex flex-col gap-2 sm:flex-row">
           <SignUpButton mode="modal">
             <Button size="lg" className="gap-2 px-7">
               {t("action.getstarted")}
@@ -84,7 +84,11 @@ export function HomePage() {
             </Button>
           </SignUpButton>
           <SignInButton mode="modal">
-            <Button size="lg" variant="outline" className="px-7">
+            <Button
+              size="lg"
+              variant="outline"
+              className="border-gray-400 px-7 hover:border-primary/60 hover:bg-muted/50"
+            >
               {t("action.signin")}
             </Button>
           </SignInButton>
@@ -102,7 +106,7 @@ export function HomePage() {
 
           {/* Card stretches to fill column height on lg */}
           <div className="rounded-xl border border-border bg-card p-4 lg:flex-1">
-            <ul className="flex flex-col gap-2.5 lg:h-full lg:justify-between lg:gap-0">
+            <ul className="flex flex-col gap-3.5 lg:h-full lg:justify-between lg:gap-0">
               {WHY_POINTS.map(({ key, icon: Icon, bold }) => (
                 <li key={key} className="flex items-center gap-3">
                   <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
@@ -150,7 +154,7 @@ export function HomePage() {
       </section>
 
       {/* B2B description — bottom of page, informational only */}
-      <p className="mt-2 pb-3 text-center text-sm text-muted-foreground/80">
+      <p className="mt-4 pb-3 text-center text-base text-muted-foreground/90">
         {t("home.description")}
       </p>
     </AppLayout>
