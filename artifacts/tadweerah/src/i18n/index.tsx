@@ -37,6 +37,34 @@ const translations: Record<string, Record<Language, string>> = {
     ar: "لا يوجد توثيق رسمي عند إغلاق الصفقة — تدويرة تُنشئ سجل صفقة قابلاً للطباعة لكلا الطرفين",
     en: "No formal document when a deal closes — Tadweerah generates a printable deal record for both parties",
   },
+
+  "home.why.title": { ar: "لماذا تدويرة؟", en: "Why Tadweerah?" },
+  "home.why.p1": {
+    ar: "لا سوق منظم للمواد القابلة للتدوير",
+    en: "No structured market for recyclable materials",
+  },
+  "home.why.p2": {
+    ar: "العروض شفهية بلا سجل موثّق",
+    en: "Offers are verbal with no documented record",
+  },
+  "home.why.p3": {
+    ar: "صفقات تُغلق بلا وثيقة رسمية",
+    en: "Deals close without formal documentation",
+  },
+
+  "home.for.title": { ar: "هل هذا لك؟", en: "Is This For You?" },
+  "home.for.producers.value": {
+    ar: "بِع فائضك بأفضل سعر عبر مزاد شفاف",
+    en: "Sell your surplus at the best price via transparent auction",
+  },
+  "home.for.buyers.value": {
+    ar: "اطّلع على مواد تدوير موثوقة ووفّر التكلفة",
+    en: "Source reliable recyclables and cut procurement costs",
+  },
+  "home.for.transporters.value": {
+    ar: "احصل على فرص شحن مستمرة من عملاء موثّقين",
+    en: "Get steady transport opportunities from verified clients",
+  },
   "nav.language": { ar: "English", en: "العربية" },
   "action.signin": { ar: "تسجيل الدخول", en: "Sign In" },
   "action.signup": { ar: "إنشاء حساب", en: "Sign Up" },
