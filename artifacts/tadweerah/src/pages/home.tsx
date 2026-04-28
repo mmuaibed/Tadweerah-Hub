@@ -154,7 +154,7 @@ export function HomePage() {
       </section>
 
       {/* B2B description — bottom of page, informational only */}
-      <p className="mt-4 pb-3 text-center text-base text-muted-foreground/90">
+      <p className="mt-1 pb-3 text-center text-base text-muted-foreground/90">
         {t("home.description")}
       </p>
     </AppLayout>
