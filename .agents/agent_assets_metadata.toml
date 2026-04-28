@@ -24,3 +24,9 @@ id = "_EWuTZ6ukua8tY6uV_LUx"
 uri = "file://tadweerah-system-report.md"
 type = "text"
 title = "Tadweerah — Factual System Report (for Operational Design Partner)"
+
+[[outputs]]
+id = "9a71dy3O5PErx_lxtMtAA"
+uri = "file://docs/tadweerah-workflow-baseline-v2.md"
+type = "text"
+title = "Tadweerah — Final 18-Workflow Baseline v2"
