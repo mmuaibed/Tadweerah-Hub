@@ -910,6 +910,13 @@ const translations: Record<string, Record<Language, string>> = {
   },
 
   // Dashboard: empty-state onboarding CTA
+  "dashboard.primary.producer": { ar: "للمنتجين", en: "For producers" },
+  "dashboard.primary.buyer":    { ar: "للمشترين", en: "For buyers" },
+  "dashboard.tools.title":      { ar: "أدوات المنصة", en: "Platform tools" },
+  "dashboard.next.offers_received":     { ar: "لديك عروض وصلتك — راجعها الآن", en: "You have incoming offers — review them now" },
+  "dashboard.next.offers_received.cta": { ar: "إعلاناتي", en: "My listings" },
+  "dashboard.next.offers_made":         { ar: "عروضك المقدمة قيد المراجعة", en: "Your submitted offers are under review" },
+  "dashboard.next.offers_made.cta":     { ar: "مشاركاتي", en: "My participations" },
   "dashboard.onboarding.title": {
     ar: "ابدأ رحلتك الأولى مع تدويرة",
     en: "Start your first journey with Tadweerah",
