@@ -21,8 +21,8 @@ const translations: Record<string, Record<Language, string>> = {
     en: "A structured marketplace for companies to list recyclable or surplus materials, receive documented offers, and track deals through to a formal close.",
   },
   "home.trust_line": {
-    ar: "تجربة محدودة — بدون التزام طويل الأمد — دعم مباشر من فريق تدويرة",
-    en: "Limited pilot — no long-term commitment — direct support from the Tadweerah team",
+    ar: "نبني سوقاً أكثر كفاءة وشفافية لإدارة المواد القابلة للتدوير",
+    en: "Building a more efficient and transparent market for recyclable materials",
   },
   "home.solves.title": { ar: "ماذا تحل تدويرة؟", en: "What it solves" },
   "home.solves.1": {
@@ -40,19 +40,19 @@ const translations: Record<string, Record<Language, string>> = {
 
   "home.why.title": { ar: "لماذا تدويرة؟", en: "Why Tadweerah?" },
   "home.why.p1": {
-    ar: "لا سوق منظم للمواد القابلة للتدوير",
-    en: "No structured market for recyclable materials",
+    ar: "سوق موحد وشفاف للمواد القابلة للتدوير",
+    en: "A unified, transparent market for recyclable materials",
   },
   "home.why.p2": {
-    ar: "العروض شفهية بلا سجل موثّق",
-    en: "Offers are verbal with no documented record",
+    ar: "كل عرض موثّق — كل قرار مبني على بيانات",
+    en: "Every offer documented — every decision data-driven",
   },
   "home.why.p3": {
-    ar: "صفقات تُغلق بلا وثيقة رسمية",
-    en: "Deals close without formal documentation",
+    ar: "صفقات واضحة يمكن تتبّعها حتى الإغلاق",
+    en: "Clear deals trackable from start to close",
   },
 
-  "home.for.title": { ar: "هل هذا لك؟", en: "Is This For You?" },
+  "home.for.title": { ar: "لمن هذه المنصة؟", en: "Who Is This For?" },
   "home.for.producers.value": {
     ar: "بِع فائضك بأفضل سعر عبر مزاد شفاف",
     en: "Sell your surplus at the best price via transparent auction",

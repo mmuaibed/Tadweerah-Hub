@@ -63,53 +63,35 @@ export function HomePage() {
           </SignInButton>
         </div>
 
-        <p className="mt-2 text-xs text-muted-foreground/60 tracking-wide">
+        <p className="mt-2 text-xs text-muted-foreground/70 leading-relaxed">
           {t("home.trust_line")}
         </p>
       </section>
 
       {/* ── 2-column: Why + For ── */}
-      <section className="grid gap-4 pb-6 lg:grid-cols-2 lg:gap-5">
+      <section className="grid gap-5 pb-6 lg:grid-cols-2">
 
         {/* Column 1 → visual RIGHT in Arabic RTL — "Why Tadweerah?" */}
-        <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:p-5">
-          <div>
-            <h2 className="text-lg font-bold text-foreground sm:text-xl">
-              {t("home.why.title")}
-            </h2>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              {t("home.solves.title")}
-            </p>
-          </div>
+        <div className="flex flex-col gap-2.5">
+          <h2 className="text-lg font-bold text-foreground sm:text-xl">
+            {t("home.why.title")}
+          </h2>
 
-          <ul className="space-y-3">
-            {WHY_POINTS.map((key) => (
-              <li key={key} className="flex items-start gap-3">
-                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-secondary" />
-                <span className="text-sm font-medium text-foreground leading-snug">
-                  {t(key)}
-                </span>
-              </li>
-            ))}
-          </ul>
-
-          {/* Inline CTAs repeated — convenient for bottom-of-hero placement on narrow screens */}
-          <div className="hidden lg:flex flex-col gap-2 sm:flex-row pt-1">
-            <SignUpButton mode="modal">
-              <Button className="gap-1.5">
-                {t("action.getstarted")}
-                <Arrow className="h-3.5 w-3.5" />
-              </Button>
-            </SignUpButton>
-            <SignInButton mode="modal">
-              <Button variant="outline">
-                {t("action.signin")}
-              </Button>
-            </SignInButton>
+          <div className="rounded-xl border border-border bg-card p-4">
+            <ul className="space-y-3">
+              {WHY_POINTS.map((key) => (
+                <li key={key} className="flex items-start gap-3">
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-secondary" />
+                  <span className="text-sm font-medium text-foreground leading-snug">
+                    {t(key)}
+                  </span>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
 
-        {/* Column 2 → visual LEFT in Arabic RTL — "Is This For You?" */}
+        {/* Column 2 → visual LEFT in Arabic RTL — "Who is this for?" */}
         <div className="flex flex-col gap-2.5">
           <h2 className="text-lg font-bold text-foreground sm:text-xl">
             {t("home.for.title")}
@@ -120,8 +102,8 @@ export function HomePage() {
               key={titleKey}
               className="flex items-center gap-3.5 rounded-xl border border-border bg-card px-4 py-3 transition-shadow hover:shadow-sm"
             >
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <Icon className="h-4 w-4" />
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <Icon className="h-5 w-5" />
               </span>
               <div className="min-w-0">
                 <p className="text-sm font-bold text-foreground">{t(titleKey)}</p>
