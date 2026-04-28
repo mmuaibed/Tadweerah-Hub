@@ -1,0 +1,210 @@
+Your layout audit is strong and we agree with the direction.
+
+Please proceed with a controlled UX density improvement pass.
+
+The goal is not to redesign Tadweerah.
+The goal is to make the current product feel more polished, compact, and easier to scan before we continue offer-flow testing.
+
+---
+
+## Design Principle
+
+Improve layout density without making the UI feel crowded.
+
+We want:
+
+* fewer unnecessary scrolls
+* clearer grouping
+* better use of desktop width
+* important actions visible earlier
+* preserved visual identity
+* strong RTL quality
+
+You have room to make design decisions, but only within the scope below.
+
+---
+
+# Execute Now
+
+## 1) Global Layout Spacing
+
+Adjust AppLayout spacing carefully:
+
+* reduce excessive vertical padding
+* reduce title/header bottom margin
+* keep pages airy, not cramped
+* ensure mobile still feels comfortable
+
+This should improve all pages without changing page structure.
+
+---
+
+## 2) Public Home Page
+
+Keep the current content and structure.
+
+Improve only:
+
+* logo size
+* vertical spacing around hero
+* spacing between CTA, trust line, and “What it solves”
+
+Goal:
+A visitor should see the logo, value sentence, CTA, trust line, and at least part of the trust/problem section in the first viewport.
+
+Do not add new sections.
+
+---
+
+## 3) Dashboard
+
+Make the dashboard more compact and actionable.
+
+Allowed:
+
+* reduce card padding
+* reduce icon box size
+* tighten spacing between stat cards and action cards
+* improve visual balance
+
+Do not:
+
+* change card order
+* remove cards
+* change navigation logic
+
+Goal:
+The user should see the key activity summary and main action cards without excessive scrolling.
+
+---
+
+## 4) Add Listing Page — Highest Priority
+
+The current logic and order are good, but the form is too tall.
+
+Please improve the desktop layout while preserving the flow.
+
+Allowed:
+
+* use two-column grouping on desktop where natural
+* keep single-column on mobile
+* group related fields visually
+* reduce unnecessary spacing
+* improve section hierarchy
+* keep image upload clean and visible
+* keep publish/cancel actions easy to reach
+
+Important grouping direction:
+
+### Group A — Material & Location
+
+* material category
+* subcategory
+* city
+* quantity
+* unit
+* unit notes when applicable
+
+### Group B — Pricing & Deal Settings
+
+* sale type
+* pricing type
+* indicative price
+* requested services / capabilities
+
+### Group C — Details & Evidence
+
+* short description
+* image upload
+
+You may choose the exact visual layout if it improves clarity, but:
+
+Do NOT:
+
+* remove any field
+* change validation
+* change backend logic
+* split into a wizard
+* add new steps
+* move the publish action into a confusing place
+* hide important fields behind accordions
+
+Goal:
+On desktop, the page should feel like one organized form, not a long scroll document.
+
+---
+
+## 5) Capability Badge Label
+
+Keep the existing logic.
+
+Only rename the badge label to something clearer:
+
+Arabic:
+“يتطلب ترخيص”
+
+English:
+“Requires License”
+
+Do not change which capabilities show the badge.
+
+---
+
+# Do Not Implement Yet
+
+Please do NOT implement these in this pass:
+
+* My Listings stat-card filtering
+* Listing Detail redesign
+* Deal panel redesign
+* Any new backend logic
+* Any new workflow behavior
+* Any new routes
+* Any new feature
+
+We will review these separately after this layout pass.
+
+---
+
+# Creative Freedom Boundaries
+
+You may improve:
+
+* spacing
+* grouping
+* alignment
+* card proportions
+* responsive layout
+* hierarchy
+* readability
+
+You may not change:
+
+* product logic
+* field meaning
+* validation rules
+* business workflow
+* data model
+* navigation structure
+
+---
+
+# Required After Implementation
+
+Please provide:
+
+1. Summary of what changed
+2. Confirmation that no logic/backend/validation changed
+3. Screenshots of:
+
+   * Home
+   * Dashboard
+   * Add Listing page top
+   * Add Listing page bottom
+4. Any remaining layout concerns you recommend reviewing later
+
+---
+
+## Final Goal
+
+Make Tadweerah feel more professional and easier to use, while keeping the MVP stable and ready for pilot testing.

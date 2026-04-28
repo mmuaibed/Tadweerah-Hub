@@ -28,12 +28,12 @@ export function AppLayout({
   return (
     <div className="min-h-[100dvh] bg-background text-foreground">
       <Topbar showSignOut={showSignOut} />
-      <main className={`mx-auto w-full ${maxWidthClass} px-4 py-8 sm:px-6 sm:py-12`}>
+      <main className={`mx-auto w-full ${maxWidthClass} px-4 py-5 sm:px-6 sm:py-8`}>
         {(title || actions) && (
-          <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
               {title && (
-                <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+                <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
                   {title}
                 </h1>
               )}

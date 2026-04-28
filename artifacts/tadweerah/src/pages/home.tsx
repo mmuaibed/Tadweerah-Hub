@@ -26,15 +26,15 @@ export function HomePage() {
   return (
     <AppLayout>
       {/* Hero */}
-      <section className="flex flex-col items-center pt-12 pb-10 text-center sm:pt-20 sm:pb-14">
-        <span className="mb-10 inline-flex items-center gap-2 rounded-full border border-border bg-card px-5 py-2 text-xs font-medium text-muted-foreground tracking-wide">
+      <section className="flex flex-col items-center pt-6 pb-6 text-center sm:pt-10 sm:pb-8">
+        <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-border bg-card px-5 py-2 text-xs font-medium text-muted-foreground tracking-wide">
           {t("app.tagline")}
         </span>
 
         <img
           src={`${basePath}/logo.png`}
           alt="Tadweerah | تدويرة"
-          className="mb-10 w-[18rem] max-w-[85vw] h-auto sm:w-[26rem] md:w-[32rem]"
+          className="mb-5 w-[13rem] max-w-[75vw] h-auto sm:w-[18rem] md:w-[22rem]"
           style={{ mixBlendMode: "multiply" }}
         />
 
@@ -42,7 +42,7 @@ export function HomePage() {
           {t("app.description")}
         </p>
 
-        <div className="mt-10 flex flex-col gap-3 sm:flex-row">
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
           <SignUpButton mode="modal">
             <Button size="lg" className="gap-2 px-8">
               {t("action.getstarted")}
@@ -57,13 +57,13 @@ export function HomePage() {
         </div>
 
         {/* Trust line */}
-        <p className="mt-5 text-xs text-muted-foreground/70 tracking-wide">
+        <p className="mt-4 text-xs text-muted-foreground/70 tracking-wide">
           {t("home.trust_line")}
         </p>
       </section>
 
       {/* What it solves */}
-      <section className="mb-10 rounded-xl border border-border bg-card px-6 py-6 sm:px-8">
+      <section className="mb-6 rounded-xl border border-border bg-card px-6 py-5 sm:px-8">
         <h2 className="mb-4 text-sm font-semibold text-muted-foreground uppercase tracking-wider">
           {t("home.solves.title")}
         </h2>
@@ -78,10 +78,10 @@ export function HomePage() {
       </section>
 
       {/* Feature cards */}
-      <section className="grid gap-4 pb-16 sm:grid-cols-3 sm:gap-6">
+      <section className="grid gap-4 pb-10 sm:grid-cols-3 sm:gap-5">
         {features.map(({ icon: Icon, title, desc }) => (
           <Card key={title} className="border-card-border bg-card transition-shadow hover:shadow-md">
-            <CardContent className="flex flex-col items-start gap-4 p-6">
+            <CardContent className="flex flex-col items-start gap-3 p-5">
               <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-secondary/10 text-secondary">
                 <Icon className="h-5 w-5" />
               </span>

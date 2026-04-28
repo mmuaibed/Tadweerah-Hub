@@ -144,6 +144,9 @@ const translations: Record<string, Record<Language, string>> = {
     ar: "السعر يُحسب بعد الوزن الفعلي عند التسليم — مناسب للمواد التي تتفاوت أوزانها.",
     en: "Price is calculated after actual weighing at delivery — suitable for variable-weight materials.",
   },
+  "listing.form.section.material": { ar: "المواد والموقع", en: "Material & Location" },
+  "listing.form.section.pricing": { ar: "التسعير والإعدادات", en: "Pricing & Settings" },
+  "listing.form.section.details": { ar: "التفاصيل والصور", en: "Details & Media" },
   "listing.form.image": { ar: "صورة العرض (اختياري)", en: "Listing Image (Optional)" },
   "listing.form.image.prompt": { ar: "انقر لرفع صورة", en: "Click to upload an image" },
   "listing.form.image.hint": { ar: "JPG أو PNG · حتى 5 ميجابايت", en: "JPG or PNG · up to 5 MB" },
@@ -572,6 +575,7 @@ const translations: Record<string, Record<Language, string>> = {
   },
 
   // License status labels
+  "capability.requires_license": { ar: "يتطلب ترخيص", en: "Requires License" },
   "license.status.pending": { ar: "قيد المراجعة", en: "Under Review" },
   "license.status.approved": { ar: "معتمد", en: "Approved" },
   "license.status.rejected": { ar: "مرفوض", en: "Rejected" },

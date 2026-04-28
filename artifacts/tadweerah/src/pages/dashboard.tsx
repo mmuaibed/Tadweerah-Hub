@@ -96,10 +96,10 @@ export function DashboardPage() {
 
   return (
     <AppLayout showSignOut>
-      <div className="mb-6">
+      <div className="mb-4">
         <p className="text-sm text-muted-foreground">{t("dashboard.welcome")}</p>
-        <h1 className="mt-1 text-3xl font-bold text-foreground sm:text-4xl">{company.name}</h1>
-        <p className="mt-2 flex items-center gap-1.5 text-sm text-muted-foreground">
+        <h1 className="mt-1 text-2xl font-bold text-foreground sm:text-3xl">{company.name}</h1>
+        <p className="mt-1.5 flex items-center gap-1.5 text-sm text-muted-foreground">
           <Truck className="h-3.5 w-3.5" />
           {company.city}
         </p>
@@ -107,8 +107,8 @@ export function DashboardPage() {
 
       {/* V4 — Activity stats strip */}
       {stats && (
-        <div className="mb-8">
-          <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">{t("dashboard.stats.title")}</p>
+        <div className="mb-5">
+          <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">{t("dashboard.stats.title")}</p>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
             <StatPill icon={FileText}    label={t("dashboard.stats.listings")}         value={stats.listings_count} />
             <StatPill icon={TrendingUp}  label={t("dashboard.stats.offers_received")}  value={stats.offers_received_count} />
@@ -127,10 +127,10 @@ export function DashboardPage() {
 
       {/* Onboarding CTA — shown only to new accounts with no activity yet */}
       {stats && stats.listings_count === 0 && stats.offers_received_count === 0 && stats.offers_made_count === 0 && (
-        <div className="mb-8 rounded-xl border border-primary/20 bg-primary/5 p-5 sm:p-6">
-          <div className="flex items-start gap-4">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <Sparkles className="h-5 w-5" />
+        <div className="mb-5 rounded-xl border border-primary/20 bg-primary/5 p-4 sm:p-5">
+          <div className="flex items-start gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <Sparkles className="h-4 w-4" />
             </span>
             <div className="flex-1 min-w-0">
               <h2 className="text-base font-semibold text-foreground">{t("dashboard.onboarding.title")}</h2>
@@ -146,17 +146,17 @@ export function DashboardPage() {
         </div>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 sm:gap-6">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 sm:gap-4">
         {PLATFORM_CARDS.map(({ titleKey, descKey, icon: Icon, href }) => (
           <Link key={titleKey} to={href}>
             <Card className="group h-full border-card-border bg-card transition-all cursor-pointer hover:-translate-y-0.5 hover:shadow-md">
-              <CardContent className="flex h-full flex-col items-start gap-4 p-6">
-                <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <Icon className="h-5 w-5" />
+              <CardContent className="flex h-full flex-col items-start gap-3 p-4 sm:p-5">
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <Icon className="h-4 w-4" />
                 </span>
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-card-foreground">{t(titleKey)}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{t(descKey)}</p>
+                  <h3 className="text-base font-semibold text-card-foreground">{t(titleKey)}</h3>
+                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{t(descKey)}</p>
                 </div>
                 <span className="inline-flex items-center gap-1 text-sm font-medium text-primary">
                   {t("action.getstarted")}

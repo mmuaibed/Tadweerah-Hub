@@ -145,7 +145,7 @@ export function CompanyCapabilitiesPage() {
                           {cap.requires_license && (
                             <span className="inline-flex items-center gap-1 text-xs text-amber-600">
                               <Shield className="h-3 w-3" />
-                              {t("onboarding.form.license_number")}
+                              {t("capability.requires_license")}
                             </span>
                           )}
                         </div>

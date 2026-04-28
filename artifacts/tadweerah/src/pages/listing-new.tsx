@@ -251,467 +251,439 @@ export function ListingNewPage() {
       title={t("listing.new.title")}
       subtitle={t("listing.new.subtitle")}
     >
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <Card className="border-card-border bg-card">
-          <CardContent className="space-y-5 p-6">
-            {/* Material category */}
-            <div className="space-y-2">
-              <Label htmlFor="material">{t("listing.form.material")}</Label>
-              <Select
-                value={materialCategoryId}
-                onValueChange={(v) => {
-                  setMaterialCategoryId(v);
-                  setMaterialSubcategoryId("");
-                }}
-              >
-                <SelectTrigger id="material">
-                  <SelectValue placeholder={t("listing.form.material")} />
-                </SelectTrigger>
-                <SelectContent>
-                  {topLevel.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      {t(`material.${cat.key}`) !== `material.${cat.key}` ? t(`material.${cat.key}`) : cat.name_ar + " / " + cat.name_en}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+      <form onSubmit={handleSubmit} className="space-y-4">
 
-            {/* Subcategory — shown only when the selected category has children */}
-            {subcategories.length > 0 && (
-              <div className="space-y-2">
-                <Label htmlFor="subcategory">{t("listing.form.subcategory")}</Label>
-                <Select
-                  value={materialSubcategoryId}
-                  onValueChange={setMaterialSubcategoryId}
-                >
-                  <SelectTrigger id="subcategory">
-                    <SelectValue placeholder={t("listing.form.subcategory.placeholder")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {subcategories.map((sub) => (
-                      <SelectItem key={sub.id} value={sub.id}>
-                        {sub.name_ar} / {sub.name_en}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+        {/* ── Section A: Material & Location ── */}
+        <div>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground px-0.5">
+            {t("listing.form.section.material")}
+          </p>
+          <Card className="border-card-border bg-card">
+            <CardContent className="space-y-4 p-4 sm:p-5">
+
+              {/* Material + Subcategory — side by side when subcategory available */}
+              <div className={`grid gap-4 ${subcategories.length > 0 ? "sm:grid-cols-2" : ""}`}>
+                <div className="space-y-1.5">
+                  <Label htmlFor="material">{t("listing.form.material")}</Label>
+                  <Select
+                    value={materialCategoryId}
+                    onValueChange={(v) => {
+                      setMaterialCategoryId(v);
+                      setMaterialSubcategoryId("");
+                    }}
+                  >
+                    <SelectTrigger id="material">
+                      <SelectValue placeholder={t("listing.form.material")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {topLevel.map((cat) => (
+                        <SelectItem key={cat.id} value={cat.id}>
+                          {t(`material.${cat.key}`) !== `material.${cat.key}` ? t(`material.${cat.key}`) : cat.name_ar + " / " + cat.name_en}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {subcategories.length > 0 && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="subcategory">{t("listing.form.subcategory")}</Label>
+                    <Select value={materialSubcategoryId} onValueChange={setMaterialSubcategoryId}>
+                      <SelectTrigger id="subcategory">
+                        <SelectValue placeholder={t("listing.form.subcategory.placeholder")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {subcategories.map((sub) => (
+                          <SelectItem key={sub.id} value={sub.id}>
+                            {sub.name_ar} / {sub.name_en}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
-            )}
 
-            <div className="grid gap-5 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="city">{t("listing.form.city")}</Label>
-                <Input
-                  id="city"
-                  required
-                  minLength={2}
-                  maxLength={80}
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                />
+              {/* City + Quantity */}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="city">{t("listing.form.city")}</Label>
+                  <Input id="city" required minLength={2} maxLength={80} value={city} onChange={(e) => setCity(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="quantity">{t("listing.form.quantity")}</Label>
+                  <Input id="quantity" required type="number" inputMode="decimal" min={0} step="0.001" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="quantity">{t("listing.form.quantity")}</Label>
-                <Input
-                  id="quantity"
-                  required
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  step="0.001"
-                  value={quantity}
-                  onChange={(e) => setQuantity(e.target.value)}
-                />
+
+              {/* Unit + Unit notes — side by side when "other" unit selected */}
+              <div className={`grid gap-4 ${isOtherUnit ? "sm:grid-cols-2" : ""}`}>
+                <div className="space-y-1.5">
+                  <Label htmlFor="unit">{t("listing.form.unit")}</Label>
+                  <Select value={resolvedUnitId} onValueChange={setUnitOptionId}>
+                    <SelectTrigger id="unit"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {(unitOptions as UnitOption[]).map((u) => (
+                        <SelectItem key={u.id} value={u.id}>
+                          {t(`unit.${u.key}`) !== `unit.${u.key}` ? t(`unit.${u.key}`) : u.name_ar + " / " + u.name_en}
+                          {" "}({u.symbol})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {isOtherUnit && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="unit_notes">{t("listing.form.unit_notes.required_label")}</Label>
+                    <Input
+                      id="unit_notes"
+                      placeholder={t("listing.form.unit_notes.placeholder")}
+                      value={unitNotes}
+                      onChange={(e) => setUnitNotes(e.target.value)}
+                    />
+                  </div>
+                )}
               </div>
-            </div>
 
-            {/* Unit — from lookup table */}
-            <div className="space-y-2">
-              <Label htmlFor="unit">{t("listing.form.unit")}</Label>
-              <Select value={resolvedUnitId} onValueChange={setUnitOptionId}>
-                <SelectTrigger id="unit">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {(unitOptions as UnitOption[]).map((u) => (
-                    <SelectItem key={u.id} value={u.id}>
-                      {t(`unit.${u.key}`) !== `unit.${u.key}` ? t(`unit.${u.key}`) : u.name_ar + " / " + u.name_en}
-                      {" "}({u.symbol})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            </CardContent>
+          </Card>
+        </div>
 
-            {/* "Other" unit — free-text description */}
-            {isOtherUnit && (
-              <div className="space-y-2">
-                <Label htmlFor="unit_notes">
-                  {isOtherUnit ? t("listing.form.unit_notes.required_label") : t("listing.form.unit_notes")}
-                </Label>
-                <Input
-                  id="unit_notes"
-                  placeholder={t("listing.form.unit_notes.placeholder")}
-                  value={unitNotes}
-                  onChange={(e) => setUnitNotes(e.target.value)}
-                />
-              </div>
-            )}
+        {/* ── Section B: Pricing & Settings ── */}
+        <div>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground px-0.5">
+            {t("listing.form.section.pricing")}
+          </p>
+          <Card className="border-card-border bg-card">
+            <CardContent className="space-y-4 p-4 sm:p-5">
 
-            {/* Sale type toggle */}
-            <div className="space-y-2">
-              <Label>{t("listing.form.saleType")}</Label>
-              <div className="grid grid-cols-2 gap-2">
-                {(["auction", "direct"] as SaleType[]).map((type) => {
-                  const active = saleType === type;
-                  return (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() => {
-                        setSaleType(type);
-                        if (type === "auction") {
-                          if (pricingModel === "revenue_share") setPricingModel("fixed");
-                          setTargetingType("open");
-                          setTargetCompanyId("");
-                          setSelectedCompany(null);
-                          setCompanySearch("");
-                          setTargetCategoryIds(new Set());
-                        }
-                      }}
-                      className={`flex items-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium transition-all ${
-                        active
-                          ? type === "auction"
-                            ? "border-primary bg-primary/10 text-primary"
-                            : "border-secondary bg-secondary/10 text-secondary"
-                          : "border-border bg-background text-muted-foreground hover:border-muted-foreground/40"
-                      }`}
-                    >
-                      {type === "auction" ? (
-                        <Gavel className="h-4 w-4 shrink-0" />
-                      ) : (
-                        <ShoppingBag className="h-4 w-4 shrink-0" />
-                      )}
-                      <span>{t(`listing.sale_type.${type}`)}</span>
-                    </button>
-                  );
-                })}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {t(`listing.form.saleType.${saleType}.hint`)}
-              </p>
-            </div>
-
-            {/* Pricing model toggle */}
-            <div className="space-y-2">
-              <Label>{t("listing.form.pricingModel")}</Label>
-              <div className={`grid gap-2 ${saleType === "direct" ? "grid-cols-3" : "grid-cols-2"}`}>
-                {(["fixed", "by_weight", ...(saleType === "direct" ? ["revenue_share"] : [])] as PricingModel[]).map((model) => {
-                  const active = pricingModel === model;
-                  const modelColor =
-                    model === "fixed"
-                      ? "border-secondary bg-secondary/10 text-secondary"
-                      : model === "by_weight"
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-emerald-500 bg-emerald-50 text-emerald-700";
-                  return (
-                    <button
-                      key={model}
-                      type="button"
-                      onClick={() => setPricingModel(model)}
-                      className={`flex flex-col items-center gap-1.5 rounded-lg border px-3 py-3 text-sm font-medium transition-all ${
-                        active ? modelColor : "border-border bg-background text-muted-foreground hover:border-muted-foreground/40"
-                      }`}
-                    >
-                      {model === "fixed" ? (
-                        <Tag className="h-4 w-4 shrink-0" />
-                      ) : model === "by_weight" ? (
-                        <Scale className="h-4 w-4 shrink-0" />
-                      ) : (
-                        <Percent className="h-4 w-4 shrink-0" />
-                      )}
-                      <span className="text-center text-xs leading-tight">{t(`listing.pricing_model.${model}`)}</span>
-                    </button>
-                  );
-                })}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {t(`listing.form.pricingModel.${pricingModel}.hint`)}
-              </p>
-            </div>
-
-            {/* Revenue share percentage — shown only when revenue_share is selected */}
-            {pricingModel === "revenue_share" && (
-              <div className="space-y-2">
-                <Label htmlFor="revenueSharePct">{t("listing.form.revenue_share_pct")}</Label>
-                <Input
-                  id="revenueSharePct"
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  max={100}
-                  step="0.1"
-                  value={revenueSharePct}
-                  onChange={(e) => setRevenueSharePct(e.target.value)}
-                  placeholder="e.g. 15"
-                  dir="ltr"
-                />
-                <p className="text-xs text-muted-foreground">{t("listing.form.revenue_share_pct.hint")}</p>
-              </div>
-            )}
-
-            {/* Targeting — only for direct sale */}
-            {saleType === "direct" && (
-              <div className="space-y-2">
-                <Label>{t("listing.form.targeting.label")}</Label>
-                <p className="text-xs text-muted-foreground">{t("listing.form.targeting.hint")}</p>
-                {/* P5: 3-option targeting grid */}
-                <div className="grid grid-cols-3 gap-2">
-                  {(["open", "category", "specific_company"] as TargetingType[]).map((type) => {
-                    const active = targetingType === type;
+              {/* Sale type */}
+              <div className="space-y-1.5">
+                <Label>{t("listing.form.saleType")}</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {(["auction", "direct"] as SaleType[]).map((type) => {
+                    const active = saleType === type;
                     return (
                       <button
                         key={type}
                         type="button"
                         onClick={() => {
-                          setTargetingType(type);
-                          setSelectedCompany(null);
-                          setCompanySearch("");
-                          setCompanyResults([]);
+                          setSaleType(type);
+                          if (type === "auction") {
+                            if (pricingModel === "revenue_share") setPricingModel("fixed");
+                            setTargetingType("open");
+                            setTargetCompanyId("");
+                            setSelectedCompany(null);
+                            setCompanySearch("");
+                            setTargetCategoryIds(new Set());
+                          }
                         }}
-                        className={`flex flex-col items-center gap-1.5 rounded-lg border px-2 py-3 text-sm font-medium transition-all ${
+                        className={`flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition-all ${
                           active
-                            ? type === "open"
+                            ? type === "auction"
                               ? "border-primary bg-primary/10 text-primary"
-                              : type === "category"
-                              ? "border-secondary bg-secondary/10 text-secondary"
-                              : "border-amber-500 bg-amber-50 text-amber-700"
+                              : "border-secondary bg-secondary/10 text-secondary"
                             : "border-border bg-background text-muted-foreground hover:border-muted-foreground/40"
                         }`}
                       >
-                        {type === "open" ? (
-                          <Globe className="h-4 w-4 shrink-0" />
-                        ) : type === "category" ? (
-                          <Users className="h-4 w-4 shrink-0" />
-                        ) : (
-                          <Lock className="h-4 w-4 shrink-0" />
-                        )}
-                        <span className="text-center text-xs leading-tight">
-                          {t(`listing.targeting.${type}`)}
-                        </span>
+                        {type === "auction" ? <Gavel className="h-4 w-4 shrink-0" /> : <ShoppingBag className="h-4 w-4 shrink-0" />}
+                        <span>{t(`listing.sale_type.${type}`)}</span>
                       </button>
                     );
                   })}
                 </div>
+                <p className="text-xs text-muted-foreground">{t(`listing.form.saleType.${saleType}.hint`)}</p>
+              </div>
 
-                {/* P5: Category multi-select */}
-                {targetingType === "category" && (
-                  <div className="space-y-2 pt-1">
-                    <Label>{t("listing.form.targeting.categories.label")}</Label>
-                    <p className="text-xs text-muted-foreground">{t("listing.form.targeting.categories.hint")}</p>
-                    <div className="grid grid-cols-1 gap-1.5 max-h-48 overflow-y-auto rounded-lg border border-border p-2">
-                      {(companyCategoryList as CompanyCategory[]).map((cat) => {
-                        const checked = targetCategoryIds.has(cat.id);
+              {/* Pricing model */}
+              <div className="space-y-1.5">
+                <Label>{t("listing.form.pricingModel")}</Label>
+                <div className={`grid gap-2 ${saleType === "direct" ? "grid-cols-3" : "grid-cols-2"}`}>
+                  {(["fixed", "by_weight", ...(saleType === "direct" ? ["revenue_share"] : [])] as PricingModel[]).map((model) => {
+                    const active = pricingModel === model;
+                    const modelColor =
+                      model === "fixed"
+                        ? "border-secondary bg-secondary/10 text-secondary"
+                        : model === "by_weight"
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-emerald-500 bg-emerald-50 text-emerald-700";
+                    return (
+                      <button
+                        key={model}
+                        type="button"
+                        onClick={() => setPricingModel(model)}
+                        className={`flex flex-col items-center gap-1 rounded-lg border px-3 py-2.5 text-sm font-medium transition-all ${
+                          active ? modelColor : "border-border bg-background text-muted-foreground hover:border-muted-foreground/40"
+                        }`}
+                      >
+                        {model === "fixed" ? <Tag className="h-4 w-4 shrink-0" /> : model === "by_weight" ? <Scale className="h-4 w-4 shrink-0" /> : <Percent className="h-4 w-4 shrink-0" />}
+                        <span className="text-center text-xs leading-tight">{t(`listing.pricing_model.${model}`)}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-muted-foreground">{t(`listing.form.pricingModel.${pricingModel}.hint`)}</p>
+              </div>
+
+              {/* Revenue share percentage — shown only when revenue_share is selected */}
+              {pricingModel === "revenue_share" && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="revenueSharePct">{t("listing.form.revenue_share_pct")}</Label>
+                  <Input
+                    id="revenueSharePct"
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    max={100}
+                    step="0.1"
+                    value={revenueSharePct}
+                    onChange={(e) => setRevenueSharePct(e.target.value)}
+                    placeholder="e.g. 15"
+                    dir="ltr"
+                  />
+                  <p className="text-xs text-muted-foreground">{t("listing.form.revenue_share_pct.hint")}</p>
+                </div>
+              )}
+
+              {/* Price hint + Targeting — side by side on desktop for direct sale */}
+              <div className={`grid gap-4 ${saleType === "direct" ? "sm:grid-cols-2" : ""}`}>
+                <div className="space-y-1.5">
+                  <Label htmlFor="priceHint">{t("listing.form.priceHint")}</Label>
+                  <Input
+                    id="priceHint"
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step="0.01"
+                    value={priceHint}
+                    onChange={(e) => setPriceHint(e.target.value)}
+                  />
+                </div>
+
+                {saleType === "direct" && (
+                  <div className="space-y-1.5">
+                    <Label>{t("listing.form.targeting.label")}</Label>
+                    <p className="text-xs text-muted-foreground">{t("listing.form.targeting.hint")}</p>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {(["open", "category", "specific_company"] as TargetingType[]).map((type) => {
+                        const active = targetingType === type;
                         return (
-                          <label
-                            key={cat.id}
-                            className={`flex items-center gap-2 rounded-md px-3 py-2 cursor-pointer transition-colors ${checked ? "bg-secondary/10 text-secondary" : "hover:bg-muted/40 text-muted-foreground"}`}
+                          <button
+                            key={type}
+                            type="button"
+                            onClick={() => {
+                              setTargetingType(type);
+                              setSelectedCompany(null);
+                              setCompanySearch("");
+                              setCompanyResults([]);
+                            }}
+                            className={`flex flex-col items-center gap-1.5 rounded-lg border px-2 py-2.5 text-sm font-medium transition-all ${
+                              active
+                                ? type === "open"
+                                  ? "border-primary bg-primary/10 text-primary"
+                                  : type === "category"
+                                  ? "border-secondary bg-secondary/10 text-secondary"
+                                  : "border-amber-500 bg-amber-50 text-amber-700"
+                                : "border-border bg-background text-muted-foreground hover:border-muted-foreground/40"
+                            }`}
                           >
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              onChange={() => {
-                                setTargetCategoryIds((prev) => {
-                                  const next = new Set(prev);
-                                  if (next.has(cat.id)) next.delete(cat.id); else next.add(cat.id);
-                                  return next;
-                                });
-                              }}
-                              className="h-3.5 w-3.5 accent-secondary shrink-0"
-                            />
-                            <span className="text-xs font-medium">{cat.name_ar}</span>
-                            <span className="text-xs text-muted-foreground">/ {cat.name_en}</span>
-                          </label>
+                            {type === "open" ? <Globe className="h-4 w-4 shrink-0" /> : type === "category" ? <Users className="h-4 w-4 shrink-0" /> : <Lock className="h-4 w-4 shrink-0" />}
+                            <span className="text-center text-xs leading-tight">{t(`listing.targeting.${type}`)}</span>
+                          </button>
                         );
                       })}
                     </div>
                   </div>
                 )}
-
-                {/* P5: Company search instead of raw UUID input */}
-                {targetingType === "specific_company" && (
-                  <div className="space-y-2 pt-1">
-                    <Label>{t("listing.form.targeting.companySearch.selected")}</Label>
-                    <p className="text-xs text-muted-foreground">{t("listing.form.targeting.companySearch.hint")}</p>
-                    {selectedCompany ? (
-                      <div className="flex items-center justify-between gap-2 rounded-lg border border-secondary/40 bg-secondary/10 px-3 py-2">
-                        <div>
-                          <p className="text-sm font-semibold text-secondary">{selectedCompany.name}</p>
-                          {selectedCompany.city && <p className="text-xs text-muted-foreground">{selectedCompany.city}</p>}
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => { setSelectedCompany(null); setCompanySearch(""); setCompanyResults([]); }}
-                          className="text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="relative">
-                        <Input
-                          type="text"
-                          value={companySearch}
-                          onChange={(e) => setCompanySearch(e.target.value)}
-                          placeholder={t("listing.form.targeting.companySearch.placeholder")}
-                          autoComplete="off"
-                        />
-                        {(companySearching || companyResults.length > 0 || (companySearch.length >= 2 && !companySearching)) && (
-                          <div className="absolute z-10 mt-1 w-full rounded-lg border border-border bg-background shadow-lg max-h-48 overflow-y-auto">
-                            {companySearching ? (
-                              <div className="flex items-center gap-2 px-3 py-3 text-sm text-muted-foreground">
-                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                {t("listing.form.targeting.companySearch.searching")}
-                              </div>
-                            ) : companyResults.length === 0 ? (
-                              <p className="px-3 py-3 text-sm text-muted-foreground">{t("listing.form.targeting.companySearch.empty")}</p>
-                            ) : (
-                              companyResults.map((c) => (
-                                <button
-                                  key={c.id}
-                                  type="button"
-                                  onClick={() => { setSelectedCompany(c); setCompanySearch(""); setCompanyResults([]); }}
-                                  className="w-full flex items-start gap-2 px-3 py-2.5 text-start hover:bg-muted/50 transition-colors"
-                                >
-                                  <div>
-                                    <p className="text-sm font-medium text-foreground">{c.name}</p>
-                                    {c.city && <p className="text-xs text-muted-foreground">{c.city}</p>}
-                                  </div>
-                                </button>
-                              ))
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
-            )}
 
-            {/* Price hint */}
-            <div className="space-y-2">
-              <Label htmlFor="priceHint">{t("listing.form.priceHint")}</Label>
-              <Input
-                id="priceHint"
-                type="number"
-                inputMode="decimal"
-                min={0}
-                step="0.01"
-                value={priceHint}
-                onChange={(e) => setPriceHint(e.target.value)}
-              />
-            </div>
+              {/* Category multi-select (direct + category targeting) */}
+              {saleType === "direct" && targetingType === "category" && (
+                <div className="space-y-1.5">
+                  <Label>{t("listing.form.targeting.categories.label")}</Label>
+                  <p className="text-xs text-muted-foreground">{t("listing.form.targeting.categories.hint")}</p>
+                  <div className="grid grid-cols-1 gap-1.5 max-h-48 overflow-y-auto rounded-lg border border-border p-2">
+                    {(companyCategoryList as CompanyCategory[]).map((cat) => {
+                      const checked = targetCategoryIds.has(cat.id);
+                      return (
+                        <label
+                          key={cat.id}
+                          className={`flex items-center gap-2 rounded-md px-3 py-2 cursor-pointer transition-colors ${checked ? "bg-secondary/10 text-secondary" : "hover:bg-muted/40 text-muted-foreground"}`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => {
+                              setTargetCategoryIds((prev) => {
+                                const next = new Set(prev);
+                                if (next.has(cat.id)) next.delete(cat.id); else next.add(cat.id);
+                                return next;
+                              });
+                            }}
+                            className="h-3.5 w-3.5 accent-secondary shrink-0"
+                          />
+                          <span className="text-xs font-medium">{cat.name_ar}</span>
+                          <span className="text-xs text-muted-foreground">/ {cat.name_en}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
-            {/* Required services */}
-            {(allCapabilities as Capability[]).length > 0 && (
-              <div className="space-y-2">
-                <Label>{t("listing.form.requiredServices")}</Label>
-                <p className="text-xs text-muted-foreground">{t("listing.form.requiredServices.hint")}</p>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {(allCapabilities as Capability[]).map((cap) => {
-                    const checked = requiredServiceIds.has(cap.id);
-                    return (
-                      <label
-                        key={cap.id}
-                        className={`flex cursor-pointer items-start gap-2.5 rounded-lg border p-3 text-sm transition-colors ${
-                          checked
-                            ? "border-primary bg-primary/5 text-foreground"
-                            : "border-border bg-background text-muted-foreground hover:border-muted-foreground/40"
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          className="mt-0.5 h-4 w-4 shrink-0 rounded accent-primary"
-                          checked={checked}
-                          onChange={() => {
-                            setRequiredServiceIds((prev) => {
-                              const next = new Set(prev);
-                              if (next.has(cap.id)) next.delete(cap.id);
-                              else next.add(cap.id);
-                              return next;
-                            });
-                          }}
-                        />
-                        <div className="flex flex-col gap-0.5">
-                          <span className="font-medium text-foreground">{cap.name_ar}</span>
-                          <span className="text-xs text-muted-foreground">{cap.name_en}</span>
-                          {cap.requires_license && (
-                            <span className="mt-0.5 inline-flex items-center gap-1 text-xs text-amber-600">
-                              <Shield className="h-3 w-3" />
-                              {t("license.status.approved")}
-                            </span>
+              {/* Company search (direct + specific_company targeting) */}
+              {saleType === "direct" && targetingType === "specific_company" && (
+                <div className="space-y-1.5">
+                  <Label>{t("listing.form.targeting.companySearch.selected")}</Label>
+                  <p className="text-xs text-muted-foreground">{t("listing.form.targeting.companySearch.hint")}</p>
+                  {selectedCompany ? (
+                    <div className="flex items-center justify-between gap-2 rounded-lg border border-secondary/40 bg-secondary/10 px-3 py-2">
+                      <div>
+                        <p className="text-sm font-semibold text-secondary">{selectedCompany.name}</p>
+                        {selectedCompany.city && <p className="text-xs text-muted-foreground">{selectedCompany.city}</p>}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => { setSelectedCompany(null); setCompanySearch(""); setCompanyResults([]); }}
+                        className="text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded"
+                      >✕</button>
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <Input
+                        type="text"
+                        value={companySearch}
+                        onChange={(e) => setCompanySearch(e.target.value)}
+                        placeholder={t("listing.form.targeting.companySearch.placeholder")}
+                        autoComplete="off"
+                      />
+                      {(companySearching || companyResults.length > 0 || (companySearch.length >= 2 && !companySearching)) && (
+                        <div className="absolute z-10 mt-1 w-full rounded-lg border border-border bg-background shadow-lg max-h-48 overflow-y-auto">
+                          {companySearching ? (
+                            <div className="flex items-center gap-2 px-3 py-3 text-sm text-muted-foreground">
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              {t("listing.form.targeting.companySearch.searching")}
+                            </div>
+                          ) : companyResults.length === 0 ? (
+                            <p className="px-3 py-3 text-sm text-muted-foreground">{t("listing.form.targeting.companySearch.empty")}</p>
+                          ) : (
+                            companyResults.map((c) => (
+                              <button
+                                key={c.id}
+                                type="button"
+                                onClick={() => { setSelectedCompany(c); setCompanySearch(""); setCompanyResults([]); }}
+                                className="w-full flex items-start gap-2 px-3 py-2.5 text-start hover:bg-muted/50 transition-colors"
+                              >
+                                <div>
+                                  <p className="text-sm font-medium text-foreground">{c.name}</p>
+                                  {c.city && <p className="text-xs text-muted-foreground">{c.city}</p>}
+                                </div>
+                              </button>
+                            ))
                           )}
                         </div>
-                      </label>
-                    );
-                  })}
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Required services */}
+              {(allCapabilities as Capability[]).length > 0 && (
+                <div className="space-y-1.5">
+                  <Label>{t("listing.form.requiredServices")}</Label>
+                  <p className="text-xs text-muted-foreground">{t("listing.form.requiredServices.hint")}</p>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {(allCapabilities as Capability[]).map((cap) => {
+                      const checked = requiredServiceIds.has(cap.id);
+                      return (
+                        <label
+                          key={cap.id}
+                          className={`flex cursor-pointer items-start gap-2.5 rounded-lg border p-3 text-sm transition-colors ${
+                            checked ? "border-primary bg-primary/5 text-foreground" : "border-border bg-background text-muted-foreground hover:border-muted-foreground/40"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            className="mt-0.5 h-4 w-4 shrink-0 rounded accent-primary"
+                            checked={checked}
+                            onChange={() => {
+                              setRequiredServiceIds((prev) => {
+                                const next = new Set(prev);
+                                if (next.has(cap.id)) next.delete(cap.id); else next.add(cap.id);
+                                return next;
+                              });
+                            }}
+                          />
+                          <div className="flex flex-col gap-0.5">
+                            <span className="font-medium text-foreground">{cap.name_ar}</span>
+                            <span className="text-xs text-muted-foreground">{cap.name_en}</span>
+                            {cap.requires_license && (
+                              <span className="mt-0.5 inline-flex items-center gap-1 text-xs text-amber-600">
+                                <Shield className="h-3 w-3" />
+                                {t("capability.requires_license")}
+                              </span>
+                            )}
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* ── Section C: Details & Media ── */}
+        <div>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground px-0.5">
+            {t("listing.form.section.details")}
+          </p>
+          <Card className="border-card-border bg-card">
+            <CardContent className="p-4 sm:p-5">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="description">{t("listing.form.description")}</Label>
+                  <Textarea
+                    id="description"
+                    maxLength={500}
+                    rows={5}
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="resize-none"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>{t("listing.form.image")}</Label>
+                  {imagePreview ? (
+                    <div className="relative w-full overflow-hidden rounded-lg border border-border">
+                      <img src={imagePreview} alt="Preview" className="h-36 w-full object-cover sm:h-full sm:max-h-[10rem]" />
+                      <button
+                        type="button"
+                        onClick={clearImage}
+                        className="absolute top-2 end-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-muted/30 py-6 text-muted-foreground transition-colors hover:border-primary/50 hover:bg-primary/5 sm:h-full sm:min-h-[9.5rem]"
+                    >
+                      <ImagePlus className="h-7 w-7" />
+                      <span className="text-sm">{t("listing.form.image.prompt")}</span>
+                      <span className="text-xs opacity-70">{t("listing.form.image.hint")}</span>
+                    </button>
+                  )}
+                  <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
                 </div>
               </div>
-            )}
-
-            {/* Description */}
-            <div className="space-y-2">
-              <Label htmlFor="description">{t("listing.form.description")}</Label>
-              <Textarea
-                id="description"
-                maxLength={500}
-                rows={3}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-            </div>
-
-            {/* Image upload */}
-            <div className="space-y-2">
-              <Label>{t("listing.form.image")}</Label>
-              {imagePreview ? (
-                <div className="relative w-full overflow-hidden rounded-lg border border-border">
-                  <img
-                    src={imagePreview}
-                    alt="Preview"
-                    className="h-44 w-full object-cover"
-                  />
-                  <button
-                    type="button"
-                    onClick={clearImage}
-                    className="absolute top-2 end-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="flex w-full flex-col items-center gap-2 rounded-lg border border-dashed border-border bg-muted/30 py-8 text-muted-foreground transition-colors hover:border-primary/50 hover:bg-primary/5"
-                >
-                  <ImagePlus className="h-8 w-8" />
-                  <span className="text-sm">{t("listing.form.image.prompt")}</span>
-                  <span className="text-xs opacity-70">{t("listing.form.image.hint")}</span>
-                </button>
-              )}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleImageChange}
-              />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
 
         {error && (
           <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
@@ -720,19 +692,10 @@ export function ListingNewPage() {
         )}
 
         <div className="flex gap-3">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setLocation("/dashboard")}
-            disabled={isBusy}
-          >
+          <Button type="button" variant="outline" onClick={() => setLocation("/dashboard")} disabled={isBusy}>
             {t("action.cancel")}
           </Button>
-          <Button
-            type="submit"
-            className="flex-1 gap-2"
-            disabled={isBusy || !materialCategoryId}
-          >
+          <Button type="submit" className="flex-1 gap-2" disabled={isBusy || !materialCategoryId}>
             {isBusy && <Loader2 className="h-4 w-4 animate-spin" />}
             {isUploading
               ? t("listing.form.uploading")
