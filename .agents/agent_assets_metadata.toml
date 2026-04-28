@@ -18,3 +18,9 @@ id = "cysAxs-W8N_KkyIEZdci1"
 uri = "file://tadweerah-implementation-report.md"
 type = "text"
 title = "Tadweerah — Developer Impact Assessment (Dual-Model Architecture)"
+
+[[outputs]]
+id = "_EWuTZ6ukua8tY6uV_LUx"
+uri = "file://tadweerah-system-report.md"
+type = "text"
+title = "Tadweerah — Factual System Report (for Operational Design Partner)"
