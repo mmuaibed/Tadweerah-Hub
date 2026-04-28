@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "GnX8fm0vbqYByosMyOTKh"
+uri = "file://tadweerah-workflows.zip"
+type = "unspecified"
+title = "Tadweerah Workflow Diagrams (draw.io)"
