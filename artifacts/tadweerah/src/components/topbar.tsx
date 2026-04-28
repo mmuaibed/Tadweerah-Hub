@@ -151,17 +151,17 @@ export function Topbar({ showSignOut = false }: { showSignOut?: boolean }) {
 
   return (
     <>
-    <header className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur">
-      <div className="mx-auto flex h-12 w-full max-w-6xl items-center justify-between px-4 sm:px-6">
+    <header className="sticky top-0 z-30 border-b border-border bg-background/90 backdrop-blur">
+      <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-6">
         <Link
           to="/"
-          className="-mx-1.5 flex items-center rounded-lg px-1.5 py-1 transition-opacity hover:opacity-70 active:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+          className="-mx-2 flex items-center rounded-xl px-2 py-1.5 transition-opacity hover:opacity-70 active:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
           aria-label={t("app.name")}
         >
           <img
             src={`${basePath}/logo.png`}
             alt="Tadweerah"
-            className="h-11 w-auto"
+            className="h-14 w-auto"
           />
         </Link>
 

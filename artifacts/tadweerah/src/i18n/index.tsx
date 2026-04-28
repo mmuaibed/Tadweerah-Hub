@@ -20,6 +20,22 @@ const translations: Record<string, Record<Language, string>> = {
     ar: "منصة B2B لعرض المواد القابلة للتدوير والفائضة، وتلقّي العروض الموثّقة، ومتابعة الصفقات حتى الإغلاق.",
     en: "A structured marketplace for companies to list recyclable or surplus materials, receive documented offers, and track deals through to a formal close.",
   },
+  "home.badge": {
+    ar: "منصة سعودية لربط منتجي النفايات بالشركات المرخصة",
+    en: "Saudi platform connecting waste producers with licensed companies",
+  },
+  "home.headline": {
+    ar: "معاً نحو منظومة نفايات صناعية ذكية .. محوكمة .. مستدامة",
+    en: "Together toward a smart, governed, and sustainable industrial waste ecosystem",
+  },
+  "home.subheadline": {
+    ar: "كل قيمة تستحق أن تعود",
+    en: "Every value deserves to be recovered",
+  },
+  "home.description": {
+    ar: "منصة B2B لعرض المواد القابلة للتدوير وتلقي العروض الموثقة حتى الإغلاق",
+    en: "A B2B platform to list recyclable materials, receive documented offers, and close deals",
+  },
   "home.trust_line": {
     ar: "نبني سوقاً أكثر كفاءة وشفافية لإدارة المواد القابلة للتدوير",
     en: "Building a more efficient and transparent market for recyclable materials",
@@ -40,16 +56,28 @@ const translations: Record<string, Record<Language, string>> = {
 
   "home.why.title": { ar: "لماذا تدويرة؟", en: "Why Tadweerah?" },
   "home.why.p1": {
-    ar: "سوق موحد وشفاف للمواد القابلة للتدوير",
-    en: "A unified, transparent market for recyclable materials",
+    ar: "منصة موحدة ومحوكمة لإدارة المواد القابلة للتدوير",
+    en: "A unified, governed platform for recyclable materials management",
   },
   "home.why.p2": {
-    ar: "كل عرض موثّق — كل قرار مبني على بيانات",
-    en: "Every offer documented — every decision data-driven",
+    ar: "كل عملية موثّقة وقابلة للتتبع بالكامل",
+    en: "Every operation documented and fully traceable",
   },
   "home.why.p3": {
-    ar: "صفقات واضحة يمكن تتبّعها حتى الإغلاق",
-    en: "Clear deals trackable from start to close",
+    ar: "تقارير امتثال جاهزة للجهات التنظيمية",
+    en: "Compliance reports ready for regulatory bodies",
+  },
+  "home.why.p4": {
+    ar: "لوحة تحكم واحدة لمتابعة جميع عملياتك",
+    en: "One dashboard to track all your operations",
+  },
+  "home.why.p5": {
+    ar: "خصوصية بيانات عالية تحمي عملياتك",
+    en: "Enterprise-grade data privacy protecting your business",
+  },
+  "home.why.p6": {
+    ar: "الوصول إلى سوق أوسع بضغطة زر",
+    en: "Access to a wider market at the click of a button",
   },
 
   "home.for.title": { ar: "لمن هذه المنصة؟", en: "Who Is This For?" },

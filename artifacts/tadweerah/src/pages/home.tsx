@@ -1,10 +1,34 @@
 import { SignInButton, SignUpButton } from "@clerk/react";
-import { Recycle, ShoppingBag, Truck, ArrowLeft, ArrowRight, CheckCircle2 } from "lucide-react";
+import {
+  Recycle,
+  ShoppingBag,
+  Truck,
+  ArrowLeft,
+  ArrowRight,
+  Building2,
+  FileCheck,
+  BadgeCheck,
+  LayoutDashboard,
+  Lock,
+  TrendingUp,
+  type LucideIcon,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AppLayout } from "@/components/app-layout";
 import { useT } from "@/i18n";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+type WhyPoint = { key: string; icon: LucideIcon; bold?: boolean };
+
+const WHY_POINTS: WhyPoint[] = [
+  { key: "home.why.p1", icon: Building2, bold: true },
+  { key: "home.why.p2", icon: FileCheck },
+  { key: "home.why.p3", icon: BadgeCheck },
+  { key: "home.why.p4", icon: LayoutDashboard },
+  { key: "home.why.p5", icon: Lock },
+  { key: "home.why.p6", icon: TrendingUp },
+];
 
 const USER_GROUPS = [
   {
@@ -24,8 +48,6 @@ const USER_GROUPS = [
   },
 ] as const;
 
-const WHY_POINTS = ["home.why.p1", "home.why.p2", "home.why.p3"] as const;
-
 export function HomePage() {
   const { t, lang } = useT();
   const Arrow = lang === "ar" ? ArrowLeft : ArrowRight;
@@ -33,22 +55,37 @@ export function HomePage() {
   return (
     <AppLayout>
       {/* ── Hero ── */}
-      <section className="flex flex-col items-center pt-2 pb-4 text-center sm:pt-4 sm:pb-5">
-        <span className="mb-2.5 inline-flex items-center rounded-full border border-border/60 bg-card/80 px-4 py-1 text-[10px] font-medium text-muted-foreground tracking-wide">
-          {t("app.tagline")}
+      <section className="flex flex-col items-center pt-2 pb-4 text-center sm:pt-3">
+
+        {/* Saudi badge — light green */}
+        <span className="mb-3 inline-flex items-center rounded-full border border-green-200 bg-green-50 px-4 py-1 text-[11px] font-semibold text-green-800 tracking-wide">
+          {t("home.badge")}
         </span>
 
+        {/* Logo */}
         <img
           src={`${basePath}/logo.png`}
           alt="Tadweerah | تدويرة"
-          className="mb-3 w-[6rem] max-w-[55vw] h-auto sm:w-[9rem] md:w-[11rem]"
+          className="mb-3 w-[5rem] max-w-[50vw] h-auto sm:w-[7rem] md:w-[8.5rem]"
           style={{ mixBlendMode: "multiply" }}
         />
 
-        <p className="max-w-lg text-pretty text-sm text-muted-foreground sm:text-base leading-relaxed">
-          {t("app.description")}
+        {/* Main headline */}
+        <h1 className="max-w-xl text-xl font-bold text-foreground leading-snug sm:text-2xl">
+          {t("home.headline")}
+        </h1>
+
+        {/* Sub-line */}
+        <p className="mt-1 text-sm font-semibold text-secondary sm:text-base">
+          {t("home.subheadline")}
         </p>
 
+        {/* B2B description — one line, strong contrast */}
+        <p className="mt-2 max-w-lg text-sm font-medium text-foreground/80">
+          {t("home.description")}
+        </p>
+
+        {/* CTAs */}
         <div className="mt-3 flex flex-col gap-2 sm:flex-row">
           <SignUpButton mode="modal">
             <Button size="lg" className="gap-2 px-7">
@@ -63,13 +100,14 @@ export function HomePage() {
           </SignInButton>
         </div>
 
-        <p className="mt-2 text-xs text-muted-foreground/70 leading-relaxed">
+        {/* Trust line */}
+        <p className="mt-2 text-xs text-muted-foreground/70">
           {t("home.trust_line")}
         </p>
       </section>
 
       {/* ── 2-column: Why + For ── */}
-      <section className="grid gap-5 pb-6 lg:grid-cols-2">
+      <section className="grid gap-5 pb-5 lg:grid-cols-2">
 
         {/* Column 1 → visual RIGHT in Arabic RTL — "Why Tadweerah?" */}
         <div className="flex flex-col gap-2.5">
@@ -77,12 +115,21 @@ export function HomePage() {
             {t("home.why.title")}
           </h2>
 
-          <div className="rounded-xl border border-border bg-card p-4">
-            <ul className="space-y-3">
-              {WHY_POINTS.map((key) => (
-                <li key={key} className="flex items-start gap-3">
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-secondary" />
-                  <span className="text-sm font-medium text-foreground leading-snug">
+          {/* Card stretches to fill column height on lg */}
+          <div className="rounded-xl border border-border bg-card p-4 lg:flex-1">
+            <ul className="flex flex-col gap-2.5 lg:h-full lg:justify-between lg:gap-0">
+              {WHY_POINTS.map(({ key, icon: Icon, bold }) => (
+                <li key={key} className="flex items-center gap-3">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                    <Icon className="h-3.5 w-3.5" />
+                  </span>
+                  <span
+                    className={`text-sm leading-snug ${
+                      bold
+                        ? "font-semibold text-foreground"
+                        : "font-medium text-foreground/85"
+                    }`}
+                  >
                     {t(key)}
                   </span>
                 </li>
@@ -100,9 +147,9 @@ export function HomePage() {
           {USER_GROUPS.map(({ icon: Icon, titleKey, valueKey }) => (
             <div
               key={titleKey}
-              className="flex items-center gap-3.5 rounded-xl border border-border bg-card px-4 py-3 transition-shadow hover:shadow-sm"
+              className="flex items-center gap-3.5 rounded-xl border border-border bg-card px-4 py-3.5 transition-shadow hover:shadow-sm"
             >
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                 <Icon className="h-5 w-5" />
               </span>
               <div className="min-w-0">
