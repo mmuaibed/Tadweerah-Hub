@@ -152,7 +152,7 @@ export function Topbar({ showSignOut = false }: { showSignOut?: boolean }) {
   return (
     <>
     <header className="sticky top-0 z-30 border-b border-border bg-background/90 backdrop-blur">
-      <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-6">
+      <div className="relative mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-6">
         <Link
           to="/"
           className="-mx-2 flex items-center rounded-xl px-2 py-1.5 transition-opacity hover:opacity-70 active:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
@@ -164,6 +164,15 @@ export function Topbar({ showSignOut = false }: { showSignOut?: boolean }) {
             className="h-14 w-auto"
           />
         </Link>
+
+        {/* Brand slogan — centered, home page only, large screens only */}
+        {location === "/" && (
+          <span className="pointer-events-none absolute inset-0 hidden items-center justify-center lg:flex">
+            <span className="text-[11px] font-semibold italic tracking-widest text-muted-foreground/55 select-none">
+              كل قيمة تستحق أن تعود
+            </span>
+          </span>
+        )}
 
         <div className="flex items-center gap-2">
           <a

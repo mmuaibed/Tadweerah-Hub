@@ -55,38 +55,33 @@ export function HomePage() {
   return (
     <AppLayout>
       {/* ── Hero ── */}
-      <section className="flex flex-col items-center pt-2 pb-4 text-center sm:pt-3">
+      <section className="flex flex-col items-center pt-6 pb-5 text-center sm:pt-8">
 
-        {/* Saudi badge — light green */}
-        <span className="mb-3 inline-flex items-center rounded-full border border-green-200 bg-green-50 px-4 py-1 text-[11px] font-semibold text-green-800 tracking-wide">
+        {/* Saudi badge — stronger green, larger pill */}
+        <span className="mb-5 inline-flex items-center rounded-full border-2 border-green-300 bg-green-100 px-5 py-2 text-xs font-bold text-green-900 tracking-wide">
           {t("home.badge")}
         </span>
 
-        {/* Logo — visual anchor, 25–35% larger */}
+        {/* Logo — primary visual anchor, +40–50% */}
         <img
           src={`${basePath}/logo.png`}
           alt="Tadweerah | تدويرة"
-          className="mb-4 w-[6.5rem] max-w-[55vw] h-auto sm:w-[9rem] md:w-[11rem]"
+          className="mb-6 w-[9rem] max-w-[60vw] h-auto sm:w-[13rem] md:w-[15rem]"
           style={{ mixBlendMode: "multiply" }}
         />
 
-        {/* Main headline — one line on desktop, slightly smaller */}
+        {/* Main headline — one line on desktop */}
         <h1 className="text-lg font-bold text-foreground leading-snug sm:whitespace-nowrap sm:text-xl">
           {t("home.headline")}
         </h1>
 
-        {/* Emotional sub-line */}
-        <p className="mt-1.5 text-sm font-semibold text-secondary sm:text-base">
-          {t("home.subheadline")}
-        </p>
-
         {/* B2B description — one line, strong contrast */}
-        <p className="mt-1.5 max-w-lg text-sm font-medium text-foreground/80">
+        <p className="mt-2 max-w-lg text-sm font-medium text-foreground/80">
           {t("home.description")}
         </p>
 
         {/* CTAs */}
-        <div className="mt-2.5 flex flex-col gap-2 sm:flex-row">
+        <div className="mt-3 flex flex-col gap-2 sm:flex-row">
           <SignUpButton mode="modal">
             <Button size="lg" className="gap-2 px-7">
               {t("action.getstarted")}
@@ -101,8 +96,8 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* ── 2-column: Why + For ── */}
-      <section className="grid gap-5 pb-5 lg:grid-cols-2">
+      {/* ── 2-column: Why + For ── pushed slightly lower ── */}
+      <section className="mt-2 grid gap-5 pb-5 lg:grid-cols-2">
 
         {/* Column 1 → visual RIGHT in Arabic RTL — "Why Tadweerah?" */}
         <div className="flex flex-col gap-2.5">
