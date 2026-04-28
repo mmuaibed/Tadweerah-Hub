@@ -28,7 +28,7 @@ import {
   assertUuid,
 } from "../middlewares/errorHandler";
 import { logAudit } from "../lib/audit";
-import { notifyPrivateDealInvitation } from "../lib/notify";
+import { notifyPrivateDealInvitation, notifyOfferRejected } from "../lib/notify";
 import { listingRef as makeListingRef } from "../lib/listing-ref";
 
 // Multer storage — saves to <project-root>/public/uploads/
@@ -671,8 +671,16 @@ router.post(
 );
 
 /**
- * DELETE /listings/:waste_listing_id — producer deletes their own listing.
- * Only allowed when the listing is still open and has no non-withdrawn offers.
+ * DELETE /listings/:waste_listing_id — producer closes their own open listing.
+ *
+ * Body (optional): { forceClose?: boolean }
+ *
+ * Behaviour:
+ *   - No pending offers       → close immediately (status = 'closed'), returns updated listing.
+ *   - Pending offers present  → if forceClose is falsy, returns 409 with
+ *       { requiresConfirmation: true, pendingOffersCount, message }.
+ *   - forceClose = true       → transaction: close listing + reject all pending offers +
+ *       fire notifications to affected buyers + audit log.
  */
 router.delete(
   "/listings/:waste_listing_id",
@@ -681,6 +689,7 @@ router.delete(
   async (req, res) => {
     const id = assertUuid(req.params.waste_listing_id, "waste_listing_id");
     const { company } = req as AuthedCompanyRequest;
+    const forceClose = req.body?.forceClose === true;
 
     const [existing] = await db
       .select()
@@ -688,47 +697,94 @@ router.delete(
       .where(eq(wasteListingsTable.id, id))
       .limit(1);
 
-    if (!existing) {
-      throw new HttpError(404, "NotFound", "Listing not found");
-    }
-    if (existing.company_id !== company.id) {
-      throw new HttpError(403, "Forbidden", "Not the owner of this listing");
-    }
-    if (existing.status !== "open") {
-      throw new HttpError(409, "InvalidState", "Only open listings can be deleted");
-    }
+    if (!existing) throw new HttpError(404, "NotFound", "Listing not found");
+    if (existing.company_id !== company.id) throw new HttpError(403, "Forbidden", "Not the owner of this listing");
+    if (existing.status !== "open") throw new HttpError(409, "InvalidState", "Only open listings can be closed");
 
-    // Block deletion if any non-withdrawn offers exist
-    const [pendingOffer] = await db
-      .select({ id: listingOffersTable.id })
+    const listingRef = makeListingRef(id);
+
+    // Fetch all non-withdrawn offers (need buyer info for notifications)
+    const pendingOffers = await db
+      .select({ id: listingOffersTable.id, buyer_company_id: listingOffersTable.buyer_company_id })
       .from(listingOffersTable)
       .where(
         and(
           eq(listingOffersTable.waste_listing_id, id),
           ne(listingOffersTable.status, "withdrawn"),
         ),
-      )
-      .limit(1);
-
-    if (pendingOffer) {
-      throw new HttpError(
-        409,
-        "HasPendingOffers",
-        "Cannot delete a listing that has active or pending offers",
       );
+
+    if (pendingOffers.length > 0 && !forceClose) {
+      // Signal the frontend that user confirmation is required before force-close
+      res.status(409).json({
+        requiresConfirmation: true,
+        pendingOffersCount: pendingOffers.length,
+        message: "listing_has_pending_offers",
+      });
+      return;
     }
 
-    await db.delete(wasteListingsTable).where(eq(wasteListingsTable.id, id));
+    if (pendingOffers.length > 0 && forceClose) {
+      // Atomic: close listing + reject all pending offers
+      await db.transaction(async (tx) => {
+        await tx
+          .update(wasteListingsTable)
+          .set({ status: "closed" })
+          .where(eq(wasteListingsTable.id, id));
+        await tx
+          .update(listingOffersTable)
+          .set({ status: "rejected", rejection_reason: "listing_closed" })
+          .where(
+            and(
+              eq(listingOffersTable.waste_listing_id, id),
+              ne(listingOffersTable.status, "withdrawn"),
+            ),
+          );
+      });
 
-    void logAudit({
-      userId: (req as AuthedCompanyRequest).userId,
-      companyId: company.id,
-      action: "listing.deleted",
-      entityType: "listing",
-      entityId: id,
-    });
+      // Notify each affected buyer (fire-and-forget)
+      for (const offer of pendingOffers) {
+        void notifyOfferRejected({
+          buyerCompanyId: offer.buyer_company_id,
+          listingId: id,
+          listingRef,
+          reason: "listing_closed",
+        });
+      }
 
-    res.status(204).send();
+      void logAudit({
+        userId: (req as AuthedCompanyRequest).userId,
+        companyId: company.id,
+        action: "listing.force_closed",
+        entityType: "listing",
+        entityId: id,
+        details: { cancelledOffersCount: pendingOffers.length },
+      });
+    } else {
+      // No pending offers — close directly
+      await db
+        .update(wasteListingsTable)
+        .set({ status: "closed" })
+        .where(eq(wasteListingsTable.id, id));
+
+      void logAudit({
+        userId: (req as AuthedCompanyRequest).userId,
+        companyId: company.id,
+        action: "listing.closed",
+        entityType: "listing",
+        entityId: id,
+      });
+    }
+
+    const [closed] = await db
+      .select(baseSelect)
+      .from(wasteListingsTable)
+      .innerJoin(companiesTable, eq(companiesTable.id, wasteListingsTable.company_id))
+      .leftJoin(materialCategoriesTable, eq(materialCategoriesTable.id, wasteListingsTable.material_category_id))
+      .where(eq(wasteListingsTable.id, id))
+      .limit(1);
+
+    res.json(serialize(closed!, [], []));
   },
 );
 

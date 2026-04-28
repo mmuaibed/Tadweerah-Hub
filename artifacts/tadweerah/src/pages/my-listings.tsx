@@ -3,7 +3,6 @@ import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useListMyListings,
-  useCloseWasteListing,
   getListMyListingsQueryKey,
   type WasteListing,
 } from "@workspace/api-client-react";
@@ -13,6 +12,14 @@ import { AppLayout } from "@/components/app-layout";
 import { EmptyState } from "@/components/empty-state";
 import { ListingCard } from "@/components/listing-card";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+} from "@/components/ui/alert-dialog";
 import { useT } from "@/i18n";
 
 type TabFilter = "open" | "closed";
@@ -60,10 +67,21 @@ export function MyListingsPage() {
   const statMyTurn    = allListings.filter(l => l.deal_status && ["active","payment_confirmed"].includes(l.deal_status)).length;
   const statCompleted = allListings.filter(l => l.deal_status === "completed").length;
 
-  const { mutate: closeListing, isPending: isClosing } = useCloseWasteListing();
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [confirmListing, setConfirmListing] = useState<WasteListing | null>(null);
   const [closeError, setCloseError] = useState<string | null>(null);
+  const [isClosing, setIsClosing] = useState(false);
+
+  const [pendingOffersOpen, setPendingOffersOpen] = useState(false);
+  const [pendingOffersCount, setPendingOffersCount] = useState(0);
+  const [pendingListingId, setPendingListingId] = useState<string | null>(null);
+  const [isForceClosing, setIsForceClosing] = useState(false);
+
+  function invalidateListings() {
+    queryClient.invalidateQueries({ queryKey: getListMyListingsQueryKey({ status: "open" }) });
+    queryClient.invalidateQueries({ queryKey: getListMyListingsQueryKey({ status: "closed" }) });
+    queryClient.invalidateQueries({ queryKey: getListMyListingsQueryKey() });
+  }
 
   function openCloseConfirm(listing: WasteListing) {
     setConfirmId(listing.id);
@@ -71,25 +89,65 @@ export function MyListingsPage() {
     setCloseError(null);
   }
 
-  function handleConfirmClose() {
+  async function callCloseListing(listingId: string, forceClose = false) {
+    const res = await fetch(`/api/listings/${listingId}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ forceClose }),
+    });
+
+    if (res.ok) return { ok: true as const };
+    const body = await res.json().catch(() => ({}));
+    if (res.status === 409 && body.requiresConfirmation) {
+      return { ok: false as const, requiresConfirmation: true, pendingOffersCount: body.pendingOffersCount as number };
+    }
+    return { ok: false as const, requiresConfirmation: false };
+  }
+
+  async function handleConfirmClose() {
     if (!confirmId) return;
     setCloseError(null);
-    closeListing(
-      { wasteListingId: confirmId },
-      {
-        onSuccess: () => {
-          setConfirmId(null);
-          setConfirmListing(null);
-          queryClient.invalidateQueries({ queryKey: getListMyListingsQueryKey({ status: "open" }) });
-          queryClient.invalidateQueries({ queryKey: getListMyListingsQueryKey({ status: "closed" }) });
-        },
-        onError: () => {
-          setConfirmId(null);
-          setConfirmListing(null);
-          setCloseError(t("myListings.closeError"));
-        },
-      },
-    );
+    setIsClosing(true);
+    try {
+      const result = await callCloseListing(confirmId);
+      if (result.ok) {
+        setConfirmId(null);
+        setConfirmListing(null);
+        invalidateListings();
+      } else if (result.requiresConfirmation) {
+        setConfirmId(null);
+        setConfirmListing(null);
+        setPendingListingId(confirmId);
+        setPendingOffersCount(result.pendingOffersCount ?? 0);
+        setPendingOffersOpen(true);
+      } else {
+        setConfirmId(null);
+        setConfirmListing(null);
+        setCloseError(t("myListings.closeError"));
+      }
+    } finally {
+      setIsClosing(false);
+    }
+  }
+
+  async function handleForceClose() {
+    if (!pendingListingId) return;
+    setIsForceClosing(true);
+    try {
+      const result = await callCloseListing(pendingListingId, true);
+      if (result.ok) {
+        setPendingOffersOpen(false);
+        setPendingListingId(null);
+        invalidateListings();
+      } else {
+        setPendingOffersOpen(false);
+        setPendingListingId(null);
+        setCloseError(t("myListings.closeError"));
+      }
+    } finally {
+      setIsForceClosing(false);
+    }
   }
 
   const pendingCount = confirmListing?.offer_count ?? 0;
@@ -112,6 +170,7 @@ export function MyListingsPage() {
         </Link>
       }
     >
+      {/* Initial close confirm dialog */}
       <ConfirmDialog
         open={confirmId !== null}
         onOpenChange={(open) => { if (!open) { setConfirmId(null); setConfirmListing(null); } }}
@@ -122,6 +181,37 @@ export function MyListingsPage() {
         isPending={isClosing}
         destructive
       />
+
+      {/* Pending-offers 2-button dialog */}
+      <AlertDialog open={pendingOffersOpen} onOpenChange={(open) => { if (!open && !isForceClosing) setPendingOffersOpen(false); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("listing.close.pendingOffers.title")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("listing.close.pendingOffers.desc").replace("{count}", String(pendingOffersCount))}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              disabled={isForceClosing}
+              onClick={() => setPendingOffersOpen(false)}
+              className="w-full sm:w-auto"
+            >
+              {t("listing.close.pendingOffers.review")}
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={isForceClosing}
+              onClick={() => void handleForceClose()}
+              className="w-full sm:w-auto"
+            >
+              {isForceClosing && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
+              {t("listing.close.pendingOffers.forceClose")}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {closeError && (
         <div className="mb-3 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">

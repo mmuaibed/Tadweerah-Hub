@@ -3,7 +3,6 @@ import { useParams, Link, useLocation, useSearch } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useGetWasteListing,
-  useCloseWasteListing,
   useGetMe,
   useGetListingOffers,
   useGetOffersSummary,
@@ -54,6 +53,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+} from "@/components/ui/alert-dialog";
 import { AppLayout } from "@/components/app-layout";
 import { EmptyState } from "@/components/empty-state";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -1073,6 +1080,10 @@ export function ListingDetailPage() {
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [closeError, setCloseError] = useState<string | null>(null);
+  const [isClosing, setIsClosing] = useState(false);
+  const [pendingOffersDialogOpen, setPendingOffersDialogOpen] = useState(false);
+  const [pendingOffersCount, setPendingOffersCount] = useState(0);
+  const [isForceClosing, setIsForceClosing] = useState(false);
   const [pendingOfferCount, setPendingOfferCount] = useState(0);
   const [refCopied, setRefCopied] = useState(false);
   const [dealOverride, setDealOverride] = useState<DealInfo | null>(null);
@@ -1086,8 +1097,6 @@ export function ListingDetailPage() {
     isError,
     queryKey,
   } = useGetWasteListing(wasteListingId);
-
-  const { mutate: closeListing, isPending: isClosing } = useCloseWasteListing();
 
   const myCompanyId = me?.company?.id;
   const isOwner = !!myCompanyId && listing?.company_id === myCompanyId;
@@ -1124,22 +1133,58 @@ export function ListingDetailPage() {
     queryClient.invalidateQueries({ queryKey: getListMyListingsQueryKey() });
   }
 
-  function handleConfirmClose() {
+  async function callCloseListing(listingId: string, forceClose = false) {
+    const res = await fetch(`/api/listings/${listingId}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ forceClose }),
+    });
+    if (res.ok) return { ok: true as const };
+    const body = await res.json().catch(() => ({}));
+    if (res.status === 409 && body.requiresConfirmation) {
+      return { ok: false as const, requiresConfirmation: true, pendingOffersCount: body.pendingOffersCount as number };
+    }
+    return { ok: false as const, requiresConfirmation: false };
+  }
+
+  async function handleConfirmClose() {
     setCloseError(null);
-    closeListing(
-      { wasteListingId },
-      {
-        onSuccess: (updated) => {
-          setConfirmOpen(false);
-          invalidateListing();
-          if (updated.status === "closed") navigate("/listings/mine");
-        },
-        onError: () => {
-          setConfirmOpen(false);
-          setCloseError(t("myListings.closeError"));
-        },
-      },
-    );
+    setIsClosing(true);
+    try {
+      const result = await callCloseListing(wasteListingId);
+      if (result.ok) {
+        setConfirmOpen(false);
+        invalidateListing();
+        navigate("/listings/mine");
+      } else if (result.requiresConfirmation) {
+        setConfirmOpen(false);
+        setPendingOffersCount(result.pendingOffersCount ?? 0);
+        setPendingOffersDialogOpen(true);
+      } else {
+        setConfirmOpen(false);
+        setCloseError(t("myListings.closeError"));
+      }
+    } finally {
+      setIsClosing(false);
+    }
+  }
+
+  async function handleForceClose() {
+    setIsForceClosing(true);
+    try {
+      const result = await callCloseListing(wasteListingId, true);
+      if (result.ok) {
+        setPendingOffersDialogOpen(false);
+        invalidateListing();
+        navigate("/listings/mine");
+      } else {
+        setPendingOffersDialogOpen(false);
+        setCloseError(t("myListings.closeError"));
+      }
+    } finally {
+      setIsForceClosing(false);
+    }
   }
 
   const backButton = (
@@ -1193,17 +1238,51 @@ export function ListingDetailPage() {
 
   return (
     <AppLayout showSignOut title={materialLabel} subtitle={ref} actions={backButton}>
-      {/* F1: Close listing confirm with pending count */}
+      {/* F1: Close listing confirm */}
       <ConfirmDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
         title={t("listing.close.confirm.title")}
         description={closeDialogDesc}
         confirmLabel={t("listing.close.confirm.action")}
-        onConfirm={handleConfirmClose}
+        onConfirm={() => void handleConfirmClose()}
         isPending={isClosing}
         destructive
       />
+
+      {/* Pending-offers 2-button dialog */}
+      <AlertDialog
+        open={pendingOffersDialogOpen}
+        onOpenChange={(open) => { if (!open && !isForceClosing) setPendingOffersDialogOpen(false); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("listing.close.pendingOffers.title")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("listing.close.pendingOffers.desc").replace("{count}", String(pendingOffersCount))}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              disabled={isForceClosing}
+              onClick={() => setPendingOffersDialogOpen(false)}
+              className="w-full sm:w-auto"
+            >
+              {t("listing.close.pendingOffers.review")}
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={isForceClosing}
+              onClick={() => void handleForceClose()}
+              className="w-full sm:w-auto"
+            >
+              {isForceClosing && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
+              {t("listing.close.pendingOffers.forceClose")}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {closeError && (
         <div className="mb-4 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">

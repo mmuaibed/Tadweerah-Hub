@@ -265,6 +265,14 @@ const translations: Record<string, Record<Language, string>> = {
   },
   "listing.close.confirm.action": { ar: "إغلاق العرض نهائياً", en: "Close Listing Permanently" },
 
+  "listing.close.pendingOffers.title": { ar: "يوجد عروض لم يُبَت فيها", en: "There are pending offers" },
+  "listing.close.pendingOffers.desc": {
+    ar: "يوجد {count} عرض لم يُبَت فيه. يمكنك مراجعة العروض وقبول أحدها، أو إغلاق الإعلان وإلغاء جميع العروض.",
+    en: "There are {count} pending offer(s). You can review them and accept one, or close the listing and cancel all offers.",
+  },
+  "listing.close.pendingOffers.review": { ar: "راجع العروض", en: "Review Offers" },
+  "listing.close.pendingOffers.forceClose": { ar: "أغلق وألغِ الكل", en: "Close & Cancel All" },
+
   "listing.offer.cta": { ar: "تقديم عرض سعر", en: "Submit a Price Offer" },
   "listing.offer.hint": {
     ar: "قريباً ستتمكن من المنافسة مع مشترين آخرين وإرسال أفضل سعر مباشرةً إلى المنتج.",

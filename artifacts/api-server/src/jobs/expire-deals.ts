@@ -13,21 +13,17 @@ import { and, eq, lt, or, sql } from "drizzle-orm";
 import { logger } from "../lib/logger";
 import { logAudit } from "../lib/audit";
 
-const ACTIVE_EXPIRY_DAYS = 30;
-const PAYMENT_CONFIRMED_EXPIRY_DAYS = 7;
-const DISPATCHED_EXPIRY_HOURS = 48;
+const EXPIRY_THRESHOLDS = {
+  active:            31 * 24 * 60 * 60 * 1000,
+  payment_confirmed:  8 * 24 * 60 * 60 * 1000,
+  dispatched:        72 * 60 * 60 * 1000,
+} as const;
 
 export async function expireStaleDeals(): Promise<void> {
   const now = new Date();
-  const activeThreshold = new Date(
-    now.getTime() - ACTIVE_EXPIRY_DAYS * 24 * 60 * 60 * 1000,
-  );
-  const paymentThreshold = new Date(
-    now.getTime() - PAYMENT_CONFIRMED_EXPIRY_DAYS * 24 * 60 * 60 * 1000,
-  );
-  const dispatchThreshold = new Date(
-    now.getTime() - DISPATCHED_EXPIRY_HOURS * 60 * 60 * 1000,
-  );
+  const activeThreshold    = new Date(now.getTime() - EXPIRY_THRESHOLDS.active);
+  const paymentThreshold   = new Date(now.getTime() - EXPIRY_THRESHOLDS.payment_confirmed);
+  const dispatchThreshold  = new Date(now.getTime() - EXPIRY_THRESHOLDS.dispatched);
 
   try {
     const expired = await db
