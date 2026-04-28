@@ -54,29 +54,29 @@ export function HomePage() {
 
   return (
     <AppLayout>
-      {/* ── Hero ── */}
-      <section className="flex flex-col items-center pt-4 pb-4 text-center sm:pt-5">
+      {/* ── Hero ── badge → logo → headline → CTAs only ── */}
+      <section className="flex flex-col items-center pt-4 pb-3 text-center sm:pt-5">
 
-        {/* Saudi badge — closer to top, strong green */}
+        {/* Saudi badge */}
         <span className="mb-3 inline-flex items-center rounded-full border-2 border-green-300 bg-green-100 px-5 py-2 text-xs font-bold text-green-900 tracking-wide">
           {t("home.badge")}
         </span>
 
-        {/* Logo — primary visual anchor */}
+        {/* Logo — primary visual anchor, more breathing room below */}
         <img
           src={`${basePath}/logo.png`}
           alt="Tadweerah | تدويرة"
-          className="mb-4 w-[9rem] max-w-[60vw] h-auto sm:w-[13rem] md:w-[15rem]"
+          className="mb-5 w-[9rem] max-w-[60vw] h-auto sm:w-[13rem] md:w-[15rem]"
           style={{ mixBlendMode: "multiply" }}
         />
 
-        {/* Main headline — one line on desktop */}
+        {/* Main headline */}
         <h1 className="text-lg font-bold text-foreground leading-snug sm:whitespace-nowrap sm:text-xl">
           {t("home.headline")}
         </h1>
 
-        {/* CTAs — directly under headline */}
-        <div className="mt-2.5 flex flex-col gap-2 sm:flex-row">
+        {/* CTAs — clearly separated from headline */}
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row">
           <SignUpButton mode="modal">
             <Button size="lg" className="gap-2 px-7">
               {t("action.getstarted")}
@@ -89,15 +89,10 @@ export function HomePage() {
             </Button>
           </SignInButton>
         </div>
-
-        {/* B2B description — supporting detail below CTA */}
-        <p className="mt-2 max-w-lg text-sm font-medium text-foreground/75">
-          {t("home.description")}
-        </p>
       </section>
 
       {/* ── 2-column: Why + For ── */}
-      <section className="mt-1 grid gap-5 pb-4 lg:grid-cols-2">
+      <section className="mt-1 grid gap-5 pb-3 lg:grid-cols-2">
 
         {/* Column 1 → visual RIGHT in Arabic RTL — "Why Tadweerah?" */}
         <div className="flex flex-col gap-2.5">
@@ -153,6 +148,11 @@ export function HomePage() {
         </div>
 
       </section>
+
+      {/* B2B description — bottom of page, informational only */}
+      <p className="pb-3 text-center text-xs text-muted-foreground/65">
+        {t("home.description")}
+      </p>
     </AppLayout>
   );
 }
