@@ -76,7 +76,7 @@ export function HomePage() {
         </h1>
 
         {/* CTAs — clearly separated from headline */}
-        <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+        <div className="mt-6 flex flex-col gap-2 sm:flex-row">
           <SignUpButton mode="modal">
             <Button size="lg" className="gap-2 px-7">
               {t("action.getstarted")}
@@ -150,7 +150,7 @@ export function HomePage() {
       </section>
 
       {/* B2B description — bottom of page, informational only */}
-      <p className="pb-3 text-center text-xs text-muted-foreground/65">
+      <p className="mt-2 pb-3 text-center text-sm text-muted-foreground/80">
         {t("home.description")}
       </p>
     </AppLayout>
