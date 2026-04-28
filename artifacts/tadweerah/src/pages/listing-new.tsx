@@ -727,13 +727,15 @@ export function ListingNewPage() {
             </Button>
           )}
 
-          {currentStep < TOTAL_STEPS - 1 ? (
+          {currentStep < TOTAL_STEPS - 1 && (
             <Button type="button" className="flex-1 gap-2" onClick={advanceStep}>
               {t("action.next")}
               <ChevronRight className="h-4 w-4" />
             </Button>
-          ) : (
-            <Button type="submit" className="flex-1 gap-2" disabled={isBusy || !materialCategoryId}>
+          )}
+
+          {currentStep === TOTAL_STEPS - 1 && (
+            <Button type="submit" className="flex-1 gap-2 bg-secondary hover:bg-secondary/90" disabled={isBusy || !materialCategoryId}>
               {isBusy && <Loader2 className="h-4 w-4 animate-spin" />}
               {isUploading
                 ? t("listing.form.uploading")
