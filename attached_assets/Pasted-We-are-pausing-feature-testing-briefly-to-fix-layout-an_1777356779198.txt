@@ -1,0 +1,162 @@
+We are pausing feature testing briefly to fix layout and UX density issues before continuing the offer flow.
+
+Please review the attached screenshots and assess the layout across the app before implementing.
+
+## Main concern
+
+Several pages are functionally good but visually too tall. Important content is spread across 2–3 scroll screens when it should fit more intelligently into one clear page or a shorter, more balanced layout.
+
+We do NOT want to reduce visual quality. We want smarter spacing, better grouping, and clearer hierarchy.
+
+---
+
+## Pages to review
+
+### 1) Public home page
+
+The content is good, but the layout is too tall.
+
+Goal:
+
+* Keep the same content
+* Reduce vertical spacing
+* Make the first impression fit better in one screen
+* Keep it elegant and clean
+
+---
+
+### 2) User dashboard / main logged-in page
+
+The dashboard works, but the cards and spacing feel too spread out.
+
+Goal:
+
+* Make the page more compact
+* Keep cards readable
+* Avoid unnecessary scrolling
+* Ensure the user sees the main available actions quickly
+
+---
+
+### 3) Add listing page
+
+The logical order is good, but the form is too long and currently feels like 2–3 pages.
+
+Please propose a better layout.
+
+Possible directions:
+
+* Use two-column grouping on desktop
+* Group related fields together
+* Reduce excessive vertical spacing
+* Keep image upload visually clear
+* Keep publish button visible or easier to reach
+
+Important:
+Do not remove fields.
+Do not change backend logic.
+Do not change validation.
+
+---
+
+### 4) Listing form — “Certified / معتمد” badge
+
+Please explain why the orange “معتمد” badge appears only under “Licensed Waste Management”.
+
+Questions:
+
+* What does it mean exactly?
+* Why is it shown only there?
+* Is this tied to license requirements?
+* Could it confuse users into thinking other capabilities are not trusted?
+
+Please recommend whether to:
+
+* keep it
+* rename it
+* move it
+* or remove it
+
+Do not change it until you explain the logic.
+
+---
+
+### 5) My Listings page
+
+The active / closed segmentation is good.
+
+However, the dashboard counters may create confusion:
+
+* “Active deals”
+* “Waiting for you”
+* “Completed”
+
+Please clarify what each means.
+
+UX improvement request:
+If possible, clicking a counter should filter the page to show only the related items.
+
+Example:
+
+* Click “Waiting for you” → show only listings/deals requiring user action
+* Click “Active deals” → show only active deals
+* Click “Completed” → show completed deals
+
+If this is low-effort and safe, propose implementation.
+If it adds complexity, explain and defer.
+
+---
+
+## General UX direction
+
+Please review all major pages and identify any layout that:
+
+* requires too much scrolling unnecessarily
+* hides important actions too low
+* spreads related fields too far apart
+* makes the user feel the page is incomplete or heavy
+
+Pages to include:
+
+* Home
+* Dashboard
+* Add Listing
+* My Listings
+* Marketplace
+* Listing Detail
+* My Offers
+* Deal Panel
+* Reports
+* Company Profile
+
+---
+
+## Constraints
+
+* No backend changes unless absolutely necessary
+* No business logic changes
+* No charter rule changes
+* No new features unless clearly low-risk
+* Keep RTL quality high
+* Keep mobile responsiveness
+* Do not make the UI cramped
+* Preserve the visual identity
+
+---
+
+## Output required before implementation
+
+Please return:
+
+1. Root cause of the layout issue
+2. Pages affected
+3. Proposed fixes by page
+4. Which fixes are safe to execute now
+5. Which fixes should be deferred
+6. Estimated difficulty
+7. Any risk to current functionality
+
+Then wait for confirmation before implementing anything major.
+
+Goal:
+Make Tadweerah feel polished, compact, and easy to use before we continue testing the offer flow.
