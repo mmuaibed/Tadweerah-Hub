@@ -25,7 +25,7 @@ const translations: Record<string, Record<Language, string>> = {
     en: "Saudi platform connecting waste producers with licensed companies",
   },
   "home.headline": {
-    ar: "معاً نحو منظومة نفايات صناعية ذكية .. محوكمة .. مستدامة",
+    ar: "معاً نحو منظومة نفايات صناعية ذكية، محوكمة، ومستدامة",
     en: "Together toward a smart, governed, and sustainable industrial waste ecosystem",
   },
   "home.subheadline": {

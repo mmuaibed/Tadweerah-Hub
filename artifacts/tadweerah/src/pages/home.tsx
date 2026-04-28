@@ -62,31 +62,31 @@ export function HomePage() {
           {t("home.badge")}
         </span>
 
-        {/* Logo */}
+        {/* Logo — visual anchor, 25–35% larger */}
         <img
           src={`${basePath}/logo.png`}
           alt="Tadweerah | تدويرة"
-          className="mb-3 w-[5rem] max-w-[50vw] h-auto sm:w-[7rem] md:w-[8.5rem]"
+          className="mb-4 w-[6.5rem] max-w-[55vw] h-auto sm:w-[9rem] md:w-[11rem]"
           style={{ mixBlendMode: "multiply" }}
         />
 
-        {/* Main headline */}
-        <h1 className="max-w-xl text-xl font-bold text-foreground leading-snug sm:text-2xl">
+        {/* Main headline — one line on desktop, slightly smaller */}
+        <h1 className="text-lg font-bold text-foreground leading-snug sm:whitespace-nowrap sm:text-xl">
           {t("home.headline")}
         </h1>
 
-        {/* Sub-line */}
-        <p className="mt-1 text-sm font-semibold text-secondary sm:text-base">
+        {/* Emotional sub-line */}
+        <p className="mt-1.5 text-sm font-semibold text-secondary sm:text-base">
           {t("home.subheadline")}
         </p>
 
         {/* B2B description — one line, strong contrast */}
-        <p className="mt-2 max-w-lg text-sm font-medium text-foreground/80">
+        <p className="mt-1.5 max-w-lg text-sm font-medium text-foreground/80">
           {t("home.description")}
         </p>
 
         {/* CTAs */}
-        <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+        <div className="mt-2.5 flex flex-col gap-2 sm:flex-row">
           <SignUpButton mode="modal">
             <Button size="lg" className="gap-2 px-7">
               {t("action.getstarted")}
@@ -99,11 +99,6 @@ export function HomePage() {
             </Button>
           </SignInButton>
         </div>
-
-        {/* Trust line */}
-        <p className="mt-2 text-xs text-muted-foreground/70">
-          {t("home.trust_line")}
-        </p>
       </section>
 
       {/* ── 2-column: Why + For ── */}
