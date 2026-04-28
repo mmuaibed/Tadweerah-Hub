@@ -1,8 +1,17 @@
 # Tadweerah — Final 18-Workflow Baseline v2
-**Version:** 2.1 (post-audit corrections)  
+**Version:** 2.2 (actor decisions accepted — April 28, 2026)  
 **Date:** April 28, 2026  
-**Status:** Authoritative Pre-Implementation Baseline — Ready for Formal Approval  
+**Status:** Authoritative Baseline — Alignment-Validated  
 **Scope:** Marketplace Track (MVP) + Contract Track (Architecture Confirmed, Implementation Deferred)
+
+---
+
+## Decision Log
+
+| Date | Decision | Impact |
+|---|---|---|
+| April 28, 2026 | **Completion actor**: buyer triggers `dispatched → completed` (via confirm-receipt). Producer-triggered completion model rejected. | WF-09, WF-12 updated |
+| April 28, 2026 | **Payment reference entry**: producer enters `payment_reference` and confirms payment in a single step. Separate buyer-entry flow rejected. | WF-10 updated |
 
 ---
 
@@ -595,8 +604,10 @@ A listing may have **only one accepted offer / active deal at a time**. On accep
 |---|---|
 | `active` → `payment_confirmed` | Producer (listing company member) only |
 | `payment_confirmed` → `dispatched` | Producer only |
-| `dispatched` → `completed` | Producer only |
+| `dispatched` → `completed` | **Buyer** only (confirm-receipt) |
 | Any → `expired` | System (expiry job, hourly) — no user action |
+
+> **Decision (April 28, 2026):** Completion is buyer-triggered. Buyer confirms receipt of goods, advancing the deal to `completed`. This matches the implemented API (`POST /deals/:id/confirm-receipt`, buyer-only) and deal panel UI.
 
 ### Deal State Machine
 
@@ -605,7 +616,7 @@ A listing may have **only one accepted offer / active deal at a time**. On accep
 | `active` | Offer accepted | **31 days** (FIX-07) | `expired` |
 | `payment_confirmed` | Producer confirms payment | **8 days** (FIX-07) | `expired` |
 | `dispatched` | Producer marks dispatch | **72 hours** (FIX-07) | `expired` |
-| `completed` | Producer confirms receipt | Never | Terminal |
+| `completed` | **Buyer** confirms receipt | Never | Terminal |
 | `expired` | Expiry job | N/A | Terminal |
 
 > **Change from v1:** active was 30d → **31d**; payment_confirmed was 7d → **8d**; dispatched was 48h → **72h**.
@@ -613,11 +624,10 @@ A listing may have **only one accepted offer / active deal at a time**. On accep
 ### Happy Path
 
 1. Deal created (`active`) when producer accepts an offer
-2. Buyer sends payment outside platform; enters `payment_reference` + optional proof document
-3. Producer reviews payment reference + proof; confirms → `payment_confirmed`
-4. Producer arranges transport; marks dispatch → `dispatched`
-5. Material received; producer marks completion → `completed` (terminal)
-6. Deal summary report available to both parties
+2. Producer enters `payment_reference` (bank transfer ID) + optional proof URL and confirms payment received → `payment_confirmed`
+3. Producer arranges transport; marks dispatch → `dispatched`
+4. Material arrives; **buyer** confirms receipt → `completed` (terminal)
+5. Deal summary report available to both parties
 
 ### Contact Visibility After Deal Is Active
 
@@ -673,26 +683,25 @@ A listing may have **only one accepted offer / active deal at a time**. On accep
 
 ## WF-10 — Payment Confirmation
 
-**Actor:** Buyer (provides reference) + Producer (confirms receipt)  
+**Actor:** Producer (enters reference and confirms)  
 **Phase:** ✅ MVP / Built  
 **Entry point:** Deal panel (active status)  
 **Phase 0 refs:** FIX-04 (payment proof document storage)
+
+> **Decision (April 28, 2026):** Producer enters `payment_reference` and confirms payment in a single step. There is no separate buyer-side reference-entry step. The deal panel shows the payment_reference input field to the producer only when `deal.status = 'active'`.
 
 ### Permissions
 
 | Action | Who |
 |---|---|
-| Enter payment reference | Buyer (company member) |
-| Upload payment proof | Buyer (company member) |
-| Confirm payment received | Producer (company member) only |
+| Enter payment reference + confirm | Producer (company member) only |
+| Upload payment proof URL | Producer (company member) only |
 
 ### Happy Path
 
-1. Buyer completes bank transfer / SADAD / other off-platform payment
-2. Buyer enters `payment_reference` in deal panel (text field, required before producer can confirm)
-3. Buyer optionally uploads payment proof document (stored in Object Storage post FIX-04)
-4. Producer reviews reference + document; confirms receipt
-5. Deal → `payment_confirmed`; expiry clock resets to 8-day window (FIX-07)
+1. Buyer completes bank transfer / SADAD / other off-platform payment and shares reference with producer out-of-band
+2. Producer enters `payment_reference` in deal panel (required) + optional `payment_proof_url`
+3. Producer confirms → Deal → `payment_confirmed`; expiry clock resets to 8-day window (FIX-07)
 
 ### Data Required at Confirmation
 
@@ -763,7 +772,7 @@ A listing may have **only one accepted offer / active deal at a time**. On accep
 
 ## WF-12 — Completion & Receipt Confirmation
 
-**Actor:** Producer  
+**Actor:** Buyer  
 **Phase:** ✅ MVP / Built  
 **Entry point:** Deal panel (dispatched status)
 
@@ -771,38 +780,39 @@ A listing may have **only one accepted offer / active deal at a time**. On accep
 
 | Action | Who |
 |---|---|
-| Mark deal complete | Producer (company member) only — in MVP |
+| Mark deal complete (confirm receipt) | **Buyer** (company member) only |
 | View deal summary | Both parties to the deal |
 
-> Note: In MVP, completion is producer-triggered. A future enhancement could allow buyer to trigger completion, or require mutual confirmation.
+> **Decision (April 28, 2026):** Completion is buyer-triggered via `POST /deals/:id/confirm-receipt`. This gives the buyer the final confirmation step, which is semantically correct: the buyer confirms they have received the goods. Producer-triggered completion is not supported.
 
 ### Happy Path
 
 1. Material arrives at buyer's site
-2. Producer marks deal: "تأكيد الاستلام / Complete" → deal → `completed` (terminal, irreversible)
-3. `completed_at` timestamp recorded
-4. Both parties notified: "الصفقة مكتملة"
+2. Buyer marks deal: "تأكيد الاستلام / Confirm Receipt" → deal → `completed` (terminal, irreversible)
+3. `received_at` timestamp recorded
+4. Producer notified: "الصفقة مكتملة"
 5. Deal summary report becomes available (WF-13)
 
 ### State Created / Updated
 
 | Table | Action | Key Fields |
 |---|---|---|
-| `deals` | UPDATE | status = 'completed', completed_at = now() |
-| `audit_log` | INSERT | action = 'deal.completed', severity = 'info' |
+| `deals` | UPDATE | status = 'completed', received_at = now() |
+| `audit_log` | INSERT | action = 'deal.receipt_confirmed', severity = 'info' |
 
 ### Governance / Audit
 
 - Completion is **irreversible** once set — no status rollback
 - Full deal audit trail is frozen at completion (no further mutations)
 - Deal summary report is a read-only snapshot generated from deal data
+- Column: `received_at` stores the completion timestamp (no separate `completed_at` column)
 
 ### Edge Cases
 
 | Scenario | Behaviour |
 |---|---|
-| Producer marks completed before actual delivery | Accepted — platform does not verify physical receipt in MVP |
-| Buyer disputes that material was not received | Issue report (WF-16); out of scope for platform logic |
+| Buyer confirms receipt before actual delivery | Accepted — platform does not verify physical receipt in MVP |
+| Producer disputes that buyer has not received | Issue report (WF-16); out of scope for platform logic |
 
 ---
 

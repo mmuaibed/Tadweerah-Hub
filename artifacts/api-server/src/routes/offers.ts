@@ -424,6 +424,17 @@ router.post(
       );
     }
 
+    // ── Terms & Conditions gate ───────────────────────────────────────────────
+    // Buyer must have accepted T&C during onboarding before submitting any offer.
+    if (!company.accepted_terms_at) {
+      throw new HttpError(
+        403,
+        "TermsRequired",
+        "You must accept the Terms & Conditions during onboarding before submitting offers.",
+      );
+    }
+    // ── End T&C gate ──────────────────────────────────────────────────────────
+
     // ── Targeting gate ────────────────────────────────────────────────────────
     // Enforce that this company is allowed to bid on the listing.
     if (listing.targeting_type === "specific_company") {
