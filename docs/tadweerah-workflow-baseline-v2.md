@@ -1,7 +1,7 @@
 # Tadweerah — Final 18-Workflow Baseline v2
-**Version:** 2.0  
+**Version:** 2.1 (post-audit corrections)  
 **Date:** April 28, 2026  
-**Status:** Authoritative Pre-Implementation Baseline  
+**Status:** Authoritative Pre-Implementation Baseline — Ready for Formal Approval  
 **Scope:** Marketplace Track (MVP) + Contract Track (Architecture Confirmed, Implementation Deferred)
 
 ---
@@ -11,13 +11,13 @@
 This is the single authoritative workflow specification for Tadweerah before developer implementation planning.  
 It supersedes all prior workflow descriptions and incorporates:
 
-- Phase 0 foundation fixes (all items FIX-01 through FIX-08)
-- Updated deal expiry thresholds (active 31d / payment_confirmed 8d / dispatched 72h)
-- Updated listing close behavior with pending-offer confirmation flow
-- Company logo upload as optional company profile field
-- All confirmed contract-track architectural decisions
-- Latest settlement schema corrections (weighbridge, variance, regulatory waste codes)
-- Governance, audit, storage, and admin notes within each workflow
+- Phase 0 foundation fixes (FIX-01 through FIX-08), referenced explicitly in every affected workflow
+- Updated deal expiry thresholds: active **31d** / payment_confirmed **8d** / dispatched **72h**
+- Updated listing close behavior with pending-offer two-step confirmation flow (FIX-06)
+- Company logo upload as optional company profile field (for future branded reporting)
+- All confirmed contract-track architectural decisions, including full end-to-end flow
+- Latest settlement schema corrections (variance, weighbridge, regulatory waste codes)
+- Explicit governance (permissions, immutability, audit, SLA) in every workflow
 
 ---
 
@@ -27,44 +27,90 @@ It supersedes all prior workflow descriptions and incorporates:
 
 | Track | Purpose | Status |
 |---|---|---|
-| **Marketplace Track** | Listing → Offer → Deal → Completion | MVP Built |
-| **Contract Track** | Standing contract → Load request → Dispatch → Settlement | Architecture confirmed, implementation deferred |
+| **Marketplace Track** | Listing → Offer → Deal → Completion | ✅ MVP Built |
+| **Contract Track** | Standing contract → Load request → Dispatch → Settlement | 📋 Architecture confirmed, implementation deferred |
 
-**Architectural rule:** Deal objects do not reference Contract objects. Contract objects do not reference Listing or Deal objects. Users and companies are shared across tracks. Reporting is track-scoped.
+**Isolation rule (immutable):** Deal objects contain no contract references. Contract objects contain no deal, listing, or offer references. Users and companies are shared across both tracks. Reporting is strictly track-scoped.
 
 ### User Roles (MVP)
 
 | Role | Description |
 |---|---|
-| **Producer** | Creates listings, reviews offers, accepts deals |
-| **Buyer / Recycler** | Browses marketplace, submits offers |
-| **Carrier / Transporter** | Future phase — transport coordination |
-| **Admin** | Internal Tadweerah team — oversight via API key-protected routes |
-| **Regulator** | Future phase — read-only compliance reporting |
+| **Producer** | Creates listings, reviews and accepts offers, manages deal lifecycle |
+| **Buyer / Recycler** | Browses marketplace, submits and manages offers |
+| **Carrier / Transporter** | 📋 Future phase — transport coordination and contract-track dispatch |
+| **Admin** | Tadweerah internal team — oversight via ADMIN_API_KEY-protected routes |
+| **Regulator** | 📋 Future phase — read-only compliance view |
 
 ### Phase Readiness Labels
 
-- **✅ MVP / Built** — Implemented and confirmed in current codebase  
-- **🔧 Pilot Enhancement** — Confirmed for implementation before pilot launch  
-- **📋 Future Phase** — Agreed architecture, deferred implementation  
+- **✅ MVP / Built** — Implemented and confirmed in current codebase
+- **🔧 Pilot Enhancement** — Confirmed scope for implementation before pilot launch
+- **📋 Future Phase** — Agreed architecture, deferred implementation
 - **❓ Needs Decision** — Open item requiring product decision before build
 
 ---
 
 ## Foundation Layer (Phase 0) — Status
 
-The following foundation fixes were applied before v2 baseline is considered stable:
-
 | Fix ID | Item | Status |
 |---|---|---|
-| FIX-01 | Clerk production keys (pk_live_) | ⚠️ Pending — awaiting user to set pk_live_ / sk_live_ in Replit Secrets |
-| FIX-02 | Audit log severity levels (info/warn/error) | ✅ Done |
-| FIX-03 | GET /me resolved via company_members join | ✅ Done |
-| FIX-04 | Object Storage migration (multer.diskStorage → GCS) | ⚠️ Pending implementation |
-| FIX-05 | company.type column cleanup & NULL companies | ⚠️ Pending — awaiting user confirmation on 2 NULL-type test records |
-| FIX-06 | DELETE /listings/:id — close + pending-offer confirmation | ✅ Done |
-| FIX-07 | Expire-deals job — 31d / 8d / 72h thresholds | ✅ Done |
-| FIX-08 | Admin router — companies, issue-reports, audit-log behind ADMIN_API_KEY | ✅ Done |
+| FIX-01 | Clerk production keys (pk_live_ / sk_live_) | ⚠️ **BLOCKING** — awaiting user to set in Replit Secrets |
+| FIX-02 | Audit log severity levels (info / warn / error) | ✅ Done |
+| FIX-03 | GET /me resolved via company_members join (not owner_user_id direct lookup) | ✅ Done |
+| FIX-04 | File storage migration: multer.diskStorage → Replit Object Storage (GCS) | ⚠️ **BLOCKING** — 5 existing files on ephemeral disk |
+| FIX-05 | company.type column: 2 NULL-type test records identified; column cleanup pending | ⚠️ Pending user confirmation — non-blocking for production logic |
+| FIX-06 | DELETE /listings/:id — close + two-step pending-offer confirmation flow | ✅ Done |
+| FIX-07 | Expire-deals job thresholds: 31d / 8d / 72h | ✅ Done |
+| FIX-08 | Admin router: companies, issue-reports, audit-log behind ADMIN_API_KEY | ✅ Done |
+
+---
+
+## State Machine Reference
+
+### Offer Status (`listing_offers.status`)
+
+```
+pending ──→ accepted  (producer accepts)
+        ──→ rejected  (producer rejects, with reason)
+        ──→ withdrawn (buyer withdraws before decision)
+```
+
+Immutability rule: once `accepted`, an offer cannot be changed. Once a deal exists, no offer on that listing can be withdrawn or modified.
+
+### Deal Status (`deals.status`)
+
+```
+active ──────────────→ payment_confirmed ──→ dispatched ──→ completed (terminal)
+  │                           │                  │
+  └──→ expired (31d)          └──→ expired (8d)   └──→ expired (72h)
+```
+
+All `expired` transitions are terminal and irreversible. `completed` is terminal and irreversible.  
+Expiry job runs **hourly** (FIX-07).
+
+### Listing Status (`waste_listings.status`)
+
+```
+open ──→ closed (manual producer action, or force-close with pending offers — FIX-06)
+```
+
+Listing status is **not** automatically changed by deal creation or deal expiry. A listing with status `open` may have an active deal running in parallel.
+
+### Contract Status (`contracts.status`) — Future Build
+
+```
+draft ──→ active ──→ suspended ──→ active (re-enabled by admin)
+                ──→ completed (terminal)
+                ──→ terminated (terminal)
+```
+
+### Load Status (`contract_loads.status`) — Future Build
+
+```
+requested ──→ dispatched ──→ received ──→ settled (terminal)
+                                     ──→ disputed ──→ resolved by admin ──→ settled
+```
 
 ---
 
@@ -72,233 +118,276 @@ The following foundation fixes were applied before v2 baseline is considered sta
 
 **Actor:** New user (any role)  
 **Phase:** ✅ MVP / Built  
-**Entry point:** Landing page → Sign Up
+**Entry point:** Landing page → "ابدأ الآن" or "تسجيل الدخول"  
+**Phase 0 refs:** FIX-01 (Clerk keys), FIX-03 (GET /me), FIX-04 (Object Storage for documents), FIX-05 (company.type)
+
+### Permissions
+
+| Action | Who |
+|---|---|
+| Register | Any unauthenticated user |
+| Complete onboarding | Authenticated user with no linked company |
+| View onboarding | System (enforced via App.tsx route guard) |
 
 ### Happy Path
 
-1. User lands on tadweerah.com, clicks "ابدأ الآن" or "تسجيل الدخول"
-2. Clerk handles identity verification (email / Google / Apple / social)
-3. On first sign-in, `/onboarding` is rendered (enforced by App.tsx route guard checking `me.company`)
-4. User enters:
-   - Company name
-   - Company type (producer / buyer) — **Note: column renamed to `type` in DB; see FIX-05**
-   - City
-   - Contact phone
+1. User visits tadweerah.com, clicks "ابدأ الآن" or "تسجيل الدخول"
+2. Clerk handles identity (email / Google / Apple / social) — requires `pk_live_` keys in production (FIX-01)
+3. On first sign-in: App.tsx route guard checks `GET /api/me` (resolved via `company_members` join — FIX-03); if `me.company` is null → redirect to `/onboarding`
+4. User completes onboarding form:
+   - Company name (required)
+   - Company type: `producer` or `buyer` (required; stored as `companies.type` — FIX-05)
+   - City (required)
+   - Contact phone (required)
    - Commercial registration number (optional)
-   - License number + license document upload (optional — stored in Object Storage post FIX-04)
-   - Company logo upload (optional — for future branded reporting)
-   - Accepted terms at (timestamp recorded on acceptance of T&C)
-5. System creates company record, creates company_members record linking user to company
-6. User redirected to `/dashboard`
+   - License number + license document upload (optional; stored in Object Storage post FIX-04)
+   - Company logo (optional; stored in Object Storage post FIX-04; used in future branded reporting)
+   - Accept Terms & Conditions checkbox (required; `accepted_terms_at` timestamp recorded on acceptance)
+5. System creates `companies` row and `company_members` row (role: `owner`)
+6. Redirect to `/dashboard`
 
 ### State Created / Updated
 
-- `companies` row (name, type, city, contact_phone, commercial_registration, license_number, license_document_url, logo_url, accepted_terms_at)
-- `company_members` row (user_id, company_id, role: 'owner')
+| Table | Action | Key Fields |
+|---|---|---|
+| `companies` | INSERT | name, type, city, contact_phone, commercial_registration, license_number, license_document_url, logo_url, accepted_terms_at, license_status = 'pending' |
+| `company_members` | INSERT | user_id, company_id, role = 'owner' |
+| `audit_log` | INSERT | action = 'company.created', severity = 'info' |
 
-### Governance / Audit Notes
+### Governance / Audit
 
-- `accepted_terms_at` timestamp is immutable once set — records T&C acceptance moment
-- T&C text must explicitly state: producer is not obligated to accept highest offer; platform bears no liability for selection decisions (see WF-08)
-- License status begins as `pending` until admin approval (see WF-15)
+- `accepted_terms_at` is immutable once set — records the exact moment T&C was accepted
+- T&C text must state: producer is not obligated to accept the highest offer; platform bears no liability for selection decisions; payment disputes are between parties only
+- `license_status` begins as `pending` — only admin can advance it (see WF-15)
+- Duplicate company name: permitted (no uniqueness constraint on name in MVP)
+- Company type cannot be changed after onboarding (enforced in both API and UI)
 
-### Storage Notes
+### Storage Notes (FIX-04)
 
-- License document: stored in Replit Object Storage (post FIX-04); path stored in `companies.license_document_url`
-- Company logo: stored in Object Storage; path stored in `companies.logo_url`; used in future branded PDF reporting
+- License document and company logo: stored in Replit Object Storage (GCS); paths stored as `license_document_url` and `logo_url` in `companies`
+- Until FIX-04 is live: document upload fields disabled in UI
 
-### Admin Notes
+### Admin Notes (FIX-08)
 
-- Admin can view all companies via `GET /admin/companies` (ADMIN_API_KEY required)
-- Admin can update license status via `PATCH /admin/companies/:id/license-status`
-- Companies with `type IS NULL` (two test records identified) must be resolved before production data cleanup
+- `GET /admin/companies` lists all companies with license status and type
+- `PATCH /admin/companies/:id/license-status` advances license from pending → approved / rejected / suspended
+- 2 companies with `type IS NULL` identified in DB — test records; resolve before production (FIX-05, non-blocking)
 
 ### Edge Cases
 
 | Scenario | Behaviour |
 |---|---|
-| User signs in a second time, company already exists | Route guard passes, redirected to /dashboard |
-| User exits onboarding mid-way | Data not saved; re-shown onboarding on next login |
-| Duplicate company name | Allowed — no uniqueness constraint at company name |
-| Clerk key is pk_test_ in production | Authentication works but triggers dev-key warnings in logs; blocks launch (FIX-01) |
+| User returns after completing onboarding | Route guard passes, redirected to /dashboard |
+| User exits onboarding mid-way | Nothing saved; re-shown full onboarding on next login |
+| Clerk key is pk_test_ in production | Auth works but triggers dev-key rate limits; **launch blocker** (FIX-01) |
+| GET /me fails to resolve company | Route guard re-shows onboarding; FIX-03 ensures correct join |
 
 ---
 
 ## WF-02 — Company Profile & Permissions
 
-**Actor:** Company owner / member  
+**Actor:** Company owner or member  
 **Phase:** ✅ MVP / Built  
-**Entry point:** /company/profile
+**Entry point:** /company/profile  
+**Phase 0 refs:** FIX-04 (logo upload), FIX-05 (type field display), FIX-08 (admin license management)
+
+### Permissions
+
+| Action | Who |
+|---|---|
+| View profile | Any company member |
+| Edit company details | Owner only |
+| Change company type | **Nobody** — locked post-onboarding |
+| Upload logo | Owner only |
+| Invite / remove members | Owner only |
+| Change license status | Admin only (via WF-15) |
 
 ### Happy Path
 
 1. User navigates to Company Profile
-2. Can view: company name, type, city, contact phone, commercial registration, license info, logo
-3. Can edit: all fields except company type (locked post-onboarding for MVP)
-4. Company logo: optional upload; displayed in profile and future branded reports
-5. Members tab: owner can invite members, set role (owner / member), remove members
-6. Capabilities tab: company declares operational capabilities (waste types handled, vehicle types, etc.)
+2. Reads: company name, type, city, contact phone, commercial registration, license status, logo
+3. Owner edits fields (except type); saves; `companies` row updated; audit log entry created
+4. Company logo: optional upload (PNG/JPG/WebP, max 5MB); displayed in profile and deal summary report header (WF-13)
+5. Members tab: owner invites users by email, assigns role (owner / member), or removes
+6. Capabilities tab: company declares waste types handled, transport capacity (used in future targeting)
 
 ### State Created / Updated
 
-- `companies` row updated (name, city, contact_phone, logo_url, license fields)
-- `company_members` rows for member management
-- `company_capabilities` rows (if capability module implemented)
+| Table | Action | Key Fields |
+|---|---|---|
+| `companies` | UPDATE | name, city, contact_phone, logo_url, license fields |
+| `company_members` | INSERT / DELETE | user_id, company_id, role |
+| `audit_log` | INSERT | action = 'company.updated' or 'member.added' / 'member.removed', severity = 'info' |
 
-### Governance / Audit Notes
+### Governance / Audit
 
-- Company type change blocked — prevents misrepresentation post-onboarding
-- License status changes must originate from admin (not self-service)
-- All member changes logged in audit trail with userId and companyId
+- Every edit by a member is logged with `userId`, `companyId`, `action`, `timestamp`
+- Company type change: blocked at API (403) regardless of caller
+- License status changes must originate from admin — no self-service pathway
+- Last-write wins for concurrent edits; no conflict resolution in MVP
 
-### Storage Notes
+### Storage Notes (FIX-04)
 
-- Logo upload: POST /api/listings/:id/image pattern to be replicated for company logo once Object Storage is active (FIX-04)
-- Maximum logo size: 5MB; accepted formats: JPG, PNG, WebP
+- Logo upload: follows same Object Storage pattern as listing image upload
+- Until FIX-04 live: logo field hidden in UI; note shown to user
 
 ### Admin Notes
 
-- License status visible and patchable from admin panel (WF-15)
-- Company capabilities visible to admin for onboarding review
+- License status visible in admin companies list (WF-15)
+- Admin can suspend a company, which blocks that company from submitting offers (eligibility check — WF-06)
 
 ### Edge Cases
 
 | Scenario | Behaviour |
 |---|---|
-| Member tries to change company type | Blocked in UI and API (403) |
-| Logo upload before Object Storage is live | Blocked; UI shows "coming soon" or upload removed until FIX-04 complete |
-| Two members attempt to edit profile simultaneously | Last-write wins; no conflict resolution for MVP |
+| Member (non-owner) attempts edit | 403 — permission denied |
+| Logo upload before FIX-04 is live | UI hides upload; text note shown |
+| Admin suspends company while member is browsing | Next API call requiring active company returns 403 |
 
 ---
 
 ## WF-03 — Create Listing
 
-**Actor:** Producer  
+**Actor:** Producer (company owner or member)  
 **Phase:** ✅ MVP / Built  
-**Entry point:** /listings/new
+**Entry point:** /listings/new  
+**Phase 0 refs:** FIX-04 (listing image storage), FIX-06 (close behavior)
 
-### Eligibility Check (Applied at POST /offers, NOT at POST /listings)
+### Permissions
 
-> **Immutable rule:** POST /listings has zero eligibility checks. Eligibility is enforced only at POST /offers (buyer side). Producers can always create listings regardless of license status.
+| Action | Who |
+|---|---|
+| Create listing | Any member of a producer company |
+| Edit listing (pre-offer) | Listing owner's company only |
+| Close listing | Any member of the listing's company only |
+| View listing (marketplace) | All authenticated buyers (open) or targeted companies (private) |
+
+> **Immutable eligibility rule:** `POST /listings` has **zero eligibility checks**. Any producer can create a listing regardless of license status. Eligibility is enforced exclusively at `POST /offers` on the buyer side. This rule cannot be changed without explicit product decision.
 
 ### Happy Path
 
 1. Producer navigates to "إنشاء إعلان"
 2. Fills form:
-   - Material category (from lookup table)
-   - Waste description
-   - Quantity + unit (from unit_options lookup)
-   - Sale type (open market / private targeting)
-   - Pickup city / district / notes (simple text — no map)
-   - Optional listing image (stored in Object Storage post FIX-04)
-   - Optional: target specific companies (if sale_type = private)
-3. System creates listing with status = 'open'
-4. If private targeting: only targeted companies see listing in marketplace
-5. Producer redirected to listing detail or my-listings page
+   - Material category (required; from `material_categories` lookup)
+   - Waste description (required)
+   - Quantity (required; > 0)
+   - Unit (required; from `unit_options` lookup)
+   - Sale type: `open` or `private` (required)
+   - Pickup city / district / notes (city required; district + notes optional)
+   - Listing image (optional; stored in Object Storage post FIX-04)
+   - If `private`: select target companies
+3. System creates listing, `status = 'open'`
+4. Redirect to listing detail
 
 ### State Created / Updated
 
-- `waste_listings` row (status: 'open', all fields including material_category_id, unit_option_id, sale_type)
-- Audit log: `listing.created`
+| Table | Action | Key Fields |
+|---|---|---|
+| `waste_listings` | INSERT | status = 'open', material_category_id, unit_option_id, sale_type, quantity, city, district, pickup_notes |
+| `audit_log` | INSERT | action = 'listing.created', severity = 'info' |
 
 ### Notifications Triggered
 
-- None on creation (public listing)
-- If private targeting: notification to each targeted company (future enhancement)
+- Open listing: none on creation (discovery via marketplace)
+- Private listing: notification to each targeted company (🔧 Pilot Enhancement — not yet built)
 
-### Governance / Audit Notes
+### Governance / Audit
 
-- Listing reference (e.g., TDW-2026-A3F2) derived from listing ID — no separate sequence needed
-- Listing images and documents stored in Object Storage (FIX-04)
-- Audit trail: creation, close, force-close all logged
+- Listing reference `TDW-YYYY-XXXXXX` derived from first 6 chars of listing UUID — no separate sequence
+- Images stored in Object Storage; paths in `waste_listings.image_url`
+- Audit events: `listing.created`, `listing.closed`, `listing.force_closed`
 
 ### Admin Notes
 
-- Admin can view all listings via platform stats endpoint
-- Material categories and unit options manageable without code via admin API (WF-15)
+- Admin can view all listings via platform stats
+- Material categories and unit options updatable without code via admin API (WF-15)
 
 ### Edge Cases
 
 | Scenario | Behaviour |
 |---|---|
-| Producer submits without category | Validation error — category required |
-| Producer creates listing with 0 quantity | Validation error |
-| Producer's license not approved | Listing is created anyway (eligibility check is on buyer side only) |
-| Duplicate listing (same material/quantity) | Allowed — no deduplication |
+| Quantity = 0 | Validation error (422) |
+| No material category selected | Validation error (422) |
+| Producer's license not approved | Listing created — no eligibility check on producer side |
+| Private listing with no targets selected | API allows creation; warning shown in UI; listing invisible to all buyers |
+| Duplicate listing (same material/quantity) | Allowed — no deduplication in MVP |
 
 ---
 
 ## WF-04 — Company Targeting & Listing Visibility
 
 **Actor:** Producer  
-**Phase:** 🔧 Pilot Enhancement (partial — sale_type field in DB, full targeting UI deferred)  
-**Entry point:** Listing creation form (targeting section)
+**Phase:** 🔧 Pilot Enhancement (sale_type field in DB; targeting UI and enforcement deferred)  
+**Entry point:** Listing creation form → targeting section
 
-### Confirmed Design
+### Visibility Rules
 
-| sale_type | Visibility |
+| `sale_type` | Who Can See |
 |---|---|
-| `open` | All authenticated buyers see listing in marketplace |
-| `private` | Only explicitly targeted companies see listing |
+| `open` | All authenticated buyers with a linked company |
+| `private` | Only companies explicitly added to the target list |
 
-### Happy Path (Open Market)
+### Happy Path — Open Listing
 
-- Producer leaves sale_type = 'open'
-- Listing appears in marketplace for all buyers
+- Producer leaves `sale_type = 'open'`
+- Listing appears in marketplace for all eligible buyers
 
-### Happy Path (Private Targeting)
+### Happy Path — Private Listing
 
-1. Producer selects sale_type = 'private'
-2. Searches for and selects target companies from registered company list
-3. System records targeting relationships
-4. Targeted companies receive notification and see listing in "private offers" section
-5. Non-targeted companies cannot see the listing
+1. Producer selects `sale_type = 'private'`
+2. Searches registered companies by name; adds targets
+3. Targeting relationships recorded (`listing_targets` or equivalent join table)
+4. Targeted companies notified: "إعلان خاص متاح لك"
+5. Only targeted companies see listing in marketplace
 
-### Governance / Audit Notes
+### Governance / Audit
 
-- Targeting decisions logged: who was targeted, when
-- Future: targeting audit for compliance reporting
+- Targeting decisions logged: `listing.targeted`, includes list of company IDs added
+- Targeting list is immutable once listing is published — no add/remove post-creation in MVP
+- A company cannot target itself (producer cannot be a buyer for its own listing — WF-06 eligibility blocks this)
 
 ### Edge Cases
 
 | Scenario | Behaviour |
 |---|---|
-| No companies targeted on private listing | Listing invisible to all buyers — producer warned |
-| Targeted company deregisters | Listing remains visible to remaining targets |
+| Targeted company deregisters or is suspended | Listing remains visible entry in their marketplace; eligibility check at offer submission blocks them |
+| No targets selected on private listing | Listing invisible to all buyers; UI shows warning |
 
 ---
 
 ## WF-05 — Marketplace Browsing
 
-**Actor:** Buyer / Recycler  
+**Actor:** Buyer  
 **Phase:** ✅ MVP / Built  
 **Entry point:** /marketplace
 
+### Permissions
+
+| Action | Who |
+|---|---|
+| Browse marketplace | Any authenticated user with a linked company |
+| View listing detail | Same |
+| See other buyers' offer prices | **Nobody** — only offer count is visible |
+
 ### Happy Path
 
-1. Buyer navigates to marketplace
-2. Sees all open listings (status = 'open', sale_type = 'open', or private with buyer targeted)
-3. Can filter by material category, city, quantity range
-4. Listing cards show: material, quantity, unit, city, offer count, listing reference
-5. Buyer clicks listing to view full detail
-6. Detail shows: full description, producer company name, pickup location notes, current offer count (not individual offer prices)
+1. Buyer navigates to /marketplace
+2. System returns listings where: `status = 'open'` AND (`sale_type = 'open'` OR buyer is in target list)
+3. Listing cards show: material category, quantity, unit, city, offer count (not prices), listing reference, creation date
+4. Buyer clicks listing → full detail: description, producer company name, pickup city/district/notes, own offer (if any)
 
-### Data Shown
+### Governance / Audit
 
-- Listing detail: material_category, quantity, unit, city, district, pickup_notes, producer name, created_at
-- Buyer's own existing offer (if any) — price, status
-
-### Governance / Audit Notes
-
-- Buyers cannot see other buyers' offer prices — only count shown
-- Withdrawn offers not counted in offer_count
+- Withdrawn offers excluded from `offer_count` display
+- Buyer sees only their own offer price — competitor pricing never exposed
 
 ### Edge Cases
 
 | Scenario | Behaviour |
 |---|---|
-| Buyer has no eligible company (type NULL) | Blocked from submitting offers (see WF-06) |
-| Listing closed while browsing | On navigation: shows "الإعلان مغلق" state |
+| Listing closes while buyer is viewing detail | On next API call: 409 or listing shows `status = 'closed'` |
+| Buyer's company type is NULL | Can browse but blocked at offer submission (WF-06) |
+| Private listing buyer not in target list | Listing not returned in API response — invisible |
 
 ---
 
@@ -306,91 +395,121 @@ The following foundation fixes were applied before v2 baseline is considered sta
 
 **Actor:** Buyer  
 **Phase:** ✅ MVP / Built  
-**Entry point:** Listing detail → "تقديم عرض سعر"
+**Entry point:** Listing detail → "تقديم عرض سعر"  
+**Phase 0 refs:** FIX-03 (company resolution for eligibility check)
 
-### Eligibility Checks (Enforced at POST /offers)
+### Permissions
 
-1. Buyer's company type must not be 'producer' (no self-bidding as producer)
-2. Buyer's company must have accepted T&C (`accepted_terms_at IS NOT NULL`)
-3. Listing must be status = 'open'
-4. Buyer must not already have a non-withdrawn offer on the same listing (one active offer per buyer per listing)
-5. License check (if configured): buyer's license_status must be 'approved' (configurable)
+| Action | Who |
+|---|---|
+| Submit offer | Buyer company member, subject to all eligibility checks |
+| Improve own offer | Same buyer who submitted the original offer |
+| Withdraw offer | Same buyer (before offer is decided) |
+
+### Eligibility Checks at `POST /offers` (Enforced — All Must Pass)
+
+1. Buyer's `companies.type` must not be `'producer'` — no producer submitting as buyer on any listing
+2. Buyer's `companies.type` must not be `NULL` — blocked until company type resolved (FIX-05)
+3. Buyer's `accepted_terms_at` must not be null — T&C acceptance required
+4. `waste_listings.status` must be `'open'`
+5. Buyer must not already have a non-withdrawn offer on the same listing (one active offer per buyer per listing)
+6. License check (configurable): buyer's `license_status` must be `'approved'` if license enforcement is enabled
 
 ### Happy Path
 
-1. Buyer views listing detail, clicks "تقديم عرض سعر"
-2. Enters price per unit (SAR)
-3. System calculates total = price_per_unit × listing.quantity
-4. Buyer reviews and submits
-5. Offer created with status = 'pending'
-6. Producer receives in-app notification: "عرض جديد على إعلانك"
+1. Buyer views listing detail; sees "تقديم عرض سعر" button
+2. Enters price per unit (SAR, required; > 0)
+3. System computes total: `price_per_unit × listing.quantity` — shown for review
+4. Buyer confirms submission
+5. `listing_offers` row created: `status = 'pending'`
+6. Producer receives in-app notification: "عرض جديد على إعلانك — TDW-XXXX"
 
-### Self-Bidding Warning (PUT /offers/mine — Pilot Enhancement)
+### Self-Bidding Warning (🔧 Pilot Enhancement — not yet built)
 
-- If buyer is already top bidder and tries to improve offer: API returns `{ isAlreadyTopBidder: true, warning: "..." }`
-- Frontend shows warning: "أنت مقدّم أعلى عرض حالياً" before allowing update
+When buyer attempts to improve an existing offer:
+- API checks if buyer is currently the highest bidder
+- If yes: returns `{ isAlreadyTopBidder: true, warning: "أنت مقدّم أعلى عرض حالياً" }`
+- Frontend shows warning before allowing price update
+- Buyer can still proceed after acknowledging warning
 
 ### State Created / Updated
 
-- `listing_offers` row (buyer_company_id, waste_listing_id, price_per_unit, status: 'pending')
-- Notification created for producer
+| Table | Action | Key Fields |
+|---|---|---|
+| `listing_offers` | INSERT | buyer_company_id, waste_listing_id, price_per_unit, status = 'pending' |
+| `notifications` | INSERT | producer notified of new offer |
+| `audit_log` | INSERT | action = 'offer.submitted', severity = 'info' |
 
-### Governance / Audit Notes
+### Governance / Audit
 
-- All offers (submitted, rejected, withdrawn) permanently stored — never deleted
-- Rejection reasons stored per offer
-- When accepted offer is below highest offer: `accepted_below_highest` flag set on deal (producer transparency)
+- All offers permanently stored — no delete, only status changes
+- Rejection reasons required on every rejection (see WF-08)
+- `accepted_below_highest` flag set on deal when accepted offer < max(all offer prices) — producer transparency (see WF-08)
 
 ### Edge Cases
 
 | Scenario | Behaviour |
 |---|---|
-| Buyer already has offer on listing | Buyer can only improve (PUT /offers/mine) or withdraw |
-| Listing closes during offer submission | 409 returned, offer not created |
-| Buyer's company type is NULL | 403 — blocked until company type resolved |
+| Buyer already has active offer | 409; buyer directed to improve or withdraw |
+| Listing closes during submission | 409; offer not created |
+| Buyer's company is NULL type | 403; blocked (FIX-05 dependency) |
+| Price = 0 | Validation error (422) |
 
 ---
 
 ## WF-07 — Bidding & Offer Competition
 
-**Actor:** Buyer (competitive)  
+**Actor:** Buyer  
 **Phase:** ✅ MVP / Built  
-**Entry point:** My Participations → listing detail
+**Entry point:** /participations → listing detail
+
+### Permissions
+
+| Action | Who |
+|---|---|
+| View own offer status | Submitting buyer only |
+| View deal stage | Buyer whose offer was accepted |
+| Improve offer | Submitting buyer (while offer is `pending`) |
+| Withdraw offer | Submitting buyer (while offer is `pending`) |
 
 ### Happy Path
 
-1. Buyer sees their submitted offer in "مشاركاتي"
-2. Can view current offer status (pending / accepted / rejected / withdrawn)
-3. Can see deal stage if accepted (active / payment_confirmed / dispatched / completed)
-4. Can improve offer price via "تحسين العرض" (PUT /offers/mine) — triggers self-bidding check
-5. Can withdraw offer via "سحب العرض" (sets status = 'withdrawn')
+1. Buyer views "مشاركاتي" — list of all listings where they have submitted offers
+2. Each card shows: listing reference, material, quantity, own offer price, own offer status, deal stage (if accepted)
+3. Deal stage display (if offer `accepted`): active / payment_confirmed / dispatched / completed — shown clearly without requiring entry to deal detail (UAT fix)
+4. Buyer can improve offer: `PUT /offers/mine` → triggers self-bidding check (🔧 Pilot Enhancement)
+5. Buyer can withdraw: `PUT /offers/mine` (status → `withdrawn`)
 
-### Offer States
+### Offer Status Definitions
 
-| Status | Description |
-|---|---|
-| `pending` | Submitted, awaiting producer decision |
-| `accepted` | Producer accepted — deal created |
-| `rejected` | Producer rejected (with reason) |
-| `withdrawn` | Buyer withdrew before decision |
+| Status | Meaning | Buyer Action Available |
+|---|---|---|
+| `pending` | Submitted, producer not yet decided | Improve or withdraw |
+| `accepted` | Producer accepted — deal active | View deal panel only |
+| `rejected` | Producer rejected with reason | None (read-only) |
+| `withdrawn` | Buyer withdrew | None (read-only) |
 
 ### Notifications
 
-- On rejection: buyer receives "تم رفض عرضك على إعلان TDW-XXXX" with rejection reason
-- On acceptance: buyer receives "تم قبول عرضك — الصفقة الآن نشطة"
+| Event | Recipient | Content |
+|---|---|---|
+| Offer rejected (all others on acceptance) | Each losing buyer | "لم يتم اختيار عرضك على TDW-XXXX — السبب: [reason]" |
+| Offer individually rejected | That buyer | "تم رفض عرضك — السبب: [reason]" |
+| Offer accepted | Winning buyer | "تم قبول عرضك — الصفقة الآن نشطة" |
 
-### Governance / Audit Notes
+### Governance / Audit
 
-- Offer history fully auditable: all price changes, withdrawals, and decisions logged
-- Buyers cannot see competitor offer amounts — only their own
+- Full price history logged: all `PUT /offers/mine` calls create an audit entry with old and new price
+- Buyers cannot see any other buyer's price or identity — only offer count on listing
+- Withdrawn offers cannot be resubmitted — buyer must create a new offer (if listing still open)
 
 ### Edge Cases
 
 | Scenario | Behaviour |
 |---|---|
-| Multiple buyers submit simultaneously | All offers stored; producer sees all |
-| Buyer improves offer after being top bidder | Warning shown (WF-06 self-bidding check) |
-| Offer withdrawn after deal created | Not possible — offer locked once accepted |
+| Multiple buyers submit simultaneously | All stored; producer sees all sorted by price desc |
+| Buyer tries to improve after offer accepted | 409 — offer locked |
+| Deal expires — buyer's view | Deal stage shows 'expired'; issue report option available |
 
 ---
 
@@ -400,56 +519,66 @@ The following foundation fixes were applied before v2 baseline is considered sta
 **Phase:** ✅ MVP / Built  
 **Entry point:** Listing detail → Offers panel
 
+### Permissions
+
+| Action | Who |
+|---|---|
+| View all offers on own listing | Any member of the listing's company |
+| Accept an offer | Any member of the listing's company |
+| Reject an offer individually | Any member of the listing's company |
+| Accept below highest offer | Same — requires reason input |
+
+### One-Deal-Per-Listing Rule
+
+A listing may have **only one accepted offer / active deal at a time**. On acceptance: all other non-withdrawn offers are automatically rejected with `rejection_reason = 'offer_not_selected'`. The listing itself remains `status = 'open'` — it is not closed by deal creation. This allows the producer to reopen to new offers if the deal later expires.
+
 ### Happy Path — Accept
 
-1. Producer views offer list on their listing detail
-2. Sees all offers sorted by price (highest first)
-3. Can accept any offer regardless of rank — including below-highest
-4. If accepting below highest: system prompts for reason (governance requirement)
-5. On acceptance:
-   - Selected offer → status = 'accepted'
-   - All other non-withdrawn offers → status = 'rejected' (with reason: 'offer_not_selected')
-   - Listing status remains 'open' (listing stays visible — deal runs in parallel)
-   - Deal created: status = 'active'
-   - Accepted buyer notified
-   - Rejected buyers notified with reason
-
-### Accepting Below Highest Offer — Governance Rule
-
-- Permitted — T&C explicitly grants producer full discretion
-- `accepted_below_highest = true` flag recorded on deal for audit
-- Reason captured and stored
-- Audit log entry: `offer.accepted_below_highest` with details
+1. Producer views offer list sorted by price (highest first)
+2. Selects any offer (may be below highest)
+3. If selected offer price < current maximum non-withdrawn offer price:
+   - System detects `accepted_below_highest` condition
+   - UI prompts: "السعر المختار أقل من الأعلى — يرجى ذكر السبب" (governance requirement)
+   - Reason recorded on deal
+4. On confirmation:
+   - Selected offer → `status = 'accepted'`
+   - All other non-withdrawn offers → `status = 'rejected'`, `rejection_reason = 'offer_not_selected'`
+   - `deals` row created: `status = 'active'`
+   - Winning buyer notified
+   - Each rejected buyer notified with reason
 
 ### Happy Path — Reject Individual Offer
 
-1. Producer selects a specific offer and rejects it
-2. Rejection reason required (dropdown or text)
-3. Offer → status = 'rejected'
+1. Producer selects a specific offer → "رفض"
+2. Rejection reason required (dropdown + optional free text)
+3. Offer → `status = 'rejected'`
 4. Buyer notified with reason
 
-### Notifications
+### Accepting Below Highest — Governance Protocol
 
-| Event | Recipient | Message |
+- Explicitly permitted by T&C: producer has full commercial discretion
+- `accepted_below_highest = true` stored on `deals` row
+- Reason stored on `deals` row
+- Audit log: `offer.accepted_below_highest` with {acceptedPrice, highestPrice, reason, userId}
+- Visible to admin in audit trail; visible to producer in own deal summary
+
+### State Created / Updated
+
+| Table | Action | Key Fields |
 |---|---|---|
-| Offer accepted | Winning buyer | "تم قبول عرضك — الصفقة نشطة" |
-| Offer rejected (all others) | Each losing buyer | "لم يتم اختيار عرضك على إعلان TDW-XXXX — السبب: [reason]" |
-| Offer individually rejected | That buyer | "تم رفض عرضك — السبب: [reason]" |
-
-### Governance / Audit Notes
-
-- All rejection reasons stored permanently
-- Accepted offer clearly recorded with timestamp and userId
-- If accepted offer < max(pending offers): `accepted_below_highest` flag + reason logged
-- Full offer audit trail available to admin
+| `listing_offers` | UPDATE (accepted) | status = 'accepted' |
+| `listing_offers` | UPDATE (rejected batch) | status = 'rejected', rejection_reason = 'offer_not_selected' |
+| `deals` | INSERT | status = 'active', accepted_below_highest, reason |
+| `notifications` | INSERT | winning buyer + each rejected buyer |
+| `audit_log` | INSERT | action = 'offer.accepted' (+ optional 'offer.accepted_below_highest'), severity = 'info' |
 
 ### Edge Cases
 
 | Scenario | Behaviour |
 |---|---|
-| Producer tries to accept withdrawn offer | 409 — cannot accept withdrawn offer |
-| All offers withdrawn before producer decides | Listing remains open with 0 active offers |
-| Producer accepts offer then changes mind | No reversal post-acceptance — deal is created |
+| Producer tries to accept a withdrawn offer | 409 |
+| All offers withdrawn before decision | Listing stays open; producer can close manually (WF-17 EX-02) |
+| Producer accepts; deal expires; producer tries to accept another offer | Must close or re-list; existing offer round is resolved |
 
 ---
 
@@ -457,145 +586,178 @@ The following foundation fixes were applied before v2 baseline is considered sta
 
 **Actor:** Producer + Buyer  
 **Phase:** ✅ MVP / Built  
-**Entry point:** Deal panel on listing detail / participations
+**Entry point:** Deal panel (on listing detail or /participations)  
+**Phase 0 refs:** FIX-07 (expiry thresholds), FIX-04 (payment proof storage)
 
-### Deal States & Expiry Thresholds
+### Permissions Per State Transition
+
+| Transition | Who Can Trigger |
+|---|---|
+| `active` → `payment_confirmed` | Producer (listing company member) only |
+| `payment_confirmed` → `dispatched` | Producer only |
+| `dispatched` → `completed` | Producer only |
+| Any → `expired` | System (expiry job, hourly) — no user action |
+
+### Deal State Machine
 
 | Status | Triggered By | Expires After | Next State |
 |---|---|---|---|
-| `active` | Offer accepted | **31 days** | → `expired` |
-| `payment_confirmed` | Producer confirms payment received | **8 days** | → `expired` |
-| `dispatched` | Producer marks dispatched | **72 hours** | → `expired` |
-| `completed` | Producer confirms receipt/completion | Never | Terminal |
-| `expired` | Expiry job (runs hourly) | N/A | Terminal |
+| `active` | Offer accepted | **31 days** (FIX-07) | `expired` |
+| `payment_confirmed` | Producer confirms payment | **8 days** (FIX-07) | `expired` |
+| `dispatched` | Producer marks dispatch | **72 hours** (FIX-07) | `expired` |
+| `completed` | Producer confirms receipt | Never | Terminal |
+| `expired` | Expiry job | N/A | Terminal |
 
-> **Threshold change from v1:** active was 30d → now **31d**; payment_confirmed was 7d → now **8d**; dispatched was 48h → now **72h**.
+> **Change from v1:** active was 30d → **31d**; payment_confirmed was 7d → **8d**; dispatched was 48h → **72h**.
 
 ### Happy Path
 
-1. Deal created (status = 'active') when offer accepted
-2. Payment phase: producer waits for buyer payment; buyer sends payment reference + proof
-3. Producer confirms payment received → status = 'payment_confirmed'
-4. Dispatch: producer arranges transport; marks dispatched → status = 'dispatched'
-5. Completion: producer (or buyer) confirms material received → status = 'completed'
-6. Deal summary generated; both parties can view/print
+1. Deal created (`active`) when producer accepts an offer
+2. Buyer sends payment outside platform; enters `payment_reference` + optional proof document
+3. Producer reviews payment reference + proof; confirms → `payment_confirmed`
+4. Producer arranges transport; marks dispatch → `dispatched`
+5. Material received; producer marks completion → `completed` (terminal)
+6. Deal summary report available to both parties
+
+### Contact Visibility After Deal Is Active
+
+- Producer sees: buyer company name, contact phone
+- Buyer sees: producer company name, contact phone, pickup city/district/notes
+- Visibility begins at `status = 'active'` and persists through all states including `expired` and `completed`
 
 ### Deal Reference
 
-- Human-readable reference: `TDW-YYYY-XXXXXX` (derived from deal ID prefix — no separate sequence)
-- Used in all communications, notifications, and reports
-
-### Contact Visibility (Critical Operational Fix)
-
-- After deal is 'active': both parties see each other's contact details in deal panel
-- Producer sees: buyer company name, contact phone
-- Buyer sees: producer company name, contact phone, pickup location
+- Format: `TDW-YYYY-XXXXXX` (year + first 6 chars of deal UUID)
+- Used in all notifications, deal panel header, and deal summary report
 
 ### State Created / Updated
 
-- `deals` row (status, payment_reference, payment_proof_url, created_at, updated_at)
-- Audit log for each state transition
+| Table | Action | Key Fields |
+|---|---|---|
+| `deals` | UPDATE | status, updated_at (at each transition) |
+| `deals` | UPDATE | payment_reference, payment_proof_url (on payment step) |
+| `audit_log` | INSERT | action = 'deal.payment_confirmed' / 'deal.dispatched' / 'deal.completed' / 'deal.expired', severity = 'info' |
 
 ### Notifications
 
-| Transition | Recipient | Trigger |
+| Transition | Recipients | Trigger |
 |---|---|---|
-| Deal created | Both | Offer acceptance |
+| Deal created | Both parties | Offer acceptance |
 | Payment confirmed | Buyer | Producer action |
-| Dispatched | Buyer | Producer action |
-| Completed | Both | Final confirmation |
-| Expired | Both | Expiry job |
+| Dispatched | Buyer | Producer action (72h countdown begins) |
+| Completed | Both parties | Producer action |
+| Expired | Both parties | Expiry job |
 
-### Governance / Audit Notes
+### Governance / Audit
 
-- Every state transition logged with userId, companyId, timestamp
-- Expiry job runs hourly — finds deals older than threshold and marks 'expired'
+- Every state transition logged: userId, companyId, action, timestamp, severity
+- Expiry job: runs hourly; marks all deals past threshold as `expired`; fires notifications; logs `deal.expired`
 - Expired deals cannot be reactivated — new listing/offer cycle required
-- Payment reference + payment proof URL stored on deal (not on listing)
+- Listing status is **not** changed by deal creation or deal expiry
 
 ### Admin Notes
 
-- Admin can view all deals and their current status
-- Admin can see expired deals for intervention if needed
+- Admin can view all deals and current statuses via platform stats
+- Admin can view expired deals for manual follow-up if needed
+- Admin cannot directly advance a deal's status
 
 ### Edge Cases
 
 | Scenario | Behaviour |
 |---|---|
-| Deal expires during active phase | Status → 'expired'; both parties notified; listing re-opens for new offers |
-| Producer marks dispatched but buyer disputes | Out of scope for MVP — admin intervention via issue report |
-| Payment proof upload before Object Storage live | Upload blocked; text reference only accepted for now |
+| Deal expires during active phase | Status → 'expired'; both notified; listing remains at its current status (unchanged) |
+| Producer marks dispatched but buyer disputes | Out of scope MVP — route to issue report (WF-16) |
+| Payment proof upload before FIX-04 live | Text reference accepted; document upload field hidden until Object Storage ready |
 
 ---
 
 ## WF-10 — Payment Confirmation
 
-**Actor:** Producer (confirms) + Buyer (provides reference)  
+**Actor:** Buyer (provides reference) + Producer (confirms receipt)  
 **Phase:** ✅ MVP / Built  
-**Entry point:** Deal panel
+**Entry point:** Deal panel (active status)  
+**Phase 0 refs:** FIX-04 (payment proof document storage)
+
+### Permissions
+
+| Action | Who |
+|---|---|
+| Enter payment reference | Buyer (company member) |
+| Upload payment proof | Buyer (company member) |
+| Confirm payment received | Producer (company member) only |
 
 ### Happy Path
 
-1. Buyer transfers payment outside platform (bank transfer / SADAD / etc.)
-2. Buyer enters payment reference number in deal panel
-3. Buyer optionally uploads payment proof document
-4. Producer reviews payment reference + proof
-5. Producer confirms: deal → status = 'payment_confirmed'
+1. Buyer completes bank transfer / SADAD / other off-platform payment
+2. Buyer enters `payment_reference` in deal panel (text field, required before producer can confirm)
+3. Buyer optionally uploads payment proof document (stored in Object Storage post FIX-04)
+4. Producer reviews reference + document; confirms receipt
+5. Deal → `payment_confirmed`; expiry clock resets to 8-day window (FIX-07)
 
-### Data Required
+### Data Required at Confirmation
 
-- `payment_reference` (text, required on confirmation — enforced server-side)
-- `payment_proof_url` (optional — Object Storage path post FIX-04)
+- `payment_reference`: text, **required** — enforced server-side (422 if missing)
+- `payment_proof_url`: optional Object Storage path
 
-### Governance / Audit Notes
+### Governance / Audit
 
-- Payment reference stored immutably once confirmed
-- Proof document stored in Object Storage (post FIX-04)
-- Platform does not process payments — acts as coordination layer only
-- T&C must clarify platform not liable for payment disputes
+- `payment_reference` stored immutably once deal moves to `payment_confirmed`
+- Platform does not process, hold, or verify funds — coordination layer only
+- T&C must state: platform not liable for payment disputes
+- Audit log: `deal.payment_confirmed` with userId, companyId
 
 ### Edge Cases
 
 | Scenario | Behaviour |
 |---|---|
-| Producer confirms without payment reference | 422 validation error — reference required |
-| Buyer uploads wrong document | Can re-upload until producer confirms |
-| Deal expires before payment confirmed | Status → 'expired'; payment reference stored but deal closed |
+| Producer confirms without payment reference having been entered | 422 validation error |
+| Buyer uploads wrong proof document | Can re-upload until producer confirms |
+| Deal expires before payment confirmed | Status → 'expired'; payment_reference stored but deal closed; no recovery |
+| Buyer claims payment not received by producer | Issue report (WF-16); out of scope for MVP |
 
 ---
 
 ## WF-11 — Transport & Dispatch
 
 **Actor:** Producer  
-**Phase:** ✅ MVP / Built (basic) | 📋 Future Phase (carrier coordination)  
-**Entry point:** Deal panel
+**Phase:** ✅ MVP / Built (self-arranged) | 📋 Future Phase (carrier coordination via Contract Track)  
+**Entry point:** Deal panel (payment_confirmed status)
 
-### MVP (Current)
+### Permissions
 
-1. Producer arranges own transport or coordinates directly with buyer
-2. Producer marks deal as "تم الشحن / dispatched" in deal panel
+| Action | Who |
+|---|---|
+| Mark dispatch | Producer (company member) only |
+| View pickup location details | Both producer and buyer once deal is `active` |
+
+### MVP — Self-Arranged Transport
+
+1. Producer arranges own transport or coordinates directly with buyer by phone/contact details (visible in deal panel)
+2. Producer marks deal: "تم الشحن / Dispatched" → deal → `dispatched`
 3. Dispatch timestamp recorded
-4. Buyer notified with 72-hour window for completion confirmation
-5. Pickup location details (city, district, notes) visible to buyer in deal panel
+4. Buyer receives notification: "تم شحن بضاعتك — يرجى التأكيد خلال 72 ساعة"
+5. 72-hour completion window begins (FIX-07)
 
-### Future Phase — Carrier Track
+### Future Phase — Carrier Integration
 
-- Separate carrier onboarding and capabilities module
-- Load request routing to registered carriers
-- Carrier confirmation and tracking
-- Integrated into Contract Track (WF-18)
+- Carrier onboarding: capabilities, vehicle types, coverage areas
+- Load assignment: routing to registered carriers based on route and material type
+- Carrier confirmation and dispatch tracking
+- Fully integrated into Contract Track (WF-18) — not Marketplace Track
 
-### Governance / Audit Notes
+### Governance / Audit
 
-- Dispatch marked by producer — buyer must independently confirm receipt
-- Dispute window: 72 hours before auto-expiry if completion not confirmed
+- Dispatch marked unilaterally by producer — buyer must independently confirm receipt (WF-12)
+- If buyer cannot confirm within 72 hours: deal → `expired`; admin intervention available via issue report
+- Audit log: `deal.dispatched` with dispatch timestamp
 
 ### Edge Cases
 
 | Scenario | Behaviour |
 |---|---|
-| Buyer unavailable to confirm within 72h | Deal → 'expired' | Admin can intervene via issue report |
-| Transport fails mid-route | Out of scope MVP — admin handles via issue report |
+| Buyer unreachable within 72h | Deal → 'expired'; both notified; issue report recommended |
+| Transport fails mid-route | Out of scope MVP — issue report (WF-16); admin intervention |
+| Producer marks dispatch accidentally | No reversal in MVP — issue report to admin |
 
 ---
 
@@ -603,142 +765,177 @@ The following foundation fixes were applied before v2 baseline is considered sta
 
 **Actor:** Producer  
 **Phase:** ✅ MVP / Built  
-**Entry point:** Deal panel → "تأكيد الاستلام"
+**Entry point:** Deal panel (dispatched status)
+
+### Permissions
+
+| Action | Who |
+|---|---|
+| Mark deal complete | Producer (company member) only — in MVP |
+| View deal summary | Both parties to the deal |
+
+> Note: In MVP, completion is producer-triggered. A future enhancement could allow buyer to trigger completion, or require mutual confirmation.
 
 ### Happy Path
 
-1. Material received at buyer site
-2. Producer marks deal as completed (or buyer confirms via producer action)
-3. Deal → status = 'completed' (terminal, permanent)
-4. Completion timestamp recorded
-5. Deal summary report generated and available
-6. Both parties can view/download deal summary
+1. Material arrives at buyer's site
+2. Producer marks deal: "تأكيد الاستلام / Complete" → deal → `completed` (terminal, irreversible)
+3. `completed_at` timestamp recorded
+4. Both parties notified: "الصفقة مكتملة"
+5. Deal summary report becomes available (WF-13)
 
 ### State Created / Updated
 
-- `deals` status → 'completed'
-- `deals.completed_at` timestamp
-- Report becomes available (WF-13)
+| Table | Action | Key Fields |
+|---|---|---|
+| `deals` | UPDATE | status = 'completed', completed_at = now() |
+| `audit_log` | INSERT | action = 'deal.completed', severity = 'info' |
 
-### Governance / Audit Notes
+### Governance / Audit
 
-- Completion is irreversible once set
-- Full deal audit trail frozen at completion
-- Audit log: `deal.completed`
+- Completion is **irreversible** once set — no status rollback
+- Full deal audit trail is frozen at completion (no further mutations)
+- Deal summary report is a read-only snapshot generated from deal data
+
+### Edge Cases
+
+| Scenario | Behaviour |
+|---|---|
+| Producer marks completed before actual delivery | Accepted — platform does not verify physical receipt in MVP |
+| Buyer disputes that material was not received | Issue report (WF-16); out of scope for platform logic |
 
 ---
 
 ## WF-13 — Reporting & Transaction Record
 
-**Actor:** Producer + Buyer  
+**Actor:** Producer + Buyer (deal parties)  
 **Phase:** ✅ MVP / Built  
-**Entry point:** Deal detail → Print / Export
+**Entry point:** Deal detail → "طباعة / تصدير" | /dashboard
 
-### Deal Summary Report Contains
+### Permissions
 
-- Deal reference (TDW-YYYY-XXXXXX)
-- Producer company name + contact
-- Buyer company name + contact
-- Material category
-- Quantity + unit
-- Accepted price per unit + total value (SAR)
-- Payment reference
-- Timeline: created → payment_confirmed → dispatched → completed
-- Duration (days from creation to completion)
+| Action | Who |
+|---|---|
+| View deal summary report | Any company member of either deal party |
+| Download/print deal report | Same |
+| View dashboard metrics | Any authenticated company member |
+| Access other companies' reports | Nobody — strictly party-scoped |
 
-### Company Logo in Reports (New — v2)
+### Deal Summary Report Contents
 
-- If company logo uploaded (WF-02), it appears in the header of the deal summary report
-- Future: company-branded PDF export
+| Field | Source |
+|---|---|
+| Deal reference | `TDW-YYYY-XXXXXX` derived from deal ID |
+| Producer company name + contact phone | `companies` |
+| Buyer company name + contact phone | `companies` |
+| Material category | `material_categories.name` |
+| Waste description | `waste_listings.description` |
+| Quantity + unit | `waste_listings.quantity + unit_options.label` |
+| Accepted price per unit (SAR) | `listing_offers.price_per_unit` |
+| Total value (SAR) | `price_per_unit × quantity` |
+| Payment reference | `deals.payment_reference` |
+| Timeline | created → payment_confirmed → dispatched → completed (with timestamps) |
+| Duration | Days from `created_at` to `completed_at` |
+| Company logo (if uploaded) | `companies.logo_url` — appears in report header |
 
-### Dashboard Metrics (Producer)
+### Dashboard Metrics (Producer View)
 
-- Total open listings
-- Total active deals
+- Open listings count
+- Active deals count
 - Completed deals count
-- "My turn" count (deals awaiting producer action)
+- "My turn" count (deals in a state requiring producer action)
 
-### Governance / Audit Notes
+### Governance / Audit
 
-- Reports are read-only snapshots — data cannot be modified post-completion
-- All historical deals accessible indefinitely (soft data retention)
+- Reports are **read-only** snapshots; underlying data cannot be modified after deal completion
+- All historical deals accessible indefinitely (no data deletion for audit purposes)
+- Reports are scoped to deal parties only — cross-company data never exposed
 
 ---
 
 ## WF-14 — Compliance-Ready Reporting
 
-**Actor:** Producer + Admin + Future Regulator  
-**Phase:** 📋 Future Phase  
-**Entry point:** /reports (placeholder exists)
+**Actor:** Producer + Admin + 📋 Future Regulator  
+**Phase:** 📋 Future Phase (placeholder `/reports` page exists)  
+**Entry point:** /reports
 
 ### Confirmed Architecture (Not Yet Built)
 
-- Waste classification per material category (linked to regulatory waste codes)
-- Weight records (source weight + destination weight from weighbridge)
-- Variance calculation (source vs. destination weight difference)
-- Settlement rule application (which party bears variance cost)
-- Material outcome classification (recycled / recovered / disposed)
-- Monthly/quarterly aggregate reports per company
+- Material classification per deal, linked to regulatory waste codes
+- Weight records: source (producer site) + destination (buyer site) from weighbridge
+- Variance: source weight vs. destination weight — calculation and classification
+- Settlement rule: which weight is authoritative (defined per contract in Contract Track)
+- Material outcome: recycled / recovered / disposed / pending
+- Aggregate reports per company: monthly / quarterly
 
-### New Fields Confirmed for Future Schema
+### Confirmed Future Schema Additions (to `companies`)
 
+```sql
+weighbridge_cert_ref        TEXT    -- certificate reference number
+weighbridge_cert_expiry     DATE    -- certificate validity date
+transport_licence_ref       TEXT    -- transport licence number
+regulatory_waste_codes      TEXT[]  -- array of applicable regulatory codes
 ```
-companies:
-  weighbridge_cert_ref        text
-  weighbridge_cert_expiry     date
-  transport_licence_ref       text
-  regulatory_waste_codes      text[]
-```
 
-### Governance / Audit Notes
+### Governance / Audit
 
 - All compliance data immutable once submitted
-- Regulator access: read-only, scoped to permitted company set
-- Platform does not certify compliance — provides data infrastructure only
+- Regulator access: read-only, scoped to companies the regulator is permitted to view
+- Platform provides data infrastructure only — does not certify compliance
+- Weighbridge cert reference required for all weight records (Contract Track — WF-18)
 
 ---
 
 ## WF-15 — Admin Oversight
 
 **Actor:** Tadweerah internal team  
-**Phase:** ✅ MVP / Built (API layer) | 🔧 Pilot Enhancement (admin UI)  
-**Entry point:** API endpoints protected by ADMIN_API_KEY header
+**Phase:** ✅ MVP / Built (API layer — FIX-08) | 🔧 Pilot Enhancement (admin UI wrapper)  
+**Entry point:** API endpoints with `Authorization: AdminKey <ADMIN_API_KEY>`
+
+### Permissions
+
+| Action | Who |
+|---|---|
+| All admin endpoints | ADMIN_API_KEY bearer only — never exposed to frontend |
+| Modify deal data | Nobody — admin is read-only on deal content |
+| Modify license status | Admin only |
+| Resolve issue reports | Admin only |
 
 ### Available Admin Capabilities (Built — FIX-08)
 
 | Endpoint | Purpose |
 |---|---|
-| `GET /admin/companies` | List all companies with license + type info |
+| `GET /admin/companies` | List all companies: name, type, license status, member count |
 | `PATCH /admin/companies/:id/license-status` | Approve / reject / suspend company license |
-| `GET /admin/issue-reports` | List all user-submitted issue reports |
-| `PATCH /admin/issue-reports/:id` | Update issue report status (open/in-review/resolved) |
-| `GET /admin/audit-log` | Query audit log by entity / action / company / date range |
+| `GET /admin/issue-reports` | List issue reports; filterable by status and severity |
+| `PATCH /admin/issue-reports/:id` | Update report status (open → in_review → resolved) |
+| `GET /admin/audit-log` | Query audit log: filter by entity, action, company, date range |
+| `GET/POST /admin/material-categories` | Manage material category lookup table |
+| `GET/POST /admin/unit-options` | Manage unit options lookup table |
+| `GET/POST /admin/company-categories` | Manage company categories lookup table |
 
-### Lookup Table Management (API)
+### Platform Stats Endpoint
 
-| Endpoint | Purpose |
+Returns: total companies, total listings, total deals by status, issue reports by status, active deal count.
+
+### SLA Targets (Operational — Not Enforced by System in MVP)
+
+| Activity | Target |
 |---|---|
-| `GET/POST /admin/material-categories` | Manage material categories |
-| `GET/POST /admin/unit-options` | Manage unit options |
-| `GET/POST /admin/company-categories` | Manage company categories |
-
-### Platform Stats
-
-- Total companies, users, listings, deals
-- Active deal count by status
-- Issue reports by status
+| Issue report acknowledgement | Within 24 hours |
+| Issue report resolution | Within 72 hours |
+| License approval decision | Within 48 hours of document submission |
 
 ### Security Model
 
-- All admin endpoints require `Authorization: AdminKey <ADMIN_API_KEY>` header
-- ADMIN_API_KEY set as Replit Secret — not exposed to frontend
-- Admin routes return 503 if ADMIN_API_KEY not configured
+- `ADMIN_API_KEY` stored as Replit Secret — not accessible from any frontend code
+- Routes return `503` if `ADMIN_API_KEY` is not configured (non-blocking for marketplace, but admin capability unavailable — see Open Items)
 
-### Governance / Audit Notes
+### Governance / Audit
 
-- All admin actions logged in audit trail with `isAdmin: true` flag
-- Admin cannot modify deal data — read + status updates only
-- License approval/rejection creates audit entry
+- All admin actions logged with `isAdmin: true` flag in audit trail
+- Admin cannot modify deal content — read + status updates (license, issue reports) only
+- Every license status change creates an audit entry: `company.license_status_changed`, severity = 'warn'
 
 ---
 
@@ -746,119 +943,208 @@ companies:
 
 **Actor:** Any authenticated user  
 **Phase:** ✅ MVP / Built  
-**Entry point:** Report Issue button (global)
+**Entry point:** "الإبلاغ عن مشكلة" (global access from any page)
+
+### Permissions
+
+| Action | Who |
+|---|---|
+| Submit issue report | Any authenticated user with a linked company |
+| Update issue status | Admin only (WF-15) |
+| View own submitted reports | The submitting user |
+| View all reports | Admin only |
 
 ### Happy Path
 
-1. User encounters a problem
-2. Clicks "الإبلاغ عن مشكلة" (global button in UI)
-3. Fills: issue type, description, related deal/listing reference (optional)
-4. Submitted to `issue_reports` table
+1. User encounters a problem during any workflow
+2. Clicks "الإبلاغ عن مشكلة" (always accessible — global UI element)
+3. Completes form: issue type, description, optional deal/listing reference, severity
+4. System stores `issue_reports` row; user sees confirmation
 5. Admin reviews via WF-15 admin routes
 
-### Issue Report Severity (FIX-02)
+### Issue Severity (FIX-02)
 
-- `info` — general feedback
-- `warning` — operational concern
-- `error` — blocking issue requiring urgent attention
+| Severity | Meaning | Admin SLA |
+|---|---|---|
+| `info` | General feedback, suggestion | 72h |
+| `warning` | Operational concern — not blocking | 48h |
+| `error` | Blocking issue — user cannot proceed | 24h |
 
-### Governance / Audit Notes
+### Governance / Audit
 
-- Issue reports are immutable once submitted (status only updated by admin)
+- Issue report content immutable once submitted — reporter cannot edit
+- Admin status updates (`open` → `in_review` → `resolved`) are audit-logged
 - Reporter identity preserved in audit trail
-- Issue reports linked to deal or listing for context
+- Issue reports linked to deal or listing ID when provided
 
 ---
 
 ## WF-17 — Edge Cases & Exception Handling
 
 **Actor:** All  
-**Phase:** ✅ MVP / Built (most) | 🔧 Pilot Enhancement (some)
+**Phase:** ✅ MVP / Built (all listed below)
 
-### EX-01: Listing with No Offers
+### EX-01 — Listing with No Offers
 
-- Producer closes listing manually → immediate close (status = 'closed')
-- Or: listing expires if expiry logic added to listings (currently: no auto-expiry on listings, only on deals)
-- Producer can repost as a new listing
+- Producer closes listing manually → listing → `status = 'closed'`; audit log: `listing.closed`
+- No auto-expiry on listings in MVP (deals expire; listings do not)
+- Producer can repost as a new listing at any time
 
-### EX-02: All Offers Rejected/Withdrawn
+### EX-02 — All Offers Rejected or Withdrawn Before Decision
 
-- Listing remains 'open' with 0 active offers
-- New buyers can still submit offers
-- Producer can close manually
+- Listing stays `status = 'open'` with 0 active offers
+- New buyers can still submit fresh offers
+- Producer can close manually (EX-03)
 
-### EX-03: Close Listing with Pending Offers — Updated Flow (FIX-06)
+### EX-03 — Close Listing with Pending Offers (FIX-06 — Updated v2 Behavior)
 
-**This is the confirmed v2 behavior:**
+Complete 2-step flow confirmed and implemented:
 
-1. Producer clicks "إغلاق الإعلان"
-2. **Step 1 — Initial confirm dialog:** "هل تريد إغلاق الإعلان نهائياً؟" (standard confirm)
-3. System calls `DELETE /api/listings/:id`
-4. **If no pending offers:** Listing → status = 'closed' immediately. Done.
-5. **If pending offers exist → 409 returned:** `{ requiresConfirmation: true, pendingOffersCount: N }`
-6. **Step 2 — Pending-offers dialog (2-button):**
-   - Button A: "راجع العروض" — closes dialog, no action taken
-   - Button B: "أغلق وألغِ الكل" — sends `{ forceClose: true }`
-7. **forceClose=true path (atomic transaction):**
-   - Listing → status = 'closed'
-   - All pending offers → status = 'rejected', rejection_reason = 'listing_closed'
-   - `notifyOfferRejected` fired for each affected buyer
-   - Audit log: `listing.force_closed` with `cancelledOffersCount`
+**Step 1 — Initial close (simple confirm dialog):**
 
-### EX-04: Deal Expiry
-
-- Expiry job runs every hour
-- Checks three thresholds: active → 31d, payment_confirmed → 8d, dispatched → 72h
-- Expired deals: status → 'expired'; both parties notified
-- Audit log: `deal.expired`
-- Listing remains at current status (does not auto-reopen)
-
-### EX-05: Duplicate Offer Attempt
-
-- Same buyer submits twice on same listing: 409 returned
-- Buyer directed to "تحسين العرض" path instead
-
-### EX-06: User Stops Mid-Flow
-
-| Stage | Recovery |
+| Sub-step | Action |
 |---|---|
-| Mid-onboarding | Re-shown onboarding on next login |
-| Mid-listing-creation | Form not saved; user starts fresh |
-| Mid-offer-submission | Offer not created until explicit submit |
-| Mid-deal (inactive) | Deal expires per threshold |
+| Producer clicks "إغلاق الإعلان" | Standard confirm dialog opens |
+| Producer confirms | `DELETE /api/listings/:id` called (body: `{}`) |
+| No pending offers → | Listing → `status = 'closed'`; audit: `listing.closed`; done |
+| Pending offers present → | API returns `409 { requiresConfirmation: true, pendingOffersCount: N }` |
 
-### EX-07: Withdrawn Offer After Deal Created
+**Step 2 — Pending-offers dialog (2-button, opens automatically after 409):**
 
-- Impossible — offer status locked to 'accepted' once deal created
-- Buyer must raise issue report if dispute
+| Button | Label | Action |
+|---|---|---|
+| A | "راجع العروض" | Closes dialog; no state change; producer reviews offers |
+| B | "أغلق وألغِ الكل" | Sends `DELETE /api/listings/:id` with `{ forceClose: true }` |
+
+**forceClose = true — Atomic transaction:**
+
+1. `waste_listings.status` → `'closed'`
+2. All non-withdrawn `listing_offers.status` → `'rejected'`, `rejection_reason = 'listing_closed'`
+3. `notifyOfferRejected` fired for each affected buyer (fire-and-forget)
+4. Audit log: `listing.force_closed`, `details.cancelledOffersCount = N`, severity = `'warn'`
+
+### EX-04 — Deal Expiry (FIX-07)
+
+- Expiry job runs **hourly** on the server
+- Evaluates all non-terminal deals against thresholds: `active ≥ 31d`, `payment_confirmed ≥ 8d`, `dispatched ≥ 72h`
+- Expired: `deals.status` → `'expired'`; both parties notified; audit: `deal.expired`, severity = `'warn'`
+- Listing status unchanged — a listing that was `open` when the deal was created remains `open`
+- Expired deal cannot be reactivated; parties must start a new offer cycle
+
+### EX-05 — Duplicate Offer Attempt
+
+- Buyer submits a second offer on the same listing while first is still active: `409`
+- UI directs buyer to improve existing offer or withdraw first
+
+### EX-06 — User Stops Mid-Flow
+
+| Stage | Recovery Behaviour |
+|---|---|
+| Mid-onboarding | Data not saved; full onboarding shown on next login |
+| Mid-listing creation | Form data not saved; user restarts form |
+| Mid-offer submission | Offer not created until explicit confirm |
+| Deal (inactive, approaching expiry) | Expiry job handles transition; parties notified |
+
+### EX-07 — Withdrawn Offer After Deal Created
+
+- Impossible: once an offer is `accepted`, it is locked — no status change permitted
+- Buyer must raise an issue report (WF-16) for any dispute
 
 ---
 
 ## WF-18 — Contract-Based Execution Track
 
 **Actor:** Producer + Buyer (under standing contract)  
-**Phase:** 📋 Future Phase — Architecture confirmed, implementation deferred  
-**Entry point:** /contracts (not yet built)
+**Phase:** 📋 Future Phase — Architecture confirmed, full flow defined, implementation deferred  
+**Entry point:** /contracts (route not yet built)
 
-### Architectural Decisions (Confirmed)
+### Isolation Rules (Immutable)
 
-1. **Complete isolation from Marketplace Track** — contract objects contain no deal IDs, listing IDs, or offer references
-2. **Shared entities** — same users, companies, and material categories are reused
-3. **Sequential load IDs** — each contract generates sequential load numbers (CTR-001-L001, CTR-001-L002, etc.)
-4. **Reporting scoped** — contract reports are separate from deal reports; dashboard shows both but independently
+1. Contract objects contain **no references** to deal IDs, listing IDs, or offer IDs
+2. Deal objects contain **no references** to contract IDs
+3. Users and companies are shared across tracks
+4. Reporting is track-scoped — contract reports separate from deal reports
+5. Dashboard can display both tracks independently
 
-### Confirmed Schema (Future Build)
+### End-to-End Contract Track Flow
+
+#### Phase A — Contract Setup
+
+1. Either party (producer or buyer) initiates a contract draft
+2. Fills: counterparty (search by company), contract duration (start/end dates), material types, price per unit per material type, settlement basis per material
+3. System creates `contracts` row: `status = 'draft'`
+4. Invitation notification sent to counterparty
+5. Counterparty reviews terms and formally accepts
+6. Both `accepted_terms_at` timestamps recorded on `contracts` (one per party — or stored as events)
+7. Contract → `status = 'active'`
+8. Both parties notified: "العقد نشط — يمكنك الآن إنشاء طلبات تحميل"
+
+#### Phase B — Load Request
+
+1. Producer (or buyer, per contract terms) creates a load request
+2. System generates sequential `load_number` (e.g., `L001`, `L002`) — application-level counter per contract
+3. `contract_loads` row created: `status = 'requested'`
+4. Counterparty notified: "طلب تحميل جديد — [load_number]"
+
+#### Phase C — Dispatch
+
+1. Carrier or producer arranges transport
+2. Dispatcher records source weight: `load_weight_records` row: `record_type = 'source'`, gross/tare/net weights, `weighbridge_cert_ref` (required)
+3. Load → `status = 'dispatched'`
+4. Buyer notified
+
+#### Phase D — Receipt
+
+1. Material arrives at buyer site
+2. Buyer records destination weight: `load_weight_records` row: `record_type = 'destination'`, gross/tare/net weights, `weighbridge_cert_ref` (required)
+3. Load → `status = 'received'`
+4. Settlement calculation triggered automatically
+
+#### Phase E — Settlement
+
+1. System computes:
+   - `variance_kg = source_net_weight − destination_net_weight`
+   - `variance_pct = (variance_kg / source_net_weight) × 100`
+2. Applies `settlement_basis` from `contract_materials` (which weight is authoritative):
+   - `source_weight`: `settled_amount = price_per_unit × source_net_weight`
+   - `destination_weight`: `settled_amount = price_per_unit × destination_net_weight`
+   - `average`: `settled_amount = price_per_unit × ((source + destination) / 2)`
+3. If `variance_pct > contract.variance_threshold`:
+   - `exception_flag = true`; `exception_reason` recorded
+   - Load → `status = 'disputed'`; admin notified (WF-15)
+   - Admin reviews and resolves → load → `status = 'settled'`
+4. If within threshold: `load_settlements` row created; `material_outcome` classification set; load → `status = 'settled'` (terminal)
+
+#### Phase F — Contract Reporting
+
+- Contract summary: all loads, settlement amounts, material outcomes, total weight per material
+- Accessible to both contract parties and admin
+- Export-ready format (future: PDF with company logo)
+
+#### Phase G — Contract Lifecycle Events
+
+| Event | Trigger | Outcome |
+|---|---|---|
+| Suspend contract | Admin action | `status = 'suspended'`; new loads blocked; active loads continue |
+| Re-enable contract | Admin action | `status = 'active'` |
+| Complete contract | End date reached OR mutual agreement | `status = 'completed'` (terminal) |
+| Terminate contract | Admin or mutual request | `status = 'terminated'` (terminal); all unsettled loads flagged |
+
+### Confirmed Schema
 
 ```
 contracts
-  id                    uuid PK
-  producer_company_id   uuid FK → companies
-  buyer_company_id      uuid FK → companies
-  status                enum (draft / active / suspended / completed / terminated)
-  start_date            date
-  end_date              date
-  created_at            timestamptz
-  accepted_terms_at     timestamptz (both parties must accept)
+  id                        uuid PK
+  producer_company_id       uuid FK → companies
+  buyer_company_id          uuid FK → companies
+  status                    enum (draft / active / suspended / completed / terminated)
+  start_date                date
+  end_date                  date
+  variance_threshold_pct    numeric  -- e.g., 2.0 for 2% tolerance
+  created_by_user_id        text
+  created_at                timestamptz
+  producer_accepted_terms_at timestamptz
+  buyer_accepted_terms_at   timestamptz
 
 contract_materials
   id                    uuid PK
@@ -866,127 +1152,155 @@ contract_materials
   material_category_id  uuid FK → material_categories
   price_per_unit        numeric
   unit_option_id        uuid FK → unit_options
+  settlement_basis      enum (source_weight / destination_weight / average)
 
 contract_loads
-  id                    uuid PK
-  contract_id           uuid FK → contracts
-  load_number           text (sequential: L001, L002...)
-  status                enum (requested / dispatched / received / settled / disputed)
-  requested_at          timestamptz
-  dispatched_at         timestamptz
-  received_at           timestamptz
+  id             uuid PK
+  contract_id    uuid FK → contracts
+  load_number    text (sequential per contract: L001, L002 ... format: CTR-{contract_seq}-L{load_seq})
+  status         enum (requested / dispatched / received / settled / disputed)
+  requested_by_user_id text
+  requested_at   timestamptz
+  dispatched_at  timestamptz
+  received_at    timestamptz
 
 load_weight_records
-  id                    uuid PK
-  load_id               uuid FK → contract_loads
-  record_type           enum (source / destination)
-  gross_weight          numeric
-  tare_weight           numeric
-  net_weight            numeric (computed: gross - tare)
-  weighbridge_cert_ref  text
-  recorded_at           timestamptz
-  recorded_by_user_id   text
+  id                   uuid PK
+  load_id              uuid FK → contract_loads
+  record_type          enum (source / destination)
+  gross_weight_kg      numeric
+  tare_weight_kg       numeric
+  net_weight_kg        numeric (computed: gross − tare; enforced by application)
+  weighbridge_cert_ref text NOT NULL -- required for traceability
+  recorded_at          timestamptz
+  recorded_by_user_id  text
 
 load_settlements
-  id                    uuid PK
-  load_id               uuid FK → contract_loads (unique)
-  source_net_weight     numeric
-  destination_net_weight numeric
-  variance_kg           numeric (computed: source - destination)
-  variance_pct          numeric (computed: variance/source × 100)
-  settlement_basis      enum (source_weight / destination_weight / average)
-  settled_amount        numeric
-  material_outcome      enum (recycled / recovered / disposed / pending_classification)
-  exception_flag        boolean
-  exception_reason      text
-  settled_at            timestamptz
+  id                      uuid PK
+  load_id                 uuid FK → contract_loads UNIQUE
+  source_net_weight_kg    numeric
+  destination_net_weight_kg numeric
+  variance_kg             numeric -- source − destination
+  variance_pct            numeric -- (variance / source) × 100
+  settlement_basis        enum (source_weight / destination_weight / average)
+  settled_weight_kg       numeric -- the authoritative weight used for payment
+  settled_amount          numeric -- price_per_unit × settled_weight_kg
+  material_outcome        enum (recycled / recovered / disposed / pending_classification)
+  exception_flag          boolean DEFAULT false
+  exception_reason        text
+  resolved_by_admin_id    text    -- set when admin resolves a disputed load
+  settled_at              timestamptz
 ```
 
-### Settlement Logic (Confirmed)
+### Load Number Format
 
-- `variance_kg = source_net_weight - destination_net_weight`
-- `variance_pct = (variance_kg / source_net_weight) × 100`
-- `settlement_basis` determined by contract terms (which weight is authoritative)
-- `settled_amount = contract_materials.price_per_unit × settled_weight`
-- Exception flag raised if `variance_pct > threshold` (configurable per contract)
+Full format: `CTR-{contract_seq}-L{load_seq}` (e.g., `CTR-001-L007`).  
+Both `contract_seq` and `load_seq` are application-level counters (not DB sequences in MVP).
 
-### Governance / Audit Notes
+### Notifications (Contract Track)
 
-- All load records immutable once status = 'settled'
-- Weight records require weighbridge cert reference for traceability
-- Material outcome classification mandatory before settlement finalization
-- Exception handling: admin review required if exception_flag = true
+| Event | Recipients |
+|---|---|
+| Contract invitation sent | Counterparty |
+| Contract activated (both accepted) | Both parties |
+| Load requested | Counterparty |
+| Load dispatched | Buyer |
+| Load received, settlement in progress | Both parties |
+| Load settled | Both parties |
+| Exception flagged | Both parties + admin |
+| Contract suspended / terminated | Both parties |
 
-### Admin Capabilities (Future)
+### Governance / Audit (Contract Track)
 
-- Contract monitoring dashboard
-- Load status overview
-- Exception queue for review
-- Weighbridge cert verification
-- Manual settlement override (with audit trail)
+- All load records are immutable once `status = 'settled'`
+- Weight records require `weighbridge_cert_ref` — must be present (enforced at creation)
+- `material_outcome` classification mandatory before settlement can be finalized
+- Exceptions (`exception_flag = true`) require admin review before load can proceed to `settled`
+- Every admin override logged: `load.exception_resolved`, including `resolved_by_admin_id` and reason
+- `variance_threshold_pct` stored per contract — configurable at contract setup time
+
+### Admin Capabilities (Future Build)
+
+- Contract monitoring dashboard (all contracts, status, load counts)
+- Exception queue (loads with `exception_flag = true` awaiting review)
+- Manual settlement override (with mandatory reason + audit trail)
+- Weighbridge cert verification (future: integration with cert authority)
+- Contract suspension / termination controls
 
 ---
 
 ## Cross-Cutting Concerns
+
+### Authentication & Authorization
+
+| Layer | Implementation |
+|---|---|
+| Identity | Clerk — **must be `pk_live_` keys before production** (FIX-01, BLOCKING) |
+| Company membership | `company_members` table — user_id → company_id → role |
+| API auth | Clerk middleware on all `/api` routes |
+| Company resolution | `GET /me` via `company_members` join (not `owner_user_id`) — FIX-03 ✅ |
+| Admin auth | `ADMIN_API_KEY` header — separate from Clerk, never in frontend |
 
 ### Notification Architecture
 
 | Channel | Status |
 |---|---|
 | In-app notifications | ✅ Built |
-| Email (infrastructure) | ✅ Ready (email content wired to events) |
+| Email (infrastructure) | ✅ Ready — content wired to events |
 | SMS | 📋 Future |
 | WhatsApp | 📋 Future |
 
-### Audit Trail
+### Audit Trail (Immutable)
 
-- Every state-changing action logs: `userId`, `companyId`, `action`, `entityType`, `entityId`, `details`, `severity`, `timestamp`
-- Audit log queryable by admin (WF-15)
-- Immutable — no delete or update on audit_log table
+Every state-changing action records:
 
-### File Storage
+```
+userId, companyId, action (e.g. 'deal.completed'), entityType, entityId,
+details (JSON), severity (info|warn|error), timestamp
+```
 
-| Asset | Current | Target (post FIX-04) |
+- Audit log: no delete, no update — append-only (FIX-02 ✅)
+- Queryable by admin by entity, action, company, date range (FIX-08 ✅)
+
+### File Storage (FIX-04)
+
+| Asset | Current State | Target (post FIX-04) |
 |---|---|---|
-| Listing images | Local disk (5 files, ephemeral) | Replit Object Storage (GCS) |
+| Listing images | 5 files on ephemeral local disk — **BLOCKING** | Replit Object Storage (GCS) |
 | License documents | Local disk | Object Storage |
 | Company logos | Not yet implemented | Object Storage |
 | Payment proof | Not yet implemented | Object Storage |
-| Deal reports | Generated on-the-fly | No storage needed (stateless) |
+| Deal reports | Generated on-the-fly (stateless) | No file storage needed |
+| Contract load weight records | N/A (future) | Object Storage (weighbridge certs) |
 
-### Authentication & Authorization
+### Data Integrity Rules (Platform-Wide)
 
-| Layer | Implementation |
-|---|---|
-| Identity | Clerk (currently pk_test_ → must upgrade to pk_live_ before launch — FIX-01 pending) |
-| Company membership | company_members table (user_id → company_id → role) |
-| API auth | Clerk middleware on all /api routes |
-| Admin auth | ADMIN_API_KEY header (separate from Clerk) |
-
-### Data Integrity Rules
-
-1. Offers are never deleted — only status changes
-2. Audit log entries are never deleted
-3. Completed deals are immutable
-4. Listing closure with pending offers requires explicit forceClose confirmation
-5. Deal expiry is irreversible
-6. Payment references are stored immutably once confirmed
+1. Offers are **never deleted** — status-only changes
+2. Audit log entries are **never deleted or updated**
+3. Completed deals are **immutable** post-completion
+4. Listing closure with pending offers requires explicit `forceClose` confirmation (FIX-06)
+5. Deal expiry is **irreversible** — no reactivation
+6. Payment references are **immutable** once deal is `payment_confirmed`
+7. Load weight records are **immutable** once load is `settled`
+8. Contract accepted_terms_at timestamps are **immutable** once set
 
 ---
 
-## Open Items Before Production Launch
+## Open Items — Production Launch Classification
 
-| # | Item | Owner | Blocking? |
-|---|---|---|---|
-| 1 | Set Clerk pk_live_ / sk_live_ keys in Replit Secrets | User (from Clerk Dashboard) | ✅ Yes |
-| 2 | Migrate multer.diskStorage → Replit Object Storage (FIX-04) | Engineering | ✅ Yes |
-| 3 | Resolve 2 NULL-type companies (test records) | User decision + Engineering | No |
-| 4 | Run db:push after company.type column cleanup | Engineering | No |
-| 5 | Set ADMIN_API_KEY in Replit Secrets | User | Partially (admin routes return 503 without it) |
-| 6 | Add company logo upload field to onboarding + profile UI | Engineering | No |
-| 7 | Pilot Enhancement batch: self-bidding warning, private targeting UI | Engineering | No |
+| # | Item | Owner | Classification | Notes |
+|---|---|---|---|---|
+| 1 | Set Clerk `pk_live_` / `sk_live_` in Replit Secrets | User (Clerk Dashboard) | 🔴 **BLOCKING** | Auth rate limits + dev-mode warnings block all real usage |
+| 2 | Migrate file storage to Replit Object Storage (FIX-04) | Engineering | 🔴 **BLOCKING** | 5 existing image files on ephemeral disk; will be lost on restart |
+| 3 | Set `ADMIN_API_KEY` in Replit Secrets | User | 🟠 **BLOCKING for Operations** | Admin endpoints return 503 without it; platform runs without it but team is operationally blind |
+| 4 | Resolve 2 NULL-type test companies (FIX-05, step 1) | User decision | 🟡 Non-blocking | Confirm records are test data; then Engineering runs cleanup |
+| 5 | Run DB cleanup: migrate type values, drop `type` column, run db:push (FIX-05, steps 2–5) | Engineering | 🟡 Non-blocking (depends on #4) | Requires user confirmation from #4 first |
+| 6 | Add company logo upload UI to onboarding + profile | Engineering | 🟡 Non-blocking | Feature ready architecturally; UI field missing |
+| 7 | Self-bidding warning (PUT /offers/mine check) | Engineering | 🔵 Pilot Enhancement | Governance feature; not blocking launch |
+| 8 | Private targeting UI (full company search + targeting flow) | Engineering | 🔵 Pilot Enhancement | sale_type field exists; full UI deferred |
 
 ---
 
-*Document generated April 28, 2026 — Tadweerah Final 18-Workflow Baseline v2*  
-*Next review: after pilot launch data collection*
+*Tadweerah — Final 18-Workflow Baseline v2.1*  
+*Audit completed and corrections applied: April 28, 2026*  
+*Document is ready for formal approval and developer impact assessment*
