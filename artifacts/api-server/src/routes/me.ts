@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { getAuth, clerkClient } from "@clerk/express";
-import { db, companiesTable } from "@workspace/db";
+import { db, companiesTable, companyMembersTable } from "@workspace/db";
 import { requireAuth, type AuthedRequest } from "../middlewares/requireAuth";
 
 const router: IRouter = Router();
@@ -21,24 +21,41 @@ router.get("/me", requireAuth, async (req, res) => {
     req.log.warn({ err }, "failed to fetch clerk user email");
   }
 
-  const rows = await db
-    .select()
-    .from(companiesTable)
-    .where(eq(companiesTable.ownerUserId, userId))
+  // Look up company via company_members (works for both owners and invited members).
+  const [membership] = await db
+    .select({
+      id: companiesTable.id,
+      name: companiesTable.name,
+      type: companiesTable.type,
+      city: companiesTable.city,
+      commercialRegistration: companiesTable.commercialRegistration,
+      contactPhone: companiesTable.contactPhone,
+      license_number: companiesTable.license_number,
+      license_status: companiesTable.license_status,
+      company_category_id: companiesTable.company_category_id,
+      accepted_terms_at: companiesTable.accepted_terms_at,
+      createdAt: companiesTable.createdAt,
+      role: companyMembersTable.role,
+    })
+    .from(companyMembersTable)
+    .innerJoin(companiesTable, eq(companiesTable.id, companyMembersTable.company_id))
+    .where(eq(companyMembersTable.user_id, userId))
     .limit(1);
 
-  const company = rows[0]
+  const company = membership
     ? {
-        id: rows[0].id,
-        name: rows[0].name,
-        type: rows[0].type ?? undefined,
-        city: rows[0].city,
-        commercialRegistration: rows[0].commercialRegistration ?? undefined,
-        contactPhone: rows[0].contactPhone,
-        license_number: rows[0].license_number ?? undefined,
-        license_status: rows[0].license_status ?? undefined,
-        company_category_id: rows[0].company_category_id ?? undefined,
-        createdAt: rows[0].createdAt.toISOString(),
+        id: membership.id,
+        name: membership.name,
+        type: membership.type ?? undefined,
+        city: membership.city,
+        commercialRegistration: membership.commercialRegistration ?? undefined,
+        contactPhone: membership.contactPhone,
+        license_number: membership.license_number ?? undefined,
+        license_status: membership.license_status ?? undefined,
+        company_category_id: membership.company_category_id ?? undefined,
+        accepted_terms_at: membership.accepted_terms_at?.toISOString() ?? undefined,
+        role: membership.role,
+        createdAt: membership.createdAt.toISOString(),
       }
     : null;
 

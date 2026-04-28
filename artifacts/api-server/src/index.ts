@@ -1,5 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { expireStaleDeals } from "./jobs/expire-deals";
 
 const rawPort = process.env["PORT"];
 
@@ -22,4 +23,8 @@ app.listen(port, (err) => {
   }
 
   logger.info({ port }, "Server listening");
+
+  // Run expiry job immediately at startup, then every hour
+  void expireStaleDeals();
+  setInterval(() => void expireStaleDeals(), 60 * 60 * 1000);
 });

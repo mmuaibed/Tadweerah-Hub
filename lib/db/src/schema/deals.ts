@@ -22,6 +22,7 @@ export const dealStatusEnum = pgEnum("deal_status", [
   "payment_confirmed",
   "dispatched",
   "completed",
+  "expired",
 ]);
 
 export const dealsTable = pgTable(

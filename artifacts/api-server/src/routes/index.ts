@@ -10,6 +10,7 @@ import lookupRouter from "./lookup";
 import notificationsRouter from "./notifications";
 import statsRouter from "./stats";
 import issueReportsRouter from "./issue-reports";
+import adminRouter from "./admin";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(lookupRouter);
 router.use(notificationsRouter);
 router.use(statsRouter);
 router.use(issueReportsRouter);
+router.use(adminRouter);
 
 export default router;

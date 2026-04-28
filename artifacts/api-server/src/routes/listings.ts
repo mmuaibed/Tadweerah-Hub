@@ -671,6 +671,68 @@ router.post(
 );
 
 /**
+ * DELETE /listings/:waste_listing_id — producer deletes their own listing.
+ * Only allowed when the listing is still open and has no non-withdrawn offers.
+ */
+router.delete(
+  "/listings/:waste_listing_id",
+  requireAuth,
+  requireCompany(),
+  async (req, res) => {
+    const id = assertUuid(req.params.waste_listing_id, "waste_listing_id");
+    const { company } = req as AuthedCompanyRequest;
+
+    const [existing] = await db
+      .select()
+      .from(wasteListingsTable)
+      .where(eq(wasteListingsTable.id, id))
+      .limit(1);
+
+    if (!existing) {
+      throw new HttpError(404, "NotFound", "Listing not found");
+    }
+    if (existing.company_id !== company.id) {
+      throw new HttpError(403, "Forbidden", "Not the owner of this listing");
+    }
+    if (existing.status !== "open") {
+      throw new HttpError(409, "InvalidState", "Only open listings can be deleted");
+    }
+
+    // Block deletion if any non-withdrawn offers exist
+    const [pendingOffer] = await db
+      .select({ id: listingOffersTable.id })
+      .from(listingOffersTable)
+      .where(
+        and(
+          eq(listingOffersTable.waste_listing_id, id),
+          ne(listingOffersTable.status, "withdrawn"),
+        ),
+      )
+      .limit(1);
+
+    if (pendingOffer) {
+      throw new HttpError(
+        409,
+        "HasPendingOffers",
+        "Cannot delete a listing that has active or pending offers",
+      );
+    }
+
+    await db.delete(wasteListingsTable).where(eq(wasteListingsTable.id, id));
+
+    void logAudit({
+      userId: (req as AuthedCompanyRequest).userId,
+      companyId: company.id,
+      action: "listing.deleted",
+      entityType: "listing",
+      entityId: id,
+    });
+
+    res.status(204).send();
+  },
+);
+
+/**
  * GET /listings/:waste_listing_id — single listing detail.
  * Any authenticated user with a company can view.
  */
