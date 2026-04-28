@@ -12,3 +12,9 @@ id = "13EBoGU618GZtluWfurre"
 uri = "file://tadweerah-workflows-v2.zip"
 type = "unspecified"
 title = "Tadweerah Complete Workflow Blueprint (draw.io)"
+
+[[outputs]]
+id = "cysAxs-W8N_KkyIEZdci1"
+uri = "file://tadweerah-implementation-report.md"
+type = "text"
+title = "Tadweerah — Developer Impact Assessment (Dual-Model Architecture)"

@@ -1,0 +1,96 @@
+We have completed an external operational review and now need a full developer impact assessment before implementation.
+
+Important:
+The external reviewer will also review your technical assessment. Please prepare the output clearly enough that a non-developer operational expert can understand what currently exists and what will change.
+
+Please produce a detailed implementation report covering:
+
+1. Current Platform Inventory
+
+* All pages/routes currently implemented
+* All major components
+* Existing user journeys
+* Existing workflow logic
+* Current database tables and key fields
+* Current API endpoints
+* Current role/permission logic
+
+2. Page-by-Page Analysis
+   For each page:
+
+* Page name and route
+* Current purpose
+* Current actors/users
+* Current data shown
+* Current actions/workflows
+* Required changes under the dual-model design
+* UX impact
+* Risk level: Low / Medium / High
+
+3. Dual-Model Architecture Impact
+   We are keeping the existing Deal-Based Marketplace track and adding a separate Contract-Based Execution track.
+
+Please confirm:
+
+* Deal objects do not reference contract objects
+* Contract objects will not reference deal/listing objects
+* Shared users/companies are allowed
+* Execution logic remains separated
+* Reporting is track-scoped
+
+4. Contract Track Implementation Plan
+   Please define the technical changes required for:
+
+* Contract setup
+* Contract material categories and prices
+* Load request creation
+* Sequential load IDs per contract
+* Dispatch confirmation
+* Source and destination weight records
+* Variance calculation
+* Settlement rule application
+* Material outcome classification
+* Exception handling
+* Contract reporting
+
+5. Database Impact
+   Please propose:
+
+* New tables
+* Modified existing tables
+* Required enums/statuses
+* Required constraints
+* Audit trail approach
+* Immutability rules
+* Any migration risks
+
+6. API Impact
+   Please list:
+
+* New API routes
+* Modified API routes
+* Routes that must remain unchanged
+* Validation rules for each major route
+
+7. Admin & Control Requirements
+   Please identify the minimum admin capabilities required before contract-track launch:
+
+* Contract monitoring
+* Load monitoring
+* Exception review
+* Company/license oversight
+* Manual intervention boundaries
+
+8. Implementation Strategy
+   Please recommend:
+
+* Safe implementation sequence
+* Feature flags if needed
+* Testing plan
+* Backward compatibility risks
+* Any pre-launch blockers
+
+9. Export Requirement
+   Please provide the report in a structured format that can be printed or exported, so it can be reviewed by the external operational reviewer before we approve implementation.
+
+Do not implement changes yet. This step is assessment only.
