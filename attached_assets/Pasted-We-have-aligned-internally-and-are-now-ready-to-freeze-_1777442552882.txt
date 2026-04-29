@@ -1,0 +1,127 @@
+We have aligned internally and are now ready to freeze the Tadweerah Operating Model as the official project charter before creating the final draw.io diagrams.
+
+This is the complete and final version of the workflows and system behavior.
+
+---
+
+1. Marketplace Core Behavior
+
+- Accept offer = accept one offer + reject all others + close listing + create deal (atomic).
+- Listing is always closed after acceptance.
+- No reopening of listings.
+- If the deal fails or expires, a new listing must be created.
+
+---
+
+2. Accepting a Lower Offer (Simplified Governance)
+
+- Producer cannot accept an offer that is not the highest active offer.
+- If the producer wants to accept a lower offer:
+  - They must first reject all higher offers.
+  - Once the desired offer becomes the highest, they can accept it.
+- No accepted_below_highest flag or schema changes.
+
+---
+
+3. Offer Behavior
+
+- Buyers can resubmit after withdrawing.
+- The new offer must exceed the current highest valid offer.
+- Self-bidding is blocked.
+- No role-based blocking using company_type.
+
+---
+
+4. Pricing Models
+
+- Marketplace supports:
+  - Fixed
+  - By weight
+- revenue_share is removed completely from Marketplace.
+- It may be considered later in Contract Track if needed.
+
+---
+
+5. Deal Lifecycle (with Flexibility)
+
+Deal can end in:
+- completed
+- expired
+- cancelled
+
+Pre-expiry policy:
+
+Before a deal reaches expiry, the system notifies the producer.
+
+Producer can:
+1. Close immediately → status = cancelled
+2. Extend once → for a limited number of days
+
+Rules:
+- Extension allowed once only
+- After extension expires → deal becomes expired automatically
+- No second extension
+- No extension after dispatch
+- If no action is taken → deal expires as per default rules
+
+---
+
+6. Required Workflows
+
+Add before finalization:
+
+WF-00: Pilot User Onboarding
+- Admin invites known companies
+- No open self-registration during pilot
+- Companies verified before activation
+
+CWF-08: Contract Completion
+- Seller completes contract
+- Only allowed when all shipments are closed/resolved
+- Contract becomes terminal (completed)
+- Both parties notified
+
+---
+
+7. Contract Track Principles
+
+- Contract Track is a separate parallel system.
+- Used for known parties and repeated transactions.
+- Marketplace = discovery
+- Contracts = execution
+
+Strict isolation:
+- Shared only: users and companies
+- No listing/offer/deal references inside contracts
+- No contract references inside marketplace
+
+---
+
+8. Required Fixes Before Pilot
+
+Please confirm status of:
+
+- Remove revenue_share from UI and API
+- Add receipt_failures_count and offer_submission_blocked
+- Add admin unsuspend route
+- Confirm cloud storage migration complete
+- Confirm company_type cleanup if still present
+
+---
+
+9. Final Confirmation
+
+This is intended to be the final version of the operating model.
+
+Please respond with one of the following:
+
+A) APPROVED — no further comments  
+B) APPROVED WITH COMMENTS — list final remarks (must-fix vs nice-to-have)  
+C) NOT APPROVED — explain blocking issues  
+
+If there are comments:
+- Provide clear recommendations
+- We will take final decisions and freeze the model
+
+If no blocking issues remain:
+- We will proceed to draw.io and treat this as the official project charter
