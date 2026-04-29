@@ -54,6 +54,7 @@ The project is built as a pnpm workspace monorepo using TypeScript (v5.9) and No
 - **Targeting System:** Direct Sale listings can target `open`, `specific_company`, or `category`. Auction listings are always `open`.
 - **Sensitive Material Gate:** `is_sensitive=true` on material category requires `license_status=approved` for buyers to make an offer.
 - **Revenue-Share Validation:** "Revenue Share" pricing is only allowed for `direct` sale types.
+- **Contract Track (Backend P1–P3 complete):** Fully isolated from Marketplace. Schema: `contracts`, `contract_materials`, `contract_sequences`, `contract_shipments`. Contract lifecycle: `draft → pending_confirmation → active → completed | cancelled`. Shipment lifecycle: `planned → dispatched → received → closed | cancelled`. Weight policies: 5 deterministic enum values; `final_weight` computed at close. Immutable reference numbers: `TDW-CTR-YYYY-NNNN` (contracts) / `TDW-CTR-YYYY-NNNN-SMMM` (shipments). Material lines locked on contract activation. Passive revenue share storage only (seller_pct / buyer_pct). Admin routes: `GET /admin/contracts`, `POST /admin/contracts/:id/cancel`. All endpoints protected by `requireAuth + requireCompany`.
 
 # External Dependencies
 

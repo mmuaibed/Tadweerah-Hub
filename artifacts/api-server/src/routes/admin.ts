@@ -8,13 +8,15 @@
  * GET    /admin/audit-log?entityType=&entityId=&action=&limit=100&offset=0
  */
 import { Router, type Request, type Response, type NextFunction } from "express";
-import { and, desc, eq, ilike, isNull } from "drizzle-orm";
+import { and, desc, eq, ilike, isNull, or, sql } from "drizzle-orm";
 import {
   db,
   companiesTable,
   issueReportsTable,
   auditLogTable,
   dealsTable,
+  contractsTable,
+  contractShipmentsTable,
 } from "@workspace/db";
 import { logAudit } from "../lib/audit";
 
@@ -284,6 +286,93 @@ router.post("/admin/deals/:id/cancel", requireAdminKey, async (req, res) => {
     entityType: "deal",
     entityId: id,
     details: { reason: reason ?? null, cancelled_from_status: deal.status },
+    severity: "warn",
+  });
+
+  res.json(updated);
+});
+
+/* -------------------------------------------------------------------------- */
+/* Contracts (admin)                                                           */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * GET /admin/contracts
+ * Query params: status, seller_company_id, buyer_company_id, limit (max 200), offset
+ */
+router.get("/admin/contracts", requireAdminKey, async (req, res) => {
+  const statusFilter = typeof req.query.status === "string" ? req.query.status : null;
+  const sellerFilter = typeof req.query.seller_company_id === "string" ? req.query.seller_company_id : null;
+  const buyerFilter = typeof req.query.buyer_company_id === "string" ? req.query.buyer_company_id : null;
+  const limit = Math.min(Number(req.query.limit) || 50, 200);
+  const offset = Number(req.query.offset) || 0;
+
+  const conditions = [];
+  if (statusFilter) conditions.push(eq(contractsTable.status, statusFilter as typeof contractsTable.$inferSelect["status"]));
+  if (sellerFilter) conditions.push(eq(contractsTable.seller_company_id, sellerFilter));
+  if (buyerFilter) conditions.push(eq(contractsTable.buyer_company_id, buyerFilter));
+
+  const rows = await db
+    .select({
+      contract: contractsTable,
+      seller_name: sql<string>`(SELECT name FROM companies WHERE id = ${contractsTable.seller_company_id})`,
+      buyer_name: sql<string>`(SELECT name FROM companies WHERE id = ${contractsTable.buyer_company_id})`,
+    })
+    .from(contractsTable)
+    .where(conditions.length ? and(...conditions) : undefined)
+    .orderBy(desc(contractsTable.created_at))
+    .limit(limit)
+    .offset(offset);
+
+  res.json(
+    rows.map((r) => ({
+      ...r.contract,
+      seller_name: r.seller_name,
+      buyer_name: r.buyer_name,
+    })),
+  );
+});
+
+/**
+ * POST /admin/contracts/:id/cancel
+ * Force-cancel any non-terminal contract, regardless of open shipments.
+ * Body: { reason?: string }
+ */
+router.post("/admin/contracts/:id/cancel", requireAdminKey, async (req, res) => {
+  const id = String(req.params["id"]);
+  const { reason } = req.body as { reason?: string };
+
+  const [contract] = await db
+    .select()
+    .from(contractsTable)
+    .where(eq(contractsTable.id, id))
+    .limit(1);
+
+  if (!contract) {
+    res.status(404).json({ error: "NotFound", message: "Contract not found" });
+    return;
+  }
+
+  if (contract.status === "cancelled" || contract.status === "completed") {
+    res.status(409).json({
+      error: "AlreadyTerminal",
+      message: `Contract is already in terminal status: ${contract.status}`,
+    });
+    return;
+  }
+
+  const now = new Date();
+  const [updated] = await db
+    .update(contractsTable)
+    .set({ status: "cancelled", cancelled_at: now, updated_at: now })
+    .where(eq(contractsTable.id, id))
+    .returning();
+
+  void logAudit({
+    action: "contract.cancelled_by_admin",
+    entityType: "contract",
+    entityId: id,
+    details: { reason: reason ?? null, cancelled_from_status: contract.status },
     severity: "warn",
   });
 

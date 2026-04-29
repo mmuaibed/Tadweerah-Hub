@@ -11,6 +11,8 @@ import notificationsRouter from "./notifications";
 import statsRouter from "./stats";
 import issueReportsRouter from "./issue-reports";
 import adminRouter from "./admin";
+import contractsRouter from "./contracts";
+import shipmentsRouter from "./shipments";
 
 const router: IRouter = Router();
 
@@ -26,5 +28,7 @@ router.use(notificationsRouter);
 router.use(statsRouter);
 router.use(issueReportsRouter);
 router.use(adminRouter);
+router.use(contractsRouter);
+router.use(shipmentsRouter);
 
 export default router;
