@@ -1,0 +1,217 @@
+We are finalizing the Contract Lite MVP scope. Please review carefully before implementation.
+
+Goal:
+Build a simple operational contract execution track for Tadweerah. This is not a legal contract system, not e-signature, not payment processing, and not dispute resolution. It is an execution, tracking, and reporting layer for existing commercial agreements between known companies.
+
+Core principle:
+Contract Track must be completely separate from Marketplace.
+Do not reuse listings, offers, or deals.
+Shared only: users, companies, material/category lookup tables, units.
+
+Required structure:
+contracts
+  └── contract_materials
+        └── contract_shipments
+
+1. Contract structure
+
+Each company can have multiple contracts.
+
+A company may be:
+- Seller in one contract
+- Buyer in another contract
+
+Role is per contract, not fixed at company level.
+
+Each contract must have a Tadweerah-generated unique immutable reference number, for example:
+TDW-CTR-2026-0001
+
+Contract fields:
+- Tadweerah contract reference
+- External contract number, optional
+- seller_company_id
+- buyer_company_id
+- start_date
+- end_date
+- status
+- weight_policy
+- optional attachment_url
+- notes, optional
+
+Attachment is optional only.
+It is a supporting document, not an e-signature, not legal approval.
+
+2. Contract materials
+
+Each contract can include multiple material lines.
+
+Each material line includes:
+- material/category
+- unit
+- price_per_unit
+- optional seller_pct
+- optional buyer_pct
+
+Example:
+- Plastic — SAR / ton
+- Furniture — SAR / ton
+- Metal — SAR / ton
+
+Revenue share is allowed only as passive stored data:
+- seller_pct
+- buyer_pct
+No revenue/profit calculation.
+No payment processing.
+No validation beyond optional/non-blocking warning if seller_pct + buyer_pct ≠ 100.
+
+3. Shipment structure
+
+Each shipment must be linked to:
+- one contract
+- one material line
+
+Each shipment must have a Tadweerah-generated immutable reference tied to the contract, for example:
+TDW-CTR-2026-0001-S001
+TDW-CTR-2026-0001-S002
+
+Shipment fields:
+- shipment_reference
+- contract_id
+- material_line_id
+- status
+- source_weight
+- destination_weight
+- final_weight
+- final_value
+- notes, optional
+- timestamps for each stage
+
+4. Weight policy
+
+Weight policy is fixed at contract creation.
+
+Allowed policies:
+- source_weight_only
+- destination_weight_only
+- dual_source_final
+- dual_destination_final
+- dual_higher_final
+
+There is no settlement reconciliation.
+
+If both source and destination weights are recorded, the variance is documented only.
+It has no automatic financial effect.
+It does not trigger dispute, tolerance, adjustment, approval, or reconciliation logic.
+
+The system should calculate final_weight automatically based on the selected policy:
+
+- source_weight_only → final_weight = source_weight
+- destination_weight_only → final_weight = destination_weight
+- dual_source_final → final_weight = source_weight
+- dual_destination_final → final_weight = destination_weight
+- dual_higher_final → final_weight = max(source_weight, destination_weight)
+
+final_value = final_weight × price_per_unit
+
+5. Shipment lifecycle
+
+Use a simple shipment lifecycle:
+
+planned → dispatched → received → closed
+
+At closure:
+- final_weight is calculated
+- final_value is calculated
+- shipment becomes immutable
+
+Closed shipment values must not be edited.
+
+6. Contract lifecycle
+
+Suggested lifecycle:
+
+draft → active → completed / cancelled
+
+Contract can become active after the counterparty confirms operational use of the contract on Tadweerah.
+
+This confirmation is not legal signing.
+It only means both parties agree to manage execution of this contract on the platform.
+
+Contract can be completed only when all shipments are in terminal state:
+- closed
+- cancelled
+- expired, if expiry is included
+
+Do not allow completion if any shipment is:
+- planned
+- dispatched
+- received
+
+7. Reporting readiness
+
+The design must support future reports per contract:
+
+For each contract, we should be able to show:
+- total shipments
+- open shipments
+- closed shipments
+- total final weight
+- total final value
+- totals by material
+- status of each shipment
+- full shipment history
+
+No advanced compliance reports in MVP.
+But the data model must support future reporting.
+
+8. UI / UX direction
+
+Preference:
+Keep the experience in one page as much as possible, similar to the Tadweerah main page style we approved.
+
+Recommended structure:
+- Contracts list
+- Contract detail page with all key information in one view
+- Material lines section
+- Shipments section
+- Status timeline
+- Actions panel
+
+Avoid spreading the user journey across too many pages unless technically necessary.
+
+The design should feel simple, operational, and executive-friendly.
+
+9. Out of scope
+
+Do NOT include in MVP:
+- PDF generation
+- E-signature
+- payment processing
+- dispute workflow
+- settlement reconciliation
+- vehicle/asset technical valuation
+- automated compliance reports
+- marketplace linkage
+- converting deals to contracts
+- converting contracts to deals
+
+10. Developer flexibility
+
+You may propose improvements if they:
+- simplify implementation
+- improve maintainability
+- improve user experience
+- do not change the core business logic
+- do not mix Marketplace and Contract Track
+
+If any improvement changes the business flow, data model, permissions, settlement logic, or user obligations, please stop and bring it back to us for approval before implementation.
+
+Please respond with:
+
+A) APPROVE / APPROVE WITH CHANGES / REJECT  
+B) Recommended final schema  
+C) Shipment and contract status machines  
+D) API route list  
+E) Frontend page/component plan  
+F) Estimated effort  
+G) Any hidden complexity or risk before coding
