@@ -8,6 +8,7 @@ import {
   Building2,
   ArrowRight,
   Package,
+  AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +16,7 @@ import { AppLayout } from "@/components/app-layout";
 import { EmptyState } from "@/components/empty-state";
 import { FileText } from "lucide-react";
 import { useT } from "@/i18n";
+import { useGetMe } from "@workspace/api-client-react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -31,6 +33,7 @@ interface ContractSummary {
   external_reference: string | null;
   seller_company_id: string;
   buyer_company_id: string;
+  created_by_company_id: string | null;
   seller_name: string;
   buyer_name: string;
   start_date: string;
@@ -85,8 +88,15 @@ function useContracts() {
 
 // ── Contract Card ─────────────────────────────────────────────────────────────
 
-function ContractCard({ contract }: { contract: ContractSummary }) {
+function ContractCard({ contract, myCompanyId }: { contract: ContractSummary; myCompanyId?: string }) {
   const { t, lang } = useT();
+
+  // Show "action required" indicator when this user is the counterparty and needs to confirm
+  const isCreator = contract.created_by_company_id
+    ? contract.created_by_company_id === myCompanyId
+    : contract.seller_company_id === myCompanyId;
+  const isParty = myCompanyId === contract.seller_company_id || myCompanyId === contract.buyer_company_id;
+  const actionRequired = !isCreator && isParty && contract.status === "pending_confirmation";
 
   const matCount = contract.materials?.length ?? 0;
   const summary = contract.shipment_summary;
@@ -111,12 +121,20 @@ function ContractCard({ contract }: { contract: ContractSummary }) {
               </span>
             )}
           </div>
-          <Badge
-            variant="outline"
-            className={`shrink-0 text-xs border ${statusBadgeClass(contract.status)}`}
-          >
-            {t(`contract.status.${contract.status}`)}
-          </Badge>
+          <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
+            {actionRequired && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-700 bg-amber-50 border border-amber-300 rounded-full px-2 py-0.5">
+                <AlertCircle className="h-3 w-3" />
+                {t("contract.action.required")}
+              </span>
+            )}
+            <Badge
+              variant="outline"
+              className={`text-xs border ${statusBadgeClass(contract.status)}`}
+            >
+              {t(`contract.status.${contract.status}`)}
+            </Badge>
+          </div>
         </div>
 
         {/* Parties */}
@@ -162,6 +180,8 @@ function ContractCard({ contract }: { contract: ContractSummary }) {
 export function ContractsPage() {
   const { t } = useT();
   const { data: contracts, isLoading, isError } = useContracts();
+  const { data: me } = useGetMe();
+  const myCompanyId = me?.company?.id;
 
   return (
     <AppLayout
@@ -208,7 +228,7 @@ export function ContractsPage() {
       {!isLoading && !isError && contracts && contracts.length > 0 && (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {contracts.map((c) => (
-            <ContractCard key={c.id} contract={c} />
+            <ContractCard key={c.id} contract={c} myCompanyId={myCompanyId} />
           ))}
         </div>
       )}

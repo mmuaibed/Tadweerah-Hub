@@ -73,6 +73,16 @@ export const contractsTable = pgTable(
     status: contractStatusEnum("status").notNull().default("draft"),
     weight_policy: weightPolicyEnum("weight_policy").notNull(),
 
+    /**
+     * The company that initiated/created this contract draft.
+     * Determines who can submit (creator) and who must confirm (counterparty).
+     * Nullable for backwards-compat with contracts created before this field was added.
+     */
+    created_by_company_id: uuid("created_by_company_id").references(
+      () => companiesTable.id,
+      { onDelete: "set null" },
+    ),
+
     /** Optional supporting document URL. Not an e-signature or legal instrument. */
     attachment_url: text("attachment_url"),
     notes: text("notes"),

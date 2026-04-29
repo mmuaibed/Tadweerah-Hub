@@ -58,6 +58,7 @@ interface ContractDetail {
   external_reference: string | null;
   seller_company_id: string;
   buyer_company_id: string;
+  created_by_company_id: string | null;
   seller_name: string;
   buyer_name: string;
   start_date: string;
@@ -186,10 +187,12 @@ function useMyCompany() {
 function ContractActionsPanel({
   contract,
   role,
+  myCompanyId,
   onRefresh,
 }: {
   contract: ContractDetail;
   role: "seller" | "buyer" | null;
+  myCompanyId: string | undefined;
   onRefresh: () => void;
 }) {
   const { t } = useT();
@@ -200,10 +203,17 @@ function ContractActionsPanel({
 
   const { status } = contract;
 
-  const canSubmit = role === "seller" && status === "draft";
-  const canConfirm = role === "buyer" && status === "pending_confirmation";
-  const canComplete = role === "seller" && status === "active";
-  const canCancel = !["completed", "cancelled"].includes(status);
+  // Determine if the current user is the creator.
+  // Fall back to seller=creator for legacy contracts without created_by_company_id.
+  const isCreator = contract.created_by_company_id
+    ? contract.created_by_company_id === myCompanyId
+    : role === "seller";
+
+  const isParty = role === "seller" || role === "buyer";
+  const canSubmit = isCreator && status === "draft";
+  const canConfirm = !isCreator && isParty && status === "pending_confirmation";
+  const canComplete = isCreator && status === "active";
+  const canCancel = isParty && !["completed", "cancelled"].includes(status);
 
   async function doAction(action: string) {
     setLoading(true);
@@ -246,10 +256,12 @@ function ContractActionsPanel({
       <div className="rounded-xl border border-border bg-card p-4 space-y-3">
         <h3 className="text-sm font-semibold text-foreground">{t("action.title") || "Actions"}</h3>
 
-        {/* Role indicator */}
+        {/* Role + creator indicator */}
         {role && (
           <p className="text-xs text-muted-foreground">
             {t(`contract.role.you_are_${role}`)}
+            {" · "}
+            {isCreator ? t("contract.role.you_are_creator") : t("contract.role.you_are_counterparty")}
           </p>
         )}
 
@@ -483,10 +495,10 @@ function ShipmentRow({
     try {
       const token = await getToken();
       const res = await fetch(`/api/shipments/${shipment.id}/${action}`, {
-        method: "PATCH",
-        headers: { ...(body ? { "Content-Type": "application/json" } : {}), ...makeAuthHeaders(token) },
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...makeAuthHeaders(token) },
         credentials: "include",
-        body: body ? JSON.stringify(body) : undefined,
+        body: body ? JSON.stringify(body) : JSON.stringify({}),
       });
       if (!res.ok) {
         const err = (await res.json().catch(() => ({}))) as { message?: string };
@@ -737,7 +749,7 @@ function ShipmentsSection({
               <div className="space-y-1">
                 <Label className="text-xs">{lang === "ar" ? "تاريخ الشحن المخطط" : "Planned Date"} *</Label>
                 <Input
-                  type="datetime-local"
+                  type="date"
                   value={addForm.plannedAt}
                   onChange={e => setAddForm(f => ({ ...f, plannedAt: e.target.value }))}
                   required
@@ -956,7 +968,32 @@ export function ContractDetailPage() {
 
         {/* Right column: actions + timeline */}
         <div className="space-y-4">
-          <ContractActionsPanel contract={contract} role={role} onRefresh={refresh} />
+          {/* Action required banner for counterparty */}
+          {(() => {
+            if (!myCompany || !contract) return null;
+            const isCreator = contract.created_by_company_id
+              ? contract.created_by_company_id === myCompany.id
+              : contract.seller_company_id === myCompany.id;
+            const isParty = role === "seller" || role === "buyer";
+            const isCounterparty = !isCreator && isParty;
+            if (isCounterparty && contract.status === "pending_confirmation") {
+              return (
+                <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 space-y-1">
+                  <p className="text-sm font-semibold text-amber-800 flex items-center gap-1.5">
+                    <span>⚠</span> {t("contract.action.required")}
+                  </p>
+                  <p className="text-xs text-amber-700">{t("contract.action.required.desc")}</p>
+                </div>
+              );
+            }
+            return null;
+          })()}
+          <ContractActionsPanel
+            contract={contract}
+            role={role}
+            myCompanyId={myCompany?.id}
+            onRefresh={refresh}
+          />
           <ContractTimeline contract={contract} lang={lang} />
         </div>
       </div>

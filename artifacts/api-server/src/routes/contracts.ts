@@ -39,6 +39,7 @@ function serializeContract(
     external_reference: contract.external_reference ?? null,
     seller_company_id: contract.seller_company_id,
     buyer_company_id: contract.buyer_company_id,
+    created_by_company_id: contract.created_by_company_id ?? null,
     seller_name: extras.seller.name,
     buyer_name: extras.buyer.name,
     start_date: contract.start_date,
@@ -92,7 +93,15 @@ async function fetchContractForParty(contractId: string, companyId: string) {
     throw new HttpError(403, "Forbidden", "Not a party to this contract");
   }
 
-  return { contract, isSeller, isBuyer };
+  // Determine creator / counterparty.
+  // created_by_company_id is null for contracts created before this field was added —
+  // fall back to legacy behaviour where seller is always the creator.
+  const isCreator =
+    contract.created_by_company_id != null
+      ? contract.created_by_company_id === companyId
+      : isSeller;
+
+  return { contract, isSeller, isBuyer, isCreator };
 }
 
 async function fetchPartyNames(sellerId: string, buyerId: string) {
@@ -120,10 +129,6 @@ async function fetchShipmentSummary(contractId: string) {
   return { total, open, closed, cancelled };
 }
 
-/**
- * Asserts the contract is in draft status, allowing material line mutations.
- * Material lines are immutable once the contract leaves draft.
- */
 function assertContractEditable(contract: Contract) {
   if (contract.status !== "draft") {
     throw new HttpError(
@@ -191,7 +196,12 @@ router.get(
 );
 
 // ---------------------------------------------------------------------------
-// POST /contracts — create contract (seller)
+// POST /contracts — create contract (either party)
+//
+// Body:
+//   my_role: "seller" | "buyer"   — creator's role in the contract
+//   counterparty_company_id: UUID — the other party
+//   start_date, weight_policy, end_date?, external_reference?, attachment_url?, notes?
 // ---------------------------------------------------------------------------
 
 router.post(
@@ -203,6 +213,9 @@ router.post(
       const company = (req as AuthedCompanyRequest).company;
       const userId = (req as AuthedCompanyRequest).userId;
       const {
+        my_role,
+        counterparty_company_id,
+        // Legacy support: accept buyer_company_id (old frontend)
         buyer_company_id,
         start_date,
         end_date,
@@ -212,8 +225,6 @@ router.post(
         notes,
       } = req.body as Record<string, string | undefined>;
 
-      if (!buyer_company_id) throw new HttpError(400, "ValidationError", "buyer_company_id is required");
-      assertUuid(buyer_company_id, "buyer_company_id");
       if (!start_date) throw new HttpError(400, "ValidationError", "start_date is required");
       if (!weight_policy) throw new HttpError(400, "ValidationError", "weight_policy is required");
 
@@ -228,17 +239,38 @@ router.post(
         throw new HttpError(400, "ValidationError", `weight_policy must be one of: ${validPolicies.join(", ")}`);
       }
 
-      if (buyer_company_id === company.id) {
+      // Determine seller/buyer based on role
+      let sellerCompanyId: string;
+      let buyerCompanyId: string;
+      const role = my_role ?? "seller";
+
+      if (role === "buyer") {
+        // Creator is the buyer; counterparty is the seller
+        const cpId = counterparty_company_id;
+        if (!cpId) throw new HttpError(400, "ValidationError", "counterparty_company_id is required");
+        assertUuid(cpId, "counterparty_company_id");
+        sellerCompanyId = cpId;
+        buyerCompanyId = company.id;
+      } else {
+        // Creator is the seller; counterparty is the buyer (legacy behavior)
+        const cpId = counterparty_company_id ?? buyer_company_id;
+        if (!cpId) throw new HttpError(400, "ValidationError", "counterparty_company_id is required");
+        assertUuid(cpId, "counterparty_company_id");
+        sellerCompanyId = company.id;
+        buyerCompanyId = cpId;
+      }
+
+      if (sellerCompanyId === buyerCompanyId) {
         throw new HttpError(400, "ValidationError", "Seller and buyer cannot be the same company");
       }
 
-      const [buyer] = await db
+      const [counterparty] = await db
         .select({ id: companiesTable.id, name: companiesTable.name })
         .from(companiesTable)
-        .where(eq(companiesTable.id, buyer_company_id))
+        .where(eq(companiesTable.id, role === "buyer" ? sellerCompanyId : buyerCompanyId))
         .limit(1);
 
-      if (!buyer) throw new HttpError(404, "NotFound", "Buyer company not found");
+      if (!counterparty) throw new HttpError(404, "NotFound", "Counterparty company not found");
 
       const reference = await nextContractReference();
 
@@ -247,8 +279,9 @@ router.post(
         .values({
           reference,
           external_reference: external_reference ?? null,
-          seller_company_id: company.id,
-          buyer_company_id,
+          seller_company_id: sellerCompanyId,
+          buyer_company_id: buyerCompanyId,
+          created_by_company_id: company.id,
           start_date,
           end_date: end_date ?? null,
           weight_policy: weight_policy as typeof contractsTable.$inferInsert["weight_policy"],
@@ -264,13 +297,16 @@ router.post(
         action: "contract.created",
         entityType: "contract",
         entityId: contract.id,
-        details: { reference, buyer_company_id },
+        details: { reference, my_role: role, seller_company_id: sellerCompanyId, buyer_company_id: buyerCompanyId },
       });
+
+      const sellerName = role === "seller" ? company.name : counterparty.name;
+      const buyerName = role === "buyer" ? company.name : counterparty.name;
 
       res.status(201).json(
         serializeContract(contract, {
-          seller: { name: company.name },
-          buyer: { name: buyer.name },
+          seller: { name: sellerName },
+          buyer: { name: buyerName },
           materials: [],
         }),
       );
@@ -322,7 +358,7 @@ router.get(
 );
 
 // ---------------------------------------------------------------------------
-// PATCH /contracts/:id — update contract fields (draft only, seller only)
+// PATCH /contracts/:id — update contract fields (draft only, either party for attachment)
 // ---------------------------------------------------------------------------
 
 router.patch(
@@ -335,21 +371,8 @@ router.patch(
       const userId = (req as AuthedCompanyRequest).userId;
       const contractId = assertUuid(req.params.id, "id");
 
-      const { contract, isSeller } = await fetchContractForParty(contractId, company.id);
-
-      if (!isSeller) {
-        throw new HttpError(403, "Forbidden", "Only the seller can edit contract details");
-      }
+      const { contract, isCreator } = await fetchContractForParty(contractId, company.id);
       assertContractEditable(contract);
-
-      const allowed = [
-        "external_reference",
-        "start_date",
-        "end_date",
-        "weight_policy",
-        "attachment_url",
-        "notes",
-      ] as const;
 
       const validPolicies = [
         "source_weight_only",
@@ -360,13 +383,31 @@ router.patch(
       ];
 
       const updates: Partial<typeof contractsTable.$inferInsert> = {};
-      for (const key of allowed) {
+
+      // Fields only the creator can change
+      const creatorOnlyFields = [
+        "external_reference",
+        "start_date",
+        "end_date",
+        "weight_policy",
+        "notes",
+      ] as const;
+
+      for (const key of creatorOnlyFields) {
         if (key in req.body) {
+          if (!isCreator) {
+            throw new HttpError(403, "Forbidden", `Only the contract creator can update '${key}'`);
+          }
           if (key === "weight_policy" && !validPolicies.includes(req.body[key])) {
             throw new HttpError(400, "ValidationError", `weight_policy must be one of: ${validPolicies.join(", ")}`);
           }
           (updates as Record<string, unknown>)[key] = req.body[key] ?? null;
         }
+      }
+
+      // attachment_url: either party can update
+      if ("attachment_url" in req.body) {
+        updates.attachment_url = req.body.attachment_url ?? null;
       }
 
       if (Object.keys(updates).length === 0) {
@@ -403,7 +444,8 @@ router.patch(
 );
 
 // ---------------------------------------------------------------------------
-// POST /contracts/:id/submit — draft → pending_confirmation (seller only)
+// POST /contracts/:id/submit — draft → pending_confirmation
+// Creator (either seller or buyer) can submit; counterparty then confirms.
 // ---------------------------------------------------------------------------
 
 router.post(
@@ -416,10 +458,10 @@ router.post(
       const userId = (req as AuthedCompanyRequest).userId;
       const contractId = assertUuid(req.params.id, "id");
 
-      const { contract, isSeller } = await fetchContractForParty(contractId, company.id);
+      const { contract, isCreator } = await fetchContractForParty(contractId, company.id);
 
-      if (!isSeller) {
-        throw new HttpError(403, "Forbidden", "Only the seller can submit a contract for confirmation");
+      if (!isCreator) {
+        throw new HttpError(403, "Forbidden", "Only the contract creator can submit it for confirmation");
       }
       if (contract.status !== "draft") {
         throw new HttpError(409, "InvalidTransition", `Cannot submit a contract with status: ${contract.status}`);
@@ -465,7 +507,8 @@ router.post(
 );
 
 // ---------------------------------------------------------------------------
-// POST /contracts/:id/confirm — pending_confirmation → active (buyer only)
+// POST /contracts/:id/confirm — pending_confirmation → active
+// Counterparty (non-creator party) confirms.
 // ---------------------------------------------------------------------------
 
 router.post(
@@ -478,10 +521,12 @@ router.post(
       const userId = (req as AuthedCompanyRequest).userId;
       const contractId = assertUuid(req.params.id, "id");
 
-      const { contract, isBuyer } = await fetchContractForParty(contractId, company.id);
+      const { contract, isCreator, isSeller, isBuyer } = await fetchContractForParty(contractId, company.id);
 
-      if (!isBuyer) {
-        throw new HttpError(403, "Forbidden", "Only the buyer can confirm a contract");
+      // Counterparty = party who did NOT create the contract
+      const isCounterparty = !isCreator && (isSeller || isBuyer);
+      if (!isCounterparty) {
+        throw new HttpError(403, "Forbidden", "Only the counterparty (non-creator) can confirm a contract");
       }
       if (contract.status !== "pending_confirmation") {
         throw new HttpError(409, "InvalidTransition", `Cannot confirm a contract with status: ${contract.status}`);
@@ -514,7 +559,7 @@ router.post(
 );
 
 // ---------------------------------------------------------------------------
-// POST /contracts/:id/complete — active → completed (seller only; all shipments terminal)
+// POST /contracts/:id/complete — active → completed (creator only; all shipments terminal)
 // ---------------------------------------------------------------------------
 
 router.post(
@@ -527,10 +572,10 @@ router.post(
       const userId = (req as AuthedCompanyRequest).userId;
       const contractId = assertUuid(req.params.id, "id");
 
-      const { contract, isSeller } = await fetchContractForParty(contractId, company.id);
+      const { contract, isCreator } = await fetchContractForParty(contractId, company.id);
 
-      if (!isSeller) {
-        throw new HttpError(403, "Forbidden", "Only the seller can complete a contract");
+      if (!isCreator) {
+        throw new HttpError(403, "Forbidden", "Only the contract creator can complete a contract");
       }
       if (contract.status !== "active") {
         throw new HttpError(409, "InvalidTransition", `Cannot complete a contract with status: ${contract.status}`);
@@ -650,7 +695,7 @@ router.post(
 );
 
 // ---------------------------------------------------------------------------
-// POST /contracts/:id/materials — add material line (draft only)
+// POST /contracts/:id/materials — add material line (draft only, creator only)
 // ---------------------------------------------------------------------------
 
 router.post(
@@ -663,10 +708,10 @@ router.post(
       const userId = (req as AuthedCompanyRequest).userId;
       const contractId = assertUuid(req.params.id, "id");
 
-      const { contract, isSeller } = await fetchContractForParty(contractId, company.id);
+      const { contract, isCreator } = await fetchContractForParty(contractId, company.id);
 
-      if (!isSeller) {
-        throw new HttpError(403, "Forbidden", "Only the seller can manage material lines");
+      if (!isCreator) {
+        throw new HttpError(403, "Forbidden", "Only the contract creator can manage material lines");
       }
       assertContractEditable(contract);
 
@@ -695,47 +740,37 @@ router.post(
         throw new HttpError(400, "ValidationError", "price_per_unit must be a non-negative number");
       }
 
-      if (material_category_id != null) assertUuid(material_category_id as string, "material_category_id");
-      if (unit_option_id != null) assertUuid(unit_option_id as string, "unit_option_id");
+      const [currentCount] = await db
+        .select({ count: sql<string>`count(*)::text` })
+        .from(contractMaterialsTable)
+        .where(eq(contractMaterialsTable.contract_id, contract.id));
 
-      const sellerPctNum = seller_pct != null ? Number(seller_pct) : null;
-      const buyerPctNum = buyer_pct != null ? Number(buyer_pct) : null;
-
-      if (
-        sellerPctNum != null &&
-        buyerPctNum != null &&
-        Math.abs(sellerPctNum + buyerPctNum - 100) > 0.01
-      ) {
-        res.setHeader("X-Revenue-Share-Warning", "seller_pct + buyer_pct does not equal 100");
-      }
+      const nextSortOrder = (sort_order != null ? Number(sort_order) : null) ?? (Number(currentCount.count) + 1);
 
       const [material] = await db
         .insert(contractMaterialsTable)
         .values({
           contract_id: contract.id,
-          material_category_id: (material_category_id as string) ?? null,
+          material_category_id:
+            typeof material_category_id === "string" ? material_category_id : null,
           material_label: material_label.trim(),
-          unit_option_id: (unit_option_id as string) ?? null,
+          unit_option_id:
+            typeof unit_option_id === "string" ? unit_option_id : null,
           unit_label: (unit_label as string).trim(),
           price_per_unit: String(priceNum),
-          seller_pct: sellerPctNum != null ? String(sellerPctNum) : null,
-          buyer_pct: buyerPctNum != null ? String(buyerPctNum) : null,
-          sort_order: sort_order != null ? Number(sort_order) : 0,
+          seller_pct: seller_pct != null ? String(Number(seller_pct)) : null,
+          buyer_pct: buyer_pct != null ? String(Number(buyer_pct)) : null,
+          sort_order: nextSortOrder,
         })
         .returning();
-
-      await db
-        .update(contractsTable)
-        .set({ updated_at: new Date() })
-        .where(eq(contractsTable.id, contract.id));
 
       await logAudit({
         userId,
         companyId: company.id,
         action: "contract.material.added",
-        entityType: "contract_material",
-        entityId: material.id,
-        details: { contract_id: contract.id, material_label },
+        entityType: "contract",
+        entityId: contract.id,
+        details: { material_label, unit_label, price_per_unit: priceNum },
       });
 
       res.status(201).json(serializeMaterial(material));
@@ -746,125 +781,11 @@ router.post(
 );
 
 // ---------------------------------------------------------------------------
-// PUT /contracts/:id/materials/:mid — update material line (draft only)
-// ---------------------------------------------------------------------------
-
-router.put(
-  "/contracts/:id/materials/:mid",
-  requireAuth,
-  requireCompany(),
-  async (req, res, next) => {
-    try {
-      const company = (req as AuthedCompanyRequest).company;
-      const userId = (req as AuthedCompanyRequest).userId;
-      const contractId = assertUuid(req.params.id, "id");
-      const materialId = assertUuid(req.params.mid, "mid");
-
-      const { contract, isSeller } = await fetchContractForParty(contractId, company.id);
-
-      if (!isSeller) {
-        throw new HttpError(403, "Forbidden", "Only the seller can manage material lines");
-      }
-      assertContractEditable(contract);
-
-      const [existing] = await db
-        .select()
-        .from(contractMaterialsTable)
-        .where(
-          and(
-            eq(contractMaterialsTable.id, materialId),
-            eq(contractMaterialsTable.contract_id, contract.id),
-          ),
-        )
-        .limit(1);
-
-      if (!existing) throw new HttpError(404, "NotFound", "Material line not found");
-
-      const updates: Partial<typeof contractMaterialsTable.$inferInsert> = {};
-      const body = req.body as Record<string, unknown>;
-
-      if ("material_label" in body) {
-        if (!body.material_label || typeof body.material_label !== "string") {
-          throw new HttpError(400, "ValidationError", "material_label cannot be empty");
-        }
-        updates.material_label = (body.material_label as string).trim();
-      }
-      if ("unit_label" in body) {
-        if (!body.unit_label || typeof body.unit_label !== "string") {
-          throw new HttpError(400, "ValidationError", "unit_label cannot be empty");
-        }
-        updates.unit_label = (body.unit_label as string).trim();
-      }
-      if ("price_per_unit" in body) {
-        const p = Number(body.price_per_unit);
-        if (isNaN(p) || p < 0) throw new HttpError(400, "ValidationError", "price_per_unit must be a non-negative number");
-        updates.price_per_unit = String(p);
-      }
-      if ("material_category_id" in body) {
-        if (body.material_category_id != null) assertUuid(body.material_category_id as string, "material_category_id");
-        updates.material_category_id = (body.material_category_id as string) ?? null;
-      }
-      if ("unit_option_id" in body) {
-        if (body.unit_option_id != null) assertUuid(body.unit_option_id as string, "unit_option_id");
-        updates.unit_option_id = (body.unit_option_id as string) ?? null;
-      }
-      if ("seller_pct" in body) {
-        updates.seller_pct = body.seller_pct != null ? String(Number(body.seller_pct)) : null;
-      }
-      if ("buyer_pct" in body) {
-        updates.buyer_pct = body.buyer_pct != null ? String(Number(body.buyer_pct)) : null;
-      }
-      if ("sort_order" in body) {
-        updates.sort_order = Number(body.sort_order);
-      }
-
-      if (Object.keys(updates).length === 0) {
-        throw new HttpError(400, "ValidationError", "No updatable fields provided");
-      }
-
-      const finalSeller = updates.seller_pct ?? existing.seller_pct;
-      const finalBuyer = updates.buyer_pct ?? existing.buyer_pct;
-      if (
-        finalSeller != null &&
-        finalBuyer != null &&
-        Math.abs(Number(finalSeller) + Number(finalBuyer) - 100) > 0.01
-      ) {
-        res.setHeader("X-Revenue-Share-Warning", "seller_pct + buyer_pct does not equal 100");
-      }
-
-      const [updated] = await db
-        .update(contractMaterialsTable)
-        .set(updates)
-        .where(eq(contractMaterialsTable.id, existing.id))
-        .returning();
-
-      await db
-        .update(contractsTable)
-        .set({ updated_at: new Date() })
-        .where(eq(contractsTable.id, contract.id));
-
-      await logAudit({
-        userId,
-        companyId: company.id,
-        action: "contract.material.updated",
-        entityType: "contract_material",
-        entityId: existing.id,
-        details: { contract_id: contract.id },
-      });
-
-      res.json(serializeMaterial(updated));
-    } catch (err) {
-      next(err);
-    }
-  },
-);
-
-// ---------------------------------------------------------------------------
-// DELETE /contracts/:id/materials/:mid — remove material line (draft only)
+// DELETE /contracts/:id/materials/:materialId — remove material line (draft, creator only)
 // ---------------------------------------------------------------------------
 
 router.delete(
-  "/contracts/:id/materials/:mid",
+  "/contracts/:id/materials/:materialId",
   requireAuth,
   requireCompany(),
   async (req, res, next) => {
@@ -872,47 +793,37 @@ router.delete(
       const company = (req as AuthedCompanyRequest).company;
       const userId = (req as AuthedCompanyRequest).userId;
       const contractId = assertUuid(req.params.id, "id");
-      const materialId = assertUuid(req.params.mid, "mid");
+      const materialId = assertUuid(req.params.materialId, "materialId");
 
-      const { contract, isSeller } = await fetchContractForParty(contractId, company.id);
+      const { contract, isCreator } = await fetchContractForParty(contractId, company.id);
 
-      if (!isSeller) {
-        throw new HttpError(403, "Forbidden", "Only the seller can manage material lines");
+      if (!isCreator) {
+        throw new HttpError(403, "Forbidden", "Only the contract creator can manage material lines");
       }
       assertContractEditable(contract);
 
-      const [existing] = await db
-        .select({ id: contractMaterialsTable.id })
-        .from(contractMaterialsTable)
+      const [deleted] = await db
+        .delete(contractMaterialsTable)
         .where(
           and(
             eq(contractMaterialsTable.id, materialId),
             eq(contractMaterialsTable.contract_id, contract.id),
           ),
         )
-        .limit(1);
+        .returning({ id: contractMaterialsTable.id });
 
-      if (!existing) throw new HttpError(404, "NotFound", "Material line not found");
-
-      await db
-        .delete(contractMaterialsTable)
-        .where(eq(contractMaterialsTable.id, existing.id));
-
-      await db
-        .update(contractsTable)
-        .set({ updated_at: new Date() })
-        .where(eq(contractsTable.id, contract.id));
+      if (!deleted) throw new HttpError(404, "NotFound", "Material line not found");
 
       await logAudit({
         userId,
         companyId: company.id,
-        action: "contract.material.deleted",
-        entityType: "contract_material",
-        entityId: existing.id,
-        details: { contract_id: contract.id },
+        action: "contract.material.removed",
+        entityType: "contract",
+        entityId: contract.id,
+        details: { material_id: materialId },
       });
 
-      res.status(204).send();
+      res.status(204).end();
     } catch (err) {
       next(err);
     }

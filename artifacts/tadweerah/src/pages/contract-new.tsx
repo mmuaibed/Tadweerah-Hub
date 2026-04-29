@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@clerk/react";
-import { Loader2, Plus, Trash2, Building2, ChevronDown, X } from "lucide-react";
+import { Loader2, Plus, Trash2, Building2, ChevronDown, X, Paperclip } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -45,16 +45,17 @@ function uid() {
   return Math.random().toString(36).slice(2, 9);
 }
 
-// ── Buyer Company Search ───────────────────────────────────────────────────────
+// ── Company Search ─────────────────────────────────────────────────────────────
 
-function BuyerCompanySearch({
+function CounterpartySearch({
   value,
   onChange,
+  placeholder,
 }: {
   value: CompanyResult | null;
   onChange: (company: CompanyResult | null) => void;
+  placeholder: string;
 }) {
-  const { t } = useT();
   const { getToken } = useAuth();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<CompanyResult[]>([]);
@@ -116,7 +117,7 @@ function BuyerCompanySearch({
       <div className="relative">
         <Building2 className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder={t("contract.new.buyer_search")}
+          placeholder={placeholder}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => results.length > 0 && setOpen(true)}
@@ -185,7 +186,7 @@ function MaterialLineRow({
 
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         <div className="space-y-1">
-          <Label className="text-xs">{t("contract.materials.label")}</Label>
+          <Label className="text-xs">{t("contract.materials.label")} *</Label>
           <Input
             value={line.materialLabel}
             onChange={(e) =>
@@ -195,7 +196,7 @@ function MaterialLineRow({
           />
         </div>
         <div className="space-y-1">
-          <Label className="text-xs">{t("contract.materials.unit")}</Label>
+          <Label className="text-xs">{t("contract.materials.unit")} *</Label>
           <Input
             value={line.unitLabel}
             onChange={(e) => onChange({ ...line, unitLabel: e.target.value })}
@@ -203,7 +204,7 @@ function MaterialLineRow({
           />
         </div>
         <div className="space-y-1">
-          <Label className="text-xs">{t("contract.materials.price")}</Label>
+          <Label className="text-xs">{t("contract.materials.price")} *</Label>
           <Input
             type="number"
             min="0"
@@ -258,14 +259,22 @@ export function ContractNewPage() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
 
-  const [buyerCompany, setBuyerCompany] = useState<CompanyResult | null>(null);
+  const [myRole, setMyRole] = useState<"seller" | "buyer">("seller");
+  const [counterparty, setCounterparty] = useState<CompanyResult | null>(null);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [weightPolicy, setWeightPolicy] = useState<WeightPolicy>("source_weight_only");
   const [externalRef, setExternalRef] = useState("");
+  const [attachmentUrl, setAttachmentUrl] = useState("");
   const [notes, setNotes] = useState("");
   const [materials, setMaterials] = useState<MaterialLine[]>([]);
   const [creating, setCreating] = useState(false);
+
+  // Reset counterparty when role changes
+  function handleRoleChange(role: "seller" | "buyer") {
+    setMyRole(role);
+    setCounterparty(null);
+  }
 
   function addMaterialLine() {
     setMaterials((prev) => [
@@ -292,8 +301,14 @@ export function ContractNewPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    if (!buyerCompany) {
-      toast({ title: t("contract.field.buyer"), description: t("error.required"), variant: "destructive" });
+    if (!counterparty) {
+      toast({
+        title: myRole === "seller"
+          ? t("contract.new.counterparty_buyer")
+          : t("contract.new.counterparty_seller"),
+        description: t("error.required"),
+        variant: "destructive",
+      });
       return;
     }
     if (!startDate) {
@@ -309,7 +324,7 @@ export function ContractNewPage() {
       (m) => !m.materialLabel.trim() || !m.unitLabel.trim() || !m.pricePerUnit,
     );
     if (invalidLine) {
-      toast({ title: t("error.generic"), variant: "destructive" });
+      toast({ title: t("error.generic"), description: lang === "ar" ? "تأكد من ملء جميع حقول بند المادة" : "Fill in all material line fields", variant: "destructive" });
       return;
     }
 
@@ -326,11 +341,13 @@ export function ContractNewPage() {
         headers,
         credentials: "include",
         body: JSON.stringify({
-          buyer_company_id: buyerCompany.id,
+          my_role: myRole,
+          counterparty_company_id: counterparty.id,
           start_date: startDate,
           end_date: endDate || undefined,
           weight_policy: weightPolicy,
           external_reference: externalRef.trim() || undefined,
+          attachment_url: attachmentUrl.trim() || undefined,
           notes: notes.trim() || undefined,
         }),
       });
@@ -343,7 +360,7 @@ export function ContractNewPage() {
       const contract = (await contractRes.json()) as { id: string };
 
       for (const mat of materials) {
-        await fetch(`/api/contracts/${contract.id}/materials`, {
+        const matRes = await fetch(`/api/contracts/${contract.id}/materials`, {
           method: "POST",
           headers,
           credentials: "include",
@@ -355,6 +372,10 @@ export function ContractNewPage() {
             buyer_pct: mat.buyerPct ? Number(mat.buyerPct) : undefined,
           }),
         });
+        if (!matRes.ok) {
+          const err = (await matRes.json().catch(() => ({}))) as { message?: string };
+          throw new Error(err.message ?? "Failed to add material line");
+        }
       }
 
       navigate(`/contracts/${contract.id}`);
@@ -369,6 +390,14 @@ export function ContractNewPage() {
     }
   }
 
+  const counterpartyLabel = myRole === "seller"
+    ? t("contract.new.counterparty_buyer")
+    : t("contract.new.counterparty_seller");
+
+  const counterpartyPlaceholder = myRole === "seller"
+    ? t("contract.new.search_buyer")
+    : t("contract.new.search_seller");
+
   return (
     <AppLayout
       title={t("contract.new.title")}
@@ -376,17 +405,41 @@ export function ContractNewPage() {
       showSignOut
     >
       <form onSubmit={handleSubmit} className="max-w-2xl space-y-6">
-        {/* Section 1: Contract details */}
+
+        {/* Section 1: Role + Counterparty */}
         <div className="rounded-xl border border-border bg-card p-5 space-y-4">
           <h2 className="text-sm font-semibold text-foreground">
             {t("contract.new.section.details")}
           </h2>
 
+          {/* Role selector */}
           <div className="space-y-1.5">
-            <Label>{t("contract.field.buyer")} *</Label>
-            <BuyerCompanySearch
-              value={buyerCompany}
-              onChange={setBuyerCompany}
+            <Label>{t("contract.new.my_role")} *</Label>
+            <div className="grid grid-cols-2 gap-2">
+              {(["seller", "buyer"] as const).map((role) => (
+                <button
+                  key={role}
+                  type="button"
+                  onClick={() => handleRoleChange(role)}
+                  className={`rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
+                    myRole === role
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-muted/30 text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                  }`}
+                >
+                  {t(`contract.new.role.${role}`)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Counterparty search */}
+          <div className="space-y-1.5">
+            <Label>{counterpartyLabel} *</Label>
+            <CounterpartySearch
+              value={counterparty}
+              onChange={setCounterparty}
+              placeholder={counterpartyPlaceholder}
             />
           </div>
 
@@ -441,6 +494,25 @@ export function ContractNewPage() {
               onChange={(e) => setExternalRef(e.target.value)}
               placeholder={lang === "ar" ? "رقم العقد الخارجي (اختياري)" : "Your external contract number (optional)"}
             />
+          </div>
+
+          {/* Attachment URL */}
+          <div className="space-y-1.5">
+            <Label htmlFor="attachment_url" className="flex items-center gap-1.5">
+              <Paperclip className="h-3.5 w-3.5" />
+              {t("contract.field.attachment")}
+            </Label>
+            <Input
+              id="attachment_url"
+              type="url"
+              value={attachmentUrl}
+              onChange={(e) => setAttachmentUrl(e.target.value)}
+              placeholder={lang === "ar" ? "رابط الوثيقة الداعمة (PDF، صورة...)" : "Supporting document URL (PDF, image...)"}
+              dir="ltr"
+            />
+            <p className="text-xs text-muted-foreground">
+              {t("contract.attachment.hint")}
+            </p>
           </div>
 
           <div className="space-y-1.5">

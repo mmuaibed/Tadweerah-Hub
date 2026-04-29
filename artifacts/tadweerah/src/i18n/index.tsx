@@ -989,12 +989,15 @@ const translations: Record<string, Record<Language, string>> = {
   "contract.field.notes": { ar: "ملاحظات", en: "Notes" },
   "contract.field.confirmed_at": { ar: "تاريخ التأكيد", en: "Confirmed On" },
 
-  "contract.action.submit": { ar: "إرسال للمشتري للتأكيد", en: "Submit for Buyer Confirmation" },
+  "contract.action.submit": { ar: "إرسال للطرف الآخر للتأكيد", en: "Submit for Counterparty Confirmation" },
   "contract.action.confirm": { ar: "تأكيد العمل بالعقد", en: "Confirm Operational Use" },
   "contract.action.complete": { ar: "إغلاق العقد", en: "Complete Contract" },
   "contract.action.cancel": { ar: "إلغاء العقد", en: "Cancel Contract" },
 
-  "contract.action.submit.confirm": { ar: "هل أنت متأكد من إرسال العقد للمشتري؟ لن تتمكن من تعديل بنود المواد بعد الإرسال.", en: "Are you sure you want to submit this contract to the buyer? You will not be able to edit material lines after submission." },
+  "contract.action.required": { ar: "مطلوب إجراء منك", en: "Action required from you" },
+  "contract.action.required.desc": { ar: "يرجى مراجعة بنود العقد والضغط على «تأكيد العمل بالعقد» للمضي قدماً", en: "Review the contract terms and click 'Confirm Operational Use' to proceed" },
+
+  "contract.action.submit.confirm": { ar: "هل أنت متأكد من إرسال العقد للطرف الآخر؟ لن تتمكن من تعديل بنود المواد بعد الإرسال.", en: "Are you sure you want to submit this contract to the counterparty? You will not be able to edit material lines after submission." },
   "contract.action.confirm.confirm": { ar: "بالتأكيد تقر بأنك توافق على تنفيذ هذا العقد عبر تدويرة. هذا ليس توقيعاً قانونياً.", en: "By confirming, you agree to manage execution of this contract on Tadweerah. This is not a legal signature." },
   "contract.action.cancel.confirm": { ar: "هل تريد إلغاء هذا العقد؟", en: "Do you want to cancel this contract?" },
   "contract.action.complete.confirm": { ar: "هل تريد إغلاق هذا العقد؟ تأكد أن جميع الشحنات في حالة نهائية.", en: "Do you want to complete this contract? Ensure all shipments are in a terminal state." },
@@ -1042,9 +1045,16 @@ const translations: Record<string, Record<Language, string>> = {
   "contract.timeline.cancelled": { ar: "تم إلغاء العقد", en: "Contract cancelled" },
 
   "contract.new.title": { ar: "عقد تنفيذ جديد", en: "New Execution Contract" },
-  "contract.new.subtitle": { ar: "حدد الطرف الآخر، نطاق المواد، وسياسة الوزن", en: "Define the counterparty, material scope, and weight policy" },
+  "contract.new.subtitle": { ar: "حدد دورك، الطرف الآخر، نطاق المواد، وسياسة الوزن", en: "Define your role, counterparty, material scope, and weight policy" },
   "contract.new.section.details": { ar: "تفاصيل العقد", en: "Contract Details" },
   "contract.new.section.materials": { ar: "بنود المواد", en: "Material Lines" },
+  "contract.new.my_role": { ar: "دوري في هذا العقد", en: "My role in this contract" },
+  "contract.new.role.seller": { ar: "بائع (مورّد)", en: "Seller (Supplier)" },
+  "contract.new.role.buyer": { ar: "مشتري (معالج)", en: "Buyer (Recycler)" },
+  "contract.new.counterparty_seller": { ar: "شركة البائع (الطرف الآخر)", en: "Seller Company (Counterparty)" },
+  "contract.new.counterparty_buyer": { ar: "شركة المشتري (الطرف الآخر)", en: "Buyer Company (Counterparty)" },
+  "contract.new.search_seller": { ar: "ابحث عن الشركة البائعة...", en: "Search for seller company..." },
+  "contract.new.search_buyer": { ar: "ابحث عن الشركة المشترية...", en: "Search for buyer company..." },
   "contract.new.buyer_search": { ar: "ابحث عن الشركة المشترية...", en: "Search for buyer company..." },
   "contract.new.buyer_selected": { ar: "الشركة المشترية", en: "Buyer Company" },
   "contract.new.submit": { ar: "إنشاء العقد", en: "Create Contract" },
@@ -1052,8 +1062,12 @@ const translations: Record<string, Record<Language, string>> = {
   "contract.new.min_one_material": { ar: "أضف بنداً واحداً على الأقل قبل الإنشاء", en: "Add at least one material line before creating" },
   "contract.new.creating": { ar: "جارٍ الإنشاء...", en: "Creating..." },
 
+  "contract.attachment.hint": { ar: "رابط اختياري لوثيقة داعمة (PDF، صورة، إلخ). لا يُعدّ توقيعاً قانونياً.", en: "Optional link to a supporting document (PDF, image, etc.). Not a legal signature." },
+
   "contract.role.you_are_seller": { ar: "أنت البائع في هذا العقد", en: "You are the seller in this contract" },
   "contract.role.you_are_buyer": { ar: "أنت المشتري في هذا العقد", en: "You are the buyer in this contract" },
+  "contract.role.you_are_creator": { ar: "أنت منشئ هذا العقد", en: "You created this contract" },
+  "contract.role.you_are_counterparty": { ar: "أنت الطرف المُستلِم لهذا العقد", en: "You are the receiving counterparty" },
 
   "contract.summary.total_shipments": { ar: "إجمالي الشحنات", en: "Total Shipments" },
   "contract.summary.open_shipments": { ar: "شحنات مفتوحة", en: "Open Shipments" },

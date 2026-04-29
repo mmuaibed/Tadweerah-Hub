@@ -180,12 +180,24 @@ router.post(
         );
       }
 
-      const { material_line_id, notes } = req.body as Record<string, unknown>;
+      const { material_line_id, planned_at, notes } = req.body as Record<string, unknown>;
 
       if (!material_line_id || typeof material_line_id !== "string") {
         throw new HttpError(400, "ValidationError", "material_line_id is required");
       }
       assertUuid(material_line_id, "material_line_id");
+
+      // Parse planned_at: accept ISO date string (YYYY-MM-DD) or datetime string.
+      // Falls back to now() if omitted.
+      let plannedAtDate: Date | undefined;
+      if (typeof planned_at === "string" && planned_at.trim()) {
+        const parsed = new Date(planned_at.trim());
+        if (!isNaN(parsed.getTime())) {
+          plannedAtDate = parsed;
+        } else {
+          throw new HttpError(400, "ValidationError", "planned_at must be a valid date");
+        }
+      }
 
       const [material] = await db
         .select()
@@ -216,6 +228,7 @@ router.post(
             contract_id: contract.id,
             material_line_id,
             status: "planned",
+            planned_at: plannedAtDate ?? new Date(),
             notes: typeof notes === "string" ? notes.trim() : null,
           })
           .returning();

@@ -1,0 +1,81 @@
+Manual testing found several Contract Lite issues. Please fix these specifically before we continue UAT.
+
+1. Contract creator role is missing
+Current behavior assumes the creator is always seller.
+
+Required:
+When creating a contract, user must choose:
+- My role in this contract: Seller / Buyer
+
+If creator chooses Seller:
+- creator = seller_company_id
+- selected counterparty = buyer_company_id
+
+If creator chooses Buyer:
+- creator = buyer_company_id
+- selected counterparty = seller_company_id
+
+This is required because a company may manage contracts as buyer or seller.
+
+2. Contract attachment
+Contract attachment must be optional, but it should be available for both roles:
+- Seller can upload contract attachment
+- Buyer can upload contract attachment
+No e-signature logic. Supporting document only.
+
+3. Buyer notifications / visibility
+When a contract is submitted for confirmation:
+- Counterparty must see it in /contracts
+- Counterparty should have a visible dashboard or notification indicator
+- Contract detail should clearly show “Action required: confirm contract”
+
+Currently there is no clear alert in dashboard/page that a contract was received.
+
+4. Contract confirmation flow
+The expected flow:
+- Draft
+- Submit to counterparty
+- Pending confirmation
+- Counterparty confirms
+- Contract becomes Active
+
+Please verify this works for both directions:
+- Seller creates → Buyer confirms
+- Buyer creates → Seller confirms
+
+5. Shipment creation permission
+The agreed rule:
+- After contract becomes Active, either party can create shipments.
+
+Current issue:
+- Buyer sees Add Shipment but gets HTTP 500.
+- Seller also cannot add shipment successfully.
+Please debug and fix POST /contracts/:id/shipments and the frontend payload.
+
+6. Shipment date field
+Do we need date + time, or only date?
+
+Decision:
+For MVP, use date only unless the backend requires timestamp.
+Show a simple date picker to reduce confusion.
+If backend stores timestamp, set default time internally.
+
+7. UI permissions
+Do not show action buttons that the current user cannot perform.
+
+If buyer is not allowed to add shipment due to a bug or rule, hide button.
+But our rule is: both parties can add shipment after active, so the fix should allow both.
+
+8. Error messages
+HTTP 500 is not acceptable for user mistakes.
+If required data is missing, return a clear 400/409 error with a message.
+Please identify the root cause of the shipment creation 500.
+
+Please respond with:
+A) Root cause of shipment creation failure
+B) Fixes implemented
+C) Whether both directions are now supported:
+   - Seller-created contract
+   - Buyer-created contract
+D) Whether both parties can create shipments after active
+E) Ready for retest YES/NO
