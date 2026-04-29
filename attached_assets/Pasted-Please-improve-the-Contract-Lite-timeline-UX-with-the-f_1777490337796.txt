@@ -1,0 +1,114 @@
+Please improve the Contract Lite timeline UX with the following design.
+
+Goal:
+Make contract and shipment progress as clear as the marketplace deal tracking flow.
+
+---
+
+1. Contract Progress Timeline
+
+Show 5 main stages:
+
+1. Contract Created
+Responsible: Creator
+
+2. Sent for Confirmation
+Responsible: Creator
+
+3. Contract Confirmed
+Responsible: Counterparty
+
+4. Shipments In Progress
+Responsible: Both Parties
+
+5. Contract Closed
+Responsible: Seller
+
+Each stage should show:
+- Completed / Current / Pending
+- Responsible party
+- Date if completed
+- Clear label in Arabic and English
+
+---
+
+2. Current Status Banner
+
+Above the timeline, show one clear operational message:
+
+Examples:
+
+If pending_confirmation:
+"Waiting for counterparty confirmation"
+
+If active and no shipments:
+"Contract active — ready to add shipments"
+
+If active with open shipments:
+"Shipments in progress"
+
+If all shipments are closed/cancelled:
+"Ready to close contract"
+
+If completed:
+"Contract completed"
+
+---
+
+3. User Responsibility Message
+
+If the current user is responsible for the next step, show a highlighted note:
+
+Examples:
+
+For buyer/counterparty:
+"You are responsible for confirming this contract"
+
+For seller:
+"You can add shipments or close the contract when all shipments are completed"
+
+For both:
+"Both parties can create shipments under this active contract"
+
+---
+
+4. Shipment Mini Timeline
+
+Inside each shipment card, show the shipment stages:
+
+1. Planned
+2. Dispatched
+3. Received
+4. Closed
+
+Each stage should show:
+- Completed / Current / Pending
+- Responsible party
+- Required weight field if applicable
+
+Example:
+
+Planned — created
+Dispatched — seller/source party
+Received — buyer/destination party
+Closed — closing party
+
+---
+
+5. Visual Style
+
+Use the same style as the marketplace deal flow:
+- Vertical timeline
+- Completed steps with check mark
+- Current step highlighted
+- Future steps faded
+- Clear Arabic RTL layout
+- Minimal text
+- No new backend logic
+
+---
+
+Important:
+This is UX-only.
+Do not change backend logic or workflow rules.
+Use existing contract status, shipment status, timestamps, and user role.

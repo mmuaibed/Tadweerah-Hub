@@ -188,22 +188,7 @@ function useMyCompany() {
   });
 }
 
-// ── Contract Lifecycle Panel ──────────────────────────────────────────────────
-// Unified timeline + actions panel matching the deal flow UX pattern.
-
-interface LifecycleStep {
-  id: string;
-  label: string;
-  party: string;
-  PartyIcon: React.ElementType;
-  context: string;
-  isDone: boolean;
-  isCurrent: boolean;
-  isCancelled?: boolean;
-  ts: string | null;
-  isMyTurn: boolean;
-  action: { label: string; key: string; primary?: boolean } | null;
-}
+// ── Contract Lifecycle Panel — 5-stage timeline with status banner ──────────────
 
 function ContractLifecyclePanel({
   contract,
@@ -224,6 +209,7 @@ function ContractLifecyclePanel({
 
   const ar = lang === "ar";
   const { status } = contract;
+  const summary = contract.shipment_summary;
 
   const isCreator = contract.created_by_company_id
     ? contract.created_by_company_id === myCompanyId
@@ -231,10 +217,15 @@ function ContractLifecyclePanel({
   const isParty = role === "seller" || role === "buyer";
   const isCounterparty = isParty && !isCreator;
 
-  const canSubmit  = isCreator     && status === "draft";
-  const canConfirm = isCounterparty && status === "pending_confirmation";
-  const canComplete = isCreator    && status === "active";
-  const canCancel  = isParty && !["completed", "cancelled"].includes(status);
+  const canSubmit   = isCreator      && status === "draft";
+  const canConfirm  = isCounterparty && status === "pending_confirmation";
+  const canComplete = isCreator      && status === "active";
+  const canCancel   = isParty && !["completed", "cancelled"].includes(status);
+
+  const isCancelled = status === "cancelled";
+  const isCompleted = status === "completed";
+  const isTerminal  = isCancelled || isCompleted;
+  const allShipmentsTerminal = summary.total > 0 && summary.open === 0;
 
   async function doAction(action: string) {
     setLoading(true);
@@ -265,95 +256,122 @@ function ContractLifecyclePanel({
     });
   }
 
-  // Who created the contract (label)
-  const creatorLabel = ar ? "المنشئ" : "Creator";
+  // ── Status Banner ────────────────────────────────────────────────────────────
+  type BannerCfg = { text: string; bg: string; fg: string; border: string; Icon: React.ElementType };
+  const banner: BannerCfg = (() => {
+    if (status === "draft")                  return { text: ar ? "مسودة — أضف البنود ثم أرسل للطرف الآخر" : "Draft — add material lines and submit", bg: "bg-muted/50", fg: "text-muted-foreground", border: "border-border", Icon: Clock };
+    if (status === "pending_confirmation")   return { text: ar ? "في انتظار تأكيد الطرف الآخر" : "Waiting for counterparty confirmation", bg: "bg-amber-50", fg: "text-amber-800", border: "border-amber-200", Icon: Clock };
+    if (status === "active") {
+      if (summary.total === 0)               return { text: ar ? "العقد نشط — جاهز لإنشاء الشحنات" : "Contract active — ready to add shipments", bg: "bg-green-50", fg: "text-green-800", border: "border-green-200", Icon: CheckCircle2 };
+      if (summary.open > 0)                  return { text: ar ? "الشحنات جارية" : "Shipments in progress", bg: "bg-blue-50", fg: "text-blue-800", border: "border-blue-200", Icon: Truck };
+      if (allShipmentsTerminal)              return { text: ar ? "جاهز لإغلاق العقد" : "Ready to close contract", bg: "bg-primary/5", fg: "text-primary", border: "border-primary/25", Icon: FileCheck };
+    }
+    if (status === "completed")              return { text: ar ? "اكتمل العقد بنجاح" : "Contract completed", bg: "bg-blue-50", fg: "text-blue-800", border: "border-blue-200", Icon: CheckCircle2 };
+    if (status === "cancelled")              return { text: ar ? "تم إلغاء العقد" : "Contract cancelled", bg: "bg-red-50", fg: "text-red-700", border: "border-red-200", Icon: XCircle };
+    return { text: "", bg: "bg-muted", fg: "text-muted-foreground", border: "border-border", Icon: Clock };
+  })();
+
+  // ── User Responsibility Message ──────────────────────────────────────────────
+  const responsibilityMsg: string | null = (() => {
+    if (!isParty) return null;
+    switch (status) {
+      case "draft":
+        return isCreator
+          ? (ar ? "أضف بنود المواد ثم أرسل العقد للطرف الآخر للتأكيد" : "Add material lines, then submit to your counterparty for confirmation")
+          : (ar ? "في انتظار المنشئ لإتمام المسودة وإرسالها" : "Waiting for the creator to complete the draft and submit");
+      case "pending_confirmation":
+        return isCounterparty
+          ? (ar ? "أنت مسؤول عن تأكيد هذا العقد — راجع البنود ثم اضغط «تأكيد»" : "You are responsible for confirming this contract — review the terms, then confirm")
+          : (ar ? "في انتظار الطرف الآخر لمراجعة العقد وتأكيده" : "Waiting for your counterparty to review and confirm the contract");
+      case "active":
+        if (allShipmentsTerminal && isCreator)
+          return ar ? "جميع الشحنات اكتملت — يمكنك الآن إغلاق العقد" : "All shipments completed — you can now close the contract";
+        return isCreator
+          ? (ar ? "يمكنك إضافة شحنات أو إغلاق العقد عند اكتمال جميع الشحنات" : "You can add shipments or close the contract when all shipments complete")
+          : (ar ? "يمكن لكلا الطرفين إنشاء الشحنات وإدارتها في هذا العقد" : "Both parties can create and manage shipments under this active contract");
+      default:
+        return null;
+    }
+  })();
+
+  const isMyTurnHighlight = canConfirm || (canComplete && allShipmentsTerminal);
+
+  // ── 5-Stage Timeline ─────────────────────────────────────────────────────────
+  const sellerLabel       = ar ? "البائع"       : "Seller";
   const counterpartyLabel = ar ? "الطرف الآخر" : "Counterparty";
-  const bothLabel = ar ? "الطرفان" : "Both parties";
+  const creatorLabel      = ar ? "المنشئ"       : "Creator";
+  const bothLabel         = ar ? "الطرفان"      : "Both parties";
 
-  const isCancelled = status === "cancelled";
-  const isCompleted = status === "completed";
-  const isTerminal = isCancelled || isCompleted;
+  interface TStep {
+    id: string;
+    label: string;
+    party: string;
+    PIcon: React.ElementType;
+    isDone: boolean;
+    isCurrent: boolean;
+    isCancelled?: boolean;
+    ts: string | null;
+    action: { label: string; key: string; primary: boolean } | null;
+  }
 
-  const steps: LifecycleStep[] = [
+  const steps: TStep[] = [
     {
-      id: "draft",
-      label: ar ? "إنشاء العقد وإضافة البنود" : "Contract created & material lines added",
+      id: "created",
+      label: ar ? "إنشاء العقد" : "Contract created",
       party: creatorLabel,
-      PartyIcon: User,
-      context: ar
-        ? "أضف جميع بنود المواد ثم أرسل العقد للطرف الآخر للتأكيد"
-        : "Add all material lines, then submit the contract to your counterparty for confirmation",
+      PIcon: User,
+      isDone: true,
+      isCurrent: false,
+      ts: contract.created_at,
+      action: null,
+    },
+    {
+      id: "submitted",
+      label: ar ? "إرسال للتأكيد" : "Sent for confirmation",
+      party: creatorLabel,
+      PIcon: Send,
       isDone: status !== "draft",
       isCurrent: status === "draft",
       ts: status !== "draft" ? contract.created_at : null,
-      isMyTurn: status === "draft" && isCreator,
-      action: canSubmit
-        ? { label: t("contract.action.submit"), key: "submit", primary: true }
-        : null,
+      action: canSubmit ? { label: t("contract.action.submit"), key: "submit", primary: true } : null,
     },
     {
-      id: "pending_confirmation",
-      label: ar ? "تأكيد الطرف الآخر" : "Counterparty confirmation",
+      id: "confirmed",
+      label: ar ? "تأكيد العقد" : "Contract confirmed",
       party: counterpartyLabel,
-      PartyIcon: User,
-      context: isCounterparty && status === "pending_confirmation"
-        ? (ar ? "يرجى مراجعة بنود العقد ثم الضغط على «تأكيد العمل بالعقد»" : "Review the contract terms, then click 'Confirm Operational Use' below")
-        : (ar ? "في انتظار الطرف الآخر لمراجعة العقد وتأكيده" : "Waiting for your counterparty to review and confirm the contract"),
-      isDone: ["active", "completed", "cancelled"].includes(status) && contract.confirmed_at != null,
+      PIcon: User,
+      isDone: contract.confirmed_at != null,
       isCurrent: status === "pending_confirmation",
       ts: contract.confirmed_at,
-      isMyTurn: canConfirm,
-      action: canConfirm
-        ? { label: t("contract.action.confirm"), key: "confirm", primary: true }
-        : null,
+      action: canConfirm ? { label: t("contract.action.confirm"), key: "confirm", primary: true } : null,
     },
     {
-      id: "active",
-      label: ar ? "تنفيذ الشحنات" : "Shipment execution",
+      id: "shipments",
+      label: ar ? "تنفيذ الشحنات" : "Shipments in progress",
       party: bothLabel,
-      PartyIcon: Users,
-      context: isCompleted
-        ? (ar ? "اكتملت جميع الشحنات وأُغلق العقد" : "All shipments completed and contract closed")
-        : isCancelled
-          ? (ar ? "تم إلغاء العقد أثناء مرحلة التنفيذ" : "Contract was cancelled during execution")
-          : (ar ? "العقد نشط — يمكن لكلا الطرفين إنشاء الشحنات وإدارتها" : "Contract is active — both parties can create and manage shipments"),
+      PIcon: Users,
       isDone: isTerminal,
       isCurrent: status === "active",
-      ts: contract.completed_at ?? null,
-      isMyTurn: status === "active" && isCreator && canComplete,
-      action: canComplete
-        ? { label: t("contract.action.complete"), key: "complete", primary: false }
-        : null,
+      ts: isTerminal ? (contract.completed_at ?? contract.cancelled_at) : null,
+      action: canComplete ? { label: t("contract.action.complete"), key: "complete", primary: false } : null,
     },
     isCancelled
-      ? {
-          id: "cancelled",
-          label: ar ? "تم إلغاء العقد" : "Contract cancelled",
-          party: "",
-          PartyIcon: XCircle,
-          context: ar ? "أُلغي هذا العقد ولا يمكن استئنافه" : "This contract has been cancelled and cannot be resumed",
-          isDone: true,
-          isCurrent: false,
-          isCancelled: true,
-          ts: contract.cancelled_at,
-          isMyTurn: false,
-          action: null,
-        }
-      : {
-          id: "completed",
-          label: ar ? "إغلاق العقد" : "Contract closed",
-          party: creatorLabel,
-          PartyIcon: FileCheck,
-          context: isCompleted
-            ? (ar ? "اكتمل العقد بنجاح" : "Contract successfully completed")
-            : (ar ? "ينتهي بإغلاق العقد من قِبل المنشئ بعد اكتمال جميع الشحنات" : "Closed by the creator once all shipments reach a terminal state"),
-          isDone: isCompleted,
-          isCurrent: false,
-          ts: contract.completed_at,
-          isMyTurn: false,
-          action: null,
-        },
+      ? { id: "cancelled", label: ar ? "إلغاء العقد"  : "Contract cancelled",  party: "", PIcon: XCircle,   isDone: true,        isCurrent: false, isCancelled: true, ts: contract.cancelled_at, action: null }
+      : { id: "closed",    label: ar ? "إغلاق العقد"  : "Contract closed",     party: sellerLabel, PIcon: FileCheck, isDone: isCompleted, isCurrent: false, ts: contract.completed_at, action: null },
   ];
+
+  function stepIconClass(s: TStep) {
+    if (s.isCancelled) return "bg-red-100 text-red-500 border-2 border-red-200";
+    if (s.isDone)      return "bg-primary text-white";
+    if (s.isCurrent)   return "bg-white text-primary border-2 border-primary ring-4 ring-primary/15";
+    return "border-2 border-muted-foreground/20 bg-background text-muted-foreground/30";
+  }
+
+  function lineClass(s: TStep) {
+    if (s.isDone)    return "bg-primary/40";
+    if (s.isCurrent) return "bg-primary/20";
+    return "bg-muted-foreground/10";
+  }
 
   return (
     <>
@@ -370,151 +388,135 @@ function ContractLifecyclePanel({
       )}
 
       <div className="rounded-xl border border-border bg-card overflow-hidden">
-        {/* Header */}
-        <div className="px-4 py-3 bg-muted/30 border-b border-border">
-          <div className="flex items-center justify-between gap-2">
-            <h3 className="text-sm font-semibold text-foreground">
-              {ar ? "مراحل العقد" : "Contract Progress"}
-            </h3>
-            {role && (
-              <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full border border-border">
-                {t(`contract.role.you_are_${role}`)}
-                {" · "}
-                {isCreator ? t("contract.role.you_are_creator") : t("contract.role.you_are_counterparty")}
-              </span>
-            )}
+
+        {/* ── Header ── */}
+        <div className="px-4 py-3 bg-muted/30 border-b border-border flex items-center justify-between gap-2">
+          <h3 className="text-sm font-semibold text-foreground">
+            {ar ? "مراحل العقد" : "Contract Progress"}
+          </h3>
+          {role && (
+            <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full border border-border shrink-0">
+              {t(`contract.role.you_are_${role}`)}
+              {" · "}
+              {isCreator ? t("contract.role.you_are_creator") : t("contract.role.you_are_counterparty")}
+            </span>
+          )}
+        </div>
+
+        <div className="px-4 pt-4 space-y-3">
+
+          {/* ── Status Banner ── */}
+          <div className={`flex items-center gap-2 rounded-lg border px-3 py-2.5 ${banner.bg} ${banner.border}`}>
+            <banner.Icon className={`h-4 w-4 shrink-0 ${banner.fg}`} />
+            <p className={`text-xs font-semibold ${banner.fg}`}>{banner.text}</p>
+          </div>
+
+          {/* ── User Responsibility Message ── */}
+          {responsibilityMsg && (
+            <div className={`flex items-start gap-2 rounded-lg px-3 py-2 border ${
+              isMyTurnHighlight
+                ? "bg-primary/5 border-primary/20"
+                : "bg-muted/30 border-transparent"
+            }`}>
+              {isMyTurnHighlight && (
+                <div className="mt-1 h-1.5 w-1.5 rounded-full bg-primary animate-pulse shrink-0" />
+              )}
+              <p className={`text-xs leading-relaxed ${isMyTurnHighlight ? "text-primary font-medium" : "text-muted-foreground"}`}>
+                {responsibilityMsg}
+              </p>
+            </div>
+          )}
+
+          {/* ── Vertical Timeline ── */}
+          <div className="space-y-0">
+            {steps.map((step, i) => {
+              const isLast = i === steps.length - 1;
+              const showAction = step.isCurrent && step.action != null && (
+                (step.id === "submitted" && canSubmit)  ||
+                (step.id === "confirmed" && canConfirm) ||
+                (step.id === "shipments" && canComplete)
+              );
+
+              return (
+                <div key={step.id} className="flex gap-3">
+                  {/* Icon col */}
+                  <div className="flex flex-col items-center shrink-0">
+                    <div className={`mt-0.5 flex h-6 w-6 items-center justify-center rounded-full shrink-0 ${stepIconClass(step)}`}>
+                      {step.isDone && !step.isCancelled ? <CheckCircle2 className="h-3.5 w-3.5" />
+                        : step.isCancelled            ? <XCircle className="h-3.5 w-3.5" />
+                        : step.isCurrent              ? <Clock className="h-3 w-3 text-primary" />
+                        :                               <Circle className="h-2.5 w-2.5" />}
+                    </div>
+                    {!isLast && <div className={`w-0.5 flex-1 min-h-5 mt-0.5 ${lineClass(step)}`} />}
+                  </div>
+
+                  {/* Content col */}
+                  <div className={`pb-4 min-w-0 flex-1 ${isLast ? "pb-2" : ""}`}>
+                    {/* Label + party */}
+                    <div className="flex items-start justify-between gap-2 flex-wrap">
+                      <p className={`text-xs font-semibold leading-tight ${
+                        step.isCancelled ? "text-red-600"
+                        : step.isDone || step.isCurrent ? "text-foreground"
+                        : "text-muted-foreground/40"
+                      }`}>
+                        {step.label}
+                      </p>
+                      {step.party && (
+                        <span className={`inline-flex items-center gap-1 text-[10px] rounded-full px-1.5 py-0.5 border shrink-0 ${
+                          step.isCurrent ? "bg-primary/10 text-primary border-primary/20"
+                          : step.isDone  ? "bg-muted text-muted-foreground border-border"
+                          :                "bg-transparent text-muted-foreground/30 border-muted-foreground/15"
+                        }`}>
+                          <step.PIcon className="h-2.5 w-2.5" />
+                          {step.party}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Timestamp */}
+                    {step.ts && step.isDone && (
+                      <p className="text-[10px] text-muted-foreground mt-0.5">{fmtDate(step.ts)}</p>
+                    )}
+
+                    {/* Waiting hint for creator on pending_confirmation */}
+                    {step.isCurrent && step.id === "confirmed" && !canConfirm && isParty && (
+                      <div className="flex items-center gap-1.5 mt-1.5">
+                        <Clock className="h-3 w-3 text-amber-500 shrink-0" />
+                        <p className="text-[11px] text-amber-700">
+                          {ar ? "في انتظار الطرف الآخر" : "Waiting for counterparty"}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Inline action button */}
+                    {showAction && step.action && (
+                      <div className="mt-2">
+                        <Button
+                          size="sm"
+                          variant={step.action.primary ? "default" : "outline"}
+                          className={`w-full gap-1.5 ${!step.action.primary ? "border-gray-400" : ""}`}
+                          onClick={() => setPending(step.action!.key)}
+                          disabled={loading}
+                        >
+                          {loading && pending === step.action.key
+                            ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            : step.action.key === "submit"  ? <Send className="h-3.5 w-3.5" />
+                            : step.action.key === "confirm" ? <CheckCircle2 className="h-3.5 w-3.5" />
+                            :                                 <FileCheck className="h-3.5 w-3.5" />}
+                          {step.action.label}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
-        {/* Timeline */}
-        <div className="px-4 py-4 space-y-0">
-          {steps.map((step, i) => {
-            const isLast = i === steps.length - 1;
-            const iconBg = step.isCancelled
-              ? "bg-red-100 text-red-500 border-2 border-red-200"
-              : step.isDone
-                ? "bg-primary text-white"
-                : step.isCurrent
-                  ? "bg-white text-primary border-2 border-primary ring-4 ring-primary/15"
-                  : "border-2 border-muted-foreground/20 bg-background text-muted-foreground/30";
-
-            const lineBg = step.isDone
-              ? "bg-primary/40"
-              : step.isCurrent
-                ? "bg-primary/20"
-                : "bg-muted-foreground/10";
-
-            return (
-              <div key={step.id} className="flex gap-3">
-                {/* Icon column */}
-                <div className="flex flex-col items-center shrink-0">
-                  <div className={`mt-0.5 flex h-6 w-6 items-center justify-center rounded-full shrink-0 ${iconBg}`}>
-                    {step.isDone && !step.isCancelled
-                      ? <CheckCircle2 className="h-3.5 w-3.5" />
-                      : step.isCancelled
-                        ? <XCircle className="h-3.5 w-3.5" />
-                        : step.isCurrent
-                          ? <Clock className="h-3 w-3 text-primary" />
-                          : <Circle className="h-2.5 w-2.5" />}
-                  </div>
-                  {!isLast && (
-                    <div className={`w-0.5 flex-1 min-h-5 mt-0.5 ${lineBg}`} />
-                  )}
-                </div>
-
-                {/* Content column */}
-                <div className={`pb-4 min-w-0 flex-1 ${isLast ? "pb-2" : ""}`}>
-                  {/* Step label + party */}
-                  <div className="flex items-start justify-between gap-2 flex-wrap">
-                    <p className={`text-xs font-semibold leading-tight ${
-                      step.isCancelled ? "text-red-600"
-                      : step.isDone ? "text-foreground"
-                      : step.isCurrent ? "text-foreground"
-                      : "text-muted-foreground/40"
-                    }`}>
-                      {step.label}
-                    </p>
-                    {step.party && (
-                      <span className={`inline-flex items-center gap-1 text-[10px] rounded-full px-1.5 py-0.5 border shrink-0 ${
-                        step.isCurrent
-                          ? "bg-primary/10 text-primary border-primary/20"
-                          : step.isDone
-                            ? "bg-muted text-muted-foreground border-border"
-                            : "bg-transparent text-muted-foreground/30 border-muted-foreground/15"
-                      }`}>
-                        <step.PartyIcon className="h-2.5 w-2.5" />
-                        {step.party}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Timestamp if done */}
-                  {step.ts && (
-                    <p className="text-[10px] text-muted-foreground mt-0.5">
-                      {fmtDate(step.ts)}
-                    </p>
-                  )}
-
-                  {/* Current step context block */}
-                  {step.isCurrent && (
-                    <div className={`mt-2 rounded-lg p-3 space-y-2 ${
-                      step.isMyTurn
-                        ? "bg-primary/8 border border-primary/25"
-                        : "bg-muted/40 border border-border"
-                    }`}>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        {step.context}
-                      </p>
-
-                      {step.isMyTurn && (
-                        <>
-                          <div className="flex items-center gap-1.5">
-                            <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse shrink-0" />
-                            <p className="text-xs font-semibold text-primary">
-                              {ar ? "هذه الخطوة تتطلب إجراءً منك" : "This step requires your action"}
-                            </p>
-                          </div>
-                          {step.action && (
-                            <Button
-                              size="sm"
-                              variant={step.action.primary ? "default" : "outline"}
-                              className={`w-full gap-1.5 ${!step.action.primary ? "border-gray-400" : ""}`}
-                              onClick={() => setPending(step.action!.key)}
-                              disabled={loading}
-                            >
-                              {loading && pending === step.action.key
-                                ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                : step.action.key === "submit"
-                                  ? <Send className="h-3.5 w-3.5" />
-                                  : step.action.key === "confirm"
-                                    ? <CheckCircle2 className="h-3.5 w-3.5" />
-                                    : <FileCheck className="h-3.5 w-3.5" />}
-                              {step.action.label}
-                            </Button>
-                          )}
-                        </>
-                      )}
-
-                      {/* Waiting state for the other party */}
-                      {!step.isMyTurn && isParty && step.id === "pending_confirmation" && (
-                        <div className="flex items-center gap-1.5">
-                          <Clock className="h-3 w-3 text-amber-500 shrink-0" />
-                          <p className="text-xs text-amber-700">
-                            {ar ? "في انتظار الطرف الآخر" : "Waiting for counterparty"}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Cancel — subtle destructive at footer */}
+        {/* ── Cancel footer ── */}
         {canCancel && (
-          <div className="px-4 pb-4 pt-0">
+          <div className="px-4 pb-4 pt-2">
             <button
               type="button"
               onClick={() => setPending("cancel")}
@@ -705,6 +707,135 @@ function MaterialLinesSection({
   );
 }
 
+// ── Shipment Mini Timeline ────────────────────────────────────────────────────
+
+function ShipmentMiniTimeline({
+  shipment,
+  lang,
+}: {
+  shipment: ContractShipment;
+  lang: string;
+}) {
+  const ar = lang === "ar";
+  const isCancelled = shipment.status === "cancelled";
+
+  function fmtShort(iso: string | null) {
+    if (!iso) return null;
+    return new Date(iso).toLocaleDateString(ar ? "ar-SA" : "en-US", {
+      month: "short", day: "numeric",
+    });
+  }
+
+  interface MiniStep {
+    id: string;
+    label: string;
+    party: string;
+    isDone: boolean;
+    isCurrent: boolean;
+    isCancelled?: boolean;
+    ts: string | null;
+    weightNote?: string | null;
+  }
+
+  const sellerLbl = ar ? "البائع"   : "Seller";
+  const buyerLbl  = ar ? "المشتري" : "Buyer";
+  const bothLbl   = ar ? "الطرفان" : "Both";
+
+  const baseSteps: MiniStep[] = [
+    {
+      id: "planned",
+      label: ar ? "مخطط" : "Planned",
+      party: bothLbl,
+      isDone: true,
+      isCurrent: shipment.status === "planned",
+      ts: shipment.planned_at,
+    },
+    {
+      id: "dispatched",
+      label: ar ? "مُشحون" : "Dispatched",
+      party: sellerLbl,
+      isDone: shipment.dispatched_at != null,
+      isCurrent: shipment.status === "planned",
+      ts: shipment.dispatched_at,
+      weightNote: shipment.source_weight != null
+        ? String(Number(shipment.source_weight).toLocaleString())
+        : null,
+    },
+    {
+      id: "received",
+      label: ar ? "مُستلم" : "Received",
+      party: buyerLbl,
+      isDone: shipment.received_at != null,
+      isCurrent: shipment.status === "dispatched",
+      ts: shipment.received_at,
+      weightNote: shipment.destination_weight != null
+        ? String(Number(shipment.destination_weight).toLocaleString())
+        : null,
+    },
+  ];
+
+  const lastStep: MiniStep = isCancelled
+    ? { id: "cancelled", label: ar ? "ملغى" : "Cancelled", party: "", isDone: true, isCancelled: true, isCurrent: false, ts: shipment.cancelled_at }
+    : { id: "closed",    label: ar ? "مغلق"  : "Closed",    party: bothLbl, isDone: shipment.closed_at != null, isCurrent: shipment.status === "received", ts: shipment.closed_at };
+
+  const steps: MiniStep[] = [...baseSteps, lastStep];
+
+  return (
+    <div className="flex items-start gap-0 overflow-x-auto" dir="ltr">
+      {steps.map((step, i) => {
+        const isLast = i === steps.length - 1;
+        const iconCls = step.isCancelled
+          ? "bg-red-100 text-red-400 border border-red-200"
+          : step.isDone
+            ? "bg-primary text-white"
+            : step.isCurrent
+              ? "bg-white border-2 border-primary text-primary ring-2 ring-primary/15"
+              : "border border-muted-foreground/25 bg-background text-muted-foreground/25";
+        const lineCls = step.isDone ? "bg-primary/35" : "bg-muted-foreground/15";
+
+        return (
+          <div key={step.id} className="flex items-start flex-1 min-w-0">
+            {/* Step block */}
+            <div className="flex flex-col items-center min-w-0">
+              {/* Circle */}
+              <div className={`h-5 w-5 rounded-full flex items-center justify-center shrink-0 ${iconCls}`}>
+                {step.isDone && !step.isCancelled ? <CheckCircle2 className="h-3 w-3" />
+                  : step.isCancelled              ? <XCircle className="h-3 w-3" />
+                  : step.isCurrent               ? <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                  :                                <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground/30" />}
+              </div>
+              {/* Label */}
+              <p className={`text-[9px] font-semibold mt-1 text-center leading-tight ${
+                step.isCancelled ? "text-red-500"
+                : step.isDone || step.isCurrent ? "text-foreground"
+                : "text-muted-foreground/40"
+              }`}>{step.label}</p>
+              {/* Party */}
+              {step.party && (
+                <p className={`text-[9px] text-center leading-tight ${
+                  step.isCurrent ? "text-primary" : step.isDone ? "text-muted-foreground" : "text-muted-foreground/30"
+                }`}>{step.party}</p>
+              )}
+              {/* Date */}
+              {step.ts && step.isDone && (
+                <p className="text-[9px] text-muted-foreground text-center mt-0.5">{fmtShort(step.ts)}</p>
+              )}
+              {/* Weight note */}
+              {step.weightNote && step.isDone && (
+                <p className="text-[9px] text-primary font-semibold text-center">{step.weightNote}</p>
+              )}
+            </div>
+            {/* Connector line */}
+            {!isLast && (
+              <div className={`h-0.5 flex-1 mt-2.5 mx-0.5 rounded-full ${lineCls}`} />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ── Shipment Row ──────────────────────────────────────────────────────────────
 
 function ShipmentRow({
@@ -772,7 +903,7 @@ function ShipmentRow({
         />
       )}
 
-      <div className="rounded-lg border border-border bg-card p-3 space-y-2">
+      <div className="rounded-lg border border-border bg-card p-3 space-y-2.5">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <span className="block text-xs font-mono font-semibold text-foreground" dir="ltr">
@@ -782,10 +913,10 @@ function ShipmentRow({
               {material?.material_label ?? "—"} · {material?.unit_label ?? ""}
             </span>
           </div>
-          <Badge variant="outline" className={`shrink-0 text-xs border ${shipmentBadgeClass(shipment.status)}`}>
-            {t(`shipment.status.${shipment.status}`)}
-          </Badge>
         </div>
+
+        {/* Shipment Mini Timeline */}
+        <ShipmentMiniTimeline shipment={shipment} lang={lang} />
 
         {/* Weights */}
         <div className="grid grid-cols-3 gap-x-3 text-xs">
