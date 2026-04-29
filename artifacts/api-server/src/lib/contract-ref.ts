@@ -1,5 +1,5 @@
 import { sql, eq } from "drizzle-orm";
-import { db, contractSequencesTable, contractShipmentsTable } from "@workspace/db";
+import { db, contractSequencesTable, contractShipmentsTable, contractsTable } from "@workspace/db";
 
 /**
  * Atomically allocates the next contract reference number for the current year.
@@ -28,6 +28,10 @@ export async function nextContractReference(): Promise<string> {
  * Must be called inside a transaction to prevent duplicate references
  * under concurrent shipment creation.
  *
+ * Locks the contract row (FOR UPDATE on a single row — valid) to
+ * serialise concurrent shipment creation, then counts existing
+ * shipments without an illegal FOR UPDATE on an aggregate.
+ *
  * Returns: {contractRef}-S{seq} where seq is zero-padded to 3 digits.
  */
 export async function nextShipmentReference(
@@ -35,11 +39,19 @@ export async function nextShipmentReference(
   contractId: string,
   contractRef: string,
 ): Promise<string> {
+  // Lock the contract row to serialise concurrent shipment creation.
+  // FOR UPDATE on a single row is always valid.
+  await tx
+    .select({ id: contractsTable.id })
+    .from(contractsTable)
+    .where(eq(contractsTable.id, contractId))
+    .for("update");
+
+  // Count existing shipments without FOR UPDATE (invalid on aggregates).
   const [countRow] = await tx
     .select({ count: sql<string>`count(*)::text` })
     .from(contractShipmentsTable)
-    .where(eq(contractShipmentsTable.contract_id, contractId))
-    .for("update");
+    .where(eq(contractShipmentsTable.contract_id, contractId));
 
   const seq = Number(countRow.count) + 1;
   return `${contractRef}-S${String(seq).padStart(3, "0")}`;
