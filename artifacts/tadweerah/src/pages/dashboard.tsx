@@ -19,6 +19,7 @@ import {
   Truck,
   Sparkles,
   Bell,
+  ClipboardList,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { AppLayout } from "@/components/app-layout";
@@ -157,6 +158,7 @@ const SECONDARY_CARDS = [
   { titleKey: "reports.title",             descKey: "reports.subtitle",             icon: BarChart2,  href: "/reports" },
   { titleKey: "members.dashboard.title",   descKey: "members.dashboard.subtitle",   icon: Users,      href: "/company/members" },
   { titleKey: "profile.nav.title",         descKey: "profile.nav.subtitle",         icon: Building2,  href: "/company/profile" },
+  { titleKey: "contracts.title",           descKey: "contracts.subtitle",           icon: ClipboardList, href: "/contracts" },
 ] as const;
 
 export function DashboardPage() {

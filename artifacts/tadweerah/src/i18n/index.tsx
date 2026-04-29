@@ -248,6 +248,8 @@ const translations: Record<string, Record<Language, string>> = {
 
   // Generic errors
   "error.generic": { ar: "حدث خطأ. حاول مرة أخرى لاحقاً.", en: "Something went wrong. Please try again later." },
+  "error.required": { ar: "هذا الحقل مطلوب", en: "This field is required" },
+  "action.title": { ar: "الإجراءات المتاحة", en: "Available Actions" },
   "error.loading": { ar: "تعذر تحميل البيانات.", en: "Could not load data." },
 
   // M3 — listing detail
@@ -952,6 +954,111 @@ const translations: Record<string, Record<Language, string>> = {
   // Company profile nav card in dashboard
   "profile.nav.title": { ar: "ملف الشركة", en: "Company Profile" },
   "profile.nav.subtitle": { ar: "عدّل بيانات شركتك ومعلوماتها", en: "Update your company details and contact info" },
+
+  // ── Contract Track ────────────────────────────────────────────────────────
+  "contracts.nav": { ar: "العقود", en: "Contracts" },
+  "contracts.title": { ar: "عقودي", en: "My Contracts" },
+  "contracts.subtitle": { ar: "عقود التنفيذ النشطة والمكتملة", en: "Active and completed execution contracts" },
+  "contracts.new": { ar: "عقد جديد", en: "New Contract" },
+  "contracts.empty.title": { ar: "لا توجد عقود حتى الآن", en: "No contracts yet" },
+  "contracts.empty.desc": { ar: "أنشئ عقدك الأول لبدء تتبع شحناتك", en: "Create your first contract to start tracking shipments" },
+  "contracts.card.materials": { ar: "بند مواد", en: "material line" },
+  "contracts.card.materials_plural": { ar: "بنود مواد", en: "material lines" },
+  "contracts.card.shipments_summary": { ar: "{open} مفتوح / {total} إجمالي", en: "{open} open / {total} total" },
+
+  "contract.status.draft": { ar: "مسودة", en: "Draft" },
+  "contract.status.pending_confirmation": { ar: "بانتظار التأكيد", en: "Pending Confirmation" },
+  "contract.status.active": { ar: "نشط", en: "Active" },
+  "contract.status.completed": { ar: "مكتمل", en: "Completed" },
+  "contract.status.cancelled": { ar: "ملغي", en: "Cancelled" },
+
+  "contract.policy.source_weight_only": { ar: "وزن المصدر فقط", en: "Source weight only" },
+  "contract.policy.destination_weight_only": { ar: "وزن الوجهة فقط", en: "Destination weight only" },
+  "contract.policy.dual_source_final": { ar: "مزدوج — المصدر معتمد", en: "Dual — source is final" },
+  "contract.policy.dual_destination_final": { ar: "مزدوج — الوجهة معتمدة", en: "Dual — destination is final" },
+  "contract.policy.dual_higher_final": { ar: "مزدوج — الأعلى معتمد", en: "Dual — higher weight is final" },
+
+  "contract.field.reference": { ar: "رقم العقد", en: "Contract Ref." },
+  "contract.field.external_ref": { ar: "رقم مرجعي خارجي", en: "External Ref." },
+  "contract.field.seller": { ar: "البائع", en: "Seller" },
+  "contract.field.buyer": { ar: "المشتري", en: "Buyer" },
+  "contract.field.start_date": { ar: "تاريخ البدء", en: "Start Date" },
+  "contract.field.end_date": { ar: "تاريخ الانتهاء", en: "End Date" },
+  "contract.field.weight_policy": { ar: "سياسة الوزن", en: "Weight Policy" },
+  "contract.field.attachment": { ar: "مستند مرفق", en: "Attachment" },
+  "contract.field.notes": { ar: "ملاحظات", en: "Notes" },
+  "contract.field.confirmed_at": { ar: "تاريخ التأكيد", en: "Confirmed On" },
+
+  "contract.action.submit": { ar: "إرسال للمشتري للتأكيد", en: "Submit for Buyer Confirmation" },
+  "contract.action.confirm": { ar: "تأكيد العمل بالعقد", en: "Confirm Operational Use" },
+  "contract.action.complete": { ar: "إغلاق العقد", en: "Complete Contract" },
+  "contract.action.cancel": { ar: "إلغاء العقد", en: "Cancel Contract" },
+
+  "contract.action.submit.confirm": { ar: "هل أنت متأكد من إرسال العقد للمشتري؟ لن تتمكن من تعديل بنود المواد بعد الإرسال.", en: "Are you sure you want to submit this contract to the buyer? You will not be able to edit material lines after submission." },
+  "contract.action.confirm.confirm": { ar: "بالتأكيد تقر بأنك توافق على تنفيذ هذا العقد عبر تدويرة. هذا ليس توقيعاً قانونياً.", en: "By confirming, you agree to manage execution of this contract on Tadweerah. This is not a legal signature." },
+  "contract.action.cancel.confirm": { ar: "هل تريد إلغاء هذا العقد؟", en: "Do you want to cancel this contract?" },
+  "contract.action.complete.confirm": { ar: "هل تريد إغلاق هذا العقد؟ تأكد أن جميع الشحنات في حالة نهائية.", en: "Do you want to complete this contract? Ensure all shipments are in a terminal state." },
+
+  "contract.materials.title": { ar: "بنود المواد", en: "Material Lines" },
+  "contract.materials.add": { ar: "إضافة بند", en: "Add Line" },
+  "contract.materials.empty": { ar: "لا توجد بنود مواد بعد", en: "No material lines yet" },
+  "contract.materials.label": { ar: "المادة", en: "Material" },
+  "contract.materials.unit": { ar: "الوحدة", en: "Unit" },
+  "contract.materials.price": { ar: "السعر للوحدة (ريال)", en: "Price / Unit (SAR)" },
+  "contract.materials.seller_pct": { ar: "نسبة البائع %", en: "Seller %" },
+  "contract.materials.buyer_pct": { ar: "نسبة المشتري %", en: "Buyer %" },
+  "contract.materials.locked": { ar: "بنود المواد مقفلة بعد الإرسال", en: "Material lines are locked after submission" },
+
+  "contract.shipments.title": { ar: "الشحنات", en: "Shipments" },
+  "contract.shipments.add": { ar: "إضافة شحنة", en: "Add Shipment" },
+  "contract.shipments.empty": { ar: "لا توجد شحنات بعد", en: "No shipments yet" },
+  "contract.shipments.ref": { ar: "رقم الشحنة", en: "Shipment Ref." },
+  "contract.shipments.material": { ar: "المادة", en: "Material" },
+  "contract.shipments.source_weight": { ar: "وزن المصدر", en: "Source Weight" },
+  "contract.shipments.dest_weight": { ar: "وزن الوجهة", en: "Dest. Weight" },
+  "contract.shipments.final_weight": { ar: "الوزن المعتمد", en: "Final Weight" },
+  "contract.shipments.final_value": { ar: "القيمة النهائية", en: "Final Value" },
+
+  "shipment.status.planned": { ar: "مجدولة", en: "Planned" },
+  "shipment.status.dispatched": { ar: "مُشحونة", en: "Dispatched" },
+  "shipment.status.received": { ar: "مُستلمة", en: "Received" },
+  "shipment.status.closed": { ar: "مغلقة", en: "Closed" },
+  "shipment.status.cancelled": { ar: "ملغاة", en: "Cancelled" },
+
+  "shipment.action.dispatch": { ar: "تأكيد الشحن", en: "Confirm Dispatch" },
+  "shipment.action.receive": { ar: "تأكيد الاستلام", en: "Confirm Receipt" },
+  "shipment.action.close": { ar: "إغلاق الشحنة", en: "Close Shipment" },
+  "shipment.action.cancel": { ar: "إلغاء الشحنة", en: "Cancel Shipment" },
+
+  "shipment.field.source_weight": { ar: "وزن المصدر (في وحدة العقد)", en: "Source weight (contract unit)" },
+  "shipment.field.dest_weight": { ar: "وزن الوجهة (في وحدة العقد)", en: "Destination weight (contract unit)" },
+  "shipment.field.notes": { ar: "ملاحظات الشحنة", en: "Shipment Notes" },
+
+  "contract.timeline.title": { ar: "السجل الزمني", en: "Timeline" },
+  "contract.timeline.created": { ar: "تم إنشاء العقد", en: "Contract created" },
+  "contract.timeline.submitted": { ar: "تم إرساله للمشتري", en: "Submitted to buyer" },
+  "contract.timeline.confirmed": { ar: "تم تأكيده من المشتري", en: "Confirmed by buyer" },
+  "contract.timeline.completed": { ar: "تم إغلاق العقد", en: "Contract completed" },
+  "contract.timeline.cancelled": { ar: "تم إلغاء العقد", en: "Contract cancelled" },
+
+  "contract.new.title": { ar: "عقد تنفيذ جديد", en: "New Execution Contract" },
+  "contract.new.subtitle": { ar: "حدد الطرف الآخر، نطاق المواد، وسياسة الوزن", en: "Define the counterparty, material scope, and weight policy" },
+  "contract.new.section.details": { ar: "تفاصيل العقد", en: "Contract Details" },
+  "contract.new.section.materials": { ar: "بنود المواد", en: "Material Lines" },
+  "contract.new.buyer_search": { ar: "ابحث عن الشركة المشترية...", en: "Search for buyer company..." },
+  "contract.new.buyer_selected": { ar: "الشركة المشترية", en: "Buyer Company" },
+  "contract.new.submit": { ar: "إنشاء العقد", en: "Create Contract" },
+  "contract.new.add_material": { ar: "إضافة بند مادة", en: "Add Material Line" },
+  "contract.new.min_one_material": { ar: "أضف بنداً واحداً على الأقل قبل الإنشاء", en: "Add at least one material line before creating" },
+  "contract.new.creating": { ar: "جارٍ الإنشاء...", en: "Creating..." },
+
+  "contract.role.you_are_seller": { ar: "أنت البائع في هذا العقد", en: "You are the seller in this contract" },
+  "contract.role.you_are_buyer": { ar: "أنت المشتري في هذا العقد", en: "You are the buyer in this contract" },
+
+  "contract.summary.total_shipments": { ar: "إجمالي الشحنات", en: "Total Shipments" },
+  "contract.summary.open_shipments": { ar: "شحنات مفتوحة", en: "Open Shipments" },
+  "contract.summary.closed_shipments": { ar: "شحنات مغلقة", en: "Closed Shipments" },
+  "contract.summary.cancelled_shipments": { ar: "شحنات ملغاة", en: "Cancelled" },
 };
 
 export const I18nProvider: React.FC<{

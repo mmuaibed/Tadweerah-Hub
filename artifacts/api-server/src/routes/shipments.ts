@@ -115,12 +115,12 @@ router.get(
   async (req, res, next) => {
     try {
       const companyId = (req as AuthedCompanyRequest).company.id;
-      const shipmentId = assertUuid(req.params.id, "id");
+      const contractId = assertUuid(req.params.id, "id");
 
       const [contract] = await db
         .select()
         .from(contractsTable)
-        .where(eq(contractsTable.id, shipmentId))
+        .where(eq(contractsTable.id, contractId))
         .limit(1);
 
       if (!contract) throw new HttpError(404, "NotFound", "Contract not found");
@@ -156,12 +156,12 @@ router.post(
     try {
       const company = (req as AuthedCompanyRequest).company;
       const userId = (req as AuthedCompanyRequest).userId;
-      const shipmentId = assertUuid(req.params.id, "id");
+      const contractId = assertUuid(req.params.id, "id");
 
       const [contract] = await db
         .select()
         .from(contractsTable)
-        .where(eq(contractsTable.id, shipmentId))
+        .where(eq(contractsTable.id, contractId))
         .limit(1);
 
       if (!contract) throw new HttpError(404, "NotFound", "Contract not found");

@@ -27,6 +27,9 @@ import { ReportsPage } from "@/pages/reports";
 import { CompanyCapabilitiesPage } from "@/pages/company-capabilities";
 import { MembersPage } from "@/pages/members";
 import { CompanyProfilePage } from "@/pages/company-profile";
+import { ContractsPage } from "@/pages/contracts";
+import { ContractNewPage } from "@/pages/contract-new";
+import { ContractDetailPage } from "@/pages/contract-detail";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -257,6 +260,15 @@ function ClerkProviderWithRoutes() {
             </Route>
             <Route path="/company/profile">
               <CompanyRoute><CompanyProfilePage /></CompanyRoute>
+            </Route>
+            <Route path="/contracts/new">
+              <CompanyRoute><ContractNewPage /></CompanyRoute>
+            </Route>
+            <Route path="/contracts/:id">
+              <CompanyRoute><ContractDetailPage /></CompanyRoute>
+            </Route>
+            <Route path="/contracts">
+              <CompanyRoute><ContractsPage /></CompanyRoute>
             </Route>
             <Route component={NotFound} />
           </Switch>
