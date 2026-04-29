@@ -1,0 +1,97 @@
+Thank you. We reviewed your comments and we are closing the remaining decisions as follows.
+
+Please treat these as the final implementation decisions before draw.io.
+
+1. revenue_share
+
+Final decision:
+- Remove revenue_share completely from Marketplace.
+- Marketplace pricing models are fixed and by_weight only.
+- If removing the enum value is risky/destructive, keep the enum value temporarily in DB but block it fully at UI and API level.
+- API must return 400 UnsupportedPricingModel if revenue_share is submitted.
+- No marketplace deal should be created with revenue_share.
+
+2. Accepting lower offer
+
+Final decision:
+- Hard block accepting any offer that is not the highest pending offer.
+- Error message: “Reject higher offers first before accepting this offer.”
+- Only pending offers count.
+- Withdrawn/rejected offers are ignored.
+- No accepted_below_highest logic.
+- acceptance_reason is not required for this case.
+
+3. Deal cancellation
+
+Final decision:
+- Add cancelled as terminal deal status.
+- Producer can cancel only before dispatch.
+- Allowed statuses: active and payment_confirmed.
+- Not allowed after dispatched.
+- Buyer cannot cancel; buyer uses issue report.
+- Admin can cancel any deal.
+- Expiry job must ignore cancelled deals.
+- Add audit log entry when cancelled.
+
+4. Pre-expiry extension
+
+Final decision:
+- Extension is allowed once only.
+- Extension duration = 7 calendar days.
+- Producer only.
+- Allowed only before dispatch.
+- Not allowed after dispatched.
+- Notification fires when 3 calendar days remain before expiry.
+- If no action is taken, deal expires normally.
+- If extension is used and the extended deadline passes, deal expires automatically with no second extension.
+
+5. receipt_failures_count / offer_submission_blocked
+
+Final decision:
+- Count only deals that expire while status = dispatched.
+- Threshold = 2 dispatched-expired deals.
+- Blocking is automatic when threshold is reached.
+- Admin can unblock manually.
+- Add fields:
+  - receipt_failures_count integer default 0
+  - offer_submission_blocked boolean default false
+- POST /offers must reject blocked companies.
+- Admin should be able to clear the block.
+
+6. WF-00 pilot onboarding
+
+Final decision:
+- We will NOT add a new invite/activation system now.
+- Pilot onboarding will be handled manually by the team using known companies.
+- No new schema or onboarding logic is required for WF-00 at this stage.
+- Document WF-00 as an operational process, not a system feature.
+
+7. Admin unsuspend / unblock
+
+Final decision:
+- We need a real operational unblock route.
+- If this relates to offer_submission_blocked, add:
+  PATCH /api/admin/companies/:id/unblock-offers
+- If a true suspended flag is added later, then add suspend/unsuspend.
+- For now, the priority is unblocking offer_submission_blocked.
+
+8. Cloud storage FIX-04
+
+Final decision:
+- Must be implemented before pilot.
+- All uploads must go to object storage.
+- No new pilot uploads should be stored on local filesystem.
+
+9. company_type cleanup
+
+Final decision:
+- Non-blocking for draw.io.
+- Clean before pilot if easy.
+- Do not use company_type for role gating.
+
+Please respond with:
+
+A) Implementation task list
+B) Any blockers
+C) Estimated effort
+D) Whether the charter can now be treated as final for draw.io

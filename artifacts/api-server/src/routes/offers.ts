@@ -435,6 +435,18 @@ router.post(
     }
     // ── End T&C gate ──────────────────────────────────────────────────────────
 
+    // ── Offer submission block gate ───────────────────────────────────────────
+    // Companies with repeated receipt failures are blocked from submitting offers.
+    // Admin must manually clear the block via PATCH /admin/companies/:id/unblock-offers.
+    if (company.offer_submission_blocked) {
+      throw new HttpError(
+        403,
+        "OfferSubmissionBlocked",
+        "Your company is currently blocked from submitting offers due to repeated receipt failures. Please contact support.",
+      );
+    }
+    // ── End offer submission block gate ───────────────────────────────────────
+
     // ── Targeting gate ────────────────────────────────────────────────────────
     // Enforce that this company is allowed to bid on the listing.
     if (listing.targeting_type === "specific_company") {
@@ -976,11 +988,12 @@ router.post(
       const isLowerThanHighest =
         otherMax !== null && Number(offer.price_per_unit) < otherMax;
 
-      if (isLowerThanHighest && !acceptance_reason?.trim()) {
+      // Hard block: producer must reject all higher pending offers before accepting a lower one.
+      if (isLowerThanHighest) {
         throw new HttpError(
-          400,
-          "AcceptanceReasonRequired",
-          "You are accepting an offer lower than the current highest offer. A reason is required.",
+          409,
+          "MustRejectHigherOffers",
+          "Reject higher offers first before accepting this offer.",
         );
       }
 
@@ -993,7 +1006,6 @@ router.post(
           status: "accepted",
           resolved_at: now,
           updated_at: now,
-          acceptance_reason: acceptance_reason?.trim() ?? null,
         })
         .where(eq(listingOffersTable.id, offerId));
 

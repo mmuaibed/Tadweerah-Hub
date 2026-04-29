@@ -14,6 +14,7 @@ import {
   companiesTable,
   issueReportsTable,
   auditLogTable,
+  dealsTable,
 } from "@workspace/db";
 import { logAudit } from "../lib/audit";
 
@@ -195,6 +196,95 @@ router.patch("/admin/issue-reports/:id", requireAdminKey, async (req, res) => {
     entityType: "issue_report",
     entityId: id,
     details: { status },
+  });
+
+  res.json(updated);
+});
+
+/**
+ * PATCH /admin/companies/:id/unblock-offers
+ * Clears offer_submission_blocked and resets receipt_failures_count for the company.
+ * Used when admin manually reviews and reinstates a blocked buyer.
+ */
+router.patch("/admin/companies/:id/unblock-offers", requireAdminKey, async (req, res) => {
+  const id = String(req.params["id"]);
+
+  const [updated] = await db
+    .update(companiesTable)
+    .set({
+      offer_submission_blocked: false,
+      receipt_failures_count: 0,
+    })
+    .where(eq(companiesTable.id, id))
+    .returning({
+      id: companiesTable.id,
+      name: companiesTable.name,
+      offer_submission_blocked: companiesTable.offer_submission_blocked,
+      receipt_failures_count: companiesTable.receipt_failures_count,
+    });
+
+  if (!updated) {
+    res.status(404).json({ error: "NotFound", message: "Company not found" });
+    return;
+  }
+
+  void logAudit({
+    action: "company.offer_submission_unblocked",
+    entityType: "company",
+    entityId: id,
+    details: { unblocked_by: "admin" },
+    severity: "warn",
+  });
+
+  res.json(updated);
+});
+
+/* -------------------------------------------------------------------------- */
+/* Deals (admin)                                                               */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * POST /admin/deals/:id/cancel
+ * Admin can cancel any deal that has not yet been dispatched, completed, or already cancelled.
+ * Body: { reason?: string }
+ */
+router.post("/admin/deals/:id/cancel", requireAdminKey, async (req, res) => {
+  const id = String(req.params["id"]);
+  const { reason } = req.body ?? {};
+
+  const [deal] = await db
+    .select()
+    .from(dealsTable)
+    .where(eq(dealsTable.id, id))
+    .limit(1);
+
+  if (!deal) {
+    res.status(404).json({ error: "NotFound", message: "Deal not found" });
+    return;
+  }
+
+  if (!["active", "payment_confirmed"].includes(deal.status)) {
+    res.status(409).json({
+      error: "InvalidState",
+      message: `Deal cannot be cancelled from status '${deal.status}'. Only active or payment_confirmed deals can be admin-cancelled.`,
+    });
+    return;
+  }
+
+  const now = new Date();
+
+  const [updated] = await db
+    .update(dealsTable)
+    .set({ status: "cancelled", cancelled_at: now, updated_at: now })
+    .where(eq(dealsTable.id, id))
+    .returning();
+
+  void logAudit({
+    action: "deal.cancelled_by_admin",
+    entityType: "deal",
+    entityId: id,
+    details: { reason: reason ?? null, cancelled_from_status: deal.status },
+    severity: "warn",
   });
 
   res.json(updated);

@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, uuid, pgEnum, integer, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { companyCategoriesTable } from "./company-categories";
@@ -53,6 +53,19 @@ export const companiesTable = pgTable("companies", {
 
   /** Timestamp when the company owner accepted the Terms & Conditions. */
   accepted_terms_at: timestamp("accepted_terms_at", { withTimezone: true }),
+
+  /**
+   * Counts deals that expired while in 'dispatched' status where this company was the buyer.
+   * Incremented automatically by the expiry job. Reset by admin via unblock-offers route.
+   */
+  receipt_failures_count: integer("receipt_failures_count").notNull().default(0),
+
+  /**
+   * When true, this company is blocked from submitting new offers.
+   * Set automatically when receipt_failures_count reaches 2.
+   * Cleared manually by admin via PATCH /admin/companies/:id/unblock-offers.
+   */
+  offer_submission_blocked: boolean("offer_submission_blocked").notNull().default(false),
 
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()

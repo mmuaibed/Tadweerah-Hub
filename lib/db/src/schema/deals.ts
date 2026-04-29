@@ -6,6 +6,8 @@ import {
   pgEnum,
   numeric,
   index,
+  integer,
+  boolean,
 } from "drizzle-orm/pg-core";
 import { companiesTable } from "./companies";
 import { wasteListingsTable } from "./waste-listings";
@@ -23,6 +25,7 @@ export const dealStatusEnum = pgEnum("deal_status", [
   "dispatched",
   "completed",
   "expired",
+  "cancelled",
 ]);
 
 export const dealsTable = pgTable(
@@ -88,6 +91,26 @@ export const dealsTable = pgTable(
     received_by: uuid("received_by").references(() => companiesTable.id, {
       onDelete: "restrict",
     }),
+
+    /**
+     * Set when producer or admin cancels the deal before dispatch.
+     * Terminal status: no further transitions after cancelled.
+     */
+    cancelled_at: timestamp("cancelled_at", { withTimezone: true }),
+
+    /**
+     * One-time extension: producer can extend the deal deadline once, before dispatch.
+     * extended_until replaces the normal SLA deadline for active/payment_confirmed states.
+     * extension_count tracks how many times the deal has been extended (max 1).
+     */
+    extended_until: timestamp("extended_until", { withTimezone: true }),
+    extension_count: integer("extension_count").notNull().default(0),
+
+    /**
+     * Set to true when the pre-expiry notification has been sent (3 calendar days before deadline).
+     * Prevents duplicate pre-expiry alerts from the hourly job.
+     */
+    pre_expiry_notified: boolean("pre_expiry_notified").notNull().default(false),
 
     created_at: timestamp("created_at", { withTimezone: true })
       .notNull()

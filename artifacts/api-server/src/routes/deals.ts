@@ -38,6 +38,9 @@ function serializeDeal(
     payment_proof_url: deal.payment_proof_url ?? null,
     dispatched_at: deal.dispatched_at?.toISOString() ?? null,
     received_at: deal.received_at?.toISOString() ?? null,
+    cancelled_at: deal.cancelled_at?.toISOString() ?? null,
+    extension_count: deal.extension_count,
+    extended_until: deal.extended_until?.toISOString() ?? null,
     created_at: deal.created_at.toISOString(),
     updated_at: deal.updated_at.toISOString(),
   };
@@ -400,6 +403,162 @@ router.post(
       title_en: "Deal Completed",
       body_ar: "أكّد المشتري استلام البضاعة. تم إتمام الصفقة بنجاح",
       body_en: "The buyer confirmed receipt. The deal is now complete.",
+    });
+
+    return res.json(serializeDeal(updated, counterparty!));
+  },
+);
+
+/**
+ * POST /deals/:deal_id/cancel
+ * Producer cancels a deal before dispatch. Terminal — cannot be undone.
+ * Allowed from: active, payment_confirmed.
+ * Not allowed from: dispatched, completed, expired, cancelled.
+ */
+router.post(
+  "/deals/:deal_id/cancel",
+  requireAuth,
+  requireCompany(),
+  async (req, res) => {
+    const dealId = assertUuid(req.params.deal_id, "deal_id");
+    const { company } = req as AuthedCompanyRequest;
+
+    const [deal] = await db
+      .select()
+      .from(dealsTable)
+      .where(eq(dealsTable.id, dealId))
+      .limit(1);
+
+    if (!deal) throw new HttpError(404, "NotFound", "Deal not found");
+    if (deal.producer_company_id !== company.id) {
+      throw new HttpError(403, "Forbidden", "Only the producer can cancel this deal");
+    }
+    if (!["active", "payment_confirmed"].includes(deal.status)) {
+      throw new HttpError(
+        409,
+        "InvalidState",
+        `Deal cannot be cancelled from status '${deal.status}'. Cancellation is only allowed before dispatch.`,
+      );
+    }
+
+    const now = new Date();
+
+    const [updated] = await db
+      .update(dealsTable)
+      .set({
+        status: "cancelled",
+        cancelled_at: now,
+        updated_at: now,
+      })
+      .where(eq(dealsTable.id, dealId))
+      .returning();
+
+    const [counterparty] = await db
+      .select({ name: companiesTable.name, contactPhone: companiesTable.contactPhone })
+      .from(companiesTable)
+      .where(eq(companiesTable.id, updated.buyer_company_id))
+      .limit(1);
+
+    void logAudit({
+      userId: (req as AuthedCompanyRequest).userId,
+      companyId: company.id,
+      action: "deal.cancelled",
+      entityType: "deal",
+      entityId: dealId,
+      severity: "warn",
+      details: { cancelled_from_status: deal.status },
+    });
+    void notifyDealStageChange({
+      companyId: updated.buyer_company_id,
+      dealId,
+      listingId: updated.listing_id,
+      type: "deal_cancelled",
+      title_ar: "تم إلغاء الصفقة",
+      title_en: "Deal Cancelled",
+      body_ar: "قام المنتج بإلغاء الصفقة. يمكنك رفع تقرير إذا كنت تعتقد أن هذا خطأ",
+      body_en: "The producer has cancelled this deal. You may file an issue report if you believe this is an error.",
+    });
+
+    return res.json(serializeDeal(updated, counterparty!));
+  },
+);
+
+/**
+ * POST /deals/:deal_id/extend
+ * Producer extends the deal deadline by 7 calendar days.
+ * Allowed once only, before dispatch (active or payment_confirmed).
+ * After dispatch, extension is not permitted.
+ */
+router.post(
+  "/deals/:deal_id/extend",
+  requireAuth,
+  requireCompany(),
+  async (req, res) => {
+    const dealId = assertUuid(req.params.deal_id, "deal_id");
+    const { company } = req as AuthedCompanyRequest;
+
+    const [deal] = await db
+      .select()
+      .from(dealsTable)
+      .where(eq(dealsTable.id, dealId))
+      .limit(1);
+
+    if (!deal) throw new HttpError(404, "NotFound", "Deal not found");
+    if (deal.producer_company_id !== company.id) {
+      throw new HttpError(403, "Forbidden", "Only the producer can extend this deal");
+    }
+    if (!["active", "payment_confirmed"].includes(deal.status)) {
+      throw new HttpError(
+        409,
+        "InvalidState",
+        `Deal cannot be extended from status '${deal.status}'. Extension is only allowed before dispatch.`,
+      );
+    }
+    if (deal.extension_count >= 1) {
+      throw new HttpError(
+        409,
+        "ExtensionLimitReached",
+        "This deal has already been extended once. No further extensions are allowed.",
+      );
+    }
+
+    const now = new Date();
+    const extendedUntil = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    const [updated] = await db
+      .update(dealsTable)
+      .set({
+        extended_until: extendedUntil,
+        extension_count: 1,
+        pre_expiry_notified: false, // reset so pre-expiry fires again relative to new deadline
+        updated_at: now,
+      })
+      .where(eq(dealsTable.id, dealId))
+      .returning();
+
+    const [counterparty] = await db
+      .select({ name: companiesTable.name, contactPhone: companiesTable.contactPhone })
+      .from(companiesTable)
+      .where(eq(companiesTable.id, updated.buyer_company_id))
+      .limit(1);
+
+    void logAudit({
+      userId: (req as AuthedCompanyRequest).userId,
+      companyId: company.id,
+      action: "deal.extended",
+      entityType: "deal",
+      entityId: dealId,
+      details: { extended_until: extendedUntil.toISOString() },
+    });
+    void notifyDealStageChange({
+      companyId: updated.buyer_company_id,
+      dealId,
+      listingId: updated.listing_id,
+      type: "deal_extended",
+      title_ar: "تم تمديد الصفقة",
+      title_en: "Deal Extended",
+      body_ar: `قام المنتج بتمديد الصفقة حتى ${extendedUntil.toLocaleDateString("ar-SA")}`,
+      body_en: `The producer extended the deal deadline to ${extendedUntil.toLocaleDateString("en-US")}.`,
     });
 
     return res.json(serializeDeal(updated, counterparty!));

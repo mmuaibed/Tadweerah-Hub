@@ -518,31 +518,24 @@ router.post(
 
     const pricingModel: string = typeof req.body.pricing_model === "string" ? req.body.pricing_model : (data.pricing_model ?? "fixed");
 
-    // ── Revenue-share validation ───────────────────────────────────────────────
-    // revenue_share pricing is only valid for Direct Sale listings.
-    if (pricingModel === "revenue_share" && saleType !== "direct") {
+    // ── Pricing model validation ───────────────────────────────────────────────
+    // Marketplace supports fixed and by_weight only.
+    // revenue_share is not a supported marketplace pricing model.
+    if (pricingModel === "revenue_share") {
+      throw new HttpError(
+        400,
+        "UnsupportedPricingModel",
+        "revenue_share is not supported in the Marketplace. Use 'fixed' or 'by_weight'.",
+      );
+    }
+    if (!["fixed", "by_weight"].includes(pricingModel)) {
       throw new HttpError(
         400,
         "ValidationError",
-        "revenue_share pricing is only allowed for Direct Sale listings (sale_type=direct)",
+        "pricing_model must be 'fixed' or 'by_weight'",
       );
     }
-    // revenue_share_pct is required (and must be 1–100) when pricing_model=revenue_share.
-    if (pricingModel === "revenue_share") {
-      const rawPct = req.body.revenue_share_pct;
-      const pctNum = rawPct != null ? Number(rawPct) : NaN;
-      if (!Number.isFinite(pctNum) || pctNum <= 0 || pctNum > 100) {
-        throw new HttpError(
-          400,
-          "ValidationError",
-          "revenue_share_pct is required and must be a number between 1 and 100 when pricing_model=revenue_share",
-        );
-      }
-    }
-    const revenueSharePct: string | null =
-      pricingModel === "revenue_share" && req.body.revenue_share_pct != null
-        ? String(Number(req.body.revenue_share_pct))
-        : null;
+    const revenueSharePct: string | null = null;
 
     // ── Targeting ─────────────────────────────────────────────────────────────
     // Targeting is only valid for Direct Sale; auction listings are always open.
