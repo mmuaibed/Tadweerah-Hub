@@ -6,6 +6,7 @@ import {
   transportRequestsTable,
   companiesTable,
   wasteListingsTable,
+  materialCategoriesTable,
 } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requireCompany, type AuthedCompanyRequest } from "../middlewares/requireCompany";
@@ -119,6 +120,10 @@ router.post(
       typeof req.body?.planned_pickup_at === "string" && req.body.planned_pickup_at
         ? new Date(req.body.planned_pickup_at as string)
         : null;
+    const wasteCategoryId =
+      typeof req.body?.waste_category_id === "string" ? req.body.waste_category_id || null : null;
+    const wasteSubcategoryId =
+      typeof req.body?.waste_subcategory_id === "string" ? req.body.waste_subcategory_id || null : null;
 
     const [created] = await db
       .insert(transportRequestsTable)
@@ -133,6 +138,8 @@ router.post(
         vehicle_plate: vehiclePlate,
         notes,
         planned_pickup_at: plannedPickupAt,
+        waste_category_id: wasteCategoryId,
+        waste_subcategory_id: wasteSubcategoryId,
       })
       .returning();
 
@@ -459,7 +466,7 @@ router.get(
         .then((r) => r[0] ?? null),
     ]);
 
-    // Fetch listing for waste details
+    // Fetch listing for waste details (including taxonomy FK refs)
     const [listing] = await db
       .select({
         id: wasteListingsTable.id,
@@ -468,10 +475,42 @@ router.get(
         unit: wasteListingsTable.unit,
         description: wasteListingsTable.description,
         city: wasteListingsTable.city,
+        material_category_id: wasteListingsTable.material_category_id,
+        material_subcategory_id: wasteListingsTable.material_subcategory_id,
       })
       .from(wasteListingsTable)
       .where(eq(wasteListingsTable.id, deal.listing_id))
       .limit(1);
+
+    // Fetch taxonomy details for category and subcategory (if set)
+    const categoryIds = [
+      listing?.material_category_id,
+      listing?.material_subcategory_id,
+    ].filter((id): id is string => typeof id === "string");
+
+    const taxonomyRows = categoryIds.length > 0
+      ? await db
+          .select({
+            id: materialCategoriesTable.id,
+            key: materialCategoriesTable.key,
+            name_ar: materialCategoriesTable.name_ar,
+            name_en: materialCategoriesTable.name_en,
+            parent_id: materialCategoriesTable.parent_id,
+            regulatory_code: materialCategoriesTable.regulatory_code,
+            hazard_level: materialCategoriesTable.hazard_level,
+            physical_state: materialCategoriesTable.physical_state,
+          })
+          .from(materialCategoriesTable)
+          .where(inArray(materialCategoriesTable.id, categoryIds))
+      : [];
+
+    const catMap = Object.fromEntries(taxonomyRows.map((r) => [r.id, r]));
+    const category = listing?.material_category_id
+      ? (catMap[listing.material_category_id] ?? null)
+      : null;
+    const subcategory = listing?.material_subcategory_id
+      ? (catMap[listing.material_subcategory_id] ?? null)
+      : null;
 
     // Fetch associated transport request if any
     const [tr] = await db
@@ -590,6 +629,30 @@ router.get(
             origin_city: listing.city,
           }
         : null,
+      waste_taxonomy: {
+        category: category
+          ? {
+              id: category.id,
+              key: category.key,
+              name_ar: category.name_ar,
+              name_en: category.name_en,
+              regulatory_code: category.regulatory_code ?? null,
+              hazard_level: category.hazard_level ?? null,
+              physical_state: category.physical_state ?? null,
+            }
+          : null,
+        subcategory: subcategory
+          ? {
+              id: subcategory.id,
+              key: subcategory.key,
+              name_ar: subcategory.name_ar,
+              name_en: subcategory.name_en,
+              regulatory_code: subcategory.regulatory_code ?? null,
+              hazard_level: subcategory.hazard_level ?? null,
+              physical_state: subcategory.physical_state ?? null,
+            }
+          : null,
+      },
       financials: {
         settlement_type: deal.settlement_type,
         price_per_unit: deal.price_per_unit,

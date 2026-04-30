@@ -7,6 +7,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { companiesTable } from "./companies";
 import { dealsTable } from "./deals";
+import { materialCategoriesTable } from "./material-categories";
 
 /**
  * Transport request status machine — aligned with MWAN eManifest concept.
@@ -83,6 +84,19 @@ export const transportRequestsTable = pgTable("transport_requests", {
 
   /** Waste description to appear on MWAN manifest (plain text for MVP). */
   waste_description: text("waste_description"),
+
+  /**
+   * Optional override for the waste category on this transport request.
+   * Falls back to the deal's listing category when null.
+   */
+  waste_category_id: uuid("waste_category_id").references(
+    () => materialCategoriesTable.id,
+    { onDelete: "set null" },
+  ),
+  waste_subcategory_id: uuid("waste_subcategory_id").references(
+    () => materialCategoriesTable.id,
+    { onDelete: "set null" },
+  ),
 
   /** Vehicle plate number — required before dispatch confirmation. */
   vehicle_plate: text("vehicle_plate"),

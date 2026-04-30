@@ -21,15 +21,27 @@ import {
   Truck,
   FileText as FileTextIcon,
   MapPin,
+  Tag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { useT } from "@/i18n";
 import { dealRef } from "@/lib/listing-ref";
-import { useGetListingOffers, useGetOffersSummary } from "@workspace/api-client-react";
-import type { ListingOffer } from "@workspace/api-client-react";
+import {
+  useGetListingOffers,
+  useGetOffersSummary,
+  useGetMaterialCategories,
+} from "@workspace/api-client-react";
+import type { ListingOffer, MaterialCategory } from "@workspace/api-client-react";
 
 export type DealStatus = "active" | "payment_confirmed" | "dispatched" | "completed";
 export type SettlementType = "fixed" | "by_weight";
@@ -329,6 +341,16 @@ function GovernanceTimeline({
 
 // ── V3a — MWAN Summary Panel ──────────────────────────────────────────────────
 
+interface TaxonomyEntry {
+  id: string;
+  key: string;
+  name_ar: string;
+  name_en: string;
+  regulatory_code: string | null;
+  hazard_level: string | null;
+  physical_state: string | null;
+}
+
 interface MwanSummary {
   deal_id: string;
   deal_status: string;
@@ -339,6 +361,10 @@ interface MwanSummary {
   receiver: { name: string; city: string | null; license_number?: string } | null;
   transporter: { name: string; city?: string | null; license_number?: string; mode: "platform" | "self_managed" } | null;
   waste: { material: string; quantity: number | null; unit: string; origin_city: string | null } | null;
+  waste_taxonomy: {
+    category: TaxonomyEntry | null;
+    subcategory: TaxonomyEntry | null;
+  } | null;
   transport: {
     id: string;
     status: string;
@@ -349,6 +375,40 @@ interface MwanSummary {
     delivery_city?: string;
     planned_pickup_at?: string;
   } | null;
+}
+
+function TaxonomyRow({ label, entry }: { label: string; entry: TaxonomyEntry }) {
+  const { lang } = useT();
+  const name = lang === "ar" ? entry.name_ar : entry.name_en;
+  return (
+    <div className="space-y-1">
+      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</p>
+      <p className="text-xs font-medium text-foreground">{name}</p>
+      <div className="flex flex-wrap gap-1">
+        {entry.regulatory_code && (
+          <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-mono font-semibold bg-primary/10 text-primary">
+            {entry.regulatory_code}
+          </span>
+        )}
+        {entry.hazard_level && (
+          <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium ${
+            entry.hazard_level === "hazardous"
+              ? "bg-red-100 text-red-700"
+              : entry.hazard_level === "inert"
+              ? "bg-slate-100 text-slate-600"
+              : "bg-green-100 text-green-700"
+          }`}>
+            {entry.hazard_level}
+          </span>
+        )}
+        {entry.physical_state && (
+          <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium bg-blue-100 text-blue-700">
+            {entry.physical_state}
+          </span>
+        )}
+      </div>
+    </div>
+  );
 }
 
 function MwanSummaryPanel({ dealId }: { dealId: string }) {
@@ -487,6 +547,30 @@ function MwanSummaryPanel({ dealId }: { dealId: string }) {
                 ))}
               </div>
 
+              {/* Waste Taxonomy section */}
+              {data.waste_taxonomy && (data.waste_taxonomy.category || data.waste_taxonomy.subcategory) && (
+                <div className="rounded-lg border border-border overflow-hidden">
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/40 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    <Tag className="h-3 w-3 shrink-0" />
+                    {t("mwan.section.taxonomy")}
+                  </div>
+                  <div className="px-3 py-2.5 space-y-2.5">
+                    {data.waste_taxonomy.category && (
+                      <TaxonomyRow
+                        label={t("taxonomy.category")}
+                        entry={data.waste_taxonomy.category}
+                      />
+                    )}
+                    {data.waste_taxonomy.subcategory && (
+                      <TaxonomyRow
+                        label={t("taxonomy.subcategory")}
+                        entry={data.waste_taxonomy.subcategory}
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Transport route summary */}
               {data.transport && (data.transport.pickup_city || data.transport.delivery_city) && (
                 <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
@@ -580,9 +664,17 @@ function CreateTransportRequestForm({
   const [wasteDesc, setWasteDesc] = useState(defaultWasteDesc);
   const [transporterName, setTransporterName] = useState("");
   const [vehiclePlate, setVehiclePlate] = useState("");
+  const [wasteCategoryId, setWasteCategoryId] = useState("");
+  const [wasteSubcategoryId, setWasteSubcategoryId] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+
+  const { data: allCategories = [] } = useGetMaterialCategories();
+  const topLevelCats = (allCategories as MaterialCategory[]).filter((c) => !c.parent_id);
+  const subcats = (allCategories as MaterialCategory[]).filter(
+    (c) => c.parent_id === wasteCategoryId,
+  );
 
   async function submit() {
     setLoading(true);
@@ -603,6 +695,8 @@ function CreateTransportRequestForm({
           waste_description: wasteDesc.trim() || null,
           transporter_name: transportMode === "self_managed" ? transporterName.trim() || null : null,
           vehicle_plate: vehiclePlate.trim() || null,
+          waste_category_id: wasteCategoryId || null,
+          waste_subcategory_id: wasteSubcategoryId || null,
         }),
       });
       if (res.status === 409) {
@@ -709,6 +803,49 @@ function CreateTransportRequestForm({
                 className="h-8 text-sm"
               />
             </div>
+            {/* Waste Category + Subcategory dropdowns */}
+            <div className={`grid gap-2 ${subcats.length > 0 ? "grid-cols-2" : ""}`}>
+              <div>
+                <label className="text-xs font-medium text-foreground mb-1 block">
+                  {t("taxonomy.category")}
+                </label>
+                <Select
+                  value={wasteCategoryId}
+                  onValueChange={(v) => { setWasteCategoryId(v); setWasteSubcategoryId(""); }}
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder={t("listing.form.material")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {topLevelCats.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id} className="text-xs">
+                        {cat.name_ar} / {cat.name_en}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {subcats.length > 0 && (
+                <div>
+                  <label className="text-xs font-medium text-foreground mb-1 block">
+                    {t("taxonomy.subcategory")}
+                  </label>
+                  <Select value={wasteSubcategoryId} onValueChange={setWasteSubcategoryId}>
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder={t("listing.form.subcategory.placeholder")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {subcats.map((sub) => (
+                        <SelectItem key={sub.id} value={sub.id} className="text-xs">
+                          {sub.name_ar} / {sub.name_en}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
+
             <div>
               <label className="text-xs font-medium text-foreground mb-1 block">
                 {t("transport.create.waste_desc")}

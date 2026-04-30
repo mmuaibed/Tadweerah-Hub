@@ -5,6 +5,8 @@
  * Tadweerah API
  * OpenAPI spec version: 0.1.0
  */
+import type { AdminMaterialCategoryWriteHazardLevel } from "./adminMaterialCategoryWriteHazardLevel";
+import type { AdminMaterialCategoryWritePhysicalState } from "./adminMaterialCategoryWritePhysicalState";
 
 /**
  * Fields for creating/updating material categories (supports hierarchy via parent_id).
@@ -26,8 +28,12 @@ export interface AdminMaterialCategoryWrite {
    */
   name_en?: string;
   /** FK to parent material_category.id. Null for top-level categories. */
-  parent_id?: string;
+  parent_id?: string | null;
   /** @minimum 0 */
   sort_order?: number;
   is_active?: boolean;
+  /** Admin-assigned regulatory code (e.g. "WC-01", "H15"). */
+  regulatory_code?: string | null;
+  hazard_level?: AdminMaterialCategoryWriteHazardLevel;
+  physical_state?: AdminMaterialCategoryWritePhysicalState;
 }

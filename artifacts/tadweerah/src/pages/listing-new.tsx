@@ -337,6 +337,40 @@ export function ListingNewPage() {
                 )}
               </div>
 
+              {/* Taxonomy info badges for selected category */}
+              {(() => {
+                const activeId = materialSubcategoryId || materialCategoryId;
+                const entry = (allCategories as MaterialCategory[]).find((c) => c.id === activeId);
+                const hasTaxonomy = entry && (entry.regulatory_code || entry.hazard_level || entry.physical_state);
+                if (!hasTaxonomy) return null;
+                return (
+                  <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-primary/10 bg-primary/5 px-3 py-2">
+                    <span className="text-[10px] text-muted-foreground me-1">{t("taxonomy.info.label")}:</span>
+                    {entry.regulatory_code && (
+                      <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-mono font-semibold bg-primary/10 text-primary">
+                        {entry.regulatory_code}
+                      </span>
+                    )}
+                    {entry.hazard_level && (
+                      <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium ${
+                        entry.hazard_level === "hazardous"
+                          ? "bg-red-100 text-red-700"
+                          : entry.hazard_level === "inert"
+                          ? "bg-slate-100 text-slate-600"
+                          : "bg-green-100 text-green-700"
+                      }`}>
+                        {t(`taxonomy.hazard_level.${entry.hazard_level}`) || entry.hazard_level}
+                      </span>
+                    )}
+                    {entry.physical_state && (
+                      <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium bg-blue-100 text-blue-700">
+                        {t(`taxonomy.physical_state.${entry.physical_state}`) || entry.physical_state}
+                      </span>
+                    )}
+                  </div>
+                );
+              })()}
+
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label htmlFor="city">{t("listing.form.city")}</Label>

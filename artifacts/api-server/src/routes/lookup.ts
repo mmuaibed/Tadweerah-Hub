@@ -269,7 +269,10 @@ router.post(
   "/admin/lookup/material-categories",
   requireAdminKey,
   async (req, res) => {
-    const { key, name_ar, name_en, parent_id, sort_order } = req.body ?? {};
+    const {
+      key, name_ar, name_en, parent_id, sort_order,
+      regulatory_code, hazard_level, physical_state,
+    } = req.body ?? {};
     if (!key || !name_ar || !name_en) {
       res.status(400).json({ error: "ValidationError", message: "key, name_ar, name_en are required" });
       return;
@@ -283,6 +286,9 @@ router.post(
         parent_id: parent_id ?? null,
         sort_order: typeof sort_order === "number" ? sort_order : 99,
         is_active: true,
+        regulatory_code: regulatory_code ?? null,
+        hazard_level: hazard_level ?? null,
+        physical_state: physical_state ?? null,
       })
       .returning();
     res.status(201).json(created);
@@ -294,7 +300,10 @@ router.put(
   requireAdminKey,
   async (req, res) => {
     const id = String(req.params["id"]);
-    const { key, name_ar, name_en, parent_id, sort_order, is_active } = req.body ?? {};
+    const {
+      key, name_ar, name_en, parent_id, sort_order, is_active,
+      regulatory_code, hazard_level, physical_state,
+    } = req.body ?? {};
     const updates: Record<string, unknown> = {};
     if (key !== undefined) updates.key = key;
     if (name_ar !== undefined) updates.name_ar = name_ar;
@@ -302,6 +311,9 @@ router.put(
     if (parent_id !== undefined) updates.parent_id = parent_id;
     if (sort_order !== undefined) updates.sort_order = sort_order;
     if (is_active !== undefined) updates.is_active = is_active;
+    if (regulatory_code !== undefined) updates.regulatory_code = regulatory_code;
+    if (hazard_level !== undefined) updates.hazard_level = hazard_level;
+    if (physical_state !== undefined) updates.physical_state = physical_state;
     if (Object.keys(updates).length === 0) {
       res.status(400).json({ error: "ValidationError", message: "No fields to update" });
       return;

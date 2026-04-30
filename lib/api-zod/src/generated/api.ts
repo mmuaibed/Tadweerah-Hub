@@ -1160,12 +1160,27 @@ export const GetMaterialCategoriesResponseItem = zod
     name_en: zod.string(),
     parent_id: zod
       .string()
-      .optional()
+      .nullish()
       .describe(
         "FK to parent material_category. Null for top-level categories.",
       ),
     is_active: zod.boolean(),
     sort_order: zod.number(),
+    is_sensitive: zod.boolean().optional(),
+    regulatory_code: zod
+      .string()
+      .nullish()
+      .describe(
+        'Admin-assigned regulatory code aligned with MWAN taxonomy (e.g. \"WC-01\", \"H15\").',
+      ),
+    hazard_level: zod
+      .enum(["hazardous", "non_hazardous", "inert"])
+      .nullish()
+      .describe("Hazard classification of this waste category."),
+    physical_state: zod
+      .enum(["solid", "liquid", "gas", "sludge", "mixed"])
+      .nullish()
+      .describe("Physical form of the waste stream."),
   })
   .describe(
     "Admin-managed hierarchical material classification. parent_id = null means top-level category. Used in logic, eligibility, and filtering.\n",
@@ -1849,7 +1864,7 @@ export const AdminCreateMaterialCategoryBody = zod
       .optional(),
     parent_id: zod
       .string()
-      .optional()
+      .nullish()
       .describe(
         "FK to parent material_category.id. Null for top-level categories.",
       ),
@@ -1858,6 +1873,14 @@ export const AdminCreateMaterialCategoryBody = zod
       .min(adminCreateMaterialCategoryBodySortOrderMin)
       .optional(),
     is_active: zod.boolean().optional(),
+    regulatory_code: zod
+      .string()
+      .nullish()
+      .describe('Admin-assigned regulatory code (e.g. \"WC-01\", \"H15\").'),
+    hazard_level: zod.enum(["hazardous", "non_hazardous", "inert"]).nullish(),
+    physical_state: zod
+      .enum(["solid", "liquid", "gas", "sludge", "mixed"])
+      .nullish(),
   })
   .describe(
     "Fields for creating\/updating material categories (supports hierarchy via parent_id).",
@@ -1897,7 +1920,7 @@ export const AdminUpdateMaterialCategoryBody = zod
       .optional(),
     parent_id: zod
       .string()
-      .optional()
+      .nullish()
       .describe(
         "FK to parent material_category.id. Null for top-level categories.",
       ),
@@ -1906,6 +1929,14 @@ export const AdminUpdateMaterialCategoryBody = zod
       .min(adminUpdateMaterialCategoryBodySortOrderMin)
       .optional(),
     is_active: zod.boolean().optional(),
+    regulatory_code: zod
+      .string()
+      .nullish()
+      .describe('Admin-assigned regulatory code (e.g. \"WC-01\", \"H15\").'),
+    hazard_level: zod.enum(["hazardous", "non_hazardous", "inert"]).nullish(),
+    physical_state: zod
+      .enum(["solid", "liquid", "gas", "sludge", "mixed"])
+      .nullish(),
   })
   .describe(
     "Fields for creating\/updating material categories (supports hierarchy via parent_id).",
@@ -1923,12 +1954,27 @@ export const AdminUpdateMaterialCategoryResponse = zod
     name_en: zod.string(),
     parent_id: zod
       .string()
-      .optional()
+      .nullish()
       .describe(
         "FK to parent material_category. Null for top-level categories.",
       ),
     is_active: zod.boolean(),
     sort_order: zod.number(),
+    is_sensitive: zod.boolean().optional(),
+    regulatory_code: zod
+      .string()
+      .nullish()
+      .describe(
+        'Admin-assigned regulatory code aligned with MWAN taxonomy (e.g. \"WC-01\", \"H15\").',
+      ),
+    hazard_level: zod
+      .enum(["hazardous", "non_hazardous", "inert"])
+      .nullish()
+      .describe("Hazard classification of this waste category."),
+    physical_state: zod
+      .enum(["solid", "liquid", "gas", "sludge", "mixed"])
+      .nullish()
+      .describe("Physical form of the waste stream."),
   })
   .describe(
     "Admin-managed hierarchical material classification. parent_id = null means top-level category. Used in logic, eligibility, and filtering.\n",

@@ -1536,11 +1536,28 @@ components:
           type: string
         parent_id:
           type: string
+          nullable: true
           description: FK to parent material_category. Null for top-level categories.
         is_active:
           type: boolean
         sort_order:
           type: integer
+        is_sensitive:
+          type: boolean
+        regulatory_code:
+          type: string
+          nullable: true
+          description: Admin-assigned regulatory code aligned with MWAN taxonomy (e.g. "WC-01", "H15").
+        hazard_level:
+          type: string
+          nullable: true
+          enum: [hazardous, non_hazardous, inert]
+          description: Hazard classification of this waste category.
+        physical_state:
+          type: string
+          nullable: true
+          enum: [solid, liquid, gas, sludge, mixed]
+          description: Physical form of the waste stream.
       required: [id, key, name_ar, name_en, is_active, sort_order]
 
     ListingRequiredService:
@@ -1787,12 +1804,25 @@ components:
           maxLength: 120
         parent_id:
           type: string
+          nullable: true
           description: FK to parent material_category.id. Null for top-level categories.
         sort_order:
           type: integer
           minimum: 0
         is_active:
           type: boolean
+        regulatory_code:
+          type: string
+          nullable: true
+          description: Admin-assigned regulatory code (e.g. "WC-01", "H15").
+        hazard_level:
+          type: string
+          nullable: true
+          enum: [hazardous, non_hazardous, inert]
+        physical_state:
+          type: string
+          nullable: true
+          enum: [solid, liquid, gas, sludge, mixed]
 
     AdminDeleteResponse:
       type: object

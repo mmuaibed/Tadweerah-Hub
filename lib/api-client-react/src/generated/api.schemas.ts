@@ -402,6 +402,34 @@ export interface UnitOption {
 }
 
 /**
+ * Hazard classification of this waste category.
+ */
+export type MaterialCategoryHazardLevel =
+  | (typeof MaterialCategoryHazardLevel)[keyof typeof MaterialCategoryHazardLevel]
+  | null;
+
+export const MaterialCategoryHazardLevel = {
+  hazardous: "hazardous",
+  non_hazardous: "non_hazardous",
+  inert: "inert",
+} as const;
+
+/**
+ * Physical form of the waste stream.
+ */
+export type MaterialCategoryPhysicalState =
+  | (typeof MaterialCategoryPhysicalState)[keyof typeof MaterialCategoryPhysicalState]
+  | null;
+
+export const MaterialCategoryPhysicalState = {
+  solid: "solid",
+  liquid: "liquid",
+  gas: "gas",
+  sludge: "sludge",
+  mixed: "mixed",
+} as const;
+
+/**
  * Admin-managed hierarchical material classification. parent_id = null means top-level category. Used in logic, eligibility, and filtering.
 
  */
@@ -412,9 +440,16 @@ export interface MaterialCategory {
   name_ar: string;
   name_en: string;
   /** FK to parent material_category. Null for top-level categories. */
-  parent_id?: string;
+  parent_id?: string | null;
   is_active: boolean;
   sort_order: number;
+  is_sensitive?: boolean;
+  /** Admin-assigned regulatory code aligned with MWAN taxonomy (e.g. "WC-01", "H15"). */
+  regulatory_code?: string | null;
+  /** Hazard classification of this waste category. */
+  hazard_level?: MaterialCategoryHazardLevel;
+  /** Physical form of the waste stream. */
+  physical_state?: MaterialCategoryPhysicalState;
 }
 
 /**
@@ -581,6 +616,28 @@ export interface AdminUnitOptionWrite {
   is_active?: boolean;
 }
 
+export type AdminMaterialCategoryWriteHazardLevel =
+  | (typeof AdminMaterialCategoryWriteHazardLevel)[keyof typeof AdminMaterialCategoryWriteHazardLevel]
+  | null;
+
+export const AdminMaterialCategoryWriteHazardLevel = {
+  hazardous: "hazardous",
+  non_hazardous: "non_hazardous",
+  inert: "inert",
+} as const;
+
+export type AdminMaterialCategoryWritePhysicalState =
+  | (typeof AdminMaterialCategoryWritePhysicalState)[keyof typeof AdminMaterialCategoryWritePhysicalState]
+  | null;
+
+export const AdminMaterialCategoryWritePhysicalState = {
+  solid: "solid",
+  liquid: "liquid",
+  gas: "gas",
+  sludge: "sludge",
+  mixed: "mixed",
+} as const;
+
 /**
  * Fields for creating/updating material categories (supports hierarchy via parent_id).
  */
@@ -601,10 +658,14 @@ export interface AdminMaterialCategoryWrite {
    */
   name_en?: string;
   /** FK to parent material_category.id. Null for top-level categories. */
-  parent_id?: string;
+  parent_id?: string | null;
   /** @minimum 0 */
   sort_order?: number;
   is_active?: boolean;
+  /** Admin-assigned regulatory code (e.g. "WC-01", "H15"). */
+  regulatory_code?: string | null;
+  hazard_level?: AdminMaterialCategoryWriteHazardLevel;
+  physical_state?: AdminMaterialCategoryWritePhysicalState;
 }
 
 /**

@@ -5,6 +5,8 @@
  * Tadweerah API
  * OpenAPI spec version: 0.1.0
  */
+import type { MaterialCategoryHazardLevel } from "./materialCategoryHazardLevel";
+import type { MaterialCategoryPhysicalState } from "./materialCategoryPhysicalState";
 
 /**
  * Admin-managed hierarchical material classification. parent_id = null means top-level category. Used in logic, eligibility, and filtering.
@@ -17,7 +19,14 @@ export interface MaterialCategory {
   name_ar: string;
   name_en: string;
   /** FK to parent material_category. Null for top-level categories. */
-  parent_id?: string;
+  parent_id?: string | null;
   is_active: boolean;
   sort_order: number;
+  is_sensitive?: boolean;
+  /** Admin-assigned regulatory code aligned with MWAN taxonomy (e.g. "WC-01", "H15"). */
+  regulatory_code?: string | null;
+  /** Hazard classification of this waste category. */
+  hazard_level?: MaterialCategoryHazardLevel;
+  /** Physical form of the waste stream. */
+  physical_state?: MaterialCategoryPhysicalState;
 }
