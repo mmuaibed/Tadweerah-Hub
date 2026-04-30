@@ -292,6 +292,59 @@ router.post("/admin/deals/:id/cancel", requireAdminKey, async (req, res) => {
   res.json(updated);
 });
 
+/**
+ * POST /admin/deals/:id/force-complete
+ * Force a deal into 'completed' status regardless of lifecycle state.
+ * Skips transport and receipt confirmation checks.
+ * Only blocked if the deal is already in a terminal state.
+ * Body: { reason?: string }
+ */
+router.post("/admin/deals/:id/force-complete", requireAdminKey, async (req, res) => {
+  const id = String(req.params["id"]);
+  const { reason } = (req.body ?? {}) as { reason?: string };
+
+  const [deal] = await db
+    .select()
+    .from(dealsTable)
+    .where(eq(dealsTable.id, id))
+    .limit(1);
+
+  if (!deal) {
+    res.status(404).json({ error: "NotFound", message: "Deal not found" });
+    return;
+  }
+
+  if (["completed", "cancelled"].includes(deal.status)) {
+    res.status(409).json({
+      error: "AlreadyTerminal",
+      message: `Deal is already in terminal status: ${deal.status}`,
+    });
+    return;
+  }
+
+  const now = new Date();
+
+  const [updated] = await db
+    .update(dealsTable)
+    .set({
+      status: "completed",
+      received_at: deal.received_at ?? now,
+      updated_at: now,
+    })
+    .where(eq(dealsTable.id, id))
+    .returning();
+
+  void logAudit({
+    action: "deal.force_completed_by_admin",
+    entityType: "deal",
+    entityId: id,
+    details: { reason: reason ?? null, forced_from_status: deal.status },
+    severity: "warn",
+  });
+
+  res.json(updated);
+});
+
 /* -------------------------------------------------------------------------- */
 /* Contracts (admin)                                                           */
 /* -------------------------------------------------------------------------- */

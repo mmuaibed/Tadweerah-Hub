@@ -527,7 +527,10 @@ router.get(
       receiver_license: !!receiver?.license_number,
       receiver_city: !!receiver?.city,
       waste_defined: !!listing,
-      quantity_confirmed: deal.actual_quantity != null,
+      // Fixed deals have a known quantity from the listing — always confirmed.
+      // By-weight deals are confirmed only when actual_quantity is set at dispatch.
+      quantity_confirmed:
+        deal.settlement_type === "fixed" ? true : deal.actual_quantity != null,
       payment_confirmed: deal.payment_confirmed_at != null,
       transport_request_created: !!tr,
       transporter_assigned: transporterAssigned,

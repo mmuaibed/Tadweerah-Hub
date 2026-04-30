@@ -42,6 +42,21 @@ export function requireCompany(
       return;
     }
 
+    // Block rejected companies from all mutating operations.
+    // GET/HEAD requests (dashboard, profile reads) are still allowed.
+    if (
+      found.company.license_status === "rejected" &&
+      req.method !== "GET" &&
+      req.method !== "HEAD"
+    ) {
+      res.status(403).json({
+        error: "CompanyRejected",
+        message:
+          "Your company registration has been rejected. Please contact support.",
+      });
+      return;
+    }
+
     (req as AuthedCompanyRequest).company = found.company;
     (req as AuthedCompanyRequest).memberRole = found.role as "owner" | "member";
     next();

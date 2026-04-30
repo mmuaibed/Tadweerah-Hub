@@ -433,6 +433,17 @@ router.post(
       );
     }
 
+    // ── Commercial Registration gate ─────────────────────────────────────────
+    // CR is required to enter binding commercial deals.
+    if (!company.commercialRegistration) {
+      throw new HttpError(
+        422,
+        "CommercialRegistrationRequired",
+        "Commercial Registration is required before submitting offers. Update your company profile.",
+      );
+    }
+    // ── End CR gate ───────────────────────────────────────────────────────────
+
     // ── Terms & Conditions gate ───────────────────────────────────────────────
     // Buyer must have accepted T&C during onboarding before submitting any offer.
     if (!company.accepted_terms_at) {

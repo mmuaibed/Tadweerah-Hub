@@ -203,6 +203,56 @@ function DealValueSummary({
   );
 }
 
+// ── Deal Progress Bar ─────────────────────────────────────────────────────────
+
+function DealProgressBar({ deal }: { deal: DealInfo }) {
+  const { t } = useT();
+
+  const stages: { key: DealStatus | "active"; label: string; done: boolean }[] = [
+    { key: "active",             label: t("deal.progress.active"),   done: true },
+    { key: "payment_confirmed",  label: t("deal.progress.payment"),  done: !!deal.payment_confirmed_at },
+    { key: "dispatched",         label: t("deal.progress.dispatch"), done: !!deal.dispatched_at },
+    { key: "completed",          label: t("deal.progress.delivery"), done: deal.status === "completed" },
+  ];
+
+  const currentIdx = stages.reduce((acc, s, i) => (s.done ? i : acc), 0);
+
+  return (
+    <div className="px-4 py-3 border-t border-primary/10 bg-primary/5">
+      <div className="flex items-center gap-0">
+        {stages.map((stage, i) => {
+          const isActive = i === currentIdx && deal.status !== "completed";
+          const isDone = stage.done;
+          return (
+            <div key={stage.key} className="flex items-center flex-1 min-w-0">
+              <div className="flex flex-col items-center gap-0.5 flex-1 min-w-0">
+                <div className={[
+                  "flex h-6 w-6 items-center justify-center rounded-full shrink-0 text-[10px] font-bold transition-colors",
+                  isDone && !isActive ? "bg-primary text-white" :
+                  isActive ? "bg-primary text-white ring-2 ring-primary/30 ring-offset-1" :
+                  "bg-muted border-2 border-muted-foreground/20 text-muted-foreground/40",
+                ].join(" ")}>
+                  {isDone ? <CheckCircle2 className="h-3.5 w-3.5" /> : <span>{i + 1}</span>}
+                </div>
+                <p className={`text-center text-[9px] leading-tight font-medium truncate w-full px-0.5 ${
+                  isDone ? "text-primary" : "text-muted-foreground/40"
+                }`}>
+                  {stage.label}
+                </p>
+              </div>
+              {i < stages.length - 1 && (
+                <div className={`h-0.5 flex-shrink-0 w-4 mx-0.5 mb-3 rounded-full transition-colors ${
+                  stages[i + 1]?.done ? "bg-primary/60" : "bg-muted-foreground/20"
+                }`} />
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 /** V2 — Proper governance timeline replacing the old flat timestamp list */
 function GovernanceTimeline({
   deal,
@@ -339,15 +389,50 @@ function MwanSummaryPanel({ dealId }: { dealId: string }) {
     waste_description_set: t("mwan.check.waste_description"),
   };
 
-  const CHECK_HINTS: Record<string, string> = {
-    quantity_confirmed: t("mwan.check.quantity_confirmed_hint"),
-    payment_confirmed: t("mwan.check.payment_confirmed_hint"),
-  };
-
   const missingCount = data ? Object.values(data.checks).filter((v) => !v).length : null;
+
+  const CHECK_SECTIONS: { key: string; checks: string[] }[] = [
+    { key: "generator", checks: ["generator_cr", "generator_license", "generator_city"] },
+    { key: "receiver",  checks: ["receiver_cr", "receiver_license", "receiver_city"] },
+    { key: "deal",      checks: ["waste_defined", "quantity_confirmed", "payment_confirmed"] },
+    { key: "transport", checks: [
+      "transport_request_created", "transporter_assigned", "vehicle_plate_set",
+      "pickup_city_set", "delivery_city_set", "waste_description_set",
+    ]},
+  ];
+
+  const SECTION_LABELS: Record<string, string> = {
+    generator: t("mwan.section.generator"),
+    receiver:  t("mwan.section.receiver"),
+    deal:      t("mwan.section.deal"),
+    transport: t("mwan.section.transport"),
+  };
 
   return (
     <div className="border-t border-border">
+      {/* Always-visible readiness banner */}
+      {data && (
+        <div className={`flex items-center gap-2 px-4 py-2 text-xs font-medium border-b ${
+          data.is_manifest_ready
+            ? "bg-green-50 border-green-100 text-green-700"
+            : "bg-amber-50 border-amber-100 text-amber-700"
+        }`}>
+          {data.is_manifest_ready
+            ? <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+            : <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+          }
+          <span>
+            {data.is_manifest_ready
+              ? t("mwan.banner.ready")
+              : missingCount === 1
+                ? t("mwan.banner.missing_one")
+                : t("mwan.banner.missing_many").replace("{n}", String(missingCount))
+            }
+          </span>
+          <span className="ms-auto font-mono text-[10px] opacity-70">{data.readiness_score}</span>
+        </div>
+      )}
+
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -356,15 +441,6 @@ function MwanSummaryPanel({ dealId }: { dealId: string }) {
         <span className="flex items-center gap-2">
           <FileTextIcon className="h-4 w-4 shrink-0" />
           {t("mwan.title")}
-          {data && (
-            <span className={`text-[11px] font-mono px-1.5 py-0.5 rounded-full ${
-              data.is_manifest_ready
-                ? "bg-green-100 text-green-700"
-                : "bg-amber-100 text-amber-700"
-            }`}>
-              {data.readiness_score}{missingCount !== null && missingCount > 0 ? ` · ${missingCount}✗` : ""}
-            </span>
-          )}
         </span>
         {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
       </button>
@@ -383,32 +459,12 @@ function MwanSummaryPanel({ dealId }: { dealId: string }) {
             </div>
           ) : data ? (
             <>
-              {/* Readiness score */}
-              <div className={`flex items-center gap-3 rounded-lg border p-3 ${
-                data.is_manifest_ready
-                  ? "border-green-200 bg-green-50"
-                  : "border-amber-200 bg-amber-50"
-              }`}>
-                {data.is_manifest_ready
-                  ? <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
-                  : <Clock className="h-5 w-5 text-amber-600 shrink-0" />
-                }
-                <div>
-                  <p className={`text-sm font-semibold ${data.is_manifest_ready ? "text-green-800" : "text-amber-800"}`}>
-                    {data.is_manifest_ready ? t("mwan.ready") : t("mwan.not_ready")}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {t("mwan.readiness_score")}: {data.readiness_score}
-                  </p>
-                </div>
-              </div>
-
               {/* Parties */}
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div className="grid gap-2 sm:grid-cols-3">
                 {[
-                  { label: t("mwan.section.generator"), party: data.generator, prefix: "generator" },
-                  { label: t("mwan.section.receiver"), party: data.receiver, prefix: "receiver" },
-                  { label: t("mwan.section.transporter"), party: data.transporter, prefix: "transporter" },
+                  { label: t("mwan.section.generator"), party: data.generator },
+                  { label: t("mwan.section.receiver"),  party: data.receiver },
+                  { label: t("mwan.section.transporter"), party: data.transporter },
                 ].map(({ label, party }) => (
                   <div key={label} className="rounded-lg border border-border bg-card p-2.5 space-y-1">
                     <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
@@ -431,48 +487,67 @@ function MwanSummaryPanel({ dealId }: { dealId: string }) {
                 ))}
               </div>
 
-              {/* Transport details */}
-              {data.transport && (
-                <div className="rounded-lg border border-border bg-muted/30 p-2.5 space-y-1">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{t("mwan.section.transport")}</p>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    {data.transport.pickup_city && (
-                      <span className="flex items-center gap-1 text-muted-foreground">
-                        <MapPin className="h-3 w-3" />{data.transport.pickup_city}
-                      </span>
-                    )}
-                    {data.transport.delivery_city && (
-                      <span className="flex items-center gap-1 text-muted-foreground">
-                        <Truck className="h-3 w-3" />{data.transport.delivery_city}
-                      </span>
-                    )}
-                  </div>
+              {/* Transport route summary */}
+              {data.transport && (data.transport.pickup_city || data.transport.delivery_city) && (
+                <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+                  <MapPin className="h-3.5 w-3.5 shrink-0 text-primary/60" />
+                  <span>{data.transport.pickup_city ?? "—"}</span>
+                  <span className="text-muted-foreground/40">→</span>
+                  <Truck className="h-3.5 w-3.5 shrink-0 text-primary/60" />
+                  <span>{data.transport.delivery_city ?? "—"}</span>
                 </div>
               )}
 
-              {/* Checklist */}
-              <div className="space-y-1">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">
-                  {t("mwan.subtitle")}
+              {/* Sectioned checklist */}
+              <div className="space-y-3">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  {t("mwan.section.checklist")}
                 </p>
-                <div className="grid gap-1 sm:grid-cols-2">
-                  {(Object.entries(data.checks) as [string, boolean][]).map(([key, ok]) => (
-                    <div key={key} className="flex items-start gap-2 text-xs">
-                      {ok
-                        ? <CheckCircle2 className="h-3.5 w-3.5 text-green-600 shrink-0 mt-0.5" />
-                        : <Circle className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0 mt-0.5" />
-                      }
-                      <span className={ok ? "text-foreground" : "text-muted-foreground"}>
-                        {CHECK_LABELS[key] ?? key}
-                        {CHECK_HINTS[key] && (
-                          <span className="block text-[10px] text-muted-foreground/60 leading-tight mt-0.5">
-                            {CHECK_HINTS[key]}
-                          </span>
-                        )}
-                      </span>
+                {CHECK_SECTIONS.map((section) => {
+                  const sectionChecks = section.checks.filter((k) => k in data.checks);
+                  if (sectionChecks.length === 0) return null;
+                  const allDone = sectionChecks.every((k) => data.checks[k]);
+                  return (
+                    <div key={section.key} className="rounded-lg border border-border overflow-hidden">
+                      <div className={`flex items-center gap-2 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide ${
+                        allDone ? "bg-green-50/60 text-green-700" : "bg-muted/40 text-muted-foreground"
+                      }`}>
+                        {allDone
+                          ? <CheckCircle2 className="h-3 w-3 shrink-0" />
+                          : <Circle className="h-3 w-3 shrink-0 opacity-50" />
+                        }
+                        {SECTION_LABELS[section.key]}
+                      </div>
+                      <div className="divide-y divide-border">
+                        {sectionChecks.map((key) => {
+                          const ok = data.checks[key] ?? false;
+                          const label = CHECK_LABELS[key] ?? key;
+                          const action = !ok ? t(`mwan.action.${key}`) : undefined;
+                          return (
+                            <div key={key} className={`flex items-start gap-2.5 px-3 py-2 text-xs ${
+                              ok ? "bg-background" : "bg-amber-50/40"
+                            }`}>
+                              {ok
+                                ? <CheckCircle2 className="h-3.5 w-3.5 text-green-600 shrink-0 mt-0.5" />
+                                : <Circle className="h-3.5 w-3.5 text-amber-400 shrink-0 mt-0.5" />
+                              }
+                              <span className="flex-1 min-w-0">
+                                <span className={ok ? "text-foreground" : "text-foreground/80 font-medium"}>
+                                  {label}
+                                </span>
+                                {action && (
+                                  <span className="block text-[10px] text-amber-700/80 leading-tight mt-0.5">
+                                    → {action}
+                                  </span>
+                                )}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
             </>
           ) : null}
@@ -1330,6 +1405,9 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
             )}
           </div>
         )}
+
+        {/* Deal Progress Bar */}
+        <DealProgressBar deal={deal} />
 
         {/* V1 — Deal Value Summary (producer only, auction only) */}
         {role === "producer" && pricingModel !== "revenue_share" && deal.listing_id && (
