@@ -287,9 +287,18 @@ interface MwanSummary {
   checks: Record<string, boolean>;
   generator: { name: string; city: string | null; commercial_registration?: string; license_number?: string } | null;
   receiver: { name: string; city: string | null; license_number?: string } | null;
-  transporter: { name: string; city: string | null; license_number?: string } | null;
+  transporter: { name: string; city?: string | null; license_number?: string; mode: "platform" | "self_managed" } | null;
   waste: { material: string; quantity: number | null; unit: string; origin_city: string | null } | null;
-  transport: { id: string; status: string; pickup_city?: string; delivery_city?: string; planned_pickup_at?: string } | null;
+  transport: {
+    id: string;
+    status: string;
+    transport_mode: "platform" | "self_managed";
+    transporter_name?: string;
+    vehicle_plate?: string;
+    pickup_city?: string;
+    delivery_city?: string;
+    planned_pickup_at?: string;
+  } | null;
 }
 
 function MwanSummaryPanel({ dealId }: { dealId: string }) {
@@ -324,6 +333,7 @@ function MwanSummaryPanel({ dealId }: { dealId: string }) {
     payment_confirmed: t("mwan.check.payment_confirmed"),
     transport_request_created: t("mwan.check.transport_created"),
     transporter_assigned: t("mwan.check.transporter_assigned"),
+    vehicle_plate_set: t("mwan.check.vehicle_plate_set"),
     pickup_city_set: t("mwan.check.pickup_city"),
     delivery_city_set: t("mwan.check.delivery_city"),
     waste_description_set: t("mwan.check.waste_description"),
@@ -489,9 +499,11 @@ function CreateTransportRequestForm({
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [transportMode, setTransportMode] = useState<"platform" | "self_managed">("platform");
   const [pickupCity, setPickupCity] = useState(defaultPickupCity);
   const [deliveryCity, setDeliveryCity] = useState(defaultDeliveryCity);
   const [wasteDesc, setWasteDesc] = useState(defaultWasteDesc);
+  const [transporterName, setTransporterName] = useState("");
   const [vehiclePlate, setVehiclePlate] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -510,9 +522,11 @@ function CreateTransportRequestForm({
         },
         credentials: "include",
         body: JSON.stringify({
+          transport_mode: transportMode,
           pickup_city: pickupCity.trim() || null,
           delivery_city: deliveryCity.trim() || null,
           waste_description: wasteDesc.trim() || null,
+          transporter_name: transportMode === "self_managed" ? transporterName.trim() || null : null,
           vehicle_plate: vehiclePlate.trim() || null,
         }),
       });
@@ -559,7 +573,45 @@ function CreateTransportRequestForm({
       {open && (
         <div className="px-4 pb-4 space-y-3">
           <p className="text-xs text-muted-foreground">{t("transport.create.prefilled")}</p>
+
+          {/* Transport mode choice */}
+          <div>
+            <p className="text-xs font-medium text-foreground mb-1.5">{t("transport.create.mode.label")}</p>
+            <div className="grid grid-cols-2 gap-2">
+              {(["platform", "self_managed"] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setTransportMode(mode)}
+                  className={[
+                    "rounded-lg border px-3 py-2 text-start transition-colors",
+                    transportMode === mode
+                      ? "border-primary bg-primary/5 text-primary"
+                      : "border-border bg-background text-muted-foreground hover:border-primary/40 hover:text-foreground",
+                  ].join(" ")}
+                >
+                  <p className="text-xs font-medium leading-tight">{t(`transport.create.mode.${mode}`)}</p>
+                  <p className="text-[10px] mt-0.5 leading-snug opacity-75">{t(`transport.create.mode.${mode}.desc`)}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="space-y-2">
+            {/* Transporter name — only for self_managed */}
+            {transportMode === "self_managed" && (
+              <div>
+                <label className="text-xs font-medium text-foreground mb-1 block">
+                  {t("transport.create.transporter_name")}
+                </label>
+                <Input
+                  value={transporterName}
+                  onChange={(e) => setTransporterName(e.target.value)}
+                  placeholder={t("transport.create.transporter_name.placeholder")}
+                  className="h-8 text-sm"
+                />
+              </div>
+            )}
             <div>
               <label className="text-xs font-medium text-foreground mb-1 block">
                 {t("transport.create.pickup_city")}

@@ -19,7 +19,9 @@ function serializeTR(tr: typeof transportRequestsTable.$inferSelect) {
     id: tr.id,
     deal_id: tr.deal_id,
     created_by_company_id: tr.created_by_company_id,
+    transport_mode: tr.transport_mode,
     transporter_company_id: tr.transporter_company_id ?? undefined,
+    transporter_name: tr.transporter_name ?? undefined,
     status: tr.status,
     pickup_city: tr.pickup_city ?? undefined,
     delivery_city: tr.delivery_city ?? undefined,
@@ -89,6 +91,16 @@ router.post(
       return;
     }
 
+    // transport_mode: 'platform' (default) or 'self_managed'
+    const rawMode = req.body?.transport_mode;
+    const transportMode: "platform" | "self_managed" =
+      rawMode === "self_managed" ? "self_managed" : "platform";
+
+    const transporterName =
+      typeof req.body?.transporter_name === "string"
+        ? req.body.transporter_name.trim() || null
+        : null;
+
     const pickupCity =
       typeof req.body?.pickup_city === "string" ? req.body.pickup_city.trim() || null : null;
     const deliveryCity =
@@ -113,6 +125,8 @@ router.post(
       .values({
         deal_id: dealId,
         created_by_company_id: company.id,
+        transport_mode: transportMode,
+        transporter_name: transporterName,
         pickup_city: pickupCity,
         delivery_city: deliveryCity,
         waste_description: wasteDescription,
@@ -336,6 +350,11 @@ router.patch(
       updates.vehicle_plate = (req.body.vehicle_plate as string).trim() || null;
     }
 
+    // transporter_name can be set/updated on any transition (self_managed mode)
+    if (typeof req.body?.transporter_name === "string") {
+      updates.transporter_name = req.body.transporter_name.trim() || null;
+    }
+
     // pickup requires vehicle_plate to be present (on the row or provided now)
     if (action === "pickup") {
       const effectivePlate = updates.vehicle_plate ?? row.vehicle_plate;
@@ -459,7 +478,10 @@ router.get(
       .select({
         id: transportRequestsTable.id,
         status: transportRequestsTable.status,
+        transport_mode: transportRequestsTable.transport_mode,
         transporter_company_id: transportRequestsTable.transporter_company_id,
+        transporter_name: transportRequestsTable.transporter_name,
+        vehicle_plate: transportRequestsTable.vehicle_plate,
         pickup_city: transportRequestsTable.pickup_city,
         delivery_city: transportRequestsTable.delivery_city,
         waste_description: transportRequestsTable.waste_description,
@@ -471,8 +493,9 @@ router.get(
       .where(eq(transportRequestsTable.deal_id, dealId))
       .limit(1);
 
-    let transporter = null;
-    if (tr?.transporter_company_id) {
+    // For platform mode: fetch registered carrier company details
+    let transporterCompany = null;
+    if (tr?.transport_mode === "platform" && tr.transporter_company_id) {
       const [tc] = await db
         .select({
           id: companiesTable.id,
@@ -483,8 +506,16 @@ router.get(
         .from(companiesTable)
         .where(eq(companiesTable.id, tr.transporter_company_id))
         .limit(1);
-      transporter = tc ?? null;
+      transporterCompany = tc ?? null;
     }
+
+    // transporter_assigned: for platform mode — a carrier accepted the job;
+    //                        for self_managed mode — transporter_name is filled
+    const transporterAssigned = tr
+      ? tr.transport_mode === "self_managed"
+        ? !!(tr.transporter_name?.trim())
+        : !!transporterCompany
+      : false;
 
     // ── MWAN Readiness Checklist ──────────────────────────────────────────────
     // Each field required for a valid MWAN eManifest entry.
@@ -499,7 +530,8 @@ router.get(
       quantity_confirmed: deal.actual_quantity != null,
       payment_confirmed: deal.payment_confirmed_at != null,
       transport_request_created: !!tr,
-      transporter_assigned: !!transporter,
+      transporter_assigned: transporterAssigned,
+      vehicle_plate_set: !!(tr?.vehicle_plate?.trim()),
       pickup_city_set: !!(tr?.pickup_city),
       delivery_city_set: !!(tr?.delivery_city),
       waste_description_set: !!(tr?.waste_description),
@@ -535,14 +567,17 @@ router.get(
             license_status: receiver.license_status ?? undefined,
           }
         : null,
-      transporter: transporter
-        ? {
-            id: transporter.id,
-            name: transporter.name,
-            city: transporter.city,
-            license_number: transporter.license_number ?? undefined,
-          }
-        : null,
+      transporter: tr?.transport_mode === "self_managed"
+        ? (tr.transporter_name ? { name: tr.transporter_name, mode: "self_managed" } : null)
+        : transporterCompany
+          ? {
+              id: transporterCompany.id,
+              name: transporterCompany.name,
+              city: transporterCompany.city,
+              license_number: transporterCompany.license_number ?? undefined,
+              mode: "platform",
+            }
+          : null,
       waste: listing
         ? {
             material: listing.material,
@@ -563,6 +598,9 @@ router.get(
         ? {
             id: tr.id,
             status: tr.status,
+            transport_mode: tr.transport_mode,
+            transporter_name: tr.transporter_name ?? undefined,
+            vehicle_plate: tr.vehicle_plate ?? undefined,
             pickup_city: tr.pickup_city ?? undefined,
             delivery_city: tr.delivery_city ?? undefined,
             waste_description: tr.waste_description ?? undefined,

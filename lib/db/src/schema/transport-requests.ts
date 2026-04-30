@@ -29,6 +29,18 @@ export const transportRequestStatusEnum = pgEnum("transport_request_status", [
   "cancelled",
 ]);
 
+/**
+ * How transport is arranged for this request.
+ *
+ * platform     — producer/buyer posts to the platform; a registered carrier accepts
+ * self_managed — producer/buyer uses their own fleet or a pre-arranged carrier;
+ *                no platform-side carrier assignment needed
+ */
+export const transportModeEnum = pgEnum("transport_mode", [
+  "platform",
+  "self_managed",
+]);
+
 export const transportRequestsTable = pgTable("transport_requests", {
   id: uuid("id").primaryKey().defaultRandom(),
 
@@ -40,11 +52,26 @@ export const transportRequestsTable = pgTable("transport_requests", {
     .notNull()
     .references(() => companiesTable.id, { onDelete: "restrict" }),
 
-  /** Assigned transporter (carrier company). Null until accepted. */
+  /**
+   * Transport mode — platform-managed or self-managed.
+   * Defaults to 'platform' for backward compatibility with existing rows.
+   */
+  transport_mode: transportModeEnum("transport_mode").notNull().default("platform"),
+
+  /**
+   * Assigned transporter (carrier company on platform).
+   * Only relevant for transport_mode = 'platform'. Null until accepted.
+   */
   transporter_company_id: uuid("transporter_company_id").references(
     () => companiesTable.id,
     { onDelete: "set null" },
   ),
+
+  /**
+   * Free-text transporter name for self-managed mode
+   * (own fleet, contracted third-party, etc.).
+   */
+  transporter_name: text("transporter_name"),
 
   status: transportRequestStatusEnum("status").notNull().default("pending"),
 
@@ -57,7 +84,7 @@ export const transportRequestsTable = pgTable("transport_requests", {
   /** Waste description to appear on MWAN manifest (plain text for MVP). */
   waste_description: text("waste_description"),
 
-  /** Vehicle plate number — required before marking pickup/in-transit. */
+  /** Vehicle plate number — required before dispatch confirmation. */
   vehicle_plate: text("vehicle_plate"),
 
   notes: text("notes"),
