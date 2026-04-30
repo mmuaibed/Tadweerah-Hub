@@ -95,6 +95,10 @@ interface DealPanelProps {
   counterpartyCity?: string;
   /** Listing description — pre-fills transport request waste description */
   listingDescription?: string;
+  /** Material category ID from listing — pre-selects taxonomy in TR form */
+  listingCategoryId?: string;
+  /** Material subcategory ID from listing — pre-selects taxonomy in TR form */
+  listingSubcategoryId?: string;
 }
 
 type PendingAction = "confirm-payment" | "confirm-dispatch" | "confirm-receipt" | null;
@@ -211,6 +215,48 @@ function DealValueSummary({
           {t("deal.value_summary.no_change")}
         </p>
       ) : null}
+    </div>
+  );
+}
+
+// ── Next Step Banner ──────────────────────────────────────────────────────────
+
+function NextStepBanner({
+  deal,
+  role,
+  onOpenTrForm,
+}: {
+  deal: DealInfo;
+  role: "producer" | "buyer";
+  onOpenTrForm: () => void;
+}) {
+  const { t } = useT();
+  if (deal.status === "completed") return null;
+
+  const needsTrForm =
+    role === "producer" &&
+    deal.status === "payment_confirmed";
+
+  const icon = needsTrForm ? <Truck className="h-4 w-4 shrink-0" /> : <Clock className="h-4 w-4 shrink-0" />;
+  const text = t(`deal.next_step.${deal.status}.${role}`);
+
+  return (
+    <div className={`flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium border-t ${
+      needsTrForm
+        ? "bg-primary/5 border-primary/15 text-primary"
+        : "bg-muted/40 border-border text-muted-foreground"
+    }`}>
+      {icon}
+      <span className="flex-1 min-w-0">{text}</span>
+      {needsTrForm && (
+        <button
+          type="button"
+          onClick={onOpenTrForm}
+          className="shrink-0 rounded-md bg-primary px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-primary/90 transition-colors"
+        >
+          {t("deal.next_step.open_tr_form")}
+        </button>
+      )}
     </div>
   );
 }
@@ -369,6 +415,9 @@ interface MwanSummary {
     id: string;
     status: string;
     transport_mode: "platform" | "self_managed";
+    manifest_ref?: string;
+    pickup_facility_name?: string;
+    delivery_facility_name?: string;
     transporter_name?: string;
     vehicle_plate?: string;
     pickup_city?: string;
@@ -411,7 +460,13 @@ function TaxonomyRow({ label, entry }: { label: string; entry: TaxonomyEntry }) 
   );
 }
 
-function MwanSummaryPanel({ dealId }: { dealId: string }) {
+function MwanSummaryPanel({
+  dealId,
+  onRequestOpenTrForm,
+}: {
+  dealId: string;
+  onRequestOpenTrForm?: () => void;
+}) {
   const { t } = useT();
   const { getToken } = useAuth();
   const [open, setOpen] = useState(false);
@@ -582,6 +637,25 @@ function MwanSummaryPanel({ dealId }: { dealId: string }) {
                 </div>
               )}
 
+              {/* Manifest ref badge */}
+              {data.transport?.manifest_ref && (
+                <div className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2">
+                  <FileTextIcon className="h-3.5 w-3.5 text-primary shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] text-primary/60 uppercase tracking-wide">{t("deal.manifest_ref.label")}</p>
+                    <p className="text-xs font-bold font-mono text-primary" dir="ltr">{data.transport.manifest_ref}</p>
+                  </div>
+                  {data.transport.pickup_facility_name && (
+                    <div className="text-right text-[10px] text-muted-foreground">
+                      <p className="truncate max-w-[100px]">{data.transport.pickup_facility_name}</p>
+                      {data.transport.delivery_facility_name && (
+                        <p className="truncate max-w-[100px]">→ {data.transport.delivery_facility_name}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Sectioned checklist */}
               <div className="space-y-3">
                 <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -606,7 +680,12 @@ function MwanSummaryPanel({ dealId }: { dealId: string }) {
                         {sectionChecks.map((key) => {
                           const ok = data.checks[key] ?? false;
                           const label = CHECK_LABELS[key] ?? key;
-                          const action = !ok ? t(`mwan.action.${key}`) : undefined;
+                          const actionText = !ok ? t(`mwan.action.${key}`) : undefined;
+                          const isTrCheck = [
+                            "transport_request_created", "transporter_assigned",
+                            "vehicle_plate_set", "pickup_city_set", "delivery_city_set",
+                            "waste_description_set",
+                          ].includes(key);
                           return (
                             <div key={key} className={`flex items-start gap-2.5 px-3 py-2 text-xs ${
                               ok ? "bg-background" : "bg-amber-50/40"
@@ -619,12 +698,21 @@ function MwanSummaryPanel({ dealId }: { dealId: string }) {
                                 <span className={ok ? "text-foreground" : "text-foreground/80 font-medium"}>
                                   {label}
                                 </span>
-                                {action && (
+                                {actionText && (
                                   <span className="block text-[10px] text-amber-700/80 leading-tight mt-0.5">
-                                    → {action}
+                                    → {actionText}
                                   </span>
                                 )}
                               </span>
+                              {!ok && isTrCheck && onRequestOpenTrForm && (
+                                <button
+                                  type="button"
+                                  onClick={onRequestOpenTrForm}
+                                  className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                                >
+                                  {t("mwan.action.add_now")}
+                                </button>
+                              )}
                             </div>
                           );
                         })}
@@ -648,24 +736,39 @@ function CreateTransportRequestForm({
   defaultPickupCity = "",
   defaultDeliveryCity = "",
   defaultWasteDesc = "",
+  defaultCategoryId = "",
+  defaultSubcategoryId = "",
+  defaultPickupFacility = "",
+  defaultDeliveryFacility = "",
+  externalOpen,
+  onExternalOpen,
 }: {
   dealId: string;
   defaultPickupCity?: string;
   defaultDeliveryCity?: string;
   defaultWasteDesc?: string;
+  defaultCategoryId?: string;
+  defaultSubcategoryId?: string;
+  defaultPickupFacility?: string;
+  defaultDeliveryFacility?: string;
+  externalOpen?: boolean;
+  onExternalOpen?: () => void;
 }) {
   const { t } = useT();
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = externalOpen ?? internalOpen;
   const [transportMode, setTransportMode] = useState<"platform" | "self_managed">("platform");
   const [pickupCity, setPickupCity] = useState(defaultPickupCity);
   const [deliveryCity, setDeliveryCity] = useState(defaultDeliveryCity);
   const [wasteDesc, setWasteDesc] = useState(defaultWasteDesc);
+  const [pickupFacility, setPickupFacility] = useState(defaultPickupFacility);
+  const [deliveryFacility, setDeliveryFacility] = useState(defaultDeliveryFacility);
   const [transporterName, setTransporterName] = useState("");
   const [vehiclePlate, setVehiclePlate] = useState("");
-  const [wasteCategoryId, setWasteCategoryId] = useState("");
-  const [wasteSubcategoryId, setWasteSubcategoryId] = useState("");
+  const [wasteCategoryId, setWasteCategoryId] = useState(defaultCategoryId);
+  const [wasteSubcategoryId, setWasteSubcategoryId] = useState(defaultSubcategoryId);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
@@ -697,6 +800,8 @@ function CreateTransportRequestForm({
           vehicle_plate: vehiclePlate.trim() || null,
           waste_category_id: wasteCategoryId || null,
           waste_subcategory_id: wasteSubcategoryId || null,
+          pickup_facility_name: pickupFacility.trim() || null,
+          delivery_facility_name: deliveryFacility.trim() || null,
         }),
       });
       if (res.status === 409) {
@@ -727,10 +832,16 @@ function CreateTransportRequestForm({
   }
 
   return (
-    <div className="border-t border-border">
+    <div className="border-t border-border" id={`tr-form-${dealId}`}>
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          if (onExternalOpen && !open) {
+            onExternalOpen();
+          } else {
+            setInternalOpen((v) => !v);
+          }
+        }}
         className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors"
       >
         <span className="flex items-center gap-2">
@@ -781,27 +892,51 @@ function CreateTransportRequestForm({
                 />
               </div>
             )}
-            <div>
-              <label className="text-xs font-medium text-foreground mb-1 block">
-                {t("transport.create.pickup_city")}
-              </label>
-              <Input
-                value={pickupCity}
-                onChange={(e) => setPickupCity(e.target.value)}
-                placeholder={t("transport.create.pickup_city")}
-                className="h-8 text-sm"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-foreground mb-1 block">
-                {t("transport.create.delivery_city")}
-              </label>
-              <Input
-                value={deliveryCity}
-                onChange={(e) => setDeliveryCity(e.target.value)}
-                placeholder={t("transport.create.delivery_city")}
-                className="h-8 text-sm"
-              />
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-xs font-medium text-foreground mb-1 block">
+                  {t("transport.create.pickup_city")}
+                </label>
+                <Input
+                  value={pickupCity}
+                  onChange={(e) => setPickupCity(e.target.value)}
+                  placeholder={t("transport.create.pickup_city")}
+                  className="h-8 text-sm"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-foreground mb-1 block">
+                  {t("transport.create.delivery_city")}
+                </label>
+                <Input
+                  value={deliveryCity}
+                  onChange={(e) => setDeliveryCity(e.target.value)}
+                  placeholder={t("transport.create.delivery_city")}
+                  className="h-8 text-sm"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-foreground mb-1 block">
+                  {t("transport.create.pickup_facility")}
+                </label>
+                <Input
+                  value={pickupFacility}
+                  onChange={(e) => setPickupFacility(e.target.value)}
+                  placeholder={t("transport.create.pickup_facility.placeholder")}
+                  className="h-8 text-sm"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-foreground mb-1 block">
+                  {t("transport.create.delivery_facility")}
+                </label>
+                <Input
+                  value={deliveryFacility}
+                  onChange={(e) => setDeliveryFacility(e.target.value)}
+                  placeholder={t("transport.create.delivery_facility.placeholder")}
+                  className="h-8 text-sm"
+                />
+              </div>
             </div>
             {/* Waste Category + Subcategory dropdowns */}
             <div className={`grid gap-2 ${subcats.length > 0 ? "grid-cols-2" : ""}`}>
@@ -1070,7 +1205,7 @@ function printDealReport(
   }
 }
 
-export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSharePct, listingRef, listingMaterial, listingQuantity, myCompanyName, listingCategory, myPhone, listingCity, counterpartyCity, listingDescription }: DealPanelProps) {
+export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSharePct, listingRef, listingMaterial, listingQuantity, myCompanyName, listingCategory, myPhone, listingCity, counterpartyCity, listingDescription, listingCategoryId, listingSubcategoryId }: DealPanelProps) {
   const { t, lang } = useT();
   const { getToken } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -1080,6 +1215,14 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
   const [paymentProofUrl, setPaymentProofUrl] = useState("");
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
   const [copied, setCopied] = useState(false);
+  const [trFormOpen, setTrFormOpen] = useState(false);
+
+  function openTrFormAndScroll() {
+    setTrFormOpen(true);
+    setTimeout(() => {
+      document.getElementById(`tr-form-${deal.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
+  }
 
   function copyDealRef() {
     const ref = dealRef(deal.id, deal.created_at);
@@ -1543,6 +1686,9 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
           </div>
         )}
 
+        {/* Next Step Banner */}
+        <NextStepBanner deal={deal} role={role} onOpenTrForm={openTrFormAndScroll} />
+
         {/* Deal Progress Bar */}
         <DealProgressBar deal={deal} />
 
@@ -1566,11 +1712,15 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
             defaultPickupCity={listingCity ?? ""}
             defaultDeliveryCity={counterpartyCity ?? deal.counterparty?.city ?? ""}
             defaultWasteDesc={listingDescription ?? listingMaterial ?? ""}
+            defaultCategoryId={listingCategoryId ?? ""}
+            defaultSubcategoryId={listingSubcategoryId ?? ""}
+            externalOpen={trFormOpen || undefined}
+            onExternalOpen={() => setTrFormOpen(true)}
           />
         )}
 
         {/* V3a — MWAN Summary Panel (all statuses — score badge shows proactive readiness) */}
-        <MwanSummaryPanel dealId={deal.id} />
+        <MwanSummaryPanel dealId={deal.id} onRequestOpenTrForm={openTrFormAndScroll} />
 
         {/* V3 — Print Report button */}
         <div className="px-4 py-3 bg-muted/10 border-t border-border">

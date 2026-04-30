@@ -1,0 +1,122 @@
+We are moving from Pilot-ready to a World-class Pilot experience.
+
+Do NOT add new systems.
+Do NOT add integrations.
+Focus only on improving movement identity, guidance, and usability.
+
+Implement the following 5 items:
+
+------------------------------------
+1. Movement Identity (high priority)
+------------------------------------
+
+Add to transport_requests:
+
+- manifest_ref (string, unique, auto-generated)
+  Example: TDW-2026-000123
+
+- pickup_facility_name (string, required)
+- delivery_facility_name (string, required)
+
+Rules:
+- manifest_ref generated on transport request creation
+- format: TDW-{year}-{incremental number}
+- displayed in:
+  - deal panel
+  - transport request
+  - MWAN summary
+
+------------------------------------
+2. Next Step Guidance (UX)
+------------------------------------
+
+In Deal Panel, add a visible “Next Step” banner above the progress bar.
+
+Logic examples:
+
+- if no transport_request:
+  → "Next step: Create transport request"
+
+- if no vehicle_plate:
+  → "Next step: Add vehicle plate"
+
+- if ready for dispatch:
+  → "Next step: Confirm dispatch"
+
+- if dispatched:
+  → "Next step: Confirm receipt"
+
+Keep logic simple and rule-based.
+
+------------------------------------
+3. Actionable MWAN Checklist
+------------------------------------
+
+For each missing MWAN item:
+
+- Add an action button next to it
+
+Example:
+❌ Vehicle plate missing → [Add now]
+
+Behavior:
+- Clicking action scrolls to the correct form section
+- No page reload
+- No navigation
+
+------------------------------------
+4. Smart Defaults (Data Autofill)
+------------------------------------
+
+Ensure the following are auto-filled everywhere:
+
+- category/subcategory
+- hazard_level
+- physical_state
+- pickup_city
+- delivery_city
+
+Transport request should inherit from listing unless overridden.
+
+User should not re-enter the same data.
+
+------------------------------------
+5. Minimal Admin View (Pilot Operations)
+------------------------------------
+
+Create a simple admin page (no design complexity):
+
+List deals with:
+- deal_id
+- manifest_ref
+- status
+- MWAN readiness score
+- missing items count
+
+Add quick actions:
+- open deal
+- force-complete
+
+No advanced filtering needed.
+
+------------------------------------
+Constraints
+------------------------------------
+
+- No MWAN API
+- No new complex models
+- No redesign
+- Keep everything lightweight and consistent with current structure
+
+------------------------------------
+Goal
+------------------------------------
+
+Make the system:
+- easier to use without training
+- clearer at every step
+- closer to a real regulatory workflow
+- more convincing for operational partners
+
+After implementation:
+Run typecheck + low-cost verification only.

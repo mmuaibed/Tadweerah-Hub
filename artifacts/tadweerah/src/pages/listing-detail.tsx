@@ -1457,6 +1457,8 @@ export function ListingDetailPage() {
             listingCity={(listing as typeof listing & { city?: string }).city}
             counterpartyCity={activeDeal.counterparty?.city}
             listingDescription={(listing as typeof listing & { description?: string }).description}
+            listingCategoryId={listing.material_category_id ?? undefined}
+            listingSubcategoryId={(listing as typeof listing & { material_subcategory_id?: string }).material_subcategory_id ?? undefined}
           />
         )}
 

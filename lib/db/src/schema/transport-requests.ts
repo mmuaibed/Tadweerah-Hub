@@ -82,6 +82,19 @@ export const transportRequestsTable = pgTable("transport_requests", {
   /** City or address of waste delivery (receiver site). */
   delivery_city: text("delivery_city"),
 
+  /**
+   * Human-readable manifest reference. Auto-generated on creation.
+   * Format: TDW-{YYYY}-{6-digit seq}, e.g. TDW-2026-000001
+   * Displayed on deal panel, TR list, MWAN summary.
+   */
+  manifest_ref: text("manifest_ref").unique(),
+
+  /** Name of the waste generator / pickup facility (e.g. "Riyadh Industrial Complex"). */
+  pickup_facility_name: text("pickup_facility_name"),
+
+  /** Name of the receiving / treatment facility. */
+  delivery_facility_name: text("delivery_facility_name"),
+
   /** Waste description to appear on MWAN manifest (plain text for MVP). */
   waste_description: text("waste_description"),
 

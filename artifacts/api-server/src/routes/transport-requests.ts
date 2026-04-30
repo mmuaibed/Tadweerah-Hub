@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, or, inArray, desc } from "drizzle-orm";
+import { eq, or, inArray, desc, count } from "drizzle-orm";
 import {
   db,
   dealsTable,
@@ -24,6 +24,9 @@ function serializeTR(tr: typeof transportRequestsTable.$inferSelect) {
     transporter_company_id: tr.transporter_company_id ?? undefined,
     transporter_name: tr.transporter_name ?? undefined,
     status: tr.status,
+    manifest_ref: tr.manifest_ref ?? undefined,
+    pickup_facility_name: tr.pickup_facility_name ?? undefined,
+    delivery_facility_name: tr.delivery_facility_name ?? undefined,
     pickup_city: tr.pickup_city ?? undefined,
     delivery_city: tr.delivery_city ?? undefined,
     waste_description: tr.waste_description ?? undefined,
@@ -37,6 +40,14 @@ function serializeTR(tr: typeof transportRequestsTable.$inferSelect) {
     created_at: tr.created_at.toISOString(),
     updated_at: tr.updated_at.toISOString(),
   };
+}
+
+/** Generate TDW-{YYYY}-{000001} style manifest reference. */
+async function generateManifestRef(): Promise<string> {
+  const year = new Date().getFullYear();
+  const [row] = await db.select({ total: count() }).from(transportRequestsTable);
+  const seq = ((row?.total ?? 0) + 1);
+  return `TDW-${year}-${String(seq).padStart(6, "0")}`;
 }
 
 // ── POST /deals/:dealId/transport-request ─────────────────────────────────────
@@ -124,6 +135,12 @@ router.post(
       typeof req.body?.waste_category_id === "string" ? req.body.waste_category_id || null : null;
     const wasteSubcategoryId =
       typeof req.body?.waste_subcategory_id === "string" ? req.body.waste_subcategory_id || null : null;
+    const pickupFacilityName =
+      typeof req.body?.pickup_facility_name === "string" ? req.body.pickup_facility_name.trim() || null : null;
+    const deliveryFacilityName =
+      typeof req.body?.delivery_facility_name === "string" ? req.body.delivery_facility_name.trim() || null : null;
+
+    const manifestRef = await generateManifestRef();
 
     const [created] = await db
       .insert(transportRequestsTable)
@@ -140,6 +157,9 @@ router.post(
         planned_pickup_at: plannedPickupAt,
         waste_category_id: wasteCategoryId,
         waste_subcategory_id: wasteSubcategoryId,
+        manifest_ref: manifestRef,
+        pickup_facility_name: pickupFacilityName,
+        delivery_facility_name: deliveryFacilityName,
       })
       .returning();
 
@@ -524,6 +544,9 @@ router.get(
         pickup_city: transportRequestsTable.pickup_city,
         delivery_city: transportRequestsTable.delivery_city,
         waste_description: transportRequestsTable.waste_description,
+        manifest_ref: transportRequestsTable.manifest_ref,
+        pickup_facility_name: transportRequestsTable.pickup_facility_name,
+        delivery_facility_name: transportRequestsTable.delivery_facility_name,
         planned_pickup_at: transportRequestsTable.planned_pickup_at,
         actual_pickup_at: transportRequestsTable.actual_pickup_at,
         delivered_at: transportRequestsTable.delivered_at,
@@ -665,6 +688,9 @@ router.get(
             id: tr.id,
             status: tr.status,
             transport_mode: tr.transport_mode,
+            manifest_ref: tr.manifest_ref ?? undefined,
+            pickup_facility_name: tr.pickup_facility_name ?? undefined,
+            delivery_facility_name: tr.delivery_facility_name ?? undefined,
             transporter_name: tr.transporter_name ?? undefined,
             vehicle_plate: tr.vehicle_plate ?? undefined,
             pickup_city: tr.pickup_city ?? undefined,

@@ -17,6 +17,8 @@ import {
   dealsTable,
   contractsTable,
   contractShipmentsTable,
+  transportRequestsTable,
+  wasteListingsTable,
 } from "@workspace/db";
 import { logAudit } from "../lib/audit";
 
@@ -461,6 +463,102 @@ router.get("/admin/audit-log", requireAdminKey, async (req, res) => {
     .offset(offset);
 
   res.json(rows);
+});
+
+/* -------------------------------------------------------------------------- */
+/* Deals (admin pilot view)                                                    */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * GET /admin/deals
+ * Returns all deals with manifest_ref, MWAN readiness score, and missing item count.
+ * Query params: status, limit (max 200), offset
+ */
+router.get("/admin/deals", requireAdminKey, async (req, res) => {
+  const statusFilter = typeof req.query.status === "string" ? req.query.status : null;
+  const limit = Math.min(Number(req.query.limit) || 100, 200);
+  const offset = Number(req.query.offset) || 0;
+
+  const rows = await db
+    .select({
+      deal: {
+        id: dealsTable.id,
+        status: dealsTable.status,
+        settlement_type: dealsTable.settlement_type,
+        actual_quantity: dealsTable.actual_quantity,
+        payment_confirmed_at: dealsTable.payment_confirmed_at,
+        created_at: dealsTable.created_at,
+        listing_id: dealsTable.listing_id,
+        producer_company_id: dealsTable.producer_company_id,
+        buyer_company_id: dealsTable.buyer_company_id,
+      },
+      tr_id: transportRequestsTable.id,
+      manifest_ref: transportRequestsTable.manifest_ref,
+      vehicle_plate: transportRequestsTable.vehicle_plate,
+      pickup_city: transportRequestsTable.pickup_city,
+      delivery_city: transportRequestsTable.delivery_city,
+      waste_description: transportRequestsTable.waste_description,
+      transporter_name: transportRequestsTable.transporter_name,
+      transporter_company_id: transportRequestsTable.transporter_company_id,
+      transport_mode: transportRequestsTable.transport_mode,
+      listing_id_check: wasteListingsTable.id,
+      gen_cr: sql<string | null>`gen.commercial_registration`,
+      gen_license: sql<string | null>`gen.license_number`,
+      gen_city: sql<string | null>`gen.city`,
+      recv_cr: sql<string | null>`recv.commercial_registration`,
+      recv_license: sql<string | null>`recv.license_number`,
+      recv_city: sql<string | null>`recv.city`,
+    })
+    .from(dealsTable)
+    .leftJoin(transportRequestsTable, eq(transportRequestsTable.deal_id, dealsTable.id))
+    .leftJoin(wasteListingsTable, eq(wasteListingsTable.id, dealsTable.listing_id))
+    .leftJoin(
+      sql`companies gen`,
+      sql`gen.id = ${dealsTable.producer_company_id}`,
+    )
+    .leftJoin(
+      sql`companies recv`,
+      sql`recv.id = ${dealsTable.buyer_company_id}`,
+    )
+    .where(statusFilter ? eq(dealsTable.status, statusFilter as typeof dealsTable.$inferSelect["status"]) : undefined)
+    .orderBy(desc(dealsTable.created_at))
+    .limit(limit)
+    .offset(offset);
+
+  const result = rows.map((r) => {
+    const checks: Record<string, boolean> = {
+      generator_cr: !!(r.gen_cr),
+      generator_license: !!(r.gen_license),
+      generator_city: !!(r.gen_city),
+      receiver_cr: !!(r.recv_cr),
+      receiver_license: !!(r.recv_license),
+      receiver_city: !!(r.recv_city),
+      waste_defined: !!(r.listing_id_check),
+      quantity_confirmed: r.deal.settlement_type === "fixed" ? true : r.deal.actual_quantity != null,
+      payment_confirmed: r.deal.payment_confirmed_at != null,
+      transport_request_created: !!(r.tr_id),
+      transporter_assigned: r.tr_id
+        ? (r.transport_mode === "self_managed" ? !!(r.transporter_name?.trim()) : !!(r.transporter_company_id))
+        : false,
+      vehicle_plate_set: !!(r.vehicle_plate?.trim()),
+      pickup_city_set: !!(r.pickup_city),
+      delivery_city_set: !!(r.delivery_city),
+      waste_description_set: !!(r.waste_description),
+    };
+    const readyCount = Object.values(checks).filter(Boolean).length;
+    const totalCount = Object.keys(checks).length;
+    return {
+      deal_id: r.deal.id,
+      status: r.deal.status,
+      manifest_ref: r.manifest_ref ?? null,
+      mwan_score: `${readyCount}/${totalCount}`,
+      missing_count: totalCount - readyCount,
+      is_mwan_ready: readyCount === totalCount,
+      created_at: r.deal.created_at.toISOString(),
+    };
+  });
+
+  res.json(result);
 });
 
 export default router;

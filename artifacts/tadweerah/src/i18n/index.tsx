@@ -1212,6 +1212,52 @@ const translations: Record<string, Record<Language, string>> = {
   "transport.create.prefilled": { ar: "مملوء تلقائياً من بيانات الصفقة — يمكنك تعديله", en: "Auto-filled from deal data — you can edit" },
   "onboarding.mwan.cr_hint": { ar: "مطلوب في البيان الإلكتروني مَوَن — أضفه الآن لتسريع إصدار البيان لاحقاً", en: "Required for MWAN eManifest — add it now to speed up manifest generation later" },
   "profile.missing_compliance": { ar: "بيانات الامتثال ناقصة: أضف السجل التجاري ورقم الترخيص لإتمام متطلبات مَوَن.", en: "Compliance data incomplete: add CR and license number to meet MWAN eManifest requirements." },
+
+  /* ── Pilot: Next Step Banner ── */
+  "deal.next_step.active.producer": { ar: "أكّد الدفع عند استلام المبلغ للانتقال للمرحلة التالية", en: "Confirm payment once received to advance the deal" },
+  "deal.next_step.active.buyer": { ar: "في انتظار تأكيد البائع للدفع", en: "Awaiting seller payment confirmation" },
+  "deal.next_step.payment_confirmed.producer": { ar: "الدفع مؤكد — أنشئ طلب النقل الآن لمتابعة جاهزية مَوَن", en: "Payment confirmed — create a transport request now for MWAN readiness" },
+  "deal.next_step.payment_confirmed.buyer": { ar: "في انتظار البائع لإنشاء طلب النقل وإرسال البضاعة", en: "Awaiting seller to create transport request and dispatch goods" },
+  "deal.next_step.dispatched.producer": { ar: "البضاعة في الطريق — في انتظار تأكيد الاستلام من المشتري", en: "Goods in transit — awaiting buyer confirmation of receipt" },
+  "deal.next_step.dispatched.buyer": { ar: "تأكد من استلام البضاعة لإغلاق الصفقة", en: "Confirm receipt of goods to close the deal" },
+  "deal.next_step.open_tr_form": { ar: "أنشئ الآن", en: "Create Now" },
+
+  /* ── Pilot: Manifest ref display ── */
+  "deal.manifest_ref.label": { ar: "رقم بيان النقل", en: "Movement Manifest Ref" },
+  "deal.manifest_ref.copy": { ar: "نسخ رقم البيان", en: "Copy manifest ref" },
+  "deal.manifest_ref.copied": { ar: "تم النسخ", en: "Copied" },
+
+  /* ── Pilot: Facility names in TR form ── */
+  "transport.create.pickup_facility": { ar: "اسم منشأة الاستلام", en: "Pickup Facility Name" },
+  "transport.create.pickup_facility.placeholder": { ar: "مثال: مصنع الرياض", en: "e.g. Riyadh Factory" },
+  "transport.create.delivery_facility": { ar: "اسم منشأة التسليم", en: "Delivery Facility Name" },
+  "transport.create.delivery_facility.placeholder": { ar: "مثال: مستودع جدة", en: "e.g. Jeddah Warehouse" },
+
+  /* ── Pilot: MWAN actionable checklist ── */
+  "mwan.action.add_now": { ar: "أضف الآن", en: "Add now" },
+
+  /* ── Admin page ── */
+  "admin.page.title": { ar: "لوحة إدارة الصفقات", en: "Deals Admin Panel" },
+  "admin.page.subtitle": { ar: "مراقبة الصفقات وجاهزية بيانات مَوَن", en: "Monitor deals and MWAN eManifest readiness" },
+  "admin.key.label": { ar: "مفتاح المدير (X-Admin-Key)", en: "Admin Key (X-Admin-Key)" },
+  "admin.key.placeholder": { ar: "أدخل المفتاح السري", en: "Enter secret key" },
+  "admin.fetch_button": { ar: "تحميل الصفقات", en: "Load Deals" },
+  "admin.loading": { ar: "جارٍ التحميل...", en: "Loading..." },
+  "admin.no_deals": { ar: "لا توجد صفقات تطابق الفلتر المحدد", en: "No deals match the selected filter" },
+  "admin.filter.all_statuses": { ar: "كل الحالات", en: "All statuses" },
+  "admin.deal.count": { ar: "{n} صفقة", en: "{n} deals" },
+  "admin.deal.id": { ar: "معرّف الصفقة", en: "Deal ID" },
+  "admin.deal.status": { ar: "الحالة", en: "Status" },
+  "admin.deal.manifest_ref": { ar: "رقم البيان", en: "Manifest Ref" },
+  "admin.deal.mwan_score": { ar: "جاهزية مَوَن", en: "MWAN Score" },
+  "admin.deal.missing": { ar: "ناقص", en: "Missing" },
+  "admin.deal.created_at": { ar: "تاريخ الإنشاء", en: "Created" },
+  "admin.mwan.ready": { ar: "جاهزة", en: "ready" },
+  "admin.mwan.incomplete": { ar: "ناقصة", en: "incomplete" },
+  "admin.error.no_key": { ar: "يرجى إدخال مفتاح المدير أولاً", en: "Please enter an admin key first" },
+  "admin.error.unauthorized": { ar: "مفتاح غير صحيح أو مرفوض", en: "Invalid or rejected admin key" },
+  "admin.error.not_configured": { ar: "مفتاح المدير غير مُعدّ في الخادم", en: "Admin key not configured on server" },
+  "admin.error.generic": { ar: "حدث خطأ أثناء التحميل", en: "An error occurred while loading" },
 };
 
 export const I18nProvider: React.FC<{

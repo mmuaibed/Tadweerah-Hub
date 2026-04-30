@@ -66,3 +66,8 @@ externalPort = 3000
 
 [nix]
 channel = "stable-25_05"
+
+[userenv]
+
+[userenv.development]
+ADMIN_API_KEY = "tdw-admin-dev"
