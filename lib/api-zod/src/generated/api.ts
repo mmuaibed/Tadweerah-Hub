@@ -785,6 +785,12 @@ export const GetListingOffersResponseItem = zod.object({
     .describe(
       "Returned by PUT \/offers\/mine (improve offer). True if the buyer was already the top bidder before submitting this improvement.\n",
     ),
+  buyer_is_verified: zod
+    .boolean()
+    .optional()
+    .describe(
+      "True when the buyer company has a commercial registration AND an approved license.",
+    ),
 });
 export const GetListingOffersResponse = zod.array(GetListingOffersResponseItem);
 
@@ -856,6 +862,12 @@ export const ImproveOfferResponse = zod.object({
     .describe(
       "Returned by PUT \/offers\/mine (improve offer). True if the buyer was already the top bidder before submitting this improvement.\n",
     ),
+  buyer_is_verified: zod
+    .boolean()
+    .optional()
+    .describe(
+      "True when the buyer company has a commercial registration AND an approved license.",
+    ),
 });
 
 /**
@@ -900,6 +912,12 @@ export const WithdrawOfferResponse = zod.object({
     .optional()
     .describe(
       "Returned by PUT \/offers\/mine (improve offer). True if the buyer was already the top bidder before submitting this improvement.\n",
+    ),
+  buyer_is_verified: zod
+    .boolean()
+    .optional()
+    .describe(
+      "True when the buyer company has a commercial registration AND an approved license.",
     ),
 });
 
@@ -1031,6 +1049,12 @@ export const AcceptOfferResponse = zod.object({
     .describe(
       "Returned by PUT \/offers\/mine (improve offer). True if the buyer was already the top bidder before submitting this improvement.\n",
     ),
+  buyer_is_verified: zod
+    .boolean()
+    .optional()
+    .describe(
+      "True when the buyer company has a commercial registration AND an approved license.",
+    ),
 });
 
 /**
@@ -1095,6 +1119,12 @@ export const RejectOfferResponse = zod.object({
     .optional()
     .describe(
       "Returned by PUT \/offers\/mine (improve offer). True if the buyer was already the top bidder before submitting this improvement.\n",
+    ),
+  buyer_is_verified: zod
+    .boolean()
+    .optional()
+    .describe(
+      "True when the buyer company has a commercial registration AND an approved license.",
     ),
 });
 
@@ -1262,6 +1292,12 @@ export const GetDealResponse = zod
       .object({
         name: zod.string(),
         contact_phone: zod.string(),
+        is_verified: zod
+          .boolean()
+          .optional()
+          .describe(
+            "True when the counterparty has a commercial registration AND an approved license.",
+          ),
       })
       .optional()
       .describe(
@@ -1353,6 +1389,12 @@ export const ConfirmPaymentResponse = zod
       .object({
         name: zod.string(),
         contact_phone: zod.string(),
+        is_verified: zod
+          .boolean()
+          .optional()
+          .describe(
+            "True when the counterparty has a commercial registration AND an approved license.",
+          ),
       })
       .optional()
       .describe(
@@ -1422,6 +1464,12 @@ export const ConfirmDispatchResponse = zod
       .object({
         name: zod.string(),
         contact_phone: zod.string(),
+        is_verified: zod
+          .boolean()
+          .optional()
+          .describe(
+            "True when the counterparty has a commercial registration AND an approved license.",
+          ),
       })
       .optional()
       .describe(
@@ -1491,6 +1539,12 @@ export const ConfirmReceiptResponse = zod
       .object({
         name: zod.string(),
         contact_phone: zod.string(),
+        is_verified: zod
+          .boolean()
+          .optional()
+          .describe(
+            "True when the counterparty has a commercial registration AND an approved license.",
+          ),
       })
       .optional()
       .describe(

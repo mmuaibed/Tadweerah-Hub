@@ -39,6 +39,8 @@ type OfferRow = {
   waste_listing_id: string;
   buyer_company_id: string;
   buyer_company_name: string;
+  buyer_commercial_registration?: string | null;
+  buyer_license_status?: string | null;
   price_per_unit: string;
   message: string | null;
   status: "pending" | "accepted" | "rejected" | "withdrawn";
@@ -54,11 +56,13 @@ type OfferRow = {
 };
 
 function serializeOffer(row: OfferRow) {
+  const buyerIsVerified = !!(row.buyer_commercial_registration && row.buyer_license_status === "approved");
   return {
     id: row.id,
     waste_listing_id: row.waste_listing_id,
     buyer_company_id: row.buyer_company_id,
     buyer_company_name: row.buyer_company_name,
+    buyer_is_verified: buyerIsVerified,
     price_per_unit: Number(row.price_per_unit),
     message: row.message ?? undefined,
     status: row.status,
@@ -78,6 +82,8 @@ const offerSelect = {
   waste_listing_id: listingOffersTable.waste_listing_id,
   buyer_company_id: listingOffersTable.buyer_company_id,
   buyer_company_name: companiesTable.name,
+  buyer_commercial_registration: companiesTable.commercialRegistration,
+  buyer_license_status: companiesTable.license_status,
   price_per_unit: listingOffersTable.price_per_unit,
   message: listingOffersTable.message,
   status: listingOffersTable.status,

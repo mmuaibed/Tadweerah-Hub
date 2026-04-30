@@ -27,4 +27,6 @@ export interface ListingOffer {
   /** Returned by PUT /offers/mine (improve offer). True if the buyer was already the top bidder before submitting this improvement.
    */
   already_top?: boolean;
+  /** True when the buyer company has a commercial registration AND an approved license. */
+  buyer_is_verified?: boolean;
 }

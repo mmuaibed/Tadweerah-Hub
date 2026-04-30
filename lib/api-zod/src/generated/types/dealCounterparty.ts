@@ -9,4 +9,6 @@
 export interface DealCounterparty {
   name: string;
   contact_phone: string;
+  /** True when the counterparty has a commercial registration AND an approved license. */
+  is_verified?: boolean;
 }

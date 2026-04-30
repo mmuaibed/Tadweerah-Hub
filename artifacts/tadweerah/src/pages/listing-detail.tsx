@@ -877,11 +877,16 @@ function ProducerOfferRow({
   return (
     <div className="py-4 space-y-3">
       <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-2 min-w-0 flex-wrap">
           <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
           <span className="text-sm font-semibold text-foreground truncate">
             {offer.buyer_company_name}
           </span>
+          {offer.buyer_is_verified && (
+            <span className="inline-flex items-center gap-0.5 rounded-full bg-green-100 text-green-800 text-[9px] font-bold px-1.5 py-0.5 shrink-0">
+              <Check className="h-2.5 w-2.5" />{t("company.verified")}
+            </span>
+          )}
         </div>
         <Badge variant={offerStatusVariant(offer.status)} className="shrink-0 text-xs">
           {t(`offer.status.${offer.status}`)}

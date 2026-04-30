@@ -1227,6 +1227,10 @@ const translations: Record<string, Record<Language, string>> = {
   "deal.manifest_ref.copy": { ar: "نسخ رقم البيان", en: "Copy manifest ref" },
   "deal.manifest_ref.copied": { ar: "تم النسخ", en: "Copied" },
 
+  /* ── VIP: Verified badge + PDF download ── */
+  "company.verified": { ar: "موثّقة", en: "Verified" },
+  "deal.pdf.download": { ar: "تحميل ملخص PDF", en: "Download PDF Summary" },
+
   /* ── Pilot: Facility names in TR form ── */
   "transport.create.pickup_facility": { ar: "اسم منشأة الاستلام", en: "Pickup Facility Name" },
   "transport.create.pickup_facility.placeholder": { ar: "مثال: مصنع الرياض", en: "e.g. Riyadh Factory" },

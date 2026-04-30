@@ -22,6 +22,7 @@ import {
   FileText as FileTextIcon,
   MapPin,
   Tag,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -60,6 +61,7 @@ export interface DealInfo {
     name: string;
     contact_phone: string;
     city?: string;
+    is_verified?: boolean;
   } | null;
   payment_confirmed_at: string | null;
   payment_reference: string | null;
@@ -403,8 +405,8 @@ interface MwanSummary {
   is_manifest_ready: boolean;
   readiness_score: string;
   checks: Record<string, boolean>;
-  generator: { name: string; city: string | null; commercial_registration?: string; license_number?: string } | null;
-  receiver: { name: string; city: string | null; license_number?: string } | null;
+  generator: { name: string; city: string | null; commercial_registration?: string; license_number?: string; license_status?: string } | null;
+  receiver: { name: string; city: string | null; commercial_registration?: string; license_number?: string; license_status?: string } | null;
   transporter: { name: string; city?: string | null; license_number?: string; mode: "platform" | "self_managed" } | null;
   waste: { material: string; quantity: number | null; unit: string; origin_city: string | null } | null;
   waste_taxonomy: {
@@ -585,7 +587,14 @@ function MwanSummaryPanel({
                     <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
                     {party ? (
                       <>
-                        <p className="text-xs font-medium text-foreground">{party.name}</p>
+                        <div className="flex items-start gap-1.5 flex-wrap">
+                          <p className="text-xs font-medium text-foreground">{party.name}</p>
+                          {"license_status" in party && party.commercial_registration && party.license_status === "approved" && (
+                            <span className="inline-flex items-center gap-0.5 rounded-full bg-green-100 text-green-800 text-[9px] font-bold px-1.5 py-0.5 shrink-0">
+                              <Check className="h-2.5 w-2.5" />{t("company.verified")}
+                            </span>
+                          )}
+                        </div>
                         {party.city && (
                           <p className="flex items-center gap-1 text-[11px] text-muted-foreground">
                             <MapPin className="h-3 w-3" />{party.city}
@@ -637,7 +646,7 @@ function MwanSummaryPanel({
                 </div>
               )}
 
-              {/* Manifest ref badge */}
+              {/* Manifest ref badge + PDF download */}
               {data.transport?.manifest_ref && (
                 <div className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2">
                   <FileTextIcon className="h-3.5 w-3.5 text-primary shrink-0" />
@@ -653,6 +662,15 @@ function MwanSummaryPanel({
                       )}
                     </div>
                   )}
+                  <a
+                    href={`/api/deals/${dealId}/transport-requests/${data.transport.id}/summary.pdf`}
+                    download
+                    className="shrink-0 flex items-center gap-1 text-[10px] font-semibold text-primary/70 hover:text-primary transition-colors border border-primary/20 rounded px-2 py-1 bg-background hover:bg-primary/5"
+                    title={t("deal.pdf.download")}
+                  >
+                    <Download className="h-3 w-3" />
+                    PDF
+                  </a>
                 </div>
               )}
 
@@ -1434,9 +1452,16 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
             <div className="min-w-0 flex-1">
               <span className="font-semibold text-primary text-sm">{t("deal.panel.title")}</span>
               {(listingMaterial || deal.counterparty?.name) && (
-                <p className="text-xs text-primary/70 mt-0.5 truncate">
-                  {[listingMaterial, deal.counterparty?.name].filter(Boolean).join(" · ")}
-                </p>
+                <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                  <p className="text-xs text-primary/70 truncate">
+                    {[listingMaterial, deal.counterparty?.name].filter(Boolean).join(" · ")}
+                  </p>
+                  {deal.counterparty?.is_verified && (
+                    <span className="inline-flex items-center gap-0.5 rounded-full bg-green-100 text-green-800 text-[9px] font-bold px-1.5 py-0.5 shrink-0">
+                      <Check className="h-2.5 w-2.5" />{t("company.verified")}
+                    </span>
+                  )}
+                </div>
               )}
               <div className="flex flex-wrap items-center gap-2 mt-1.5">
                 {/* Deal ref */}
@@ -1561,7 +1586,14 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
             </div>
             <div className="px-4 py-3 bg-background">
               <p className="text-[11px] font-medium text-muted-foreground mb-1.5">{t("deal.contact.counterparty_label")}</p>
-              <p className="font-bold text-base text-foreground leading-tight">{deal.counterparty.name}</p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="font-bold text-base text-foreground leading-tight">{deal.counterparty.name}</p>
+                {deal.counterparty.is_verified && (
+                  <span className="inline-flex items-center gap-0.5 rounded-full bg-green-100 text-green-800 text-[10px] font-bold px-2 py-0.5 shrink-0">
+                    <Check className="h-3 w-3" />{t("company.verified")}
+                  </span>
+                )}
+              </div>
               {deal.counterparty.contact_phone ? (
                 <a
                   href={`tel:${deal.counterparty.contact_phone}`}

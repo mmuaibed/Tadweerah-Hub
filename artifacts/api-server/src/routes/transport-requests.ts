@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
-import { eq, or, inArray, desc, count } from "drizzle-orm";
+import { and, eq, or, inArray, desc, count } from "drizzle-orm";
+import PDFDocument from "pdfkit";
 import {
   db,
   dealsTable,
@@ -702,6 +703,178 @@ router.get(
           }
         : null,
     });
+  },
+);
+
+// ── GET /deals/:dealId/transport-requests/:tid/summary.pdf ───────────────────
+// Generates a printable single-page PDF movement summary.
+
+router.get(
+  "/deals/:dealId/transport-requests/:tid/summary.pdf",
+  requireAuth,
+  requireCompany(),
+  async (req, res) => {
+    const { company } = req as AuthedCompanyRequest;
+    const dealId = req.params.dealId as string;
+    const tid    = req.params.tid    as string;
+
+    // Fetch deal (auth check + party IDs)
+    const [deal] = await db
+      .select({
+        id: dealsTable.id,
+        status: dealsTable.status,
+        producer_company_id: dealsTable.producer_company_id,
+        buyer_company_id: dealsTable.buyer_company_id,
+        listing_id: dealsTable.listing_id,
+        settlement_type: dealsTable.settlement_type,
+        estimated_amount: dealsTable.estimated_amount,
+        actual_quantity: dealsTable.actual_quantity,
+        final_amount: dealsTable.final_amount,
+        price_per_unit: dealsTable.price_per_unit,
+        created_at: dealsTable.created_at,
+      })
+      .from(dealsTable)
+      .where(eq(dealsTable.id, dealId))
+      .limit(1);
+
+    if (!deal) { res.status(404).json({ error: "NotFound" }); return; }
+    const isParty = deal.producer_company_id === company.id || deal.buyer_company_id === company.id;
+    if (!isParty) { res.status(403).json({ error: "Forbidden" }); return; }
+
+    // Fetch transport request
+    const [tr] = await db
+      .select()
+      .from(transportRequestsTable)
+      .where(and(eq(transportRequestsTable.id, tid), eq(transportRequestsTable.deal_id, dealId)))
+      .limit(1);
+
+    if (!tr) { res.status(404).json({ error: "TransportRequestNotFound" }); return; }
+
+    // Fetch both companies
+    const companyIds = [...new Set([deal.producer_company_id, deal.buyer_company_id])];
+    const companies = await db
+      .select({
+        id: companiesTable.id,
+        name: companiesTable.name,
+        city: companiesTable.city,
+        commercialRegistration: companiesTable.commercialRegistration,
+      })
+      .from(companiesTable)
+      .where(inArray(companiesTable.id, companyIds));
+
+    const compMap = Object.fromEntries(companies.map((c) => [c.id, c]));
+    const producer = compMap[deal.producer_company_id];
+    const buyer    = compMap[deal.buyer_company_id];
+
+    // Fetch waste listing
+    const [listing] = deal.listing_id
+      ? await db
+          .select({ quantity: wasteListingsTable.quantity, unit: wasteListingsTable.unit, material_category_id: wasteListingsTable.material_category_id })
+          .from(wasteListingsTable)
+          .where(eq(wasteListingsTable.id, deal.listing_id))
+          .limit(1)
+      : [null];
+
+    // Fetch category (TR category override or listing category)
+    const catId = tr.waste_category_id ?? listing?.material_category_id;
+    const [cat] = catId
+      ? await db
+          .select({ name_ar: materialCategoriesTable.name_ar, name_en: materialCategoriesTable.name_en, regulatory_code: materialCategoriesTable.regulatory_code, physical_state: materialCategoriesTable.physical_state })
+          .from(materialCategoriesTable)
+          .where(eq(materialCategoriesTable.id, catId))
+          .limit(1)
+      : [null];
+
+    // ── Build PDF ────────────────────────────────────────────────────────────
+
+    const doc = new PDFDocument({ size: "A4", margin: 48, info: { Title: `Tadweerah Movement Summary — ${tr.manifest_ref ?? dealId}` } });
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="tadweerah-${tr.manifest_ref ?? dealId}.pdf"`,
+    );
+    doc.pipe(res);
+
+    const primaryColor = "#1d4ed8";
+    const green        = "#166534";
+    const grey         = "#64748b";
+    const pageWidth    = doc.page.width - 96; // usable width
+
+    // Header bar
+    doc.rect(48, 48, pageWidth, 44).fill(primaryColor);
+    doc.fillColor("#ffffff").fontSize(16).font("Helvetica-Bold")
+       .text("Tadweerah · تدويرة", 64, 62, { lineBreak: false });
+    doc.fontSize(10).font("Helvetica")
+       .text("Movement Summary / ملخص حركة النفايات", 0, 66, { align: "right", width: pageWidth + 48 });
+
+    doc.moveDown(3.2);
+
+    // Manifest ref + date
+    const manifestLine = tr.manifest_ref ? `Manifest Ref: ${tr.manifest_ref}` : `Deal ID: ${dealId}`;
+    doc.fillColor(primaryColor).fontSize(14).font("Helvetica-Bold").text(manifestLine, 48, doc.y);
+    doc.fillColor(grey).fontSize(9).font("Helvetica")
+       .text(`Date: ${new Date().toISOString().split("T")[0]}   Status: ${deal.status.toUpperCase()}`, { align: "left" });
+
+    doc.moveDown(0.8);
+    doc.moveTo(48, doc.y).lineTo(48 + pageWidth, doc.y).strokeColor("#e2e8f0").lineWidth(1).stroke();
+    doc.moveDown(0.8);
+
+    // Section helper
+    function section(title: string, rows: [string, string | undefined | null][]): void {
+      doc.fillColor(green).fontSize(10).font("Helvetica-Bold").text(title.toUpperCase());
+      doc.moveDown(0.3);
+      for (const [label, value] of rows) {
+        if (!value) continue;
+        doc.fillColor(grey).fontSize(9).font("Helvetica")
+           .text(label + ":", { continued: true, width: 140 });
+        doc.fillColor("#1e293b").font("Helvetica-Bold")
+           .text(" " + value, { indent: 0 });
+      }
+      doc.moveDown(0.8);
+    }
+
+    // Generator (Producer)
+    section("Generator / المُولِّد", [
+      ["Company", producer?.name],
+      ["CR Number", producer?.commercialRegistration],
+      ["City", producer?.city],
+      ["Pickup Facility", tr.pickup_facility_name],
+    ]);
+
+    // Receiver (Buyer)
+    section("Receiver / المُستقبِل", [
+      ["Company", buyer?.name],
+      ["CR Number", buyer?.commercialRegistration],
+      ["City", buyer?.city],
+      ["Delivery Facility", tr.delivery_facility_name],
+    ]);
+
+    // Waste
+    const qty = deal.actual_quantity ?? deal.estimated_amount;
+    section("Waste / النفايات", [
+      ["Category (AR)", cat?.name_ar],
+      ["Category (EN)", cat?.name_en],
+      ["Regulatory Code", cat?.regulatory_code],
+      ["Physical State", cat?.physical_state],
+      ["Quantity", qty ? `${Number(qty).toLocaleString()} ${listing?.unit ?? ""}`.trim() : undefined],
+    ]);
+
+    // Transport
+    section("Transport / النقل", [
+      ["Transporter", tr.transporter_name],
+      ["Vehicle Plate", tr.vehicle_plate],
+      ["Pickup City", tr.pickup_city],
+      ["Delivery City", tr.delivery_city],
+    ]);
+
+    // Footer
+    const footerY = doc.page.height - 56;
+    doc.moveTo(48, footerY - 8).lineTo(48 + pageWidth, footerY - 8).strokeColor("#e2e8f0").lineWidth(1).stroke();
+    doc.fillColor(grey).fontSize(8).font("Helvetica")
+       .text("Generated by Tadweerah Platform · منصة تدويرة للنفايات الصناعية", 48, footerY, { align: "center", width: pageWidth });
+
+    doc.end();
   },
 );
 

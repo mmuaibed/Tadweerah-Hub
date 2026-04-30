@@ -300,6 +300,8 @@ export interface ListingOffer {
   /** Returned by PUT /offers/mine (improve offer). True if the buyer was already the top bidder before submitting this improvement.
    */
   already_top?: boolean;
+  /** True when the buyer company has a commercial registration AND an approved license. */
+  buyer_is_verified?: boolean;
 }
 
 export interface SubmitOfferBody {
@@ -508,6 +510,8 @@ export const DealSettlementType = {
 export interface DealCounterparty {
   name: string;
   contact_phone: string;
+  /** True when the counterparty has a commercial registration AND an approved license. */
+  is_verified?: boolean;
 }
 
 /**

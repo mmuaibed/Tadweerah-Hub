@@ -1,6 +1,15 @@
 import { Router, type IRouter } from "express";
 import { and, eq, or } from "drizzle-orm";
-import { db, companiesTable, dealsTable, transportRequestsTable } from "@workspace/db";
+import { clerkClient } from "@clerk/express";
+import {
+  db,
+  companiesTable,
+  companyMembersTable,
+  dealsTable,
+  transportRequestsTable,
+  wasteListingsTable,
+  materialCategoriesTable,
+} from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import {
   requireCompany,
@@ -9,13 +18,15 @@ import {
 import { HttpError, assertUuid } from "../middlewares/errorHandler";
 import { logAudit } from "../lib/audit";
 import { notifyDealStageChange } from "../lib/notify";
+import { sendDealCompletionEmail } from "../lib/email";
 
 const router: IRouter = Router();
 
 function serializeDeal(
   deal: typeof dealsTable.$inferSelect,
-  counterparty: { name: string; contactPhone: string; city: string | null },
+  counterparty: { name: string; contactPhone: string; city: string | null; commercialRegistration?: string | null; license_status?: string | null },
 ) {
+  const isVerified = !!(counterparty.commercialRegistration && counterparty.license_status === "approved");
   return {
     id: deal.id,
     offer_id: deal.offer_id,
@@ -33,6 +44,7 @@ function serializeDeal(
       name: counterparty.name,
       contact_phone: counterparty.contactPhone,
       city: counterparty.city ?? undefined,
+      is_verified: isVerified,
     },
     payment_confirmed_at: deal.payment_confirmed_at?.toISOString() ?? null,
     payment_reference: deal.payment_reference ?? null,
@@ -70,7 +82,13 @@ async function fetchDealWithCounterparty(
     : deal.producer_company_id;
 
   const [counterparty] = await db
-    .select({ name: companiesTable.name, contactPhone: companiesTable.contactPhone, city: companiesTable.city })
+    .select({
+      name: companiesTable.name,
+      contactPhone: companiesTable.contactPhone,
+      city: companiesTable.city,
+      commercialRegistration: companiesTable.commercialRegistration,
+      license_status: companiesTable.license_status,
+    })
     .from(companiesTable)
     .where(eq(companiesTable.id, counterpartyId))
     .limit(1);
@@ -176,7 +194,7 @@ router.post(
       .returning();
 
     const [counterparty] = await db
-      .select({ name: companiesTable.name, contactPhone: companiesTable.contactPhone, city: companiesTable.city })
+      .select({ name: companiesTable.name, contactPhone: companiesTable.contactPhone, city: companiesTable.city, commercialRegistration: companiesTable.commercialRegistration, license_status: companiesTable.license_status })
       .from(companiesTable)
       .where(eq(companiesTable.id, updated.buyer_company_id))
       .limit(1);
@@ -302,7 +320,7 @@ router.post(
       .returning();
 
     const [counterparty] = await db
-      .select({ name: companiesTable.name, contactPhone: companiesTable.contactPhone, city: companiesTable.city })
+      .select({ name: companiesTable.name, contactPhone: companiesTable.contactPhone, city: companiesTable.city, commercialRegistration: companiesTable.commercialRegistration, license_status: companiesTable.license_status })
       .from(companiesTable)
       .where(eq(companiesTable.id, updated.buyer_company_id))
       .limit(1);
@@ -374,7 +392,7 @@ router.post(
       .returning();
 
     const [counterparty] = await db
-      .select({ name: companiesTable.name, contactPhone: companiesTable.contactPhone, city: companiesTable.city })
+      .select({ name: companiesTable.name, contactPhone: companiesTable.contactPhone, city: companiesTable.city, commercialRegistration: companiesTable.commercialRegistration, license_status: companiesTable.license_status })
       .from(companiesTable)
       .where(eq(companiesTable.id, updated.producer_company_id))
       .limit(1);
@@ -396,6 +414,76 @@ router.post(
       body_ar: "أكّد المشتري استلام البضاعة. تم إتمام الصفقة بنجاح",
       body_en: "The buyer confirmed receipt. The deal is now complete.",
     });
+
+    // Fire-and-forget completion emails to both parties
+    void (async () => {
+      try {
+        // Fetch listing + category for email content
+        const [listing] = updated.listing_id
+          ? await db.select({ quantity: wasteListingsTable.quantity, unit: wasteListingsTable.unit, material_category_id: wasteListingsTable.material_category_id })
+              .from(wasteListingsTable).where(eq(wasteListingsTable.id, updated.listing_id)).limit(1)
+          : [null];
+        const [cat] = listing?.material_category_id
+          ? await db.select({ name_en: materialCategoriesTable.name_en })
+              .from(materialCategoriesTable).where(eq(materialCategoriesTable.id, listing.material_category_id)).limit(1)
+          : [null];
+        const [tr] = await db.select({ manifest_ref: transportRequestsTable.manifest_ref })
+          .from(transportRequestsTable).where(eq(transportRequestsTable.deal_id, dealId)).limit(1);
+
+        // Get deal ref label
+        const idx  = updated.id.replace(/-/g, "").slice(0, 6).toUpperCase();
+        const ref  = `DL-${String(idx).slice(0, 6)}`;
+        const completionDate = now.toISOString().split("T")[0]!;
+        const qty  = listing ? `${Number(updated.actual_quantity ?? listing.quantity).toLocaleString()} ${listing.unit ?? ""}`.trim() : undefined;
+        const finalAmt = updated.final_amount ? Number(updated.final_amount).toLocaleString() : undefined;
+
+        // Get owner user IDs for both companies
+        const members = await db
+          .select({ company_id: companyMembersTable.company_id, user_id: companyMembersTable.user_id, role: companyMembersTable.role })
+          .from(companyMembersTable)
+          .where(or(
+            eq(companyMembersTable.company_id, updated.producer_company_id),
+            eq(companyMembersTable.company_id, updated.buyer_company_id),
+          ));
+
+        // One email per company (prefer owner)
+        const byCompany = new Map<string, string>();
+        for (const m of members) {
+          if (!byCompany.has(m.company_id) || m.role === "owner") {
+            byCompany.set(m.company_id, m.user_id);
+          }
+        }
+
+        const emailPromises: Promise<void>[] = [];
+        for (const [compId, userId] of byCompany.entries()) {
+          emailPromises.push((async () => {
+            try {
+              const user = await clerkClient.users.getUser(userId);
+              const email = user.emailAddresses[0]?.emailAddress;
+              if (!email) return;
+              const isProducer = compId === updated.producer_company_id;
+              const cpName = isProducer ? (company.name) : (counterparty?.name ?? "");
+              const cpCr   = isProducer ? company.commercialRegistration : counterparty?.commercialRegistration ?? undefined;
+              await sendDealCompletionEmail({
+                to: email,
+                dealRef: ref,
+                completionDate,
+                counterpartyName: cpName ?? "",
+                counterpartyCr: cpCr ?? undefined,
+                wasteCategory: cat?.name_en ?? undefined,
+                quantity: qty,
+                finalAmount: finalAmt,
+                manifestRef: tr?.manifest_ref ?? undefined,
+                dealId,
+              });
+            } catch { /* ignore per-user errors */ }
+          })());
+        }
+        await Promise.allSettled(emailPromises);
+      } catch (err) {
+        req.log.warn({ err }, "deal completion email failed");
+      }
+    })();
 
     return res.json(serializeDeal(updated, counterparty!));
   },
@@ -446,7 +534,7 @@ router.post(
       .returning();
 
     const [counterparty] = await db
-      .select({ name: companiesTable.name, contactPhone: companiesTable.contactPhone, city: companiesTable.city })
+      .select({ name: companiesTable.name, contactPhone: companiesTable.contactPhone, city: companiesTable.city, commercialRegistration: companiesTable.commercialRegistration, license_status: companiesTable.license_status })
       .from(companiesTable)
       .where(eq(companiesTable.id, updated.buyer_company_id))
       .limit(1);
@@ -529,7 +617,7 @@ router.post(
       .returning();
 
     const [counterparty] = await db
-      .select({ name: companiesTable.name, contactPhone: companiesTable.contactPhone, city: companiesTable.city })
+      .select({ name: companiesTable.name, contactPhone: companiesTable.contactPhone, city: companiesTable.city, commercialRegistration: companiesTable.commercialRegistration, license_status: companiesTable.license_status })
       .from(companiesTable)
       .where(eq(companiesTable.id, updated.buyer_company_id))
       .limit(1);
