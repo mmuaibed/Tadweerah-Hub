@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { and, eq, or } from "drizzle-orm";
-import { db, companiesTable, dealsTable } from "@workspace/db";
+import { db, companiesTable, dealsTable, transportRequestsTable } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import {
   requireCompany,
@@ -234,6 +234,28 @@ router.post(
         409,
         "InvalidState",
         "Deal must be in 'payment_confirmed' state. Current state: " + deal.status,
+      );
+    }
+
+    // Vehicle plate must be on the linked transport request before dispatch
+    const [tr] = await db
+      .select({ id: transportRequestsTable.id, vehicle_plate: transportRequestsTable.vehicle_plate })
+      .from(transportRequestsTable)
+      .where(eq(transportRequestsTable.deal_id, dealId))
+      .limit(1);
+
+    if (!tr) {
+      throw new HttpError(
+        422,
+        "TransportRequestRequired",
+        "A transport request must be created for this deal before confirming dispatch.",
+      );
+    }
+    if (!tr.vehicle_plate || tr.vehicle_plate.trim() === "") {
+      throw new HttpError(
+        422,
+        "VehiclePlateRequired",
+        "Vehicle plate number must be set on the transport request before confirming dispatch.",
       );
     }
 

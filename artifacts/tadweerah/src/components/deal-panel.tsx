@@ -94,6 +94,14 @@ const STATUS_STEPS: DealStatus[] = [
   "completed",
 ];
 
+class DealApiError extends Error {
+  code: string;
+  constructor(code: string, message: string) {
+    super(message);
+    this.code = code;
+  }
+}
+
 async function callDealApi(
   dealId: string,
   action: "confirm-payment" | "confirm-dispatch" | "confirm-receipt",
@@ -109,8 +117,8 @@ async function callDealApi(
     body: body ? JSON.stringify(body) : undefined,
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error((err as { message?: string }).message ?? `HTTP ${res.status}`);
+    const err = await res.json().catch(() => ({})) as { error?: string; message?: string };
+    throw new DealApiError(err.error ?? "GenericError", err.message ?? `HTTP ${res.status}`);
   }
   return res.json() as Promise<DealInfo>;
 }
@@ -830,7 +838,18 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
       const updated = await callDealApi(deal.id, action, body, authToken);
       onUpdate(updated);
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("deal.error.generic"));
+      if (e instanceof DealApiError) {
+        const CODE_TO_I18N: Record<string, string> = {
+          VehiclePlateRequired:      "deal.error.vehicle_plate_required",
+          TransportRequestRequired:  "deal.error.transport_request_required",
+          ActualQuantityRequired:    "deal.error.quantity_required_for_dispatch",
+          CommercialRegistrationRequired: "cr.gate.offer",
+        };
+        const key = CODE_TO_I18N[e.code];
+        setError(key ? t(key) : e.message);
+      } else {
+        setError(e instanceof Error ? e.message : t("deal.error.generic"));
+      }
     } finally {
       setLoading(false);
     }

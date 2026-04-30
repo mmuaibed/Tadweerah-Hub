@@ -571,6 +571,8 @@ const translations: Record<string, Record<Language, string>> = {
   "deal.error.payment_reference_required": { ar: "رقم مرجع الدفع مطلوب", en: "Payment reference is required" },
   "deal.field.actual_quantity.dispatch_hint": { ar: "أدخل الكمية من قراءة الميزان عند الاستلام", en: "Enter quantity from weighbridge reading at pickup" },
   "deal.error.quantity_required_for_dispatch": { ar: "الكمية الفعلية (قراءة الوزن) مطلوبة لتأكيد الإرسال", en: "Actual quantity (weighbridge reading) is required to confirm dispatch" },
+  "deal.error.transport_request_required": { ar: "يجب إنشاء طلب نقل لهذه الصفقة قبل تأكيد الإرسال", en: "A transport request must be created for this deal before confirming dispatch" },
+  "deal.error.vehicle_plate_required": { ar: "يجب إدخال رقم لوحة المركبة في طلب النقل قبل تأكيد الإرسال", en: "Vehicle plate must be set on the transport request before confirming dispatch" },
   "transport.create.vehicle_plate": { ar: "لوحة المركبة", en: "Vehicle Plate" },
   "transport.create.vehicle_plate.hint": { ar: "مطلوب قبل تأكيد بدء رحلة النقل", en: "Required before confirming pickup / in-transit" },
   "cr.gate.listing": { ar: "السجل التجاري مطلوب قبل إنشاء الإعلانات. يرجى تحديث ملف شركتك.", en: "Commercial Registration is required before creating listings. Update your company profile." },
