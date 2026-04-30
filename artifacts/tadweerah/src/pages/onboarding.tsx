@@ -232,6 +232,7 @@ export function OnboardingPage() {
                 value={commercialRegistration}
                 onChange={(e) => setCr(e.target.value)}
               />
+              <p className="text-xs text-muted-foreground">{t("onboarding.mwan.cr_hint")}</p>
             </div>
 
             {/* Company category */}

@@ -13,6 +13,7 @@ import {
   ShieldAlert,
   ShieldX,
   Clock,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -198,6 +199,14 @@ export function CompanyProfilePage() {
           <div className="flex items-center gap-3">
             <span className="text-sm text-muted-foreground">{t("profile.license.status")}:</span>
             <LicenseStatusBadge status={profile.license_status} />
+          </div>
+        )}
+
+        {/* MWAN compliance warning — shown when CR or license number is missing */}
+        {profile && (!profile.commercialRegistration || !profile.license_number) && (
+          <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+            <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
+            <p className="text-sm text-amber-800">{t("profile.missing_compliance")}</p>
           </div>
         )}
 

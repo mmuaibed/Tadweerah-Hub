@@ -1454,6 +1454,9 @@ export function ListingDetailPage() {
             listingQuantity={quantity}
             myCompanyName={me?.company?.name}
             myPhone={(me as { company?: { contactPhone?: string } } | undefined)?.company?.contactPhone}
+            listingCity={(listing as typeof listing & { city?: string }).city}
+            counterpartyCity={activeDeal.counterparty?.city}
+            listingDescription={(listing as typeof listing & { description?: string }).description}
           />
         )}
 

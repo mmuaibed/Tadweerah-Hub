@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@clerk/react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Phone,
   CheckCircle2,
@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { useT } from "@/i18n";
 import { dealRef } from "@/lib/listing-ref";
@@ -46,6 +47,7 @@ export interface DealInfo {
   counterparty: {
     name: string;
     contact_phone: string;
+    city?: string;
   } | null;
   payment_confirmed_at: string | null;
   payment_reference: string | null;
@@ -75,6 +77,12 @@ interface DealPanelProps {
   listingCategory?: string;
   /** Authenticated user's company phone (for print report) */
   myPhone?: string;
+  /** Listing city — pre-fills transport request pickup city */
+  listingCity?: string;
+  /** Counterparty (buyer/receiver) city — pre-fills transport request delivery city */
+  counterpartyCity?: string;
+  /** Listing description — pre-fills transport request waste description */
+  listingDescription?: string;
 }
 
 type PendingAction = "confirm-payment" | "confirm-dispatch" | "confirm-receipt" | null;
@@ -292,7 +300,7 @@ function MwanSummaryPanel({ dealId }: { dealId: string }) {
       if (!res.ok) throw new Error("mwan fetch failed");
       return res.json() as Promise<MwanSummary>;
     },
-    enabled: open,
+    enabled: true,
     staleTime: 60_000,
   });
 
@@ -313,6 +321,13 @@ function MwanSummaryPanel({ dealId }: { dealId: string }) {
     waste_description_set: t("mwan.check.waste_description"),
   };
 
+  const CHECK_HINTS: Record<string, string> = {
+    quantity_confirmed: t("mwan.check.quantity_confirmed_hint"),
+    payment_confirmed: t("mwan.check.payment_confirmed_hint"),
+  };
+
+  const missingCount = data ? Object.values(data.checks).filter((v) => !v).length : null;
+
   return (
     <div className="border-t border-border">
       <button
@@ -323,6 +338,15 @@ function MwanSummaryPanel({ dealId }: { dealId: string }) {
         <span className="flex items-center gap-2">
           <FileTextIcon className="h-4 w-4 shrink-0" />
           {t("mwan.title")}
+          {data && (
+            <span className={`text-[11px] font-mono px-1.5 py-0.5 rounded-full ${
+              data.is_manifest_ready
+                ? "bg-green-100 text-green-700"
+                : "bg-amber-100 text-amber-700"
+            }`}>
+              {data.readiness_score}{missingCount !== null && missingCount > 0 ? ` · ${missingCount}✗` : ""}
+            </span>
+          )}
         </span>
         {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
       </button>
@@ -415,13 +439,18 @@ function MwanSummaryPanel({ dealId }: { dealId: string }) {
                 </p>
                 <div className="grid gap-1 sm:grid-cols-2">
                   {(Object.entries(data.checks) as [string, boolean][]).map(([key, ok]) => (
-                    <div key={key} className="flex items-center gap-2 text-xs">
+                    <div key={key} className="flex items-start gap-2 text-xs">
                       {ok
-                        ? <CheckCircle2 className="h-3.5 w-3.5 text-green-600 shrink-0" />
-                        : <Circle className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
+                        ? <CheckCircle2 className="h-3.5 w-3.5 text-green-600 shrink-0 mt-0.5" />
+                        : <Circle className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0 mt-0.5" />
                       }
                       <span className={ok ? "text-foreground" : "text-muted-foreground"}>
                         {CHECK_LABELS[key] ?? key}
+                        {CHECK_HINTS[key] && (
+                          <span className="block text-[10px] text-muted-foreground/60 leading-tight mt-0.5">
+                            {CHECK_HINTS[key]}
+                          </span>
+                        )}
                       </span>
                     </div>
                   ))}
@@ -429,6 +458,147 @@ function MwanSummaryPanel({ dealId }: { dealId: string }) {
               </div>
             </>
           ) : null}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── V3b — Create Transport Request inline form ────────────────────────────────
+
+function CreateTransportRequestForm({
+  dealId,
+  defaultPickupCity = "",
+  defaultDeliveryCity = "",
+  defaultWasteDesc = "",
+}: {
+  dealId: string;
+  defaultPickupCity?: string;
+  defaultDeliveryCity?: string;
+  defaultWasteDesc?: string;
+}) {
+  const { t } = useT();
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [pickupCity, setPickupCity] = useState(defaultPickupCity);
+  const [deliveryCity, setDeliveryCity] = useState(defaultDeliveryCity);
+  const [wasteDesc, setWasteDesc] = useState(defaultWasteDesc);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+
+  async function submit() {
+    setLoading(true);
+    setError(null);
+    try {
+      const token = await getToken();
+      const res = await fetch(`/api/deals/${dealId}/transport-request`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          pickup_city: pickupCity.trim() || null,
+          delivery_city: deliveryCity.trim() || null,
+          waste_description: wasteDesc.trim() || null,
+        }),
+      });
+      if (res.status === 409) {
+        setDone(true);
+        void queryClient.invalidateQueries({ queryKey: ["mwan-summary", dealId] });
+        return;
+      }
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error((data as { message?: string }).message ?? `HTTP ${res.status}`);
+      }
+      setDone(true);
+      void queryClient.invalidateQueries({ queryKey: ["mwan-summary", dealId] });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t("deal.error.generic"));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (done) {
+    return (
+      <div className="border-t border-border px-4 py-3 flex items-center gap-2 text-sm text-green-700">
+        <CheckCircle2 className="h-4 w-4 shrink-0" />
+        {t("transport.create.success")}
+      </div>
+    );
+  }
+
+  return (
+    <div className="border-t border-border">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors"
+      >
+        <span className="flex items-center gap-2">
+          <Truck className="h-4 w-4 shrink-0" />
+          {t("transport.create.title")}
+        </span>
+        {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+      </button>
+      {open && (
+        <div className="px-4 pb-4 space-y-3">
+          <p className="text-xs text-muted-foreground">{t("transport.create.prefilled")}</p>
+          <div className="space-y-2">
+            <div>
+              <label className="text-xs font-medium text-foreground mb-1 block">
+                {t("transport.create.pickup_city")}
+              </label>
+              <Input
+                value={pickupCity}
+                onChange={(e) => setPickupCity(e.target.value)}
+                placeholder={t("transport.create.pickup_city")}
+                className="h-8 text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-foreground mb-1 block">
+                {t("transport.create.delivery_city")}
+              </label>
+              <Input
+                value={deliveryCity}
+                onChange={(e) => setDeliveryCity(e.target.value)}
+                placeholder={t("transport.create.delivery_city")}
+                className="h-8 text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-foreground mb-1 block">
+                {t("transport.create.waste_desc")}
+              </label>
+              <Input
+                value={wasteDesc}
+                onChange={(e) => setWasteDesc(e.target.value)}
+                placeholder={t("transport.create.waste_desc")}
+                className="h-8 text-sm"
+              />
+            </div>
+          </div>
+          {error && (
+            <div className="flex items-center gap-2 text-xs text-destructive">
+              <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+              {error}
+            </div>
+          )}
+          <Button
+            size="sm"
+            onClick={submit}
+            disabled={loading}
+            className="w-full h-8"
+          >
+            {loading && <Loader2 className="h-3.5 w-3.5 me-2 animate-spin" />}
+            {t("transport.create.submit")}
+          </Button>
         </div>
       )}
     </div>
@@ -613,7 +783,7 @@ function printDealReport(
   }
 }
 
-export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSharePct, listingRef, listingMaterial, listingQuantity, myCompanyName, listingCategory, myPhone }: DealPanelProps) {
+export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSharePct, listingRef, listingMaterial, listingQuantity, myCompanyName, listingCategory, myPhone, listingCity, counterpartyCity, listingDescription }: DealPanelProps) {
   const { t, lang } = useT();
   const { getToken } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -1077,10 +1247,18 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
         {/* V2 — Governance Timeline */}
         <GovernanceTimeline deal={deal} lang={lang} />
 
-        {/* V3a — MWAN Summary Panel (payment_confirmed+ deals only) */}
+        {/* V3b — Create Transport Request (payment_confirmed+ only, pre-filled) */}
         {["payment_confirmed", "dispatched", "completed"].includes(deal.status) && (
-          <MwanSummaryPanel dealId={deal.id} />
+          <CreateTransportRequestForm
+            dealId={deal.id}
+            defaultPickupCity={listingCity ?? ""}
+            defaultDeliveryCity={counterpartyCity ?? deal.counterparty?.city ?? ""}
+            defaultWasteDesc={listingDescription ?? listingMaterial ?? ""}
+          />
         )}
+
+        {/* V3a — MWAN Summary Panel (all statuses — score badge shows proactive readiness) */}
+        <MwanSummaryPanel dealId={deal.id} />
 
         {/* V3 — Print Report button */}
         <div className="px-4 py-3 bg-muted/10 border-t border-border">

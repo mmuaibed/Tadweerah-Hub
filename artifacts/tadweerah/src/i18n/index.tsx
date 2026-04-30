@@ -1129,7 +1129,9 @@ const translations: Record<string, Record<Language, string>> = {
   "mwan.check.city": { ar: "المدينة", en: "City" },
   "mwan.check.waste_defined": { ar: "النفاية محددة", en: "Waste defined" },
   "mwan.check.quantity_confirmed": { ar: "الكمية مؤكدة", en: "Quantity confirmed" },
+  "mwan.check.quantity_confirmed_hint": { ar: "يُؤكَّد بعد الاستلام وقراءة الوزن", en: "Confirmed after pickup / weighbridge reading" },
   "mwan.check.payment_confirmed": { ar: "الدفع مؤكد", en: "Payment confirmed" },
+  "mwan.check.payment_confirmed_hint": { ar: "مطلوب قبل الإغلاق النهائي", en: "Required before final closure" },
   "mwan.check.transport_created": { ar: "طلب النقل منشأ", en: "Transport request created" },
   "mwan.check.transporter_assigned": { ar: "الناقل مُعيَّن", en: "Transporter assigned" },
   "mwan.check.pickup_city": { ar: "مدينة الاستلام محددة", en: "Pickup city set" },
@@ -1139,6 +1141,15 @@ const translations: Record<string, Record<Language, string>> = {
   "mwan.view_transport": { ar: "عرض طلب النقل", en: "View Transport Request" },
   "mwan.loading": { ar: "جارٍ تحميل بيانات مَوَن...", en: "Loading MWAN data..." },
   "mwan.error": { ar: "تعذّر تحميل ملخص مَوَن", en: "Could not load MWAN summary" },
+  "transport.create.title": { ar: "إنشاء طلب نقل", en: "Create Transport Request" },
+  "transport.create.pickup_city": { ar: "مدينة الاستلام", en: "Pickup City" },
+  "transport.create.delivery_city": { ar: "مدينة التسليم", en: "Delivery City" },
+  "transport.create.waste_desc": { ar: "وصف النفاية", en: "Waste Description" },
+  "transport.create.submit": { ar: "إرسال طلب النقل", en: "Submit Transport Request" },
+  "transport.create.success": { ar: "تم إنشاء طلب النقل بنجاح ✓", en: "Transport request created ✓" },
+  "transport.create.prefilled": { ar: "مملوء تلقائياً من بيانات الصفقة — يمكنك تعديله", en: "Auto-filled from deal data — you can edit" },
+  "onboarding.mwan.cr_hint": { ar: "مطلوب في البيان الإلكتروني مَوَن — أضفه الآن لتسريع إصدار البيان لاحقاً", en: "Required for MWAN eManifest — add it now to speed up manifest generation later" },
+  "profile.missing_compliance": { ar: "بيانات الامتثال ناقصة: أضف السجل التجاري ورقم الترخيص لإتمام متطلبات مَوَن.", en: "Compliance data incomplete: add CR and license number to meet MWAN eManifest requirements." },
 };
 
 export const I18nProvider: React.FC<{

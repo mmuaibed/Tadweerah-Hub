@@ -14,7 +14,7 @@ const router: IRouter = Router();
 
 function serializeDeal(
   deal: typeof dealsTable.$inferSelect,
-  counterparty: { name: string; contactPhone: string },
+  counterparty: { name: string; contactPhone: string; city: string | null },
 ) {
   return {
     id: deal.id,
@@ -32,6 +32,7 @@ function serializeDeal(
     counterparty: {
       name: counterparty.name,
       contact_phone: counterparty.contactPhone,
+      city: counterparty.city ?? undefined,
     },
     payment_confirmed_at: deal.payment_confirmed_at?.toISOString() ?? null,
     payment_reference: deal.payment_reference ?? null,
@@ -69,7 +70,7 @@ async function fetchDealWithCounterparty(
     : deal.producer_company_id;
 
   const [counterparty] = await db
-    .select({ name: companiesTable.name, contactPhone: companiesTable.contactPhone })
+    .select({ name: companiesTable.name, contactPhone: companiesTable.contactPhone, city: companiesTable.city })
     .from(companiesTable)
     .where(eq(companiesTable.id, counterpartyId))
     .limit(1);
@@ -174,7 +175,7 @@ router.post(
 
       const counterpartyId = updated.buyer_company_id;
       const [counterparty] = await db
-        .select({ name: companiesTable.name, contactPhone: companiesTable.contactPhone })
+        .select({ name: companiesTable.name, contactPhone: companiesTable.contactPhone, city: companiesTable.city })
         .from(companiesTable)
         .where(eq(companiesTable.id, counterpartyId))
         .limit(1);
@@ -237,7 +238,7 @@ router.post(
       .returning();
 
     const [counterparty] = await db
-      .select({ name: companiesTable.name, contactPhone: companiesTable.contactPhone })
+      .select({ name: companiesTable.name, contactPhone: companiesTable.contactPhone, city: companiesTable.city })
       .from(companiesTable)
       .where(eq(companiesTable.id, updated.buyer_company_id))
       .limit(1);
@@ -310,7 +311,7 @@ router.post(
       .returning();
 
     const [counterparty] = await db
-      .select({ name: companiesTable.name, contactPhone: companiesTable.contactPhone })
+      .select({ name: companiesTable.name, contactPhone: companiesTable.contactPhone, city: companiesTable.city })
       .from(companiesTable)
       .where(eq(companiesTable.id, updated.buyer_company_id))
       .limit(1);
@@ -382,7 +383,7 @@ router.post(
       .returning();
 
     const [counterparty] = await db
-      .select({ name: companiesTable.name, contactPhone: companiesTable.contactPhone })
+      .select({ name: companiesTable.name, contactPhone: companiesTable.contactPhone, city: companiesTable.city })
       .from(companiesTable)
       .where(eq(companiesTable.id, updated.producer_company_id))
       .limit(1);
@@ -454,7 +455,7 @@ router.post(
       .returning();
 
     const [counterparty] = await db
-      .select({ name: companiesTable.name, contactPhone: companiesTable.contactPhone })
+      .select({ name: companiesTable.name, contactPhone: companiesTable.contactPhone, city: companiesTable.city })
       .from(companiesTable)
       .where(eq(companiesTable.id, updated.buyer_company_id))
       .limit(1);
@@ -537,7 +538,7 @@ router.post(
       .returning();
 
     const [counterparty] = await db
-      .select({ name: companiesTable.name, contactPhone: companiesTable.contactPhone })
+      .select({ name: companiesTable.name, contactPhone: companiesTable.contactPhone, city: companiesTable.city })
       .from(companiesTable)
       .where(eq(companiesTable.id, updated.buyer_company_id))
       .limit(1);
