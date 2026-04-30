@@ -1,6 +1,25 @@
 # Overview
 
-Tadweerah (تدويرة) is a Saudi B2B MVP platform designed to connect waste producers, recycling buyers, and transport carriers. Its core purpose is to streamline the recycling process by providing a centralized marketplace for waste listings, offers, and deal management within the Saudi Arabian market. Key capabilities include user authentication, company onboarding, waste listing management, a buyer marketplace, an offer/bidding system, and a deal lifecycle management. The project aims to be robust, scalable, and user-friendly, with future ambitions including advanced transport bidding and comprehensive trip lifecycle management.
+Tadweerah (تدويرة) is a Saudi B2B MVP platform designed to connect waste producers, recycling buyers, and licensed transporters. Its core purpose is to streamline the recycling process by providing a centralized marketplace for waste listings, offers, and deal management within the Saudi Arabian market. Key capabilities include user authentication, company onboarding (with MWAN-aligned multi-role classification), waste listing management, a buyer marketplace, an offer/bidding system, deal lifecycle management, and transport request orchestration aligned with MWAN eManifest requirements.
+
+## Stable Baseline — MWAN-Aligned MVP (commit b6c562b)
+
+**Status:** Verified stable. No new features should be added until the next scenario is defined.
+
+**What is complete and verified:**
+- API typecheck: 0 errors
+- Frontend typecheck: 0 errors
+- DB schema: `mwan_role` enum `{generator, receiver, transporter}` live in PostgreSQL
+- Company roles junction (`company_roles`) stores MWAN values; legacy `companies.type` kept for backward compat with transparent read mapping
+- All 4 role scenarios verified at DB level: generator-only, receiver-only, transporter-only, all-three
+- Onboarding form sends and stores MWAN values; generator-only registration confirmed end-to-end (Clerk → API → DB → `/api/me` returns `["generator"]`)
+- Dashboard transporter section correctly shown/hidden based on `companyRoles.includes("transporter")`
+- Home page primary CTA: "سجّل شركتك مجاناً" / "Register Your Company — Free"
+- Transport requests API routes registered (`POST`, `GET /mine`, `GET /available`, `PATCH /:id/accept|pickup|deliver|close`)
+- MWAN summary route: `GET /api/deals/:id/mwan-summary`
+- Zero legacy role strings (`carrier`/`producer`/`buyer`) in frontend code or i18n
+
+**Do not add features until next scenario is defined.**
 
 # User Preferences
 
