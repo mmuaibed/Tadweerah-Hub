@@ -7,6 +7,7 @@ import {
 } from "@workspace/db";
 import { requireAuth, type AuthedRequest } from "../middlewares/requireAuth";
 import type { Request, Response } from "express";
+import { sendSupportNotification } from "../lib/email";
 
 const router: IRouter = Router();
 
@@ -56,6 +57,14 @@ router.post(
       .insert(issueReportsTable)
       .values({ user_id: userId, company_id: companyId, message })
       .returning({ id: issueReportsTable.id, status: issueReportsTable.status });
+
+    // Fire-and-forget support notification email
+    void sendSupportNotification({
+      reportId: report.id,
+      userId,
+      companyId,
+      message,
+    });
 
     res.status(201).json({ id: report.id, status: report.status });
   },

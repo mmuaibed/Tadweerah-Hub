@@ -168,6 +168,64 @@ function buildDealCompletionHtml(p: DealCompletionParams): string {
 </body></html>`;
 }
 
+/* ─────────────────────────────────────────────────────────────
+ * Support notification — sent to SUPPORT_EMAIL when a user
+ * submits an issue report. No-ops gracefully when RESEND_API_KEY
+ * or SUPPORT_EMAIL is absent.
+ * ───────────────────────────────────────────────────────────── */
+interface SupportNotificationParams {
+  reportId: string;
+  userId: string;
+  companyId: string | null;
+  message: string;
+}
+
+export async function sendSupportNotification(p: SupportNotificationParams): Promise<void> {
+  const supportEmail = process.env.SUPPORT_EMAIL;
+  if (!resend) {
+    console.info("[email] RESEND_API_KEY not set — skipping support notification for report:", p.reportId);
+    return;
+  }
+  if (!supportEmail) {
+    console.info("[email] SUPPORT_EMAIL not set — skipping support notification for report:", p.reportId);
+    return;
+  }
+  try {
+    await resend.emails.send({
+      from: FROM,
+      to: supportEmail,
+      subject: `[تدويرة] بلاغ جديد من المستخدم — Issue Report ${p.reportId}`,
+      html: `<!DOCTYPE html>
+<html dir="ltr" lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f8fafc;font-family:sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:32px 16px;">
+  <table width="560" style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden">
+    <tr><td style="background:#166534;padding:20px 32px;">
+      <p style="margin:0;font-size:18px;font-weight:700;color:#fff;">تدويرة — Issue Report</p>
+    </td></tr>
+    <tr><td style="padding:24px 32px;">
+      <table width="100%" style="border-collapse:collapse;font-size:13px">
+        <tr><td style="padding:6px 0;color:#64748b;width:120px">Report ID</td><td style="padding:6px 0;font-weight:600">${p.reportId}</td></tr>
+        <tr><td style="padding:6px 0;color:#64748b">User ID</td><td style="padding:6px 0;font-family:monospace;font-size:11px">${p.userId}</td></tr>
+        <tr><td style="padding:6px 0;color:#64748b">Company ID</td><td style="padding:6px 0;font-family:monospace;font-size:11px">${p.companyId ?? "—"}</td></tr>
+      </table>
+      <hr style="border:none;border-top:1px solid #e2e8f0;margin:16px 0">
+      <p style="margin:0 0 8px;font-size:12px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.05em">Message</p>
+      <div style="background:#f1f5f9;border-radius:8px;padding:16px;font-size:14px;color:#1e293b;white-space:pre-wrap;line-height:1.6">${p.message.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
+    </td></tr>
+    <tr><td style="background:#f8fafc;padding:12px 32px;border-top:1px solid #e2e8f0">
+      <p style="margin:0;font-size:11px;color:#94a3b8;text-align:center">Tadweerah Platform — Auto-generated support notification</p>
+    </td></tr>
+  </table>
+</td></tr></table>
+</body></html>`,
+    });
+  } catch (err) {
+    console.error("[email] support notification send failed:", err);
+  }
+}
+
 export async function sendDealCompletionEmail(p: DealCompletionParams): Promise<void> {
   if (!resend) {
     console.info("[email] RESEND_API_KEY not set — skipping deal completion email to:", p.to);

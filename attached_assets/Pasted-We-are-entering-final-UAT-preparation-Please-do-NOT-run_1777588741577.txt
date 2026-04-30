@@ -1,0 +1,88 @@
+We are entering final UAT preparation.
+
+Please do NOT run repeated browser testing or open many screens. Use low-cost verification only:
+- code inspection
+- API checks
+- DB checks
+- typecheck
+- minimal screenshot only if absolutely needed
+
+Focus on the following:
+
+1. Existing users test readiness
+Verify that current existing users/companies can still complete the full journey:
+- generator creates listing
+- receiver submits offer
+- offer accepted
+- deal created
+- payment confirmed
+- transport request created
+- self-managed and platform transport modes still work
+- vehicle plate gate works
+- dispatch works
+- receipt works
+- MWAN summary works
+- PDF summary works if available
+
+Do not create new users unless needed for a specific missing role.
+
+2. Multi-user company membership
+We need to test adding a user/member inside an existing company.
+Please verify:
+- Is there already a route/API/UI for inviting or adding a member to a company?
+- Can the new member access the same company data?
+- Does /api/me return the correct company membership?
+- Can the member perform allowed company actions?
+
+If this feature does not exist, do not build it yet. Just report what exists and what is missing.
+
+3. Support / Report Issue button
+There are two buttons on the homepage:
+- report issue by email
+- support button/dialog
+
+Please verify exactly where submitted messages go.
+
+Questions to answer:
+- Is the support dialog connected to an API?
+- Does it send email?
+- Does it save to DB?
+- Does it use Resend/email.ts?
+- What email address receives the message?
+- Does the user see a success confirmation?
+
+If it currently goes nowhere, please fix it with the simplest reliable solution:
+- Either connect it to a support email endpoint
+- Or make it a clear mailto link temporarily
+
+Minimum acceptable behavior:
+- user submits issue/support request
+- message is sent to configured support email
+- user sees clear success message
+- if email service is not configured, show a clear fallback message
+
+Please document required env vars, such as:
+- SUPPORT_EMAIL
+- RESEND_API_KEY
+- EMAIL_FROM
+
+4. Admin access
+Please confirm exactly how I access the admin area.
+
+Answer:
+- What is the admin URL?
+- Does it require Clerk login or admin key?
+- What key/env var is required?
+- Where do I enter the key?
+- Is the current dev key set?
+- What should be changed before production?
+
+5. Final output required
+Please provide a short report with:
+- PASS/FAIL for each item
+- routes/endpoints involved
+- any obvious bugs fixed
+- any missing feature we should decide on later
+
+Run typecheck at the end.
+No repeated browser testing.
