@@ -54,11 +54,16 @@ router.get("/me", requireAuth, async (req, res) => {
       .from(companyRolesTable)
       .where(eq(companyRolesTable.company_id, membership.id));
 
-    // Derive roles: prefer junction table; fall back to legacy type field
+    // Derive roles: prefer junction table (MWAN values); fall back to legacy type
+    const LEGACY_TO_MWAN: Record<string, string> = {
+      producer: "generator",
+      buyer: "receiver",
+      carrier: "transporter",
+    };
     const roles: string[] = roleRows.length > 0
       ? roleRows.map((r) => r.role)
       : membership.type
-        ? [membership.type]
+        ? [LEGACY_TO_MWAN[membership.type] ?? membership.type]
         : [];
 
     company = {

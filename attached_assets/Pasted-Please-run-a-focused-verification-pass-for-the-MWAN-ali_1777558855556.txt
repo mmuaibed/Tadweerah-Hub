@@ -1,0 +1,82 @@
+Please run a focused verification pass for the MWAN-aligned changes.
+
+We need to confirm that the implementation fully matches the agreed scope from the reviewer and that no critical item was missed.
+
+1. Role naming consistency
+Please verify that company roles are consistent across DB, API, frontend, onboarding, dashboard, and routes.
+The agreed MVP roles are:
+- generator
+- receiver
+- transporter
+
+Important: I noticed “carrier” was mentioned in the implementation summary. Please confirm whether this is only a UI label or an actual role value. If it is an actual value, align it to “transporter” everywhere to avoid dashboard/module bugs.
+
+2. New company registration visibility
+Please verify the public/home/login screen.
+There must be a clear CTA for new users/companies:
+- Login
+- Register New Company
+
+Currently it seems that only login is visible for existing users. Please add or restore a clear “Register New Company” button next to the login button or in a highly visible location.
+
+3. Smart low-cost test scenarios
+Please run lightweight end-to-end tests without adding heavy automation.
+
+Test Scenario A — Generator only:
+- Register company as generator only.
+- Confirm dashboard shows only generator modules.
+- Create listing.
+- Confirm no transporter-only modules appear.
+
+Test Scenario B — Receiver only:
+- Register company as receiver only.
+- Confirm dashboard shows receiver modules only.
+- Confirm it can view/respond to relevant marketplace opportunities if allowed.
+
+Test Scenario C — Transporter only:
+- Register company as transporter only.
+- Confirm dashboard shows transport module.
+- Confirm /transport-requests is accessible.
+- Confirm available requests can be viewed.
+
+Test Scenario D — Multi-role recycling/scrap company:
+- Register company as generator + receiver + transporter.
+- Confirm dashboard combines all relevant modules without duplication.
+- Confirm the company can act as receiver and transporter without needing separate accounts.
+
+Test Scenario E — Marketplace to transport flow:
+- Generator creates listing.
+- Receiver submits offer.
+- Offer is accepted and deal is created.
+- Transport request is created from the deal.
+- Transport request reaches the correct final state.
+- MWAN-ready summary is generated and shows readiness/missing fields clearly.
+
+Test Scenario F — Role change:
+- Admin or company updates roles.
+- Confirm /api/me returns updated roles.
+- Confirm dashboard updates modules accordingly.
+
+4. Transport request state validation
+Please verify that transport request transitions are valid and cannot skip incorrectly.
+Expected MVP flow:
+draft → submitted → matched → in_transit → delivered → closed
+with cancelled as an exception.
+
+5. MWAN-ready summary validation
+Please verify that the summary is generated from existing data, not duplicate manual entry.
+It should include:
+- generator
+- receiver
+- transporter if assigned
+- waste category/subcategory
+- quantity/unit
+- pickup/delivery locations
+- readiness score
+- missing fields
+
+6. Final confirmation
+Please provide:
+- Screenshots for onboarding, dashboard by role, transport requests page, and MWAN summary.
+- Confirmation that typecheck passes.
+- Confirmation that registration CTA is visible from the public/login screen.

@@ -98,6 +98,7 @@ const translations: Record<string, Record<Language, string>> = {
   "action.signup": { ar: "إنشاء حساب", en: "Sign Up" },
   "action.signout": { ar: "تسجيل الخروج", en: "Sign Out" },
   "action.getstarted": { ar: "ابدأ الآن", en: "Get Started" },
+  "action.register_company": { ar: "سجّل شركتك مجاناً", en: "Register Your Company — Free" },
   "action.cancel": { ar: "إلغاء", en: "Cancel" },
   "action.close": { ar: "إغلاق", en: "Close" },
   "action.back": { ar: "رجوع", en: "Back" },
@@ -1074,17 +1075,17 @@ const translations: Record<string, Record<Language, string>> = {
   "contract.summary.closed_shipments": { ar: "شحنات مغلقة", en: "Closed Shipments" },
   "contract.summary.cancelled_shipments": { ar: "شحنات ملغاة", en: "Cancelled" },
 
-  // ── Company Roles (MWAN terminology) ──────────────────────────────────────
-  "role.producer": { ar: "مولّد نفايات (Generator)", en: "Waste Generator" },
-  "role.buyer": { ar: "مستلِم نفايات (Receiver)", en: "Waste Receiver" },
-  "role.carrier": { ar: "ناقل مرخّص (Transporter)", en: "Licensed Transporter" },
+  // ── Company Roles (MWAN terminology — stored values match MWAN) ─────────────
+  "role.generator": { ar: "مولّد نفايات (Generator)", en: "Waste Generator" },
+  "role.receiver": { ar: "مستلِم نفايات (Receiver)", en: "Waste Receiver" },
+  "role.transporter": { ar: "ناقل مرخّص (Transporter)", en: "Licensed Transporter" },
   "onboarding.form.roles": { ar: "دور الشركة في منظومة النفايات", en: "Company Role in Waste System" },
   "onboarding.form.roles.hint": { ar: "يمكنك اختيار أكثر من دور. يُستخدم لتصنيف الشركة وفق متطلبات مَوَن.", en: "Select all that apply. Used to classify your company per MWAN requirements." },
-  "onboarding.form.roles.producer.desc": { ar: "تنتج أو تخزّن نفايات صناعية أو تجارية", en: "Generates or holds industrial/commercial waste" },
-  "onboarding.form.roles.buyer.desc": { ar: "تستلم النفايات لإعادة التدوير أو المعالجة", en: "Receives waste for recycling or treatment" },
-  "onboarding.form.roles.carrier.desc": { ar: "تنقل النفايات بين الجهات المرخّصة", en: "Transports waste between licensed facilities" },
+  "onboarding.form.roles.generator.desc": { ar: "تنتج أو تخزّن نفايات صناعية أو تجارية", en: "Generates or holds industrial/commercial waste" },
+  "onboarding.form.roles.receiver.desc": { ar: "تستلم النفايات لإعادة التدوير أو المعالجة", en: "Receives waste for recycling or treatment" },
+  "onboarding.form.roles.transporter.desc": { ar: "تنقل النفايات بين الجهات المرخّصة", en: "Transports waste between licensed facilities" },
 
-  // ── Dashboard — Carrier section ────────────────────────────────────────────
+  // ── Dashboard — Transporter section ───────────────────────────────────────
   "dashboard.carrier.title": { ar: "طلبات النقل", en: "Transport Requests" },
   "dashboard.carrier.desc": { ar: "عرض وقبول طلبات نقل النفايات المتاحة", en: "Browse and accept available waste transport jobs" },
   "dashboard.carrier.available_cta": { ar: "تصفح الطلبات المتاحة", en: "Browse Available Jobs" },

@@ -1,10 +1,12 @@
 import { pgTable, uuid, primaryKey } from "drizzle-orm/pg-core";
-import { companiesTable, companyTypeEnum } from "./companies";
+import { companiesTable } from "./companies";
+import { mwanRoleEnum } from "./mwan-role";
 
 /**
  * Multi-role junction table.
- * A company can simultaneously act as producer, buyer, and/or carrier.
- * Display labels map MWAN terminology: producer=generator, buyer=receiver, carrier=transporter.
+ * A company can simultaneously act in multiple MWAN-defined roles.
+ * Uses mwanRoleEnum (generator/receiver/transporter) — not the legacy
+ * companyTypeEnum (producer/buyer/carrier) that lives on companies.type.
  */
 export const companyRolesTable = pgTable(
   "company_roles",
@@ -12,7 +14,7 @@ export const companyRolesTable = pgTable(
     company_id: uuid("company_id")
       .notNull()
       .references(() => companiesTable.id, { onDelete: "cascade" }),
-    role: companyTypeEnum("role").notNull(),
+    role: mwanRoleEnum("role").notNull(),
   },
   (t) => ({
     pk: primaryKey({ columns: [t.company_id, t.role] }),

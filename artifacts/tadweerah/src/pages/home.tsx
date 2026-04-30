@@ -78,8 +78,8 @@ export function HomePage() {
         {/* CTAs — clearly separated from headline */}
         <div className="mt-8 flex flex-col gap-2 sm:flex-row">
           <SignUpButton mode="modal">
-            <Button size="lg" className="gap-2 px-7">
-              {t("action.getstarted")}
+            <Button size="lg" className="gap-2 px-7 font-bold">
+              {t("action.register_company")}
               <Arrow className="h-4 w-4" />
             </Button>
           </SignUpButton>

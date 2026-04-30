@@ -41,7 +41,7 @@ export function OnboardingPage() {
   const [commercialRegistration, setCr] = useState("");
   const [companyCategoryId, setCompanyCategoryId] = useState("");
   const [selectedActionIds, setSelectedActionIds] = useState<Set<string>>(new Set());
-  const [selectedRoles, setSelectedRoles] = useState<Set<"producer" | "buyer" | "carrier">>(new Set(["producer"]));
+  const [selectedRoles, setSelectedRoles] = useState<Set<"generator" | "receiver" | "transporter">>(new Set(["generator"]));
   const [otherActionDesc, setOtherActionDesc] = useState("");
   const [licenseNumber, setLicenseNumber] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -92,7 +92,7 @@ export function OnboardingPage() {
     setError(null);
   };
 
-  const toggleRole = (role: "producer" | "buyer" | "carrier") => {
+  const toggleRole = (role: "generator" | "receiver" | "transporter") => {
     setSelectedRoles((prev) => {
       const next = new Set(prev);
       if (next.has(role)) next.delete(role);
@@ -263,7 +263,7 @@ export function OnboardingPage() {
           </legend>
           <p className="mb-3 text-xs text-muted-foreground">{t("onboarding.form.roles.hint")}</p>
           <div className="grid gap-2 sm:grid-cols-3">
-            {(["producer", "buyer", "carrier"] as const).map((role) => {
+            {(["generator", "receiver", "transporter"] as const).map((role) => {
               const selected = selectedRoles.has(role);
               return (
                 <button

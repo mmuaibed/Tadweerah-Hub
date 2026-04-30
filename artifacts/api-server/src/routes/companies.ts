@@ -73,14 +73,28 @@ router.post("/companies", requireAuth, async (req, res) => {
     ? (req.body.action_ids as unknown[]).filter((v): v is string => typeof v === "string")
     : [];
 
-  // roles: array of platform roles (producer/buyer/carrier) — multi-role support
-  const VALID_ROLES = ["producer", "buyer", "carrier"] as const;
-  type ValidRole = (typeof VALID_ROLES)[number];
-  const rolesRaw: ValidRole[] = Array.isArray(req.body?.roles)
-    ? (req.body.roles as unknown[]).filter((v): v is ValidRole =>
-        typeof v === "string" && (VALID_ROLES as readonly string[]).includes(v)
-      )
+  // roles: MWAN-aligned role values (generator/receiver/transporter)
+  const VALID_MWAN_ROLES = ["generator", "receiver", "transporter"] as const;
+  type MwanRole = (typeof VALID_MWAN_ROLES)[number];
+  // Also accept legacy values and silently map them
+  const LEGACY_TO_MWAN: Record<string, MwanRole> = {
+    producer: "generator",
+    buyer: "receiver",
+    carrier: "transporter",
+  };
+  const MWAN_TO_LEGACY: Record<MwanRole, "producer" | "buyer" | "carrier"> = {
+    generator: "producer",
+    receiver: "buyer",
+    transporter: "carrier",
+  };
+  const rolesRaw: MwanRole[] = Array.isArray(req.body?.roles)
+    ? (req.body.roles as unknown[])
+        .filter((v): v is string => typeof v === "string")
+        .map((v) => LEGACY_TO_MWAN[v] ?? ((VALID_MWAN_ROLES as readonly string[]).includes(v) ? v as MwanRole : null))
+        .filter((v): v is MwanRole => v !== null)
     : [];
+
+  const legacyType = rolesRaw.length > 0 ? MWAN_TO_LEGACY[rolesRaw[0]] : undefined;
 
   const [created] = await db
     .insert(companiesTable)
@@ -94,8 +108,8 @@ router.post("/companies", requireAuth, async (req, res) => {
       company_category_id: companyCategoryId,
       license_status: licenseNumber ? "pending" : null,
       accepted_terms_at: acceptedTerms ? new Date() : null,
-      // Set primary type from first role (backward compat)
-      ...(rolesRaw.length > 0 ? { type: rolesRaw[0] } : {}),
+      // Sync legacy type column from first MWAN role for backward compat
+      ...(legacyType ? { type: legacyType } : {}),
     })
     .returning();
 
@@ -106,7 +120,7 @@ router.post("/companies", requireAuth, async (req, res) => {
     role: "owner",
   }).onConflictDoNothing();
 
-  // Insert roles into company_roles junction
+  // Insert MWAN roles into company_roles junction
   if (rolesRaw.length > 0) {
     await db.insert(companyRolesTable).values(
       rolesRaw.map((r) => ({ company_id: created.id, role: r })),
@@ -298,11 +312,16 @@ router.get(
       .from(companyRolesTable)
       .where(eq(companyRolesTable.company_id, r.id));
 
-    // Fall back to legacy type field if no junction roles set
+    // Map legacy type → MWAN for backward compat fallback
+    const LEGACY_TO_MWAN_FALLBACK: Record<string, string> = {
+      producer: "generator",
+      buyer: "receiver",
+      carrier: "transporter",
+    };
     const roles: string[] = roleRows.length > 0
       ? roleRows.map((rr) => rr.role)
       : r.type
-        ? [r.type]
+        ? [LEGACY_TO_MWAN_FALLBACK[r.type] ?? r.type]
         : [];
 
     res.json({
@@ -336,24 +355,42 @@ router.put(
   async (req, res) => {
     const { company } = req as AuthedCompanyRequest;
 
-    const VALID_ROLES = ["producer", "buyer", "carrier"] as const;
-    type ValidRole = (typeof VALID_ROLES)[number];
+    const VALID_MWAN = ["generator", "receiver", "transporter"] as const;
+    type MwanRole = (typeof VALID_MWAN)[number];
+    const MWAN_TO_LEGACY: Record<MwanRole, "producer" | "buyer" | "carrier"> = {
+      generator: "producer",
+      receiver: "buyer",
+      transporter: "carrier",
+    };
+    const LEGACY_MAP: Record<string, MwanRole> = {
+      producer: "generator",
+      buyer: "receiver",
+      carrier: "transporter",
+    };
+
     const ids: unknown = req.body?.roles;
-    if (!Array.isArray(ids) || ids.some((x) => !VALID_ROLES.includes(x as ValidRole))) {
+    if (!Array.isArray(ids) || ids.length === 0) {
       res.status(400).json({
         error: "ValidationError",
-        message: 'roles must be an array of "producer", "buyer", and/or "carrier"',
+        message: "At least one role required: generator, receiver, or transporter",
       });
       return;
     }
-    if (ids.length === 0) {
+    // Accept both MWAN and legacy values; map to MWAN
+    const roles: MwanRole[] = (ids as unknown[])
+      .filter((x): x is string => typeof x === "string")
+      .map((x) => LEGACY_MAP[x] ?? ((VALID_MWAN as readonly string[]).includes(x) ? x as MwanRole : null))
+      .filter((x): x is MwanRole => x !== null);
+
+    if (roles.length === 0) {
       res.status(400).json({
         error: "ValidationError",
-        message: "At least one role is required",
+        message: 'roles must be an array of "generator", "receiver", and/or "transporter"',
       });
       return;
     }
-    const roles = ids as ValidRole[];
+
+    const legacyType = MWAN_TO_LEGACY[roles[0]];
 
     await db.transaction(async (tx) => {
       await tx.delete(companyRolesTable).where(eq(companyRolesTable.company_id, company.id));
@@ -363,7 +400,7 @@ router.put(
       // Keep legacy type in sync
       await tx
         .update(companiesTable)
-        .set({ type: roles[0] })
+        .set({ type: legacyType })
         .where(eq(companiesTable.id, company.id));
     });
 

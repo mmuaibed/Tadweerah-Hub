@@ -173,7 +173,7 @@ function CarrierSection({ t, Arrow }: { t: (k: string) => string; Arrow: typeof 
             <Truck className="h-5 w-5" />
           </span>
           <div className="flex-1 min-w-0">
-            <p className="text-[10px] font-medium text-amber-600/80">{t("role.carrier")}</p>
+            <p className="text-[10px] font-medium text-amber-600/80">{t("role.transporter")}</p>
             <h3 className="text-sm font-bold text-foreground">{t("transport.title")}</h3>
             <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{t("dashboard.carrier.desc")}</p>
           </div>
@@ -203,7 +203,7 @@ export function DashboardPage() {
   const company = me.company;
   // roles[] is returned by the API but not yet in generated types — safe cast
   const companyRoles: string[] = ((company as unknown) as Record<string, unknown>).roles as string[] ?? [];
-  const isCarrier = companyRoles.includes("carrier");
+  const isTransporter = companyRoles.includes("transporter");
 
   return (
     <AppLayout showSignOut>
@@ -251,8 +251,8 @@ export function DashboardPage() {
       {/* ── Context-aware next-action nudge ── */}
       {stats && <NextActionBanner stats={stats} t={t} Arrow={Arrow} />}
 
-      {/* ── Carrier transport section (shown when company has carrier role) ── */}
-      {isCarrier && <CarrierSection t={t} Arrow={Arrow} />}
+      {/* ── Transporter section (shown when company has transporter role) ── */}
+      {isTransporter && <CarrierSection t={t} Arrow={Arrow} />}
 
       {/* ── Primary action cards (blue = produce, green = buy) ── */}
       <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
