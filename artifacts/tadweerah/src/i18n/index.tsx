@@ -960,6 +960,8 @@ const translations: Record<string, Record<Language, string>> = {
   "profile.save": { ar: "حفظ التغييرات", en: "Save Changes" },
   "profile.saving": { ar: "جاري الحفظ...", en: "Saving..." },
   "profile.saved": { ar: "تم حفظ بيانات الشركة بنجاح", en: "Company profile saved successfully" },
+  "profile.roles_save": { ar: "حفظ الأدوار", en: "Save Roles" },
+  "profile.roles_saved": { ar: "تم تحديث أدوار الشركة بنجاح. ستظهر التغييرات في لوحة التحكم.", en: "Company roles updated. Changes are now reflected in the dashboard." },
   "profile.error.required": { ar: "مطلوب", en: "is required" },
   "profile.license.status": { ar: "حالة الترخيص", en: "License Status" },
   "profile.license.approved": { ar: "معتمد", en: "Approved" },

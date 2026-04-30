@@ -14,6 +14,7 @@ import {
   ShieldX,
   Clock,
   AlertTriangle,
+  Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -29,6 +30,8 @@ interface CompanyCategoryOption {
   name_en: string;
 }
 
+type MwanRole = "generator" | "receiver" | "transporter";
+
 interface CompanyProfile {
   id: string;
   name: string;
@@ -42,6 +45,7 @@ interface CompanyProfile {
   category_name_en?: string;
   accepted_terms_at?: string;
   createdAt: string;
+  roles?: MwanRole[];
 }
 
 function LicenseStatusBadge({ status }: { status?: string }) {
@@ -85,6 +89,58 @@ export function CompanyProfilePage() {
   const [licenseNumber, setLicenseNumber] = useState("");
   const [categoryCategoryId, setCategoryId] = useState("");
 
+  // ── Roles ──────────────────────────────────────────────────────────────────
+  const [selectedRoles, setSelectedRoles] = useState<Set<MwanRole>>(new Set());
+  const [rolesSaving, setRolesSaving] = useState(false);
+  const [rolesSaved, setRolesSaved] = useState(false);
+  const [rolesError, setRolesError] = useState<string | null>(null);
+
+  const toggleRole = (role: MwanRole) => {
+    setSelectedRoles((prev) => {
+      const next = new Set(prev);
+      if (next.has(role)) {
+        if (next.size > 1) next.delete(role);
+      } else {
+        next.add(role);
+      }
+      return next;
+    });
+    setRolesSaved(false);
+  };
+
+  const saveRoles = async () => {
+    setRolesSaving(true);
+    setRolesError(null);
+    setRolesSaved(false);
+    try {
+      const token = await getToken();
+      const res = await fetch("/api/companies/mine/roles", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        credentials: "include",
+        body: JSON.stringify({ roles: Array.from(selectedRoles) }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setRolesError((data as { message?: string }).message ?? t("onboarding.error.generic"));
+        return;
+      }
+      // Invalidate /me so dashboard reacts immediately
+      await queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
+      // Also invalidate the company query used by the dashboard
+      await queryClient.invalidateQueries({ queryKey: ["company"] });
+      setRolesSaved(true);
+      setTimeout(() => setRolesSaved(false), 4000);
+    } catch {
+      setRolesError(t("onboarding.error.generic"));
+    } finally {
+      setRolesSaving(false);
+    }
+  };
+
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
@@ -110,6 +166,9 @@ export function CompanyProfilePage() {
           setCr(data.commercialRegistration ?? "");
           setLicenseNumber(data.license_number ?? "");
           setCategoryId(data.company_category_id ?? "");
+          if (data.roles && data.roles.length > 0) {
+            setSelectedRoles(new Set(data.roles));
+          }
         }
         if (catsRes.ok) {
           const cats = await catsRes.json() as CompanyCategoryOption[];
@@ -338,6 +397,79 @@ export function CompanyProfilePage() {
           )}
         </Button>
       </form>
+
+      {/* ── Roles Section (separate save — calls PUT /companies/mine/roles) ──── */}
+      <div className="max-w-2xl mt-6">
+        <Card className="border-card-border bg-card">
+          <CardContent className="space-y-4 p-6">
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-muted-foreground shrink-0" />
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {t("onboarding.form.roles")}
+              </p>
+            </div>
+            <p className="text-xs text-muted-foreground">{t("onboarding.form.roles.hint")}</p>
+
+            <div className="space-y-3">
+              {(["generator", "receiver", "transporter"] as const).map((role) => {
+                const checked = selectedRoles.has(role);
+                return (
+                  <label
+                    key={role}
+                    className={[
+                      "flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors",
+                      checked
+                        ? "border-primary bg-primary/5"
+                        : "border-border bg-background hover:border-primary/40",
+                    ].join(" ")}
+                  >
+                    <input
+                      type="checkbox"
+                      className="mt-0.5 h-4 w-4 accent-primary shrink-0"
+                      checked={checked}
+                      onChange={() => toggleRole(role)}
+                    />
+                    <div>
+                      <p className="text-sm font-medium">{t(`role.${role}`)}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {t(`onboarding.form.roles.${role}.desc`)}
+                      </p>
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
+
+            {rolesError && (
+              <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+                {rolesError}
+              </div>
+            )}
+
+            {rolesSaved && (
+              <div className="rounded-md border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-700">
+                {t("profile.roles_saved")}
+              </div>
+            )}
+
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="gap-2"
+              onClick={() => void saveRoles()}
+              disabled={rolesSaving}
+            >
+              {rolesSaving ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Save className="h-3.5 w-3.5" />
+              )}
+              {t("profile.roles_save")}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     </AppLayout>
   );
 }
