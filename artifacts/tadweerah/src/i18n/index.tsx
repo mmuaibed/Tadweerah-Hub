@@ -1258,6 +1258,26 @@ const translations: Record<string, Record<Language, string>> = {
   "admin.error.unauthorized": { ar: "مفتاح غير صحيح أو مرفوض", en: "Invalid or rejected admin key" },
   "admin.error.not_configured": { ar: "مفتاح المدير غير مُعدّ في الخادم", en: "Admin key not configured on server" },
   "admin.error.generic": { ar: "حدث خطأ أثناء التحميل", en: "An error occurred while loading" },
+  "admin.logout": { ar: "تسجيل الخروج", en: "Logout" },
+
+  /* ── UX Polish: Receipt Confirmation Dialog ── */
+  "deal.receipt_dialog.producer": { ar: "المنتج (الشركة)", en: "Producer (Company)" },
+  "deal.receipt_dialog.quantity": { ar: "الكمية المتوقعة", en: "Expected Quantity" },
+  "deal.receipt_dialog.irreversible": { ar: "هذا الإجراء نهائي ولا يمكن التراجع عنه.", en: "This action is final and cannot be undone." },
+
+  /* ── UX Polish: MWAN score badge in deal header ── */
+  "mwan.header.score_label": { ar: "مَوَن", en: "MWAN" },
+
+  /* ── UX Polish: What Happens Next panel ── */
+  "listing.what_next.title": { ar: "ما الذي يحدث بعد ذلك؟", en: "What Happens Next?" },
+  "listing.what_next.step1": { ar: "المشترون المهتمون سيرون إعلانك ويرسلون عروضاً.", en: "Interested buyers will see your listing and send offers." },
+  "listing.what_next.step2": { ar: "ستصلك إشعار بكل عرض جديد ويمكنك مراجعة تفاصيله.", en: "You'll be notified of each offer and can review its details." },
+  "listing.what_next.step3": { ar: "بإمكانك قبول أي عرض أو رفضه، أو إرسال عرض مضاد.", en: "You can accept, reject, or counter any offer." },
+  "listing.what_next.step4": { ar: "عند قبول العرض، تُنشأ صفقة تلقائياً وتبدأ إجراءات النقل.", en: "Accepting an offer automatically creates a deal and starts transport coordination." },
+  "listing.what_next.eta": { ar: "وقت الاستجابة المتوقع: 24–48 ساعة في الغالب.", en: "Typical response time: 24–48 hours." },
+
+  /* ── UX Polish: Waste code hint in TR form ── */
+  "transport.create.waste_code_hint": { ar: "يجب أن يتبع الرمز تنسيق مَوَن أو بازل، مثال: 16-01-19", en: "Code should follow MWAN or Basel format, e.g. 16-01-19" },
 };
 
 export const I18nProvider: React.FC<{

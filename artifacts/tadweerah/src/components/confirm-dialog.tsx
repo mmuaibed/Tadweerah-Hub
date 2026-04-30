@@ -20,6 +20,7 @@ interface ConfirmDialogProps {
   onConfirm: () => void;
   isPending?: boolean;
   destructive?: boolean;
+  children?: React.ReactNode;
 }
 
 export function ConfirmDialog({
@@ -31,6 +32,7 @@ export function ConfirmDialog({
   onConfirm,
   isPending = false,
   destructive = false,
+  children,
 }: ConfirmDialogProps) {
   const { t } = useT();
 
@@ -41,6 +43,7 @@ export function ConfirmDialog({
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
+        {children}
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isPending}>
             {t("action.cancel")}

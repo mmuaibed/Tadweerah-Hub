@@ -1476,6 +1476,28 @@ export function ListingDetailPage() {
                 {t("myListings.close")}
               </Button>
             )}
+            {isOpen && !activeDeal && (
+              <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-base">🗺️</span>
+                  <h3 className="text-sm font-semibold text-primary">{t("listing.what_next.title")}</h3>
+                </div>
+                <ol className="space-y-2 text-xs text-foreground/80 list-none">
+                  {(["step1","step2","step3","step4"] as const).map((step, i) => (
+                    <li key={step} className="flex items-start gap-2.5">
+                      <span className="shrink-0 h-5 w-5 rounded-full bg-primary/15 text-primary text-[10px] font-bold flex items-center justify-center mt-px">
+                        {i + 1}
+                      </span>
+                      <span>{t(`listing.what_next.${step}`)}</span>
+                    </li>
+                  ))}
+                </ol>
+                <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 pt-1 border-t border-primary/20">
+                  <span>⏱️</span>
+                  {t("listing.what_next.eta")}
+                </p>
+              </div>
+            )}
             <ProducerOffersPanel
               wasteListingId={wasteListingId}
               listingQuantity={quantity}

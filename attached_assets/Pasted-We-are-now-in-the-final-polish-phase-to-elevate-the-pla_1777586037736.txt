@@ -1,0 +1,127 @@
+We are now in the final polish phase to elevate the platform from a strong pilot (≈79%) to a world-class pilot experience.
+
+Do NOT add new systems.
+Do NOT change core logic.
+Focus only on high-impact UX and data quality improvements.
+
+Please implement the following 7 adjustments:
+
+------------------------------------
+1. Receipt Confirmation Dialog (critical UX)
+------------------------------------
+
+Before confirming receipt, show a blocking modal:
+
+- Title: "Confirm Receipt — Final Action"
+- Message:
+  "Please confirm you have received and verified the materials.
+   This action cannot be undone."
+
+- Show:
+  - expected quantity
+  - producer company name
+
+- Buttons:
+  [Cancel] [Confirm Final]
+
+No backend change required.
+
+------------------------------------
+2. Manifest Reference in Deal Header
+------------------------------------
+
+Display manifest_ref (TDW-YYYY-NNNNNN) in the deal panel header next to deal ID.
+
+- Use monospace style
+- Add copy-to-clipboard button
+
+Example:
+Deal #DL-0047   TDW-2026-000123 [copy]
+
+------------------------------------
+3. MWAN Readiness Score in Header
+------------------------------------
+
+Show compact MWAN score in the deal header:
+
+Example:
+[ ● 12/15 MWAN ]
+
+Color logic:
+- green = 15/15
+- amber = 10–14
+- red = <10
+
+------------------------------------
+4. Listing "What Happens Next" Panel
+------------------------------------
+
+After publishing a listing, show a static panel explaining next steps:
+
+- buyers will see listing
+- offers will arrive
+- you can accept/reject
+- accepting creates a deal
+
+Include estimated response time (e.g. 24–48 hours)
+
+No logic needed, just display.
+
+------------------------------------
+5. Admin Session Persistence
+------------------------------------
+
+Store validated admin key in sessionStorage.
+
+- do not use localStorage
+- persist only for session
+- add "Logout" button to clear it
+
+------------------------------------
+6. Facility Name Autocomplete
+------------------------------------
+
+When entering pickup/delivery facility:
+
+- suggest previously used facility names for the same company
+- simple implementation:
+  - store unique names per company
+  - show suggestions (datalist)
+
+User can still type freely.
+
+------------------------------------
+7. Waste Code Input Hint (Admin)
+------------------------------------
+
+In admin category form:
+
+Add visible hint for regulatory_code:
+
+"Code should follow MWAN or Basel format, e.g. 16-01-19"
+
+Optional:
+- add simple regex pattern for validation
+
+No backend validation required.
+
+------------------------------------
+Constraints
+------------------------------------
+
+- No MWAN API
+- No new workflows
+- No redesign
+- Keep changes minimal and consistent
+
+------------------------------------
+Goal
+------------------------------------
+
+- Reduce user mistakes
+- Improve clarity and confidence
+- Improve data consistency
+- Make the platform more convincing for operational partners
+
+After implementation:
+Run typecheck + quick verification only.

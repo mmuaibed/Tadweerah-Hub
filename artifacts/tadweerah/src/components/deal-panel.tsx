@@ -772,6 +772,21 @@ function CreateTransportRequestForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [facilitySuggestions, setFacilitySuggestions] = useState<string[]>(() => {
+    try {
+      const raw = sessionStorage.getItem("tdw_facilities");
+      return raw ? (JSON.parse(raw) as string[]) : [];
+    } catch { return []; }
+  });
+
+  function saveFacility(name: string) {
+    if (!name.trim()) return;
+    setFacilitySuggestions((prev) => {
+      const next = [...new Set([name.trim(), ...prev])].slice(0, 20);
+      try { sessionStorage.setItem("tdw_facilities", JSON.stringify(next)); } catch { /* ignore */ }
+      return next;
+    });
+  }
 
   const { data: allCategories = [] } = useGetMaterialCategories();
   const topLevelCats = (allCategories as MaterialCategory[]).filter((c) => !c.parent_id);
@@ -813,6 +828,9 @@ function CreateTransportRequestForm({
         const data = await res.json().catch(() => ({}));
         throw new Error((data as { message?: string }).message ?? `HTTP ${res.status}`);
       }
+      // Save facility names for autocomplete
+      saveFacility(pickupFacility);
+      saveFacility(deliveryFacility);
       setDone(true);
       void queryClient.invalidateQueries({ queryKey: ["mwan-summary", dealId] });
     } catch (e) {
@@ -915,6 +933,13 @@ function CreateTransportRequestForm({
                   className="h-8 text-sm"
                 />
               </div>
+              {facilitySuggestions.length > 0 && (
+                <datalist id={`tdw-facilities-${dealId}`}>
+                  {facilitySuggestions.map((s) => (
+                    <option key={s} value={s} />
+                  ))}
+                </datalist>
+              )}
               <div>
                 <label className="text-xs font-medium text-foreground mb-1 block">
                   {t("transport.create.pickup_facility")}
@@ -924,6 +949,7 @@ function CreateTransportRequestForm({
                   onChange={(e) => setPickupFacility(e.target.value)}
                   placeholder={t("transport.create.pickup_facility.placeholder")}
                   className="h-8 text-sm"
+                  list={facilitySuggestions.length > 0 ? `tdw-facilities-${dealId}` : undefined}
                 />
               </div>
               <div>
@@ -935,6 +961,7 @@ function CreateTransportRequestForm({
                   onChange={(e) => setDeliveryFacility(e.target.value)}
                   placeholder={t("transport.create.delivery_facility.placeholder")}
                   className="h-8 text-sm"
+                  list={facilitySuggestions.length > 0 ? `tdw-facilities-${dealId}` : undefined}
                 />
               </div>
             </div>
@@ -980,6 +1007,11 @@ function CreateTransportRequestForm({
                 </div>
               )}
             </div>
+            {/* Waste code hint */}
+            <p className="text-[11px] text-muted-foreground flex items-start gap-1.5 -mt-1">
+              <span className="shrink-0 mt-px">ℹ️</span>
+              {t("transport.create.waste_code_hint")}
+            </p>
 
             <div>
               <label className="text-xs font-medium text-foreground mb-1 block">
@@ -1215,7 +1247,29 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
   const [paymentProofUrl, setPaymentProofUrl] = useState("");
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
   const [copied, setCopied] = useState(false);
+  const [copiedManifest, setCopiedManifest] = useState(false);
   const [trFormOpen, setTrFormOpen] = useState(false);
+
+  // Share cache key with MwanSummaryPanel — no extra network call
+  const { data: mwanHeaderData } = useQuery<MwanSummary>({
+    queryKey: ["mwan-summary", deal.id],
+    queryFn: async () => {
+      const token = await getToken();
+      const res = await fetch(`/api/deals/${deal.id}/mwan-summary`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("mwan fetch failed");
+      return res.json() as Promise<MwanSummary>;
+    },
+    staleTime: 60_000,
+  });
+
+  function copyManifestRef(ref: string) {
+    navigator.clipboard.writeText(ref).catch(() => {});
+    setCopiedManifest(true);
+    setTimeout(() => setCopiedManifest(false), 2000);
+  }
 
   function openTrFormAndScroll() {
     setTrFormOpen(true);
@@ -1349,7 +1403,28 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
           confirmLabel={activeDialog.label}
           onConfirm={handleConfirmed}
           isPending={loading}
-        />
+          destructive={pendingAction === "confirm-receipt"}
+        >
+          {pendingAction === "confirm-receipt" && (
+            <div className="rounded-lg border border-border bg-muted/30 px-4 py-3 text-sm space-y-1.5 my-2">
+              {deal.counterparty?.name && (
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-muted-foreground text-xs">{t("deal.receipt_dialog.producer")}</span>
+                  <span className="font-semibold text-foreground text-xs">{deal.counterparty.name}</span>
+                </div>
+              )}
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-muted-foreground text-xs">{t("deal.receipt_dialog.quantity")}</span>
+                <span className="font-semibold text-foreground text-xs">
+                  {(deal.actual_quantity ?? listingQuantity ?? "—").toLocaleString()} {unit}
+                </span>
+              </div>
+              <p className="text-[11px] text-destructive/80 font-medium pt-1 border-t border-border">
+                {t("deal.receipt_dialog.irreversible")}
+              </p>
+            </div>
+          )}
+        </ConfirmDialog>
       )}
 
       <div className="rounded-xl border border-primary/20 bg-primary/5 space-y-0 overflow-hidden">
@@ -1363,7 +1438,8 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
                   {[listingMaterial, deal.counterparty?.name].filter(Boolean).join(" · ")}
                 </p>
               )}
-              <div className="flex items-center gap-2 mt-1.5">
+              <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                {/* Deal ref */}
                 <span className="text-sm font-bold font-mono text-primary tracking-wider" dir="ltr">
                   {dealRef(deal.id, deal.created_at)}
                 </span>
@@ -1378,11 +1454,47 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
                     : <Copy className="h-3.5 w-3.5" />}
                   {copied && <span className="text-[10px] text-green-600 font-medium">{t("deal.ref.copied")}</span>}
                 </button>
+                {/* Manifest ref */}
+                {mwanHeaderData?.transport?.manifest_ref && (
+                  <>
+                    <span className="text-primary/30 text-xs">·</span>
+                    <span className="text-xs font-bold font-mono text-primary/80" dir="ltr">
+                      {mwanHeaderData.transport.manifest_ref}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => copyManifestRef(mwanHeaderData.transport!.manifest_ref!)}
+                      className="flex items-center gap-1 text-primary/50 hover:text-primary transition-colors"
+                      aria-label={t("deal.manifest_ref.copy")}
+                    >
+                      {copiedManifest
+                        ? <Check className="h-3 w-3 text-green-600" />
+                        : <Copy className="h-3 w-3" />}
+                    </button>
+                  </>
+                )}
               </div>
             </div>
-            <Badge variant={statusBadgeVariant(deal.status)} className="shrink-0">
-              {statusLabel(deal.status)}
-            </Badge>
+            <div className="flex flex-col items-end gap-1.5 shrink-0">
+              <Badge variant={statusBadgeVariant(deal.status)}>
+                {statusLabel(deal.status)}
+              </Badge>
+              {/* MWAN score badge */}
+              {mwanHeaderData && (() => {
+                const [ready, total] = mwanHeaderData.readiness_score.split("/").map(Number);
+                const color = ready === total
+                  ? "bg-green-100 text-green-800"
+                  : ready >= 10
+                  ? "bg-amber-100 text-amber-800"
+                  : "bg-red-100 text-red-700";
+                return (
+                  <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${color}`}>
+                    <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                    {mwanHeaderData.readiness_score} {t("mwan.header.score_label")}
+                  </span>
+                );
+              })()}
+            </div>
           </div>
 
           {pricingModel === "revenue_share" && revenueSharePct != null && (

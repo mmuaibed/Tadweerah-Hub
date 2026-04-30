@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CheckCircle2, AlertCircle, Loader2, ShieldCheck, RefreshCw } from "lucide-react";
+import { CheckCircle2, AlertCircle, Loader2, ShieldCheck, RefreshCw, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -24,11 +24,18 @@ const STATUS_VARIANTS: Record<string, "default" | "secondary" | "outline" | "des
 
 export function AdminPage() {
   const { t, lang } = useT();
-  const [adminKey, setAdminKey] = useState("");
+  const [adminKey, setAdminKey] = useState(() => sessionStorage.getItem("tdw_admin_key") ?? "");
   const [deals, setDeals] = useState<AdminDeal[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState("");
+
+  function logout() {
+    sessionStorage.removeItem("tdw_admin_key");
+    setAdminKey("");
+    setDeals(null);
+    setError(null);
+  }
 
   async function fetchDeals() {
     if (!adminKey.trim()) {
@@ -42,10 +49,15 @@ export function AdminPage() {
       const res = await fetch(`/api/admin/deals${params}`, {
         headers: { "X-Admin-Key": adminKey.trim() },
       });
-      if (res.status === 401) throw new Error(t("admin.error.unauthorized"));
+      if (res.status === 401) {
+        sessionStorage.removeItem("tdw_admin_key");
+        throw new Error(t("admin.error.unauthorized"));
+      }
       if (res.status === 503) throw new Error(t("admin.error.not_configured"));
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json() as AdminDeal[];
+      // Persist validated key for the session
+      sessionStorage.setItem("tdw_admin_key", adminKey.trim());
       setDeals(data);
     } catch (e) {
       setError(e instanceof Error ? e.message : t("admin.error.generic"));
@@ -110,12 +122,20 @@ export function AdminPage() {
               </select>
             </div>
           </div>
-          <Button onClick={() => void fetchDeals()} disabled={loading} className="w-full sm:w-auto">
-            {loading
-              ? <><Loader2 className="h-4 w-4 me-2 animate-spin" />{t("admin.loading")}</>
-              : <><RefreshCw className="h-4 w-4 me-2" />{t("admin.fetch_button")}</>
-            }
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => void fetchDeals()} disabled={loading} className="flex-1 sm:flex-none">
+              {loading
+                ? <><Loader2 className="h-4 w-4 me-2 animate-spin" />{t("admin.loading")}</>
+                : <><RefreshCw className="h-4 w-4 me-2" />{t("admin.fetch_button")}</>
+              }
+            </Button>
+            {adminKey && (
+              <Button variant="outline" onClick={logout} className="shrink-0">
+                <LogOut className="h-4 w-4 me-2" />
+                {t("admin.logout")}
+              </Button>
+            )}
+          </div>
         </div>
 
         {error && (
