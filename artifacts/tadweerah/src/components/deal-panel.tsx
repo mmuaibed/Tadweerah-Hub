@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@clerk/react";
+import { useQuery } from "@tanstack/react-query";
 import {
   Phone,
   CheckCircle2,
@@ -15,6 +16,11 @@ import {
   Shield,
   Copy,
   Check,
+  ChevronDown,
+  ChevronUp,
+  Truck,
+  FileText as FileTextIcon,
+  MapPin,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -255,7 +261,181 @@ function GovernanceTimeline({
   );
 }
 
-/** V3 — Print deal report (opens a new window) */
+// ── V3a — MWAN Summary Panel ──────────────────────────────────────────────────
+
+interface MwanSummary {
+  deal_id: string;
+  deal_status: string;
+  is_manifest_ready: boolean;
+  readiness_score: string;
+  checks: Record<string, boolean>;
+  generator: { name: string; city: string | null; commercial_registration?: string; license_number?: string } | null;
+  receiver: { name: string; city: string | null; license_number?: string } | null;
+  transporter: { name: string; city: string | null; license_number?: string } | null;
+  waste: { material: string; quantity: number | null; unit: string; origin_city: string | null } | null;
+  transport: { id: string; status: string; pickup_city?: string; delivery_city?: string; planned_pickup_at?: string } | null;
+}
+
+function MwanSummaryPanel({ dealId }: { dealId: string }) {
+  const { t } = useT();
+  const { getToken } = useAuth();
+  const [open, setOpen] = useState(false);
+
+  const { data, isLoading, error } = useQuery<MwanSummary>({
+    queryKey: ["mwan-summary", dealId],
+    queryFn: async () => {
+      const token = await getToken();
+      const res = await fetch(`/api/deals/${dealId}/mwan-summary`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("mwan fetch failed");
+      return res.json() as Promise<MwanSummary>;
+    },
+    enabled: open,
+    staleTime: 60_000,
+  });
+
+  const CHECK_LABELS: Record<string, string> = {
+    generator_cr: t("mwan.check.cr"),
+    generator_license: t("mwan.check.license"),
+    generator_city: t("mwan.check.city"),
+    receiver_cr: t("mwan.check.cr"),
+    receiver_license: t("mwan.check.license"),
+    receiver_city: t("mwan.check.city"),
+    waste_defined: t("mwan.check.waste_defined"),
+    quantity_confirmed: t("mwan.check.quantity_confirmed"),
+    payment_confirmed: t("mwan.check.payment_confirmed"),
+    transport_request_created: t("mwan.check.transport_created"),
+    transporter_assigned: t("mwan.check.transporter_assigned"),
+    pickup_city_set: t("mwan.check.pickup_city"),
+    delivery_city_set: t("mwan.check.delivery_city"),
+    waste_description_set: t("mwan.check.waste_description"),
+  };
+
+  return (
+    <div className="border-t border-border">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors"
+      >
+        <span className="flex items-center gap-2">
+          <FileTextIcon className="h-4 w-4 shrink-0" />
+          {t("mwan.title")}
+        </span>
+        {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+      </button>
+
+      {open && (
+        <div className="px-4 pb-4 space-y-4">
+          {isLoading ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              {t("mwan.loading")}
+            </div>
+          ) : error ? (
+            <div className="flex items-center gap-2 text-sm text-destructive">
+              <AlertCircle className="h-4 w-4" />
+              {t("mwan.error")}
+            </div>
+          ) : data ? (
+            <>
+              {/* Readiness score */}
+              <div className={`flex items-center gap-3 rounded-lg border p-3 ${
+                data.is_manifest_ready
+                  ? "border-green-200 bg-green-50"
+                  : "border-amber-200 bg-amber-50"
+              }`}>
+                {data.is_manifest_ready
+                  ? <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
+                  : <Clock className="h-5 w-5 text-amber-600 shrink-0" />
+                }
+                <div>
+                  <p className={`text-sm font-semibold ${data.is_manifest_ready ? "text-green-800" : "text-amber-800"}`}>
+                    {data.is_manifest_ready ? t("mwan.ready") : t("mwan.not_ready")}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {t("mwan.readiness_score")}: {data.readiness_score}
+                  </p>
+                </div>
+              </div>
+
+              {/* Parties */}
+              <div className="grid gap-3 sm:grid-cols-3">
+                {[
+                  { label: t("mwan.section.generator"), party: data.generator, prefix: "generator" },
+                  { label: t("mwan.section.receiver"), party: data.receiver, prefix: "receiver" },
+                  { label: t("mwan.section.transporter"), party: data.transporter, prefix: "transporter" },
+                ].map(({ label, party }) => (
+                  <div key={label} className="rounded-lg border border-border bg-card p-2.5 space-y-1">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
+                    {party ? (
+                      <>
+                        <p className="text-xs font-medium text-foreground">{party.name}</p>
+                        {party.city && (
+                          <p className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                            <MapPin className="h-3 w-3" />{party.city}
+                          </p>
+                        )}
+                        {party.license_number && (
+                          <p className="text-[11px] text-muted-foreground">#{party.license_number}</p>
+                        )}
+                      </>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">{t("transport.not_assigned")}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Transport details */}
+              {data.transport && (
+                <div className="rounded-lg border border-border bg-muted/30 p-2.5 space-y-1">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{t("mwan.section.transport")}</p>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    {data.transport.pickup_city && (
+                      <span className="flex items-center gap-1 text-muted-foreground">
+                        <MapPin className="h-3 w-3" />{data.transport.pickup_city}
+                      </span>
+                    )}
+                    {data.transport.delivery_city && (
+                      <span className="flex items-center gap-1 text-muted-foreground">
+                        <Truck className="h-3 w-3" />{data.transport.delivery_city}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Checklist */}
+              <div className="space-y-1">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                  {t("mwan.subtitle")}
+                </p>
+                <div className="grid gap-1 sm:grid-cols-2">
+                  {(Object.entries(data.checks) as [string, boolean][]).map(([key, ok]) => (
+                    <div key={key} className="flex items-center gap-2 text-xs">
+                      {ok
+                        ? <CheckCircle2 className="h-3.5 w-3.5 text-green-600 shrink-0" />
+                        : <Circle className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
+                      }
+                      <span className={ok ? "text-foreground" : "text-muted-foreground"}>
+                        {CHECK_LABELS[key] ?? key}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : null}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** V4 — Print deal report (opens a new window) */
 function printDealReport(
   deal: DealInfo,
   role: "producer" | "buyer",
@@ -896,6 +1076,11 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
 
         {/* V2 — Governance Timeline */}
         <GovernanceTimeline deal={deal} lang={lang} />
+
+        {/* V3a — MWAN Summary Panel (payment_confirmed+ deals only) */}
+        {["payment_confirmed", "dispatched", "completed"].includes(deal.status) && (
+          <MwanSummaryPanel dealId={deal.id} />
+        )}
 
         {/* V3 — Print Report button */}
         <div className="px-4 py-3 bg-muted/10 border-t border-border">

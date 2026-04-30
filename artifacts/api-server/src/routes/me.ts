@@ -1,7 +1,12 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { getAuth, clerkClient } from "@clerk/express";
-import { db, companiesTable, companyMembersTable } from "@workspace/db";
+import {
+  db,
+  companiesTable,
+  companyMembersTable,
+  companyRolesTable,
+} from "@workspace/db";
 import { requireAuth, type AuthedRequest } from "../middlewares/requireAuth";
 
 const router: IRouter = Router();
@@ -21,7 +26,6 @@ router.get("/me", requireAuth, async (req, res) => {
     req.log.warn({ err }, "failed to fetch clerk user email");
   }
 
-  // Look up company via company_members (works for both owners and invited members).
   const [membership] = await db
     .select({
       id: companiesTable.id,
@@ -42,22 +46,37 @@ router.get("/me", requireAuth, async (req, res) => {
     .where(eq(companyMembersTable.user_id, userId))
     .limit(1);
 
-  const company = membership
-    ? {
-        id: membership.id,
-        name: membership.name,
-        type: membership.type ?? undefined,
-        city: membership.city,
-        commercialRegistration: membership.commercialRegistration ?? undefined,
-        contactPhone: membership.contactPhone,
-        license_number: membership.license_number ?? undefined,
-        license_status: membership.license_status ?? undefined,
-        company_category_id: membership.company_category_id ?? undefined,
-        accepted_terms_at: membership.accepted_terms_at?.toISOString() ?? undefined,
-        role: membership.role,
-        createdAt: membership.createdAt.toISOString(),
-      }
-    : null;
+  let company = null;
+  if (membership) {
+    // Fetch multi-roles from junction table
+    const roleRows = await db
+      .select({ role: companyRolesTable.role })
+      .from(companyRolesTable)
+      .where(eq(companyRolesTable.company_id, membership.id));
+
+    // Derive roles: prefer junction table; fall back to legacy type field
+    const roles: string[] = roleRows.length > 0
+      ? roleRows.map((r) => r.role)
+      : membership.type
+        ? [membership.type]
+        : [];
+
+    company = {
+      id: membership.id,
+      name: membership.name,
+      type: membership.type ?? undefined,
+      roles,
+      city: membership.city,
+      commercialRegistration: membership.commercialRegistration ?? undefined,
+      contactPhone: membership.contactPhone,
+      license_number: membership.license_number ?? undefined,
+      license_status: membership.license_status ?? undefined,
+      company_category_id: membership.company_category_id ?? undefined,
+      accepted_terms_at: membership.accepted_terms_at?.toISOString() ?? undefined,
+      role: membership.role,
+      createdAt: membership.createdAt.toISOString(),
+    };
+  }
 
   res.json({ userId, email, company });
 });

@@ -13,6 +13,7 @@ import issueReportsRouter from "./issue-reports";
 import adminRouter from "./admin";
 import contractsRouter from "./contracts";
 import shipmentsRouter from "./shipments";
+import transportRequestsRouter from "./transport-requests";
 
 const router: IRouter = Router();
 
@@ -30,5 +31,6 @@ router.use(issueReportsRouter);
 router.use(adminRouter);
 router.use(contractsRouter);
 router.use(shipmentsRouter);
+router.use(transportRequestsRouter);
 
 export default router;

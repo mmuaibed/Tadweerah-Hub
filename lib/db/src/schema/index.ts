@@ -19,3 +19,6 @@ export * from "./contract-sequences";
 export * from "./contracts";
 export * from "./contract-materials";
 export * from "./contract-shipments";
+export * from "./company-roles";
+export * from "./transport-requests";
+export * from "./manifest-records";

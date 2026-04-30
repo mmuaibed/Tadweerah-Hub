@@ -9,6 +9,7 @@ import {
   companyActionSelectionsTable,
   companyMembersTable,
   companyCategoriesTable,
+  companyRolesTable,
 } from "@workspace/db";
 import { CreateCompanyBody } from "@workspace/api-zod";
 import { requireAuth, type AuthedRequest } from "../middlewares/requireAuth";
@@ -72,6 +73,15 @@ router.post("/companies", requireAuth, async (req, res) => {
     ? (req.body.action_ids as unknown[]).filter((v): v is string => typeof v === "string")
     : [];
 
+  // roles: array of platform roles (producer/buyer/carrier) — multi-role support
+  const VALID_ROLES = ["producer", "buyer", "carrier"] as const;
+  type ValidRole = (typeof VALID_ROLES)[number];
+  const rolesRaw: ValidRole[] = Array.isArray(req.body?.roles)
+    ? (req.body.roles as unknown[]).filter((v): v is ValidRole =>
+        typeof v === "string" && (VALID_ROLES as readonly string[]).includes(v)
+      )
+    : [];
+
   const [created] = await db
     .insert(companiesTable)
     .values({
@@ -84,6 +94,8 @@ router.post("/companies", requireAuth, async (req, res) => {
       company_category_id: companyCategoryId,
       license_status: licenseNumber ? "pending" : null,
       accepted_terms_at: acceptedTerms ? new Date() : null,
+      // Set primary type from first role (backward compat)
+      ...(rolesRaw.length > 0 ? { type: rolesRaw[0] } : {}),
     })
     .returning();
 
@@ -93,6 +105,13 @@ router.post("/companies", requireAuth, async (req, res) => {
     user_id: userId,
     role: "owner",
   }).onConflictDoNothing();
+
+  // Insert roles into company_roles junction
+  if (rolesRaw.length > 0) {
+    await db.insert(companyRolesTable).values(
+      rolesRaw.map((r) => ({ company_id: created.id, role: r })),
+    ).onConflictDoNothing();
+  }
 
   // Insert selected actions
   if (actionIds.length > 0) {
@@ -247,6 +266,7 @@ router.get(
       .select({
         id: companiesTable.id,
         name: companiesTable.name,
+        type: companiesTable.type,
         city: companiesTable.city,
         contactPhone: companiesTable.contactPhone,
         commercialRegistration: companiesTable.commercialRegistration,
@@ -271,6 +291,20 @@ router.get(
       return;
     }
     const r = rows[0];
+
+    // Fetch multi-roles
+    const roleRows = await db
+      .select({ role: companyRolesTable.role })
+      .from(companyRolesTable)
+      .where(eq(companyRolesTable.company_id, r.id));
+
+    // Fall back to legacy type field if no junction roles set
+    const roles: string[] = roleRows.length > 0
+      ? roleRows.map((rr) => rr.role)
+      : r.type
+        ? [r.type]
+        : [];
+
     res.json({
       id: r.id,
       name: r.name,
@@ -283,8 +317,66 @@ router.get(
       category_name_ar: r.category_name_ar ?? undefined,
       category_name_en: r.category_name_en ?? undefined,
       accepted_terms_at: r.accepted_terms_at?.toISOString() ?? undefined,
+      roles,
       createdAt: r.createdAt.toISOString(),
     });
+  },
+);
+
+/**
+ * PUT /companies/mine/roles
+ * Body: { roles: ("producer" | "buyer" | "carrier")[] }
+ * Atomically replaces the company's role list.
+ * Also syncs the legacy `type` field to the first role for backward compat.
+ */
+router.put(
+  "/companies/mine/roles",
+  requireAuth,
+  requireCompany(),
+  async (req, res) => {
+    const { company } = req as AuthedCompanyRequest;
+
+    const VALID_ROLES = ["producer", "buyer", "carrier"] as const;
+    type ValidRole = (typeof VALID_ROLES)[number];
+    const ids: unknown = req.body?.roles;
+    if (!Array.isArray(ids) || ids.some((x) => !VALID_ROLES.includes(x as ValidRole))) {
+      res.status(400).json({
+        error: "ValidationError",
+        message: 'roles must be an array of "producer", "buyer", and/or "carrier"',
+      });
+      return;
+    }
+    if (ids.length === 0) {
+      res.status(400).json({
+        error: "ValidationError",
+        message: "At least one role is required",
+      });
+      return;
+    }
+    const roles = ids as ValidRole[];
+
+    await db.transaction(async (tx) => {
+      await tx.delete(companyRolesTable).where(eq(companyRolesTable.company_id, company.id));
+      await tx.insert(companyRolesTable).values(
+        roles.map((r) => ({ company_id: company.id, role: r })),
+      ).onConflictDoNothing();
+      // Keep legacy type in sync
+      await tx
+        .update(companiesTable)
+        .set({ type: roles[0] })
+        .where(eq(companiesTable.id, company.id));
+    });
+
+    void logAudit({
+      userId: (req as AuthedCompanyRequest).userId,
+      companyId: company.id,
+      action: "company.roles_updated",
+      entityType: "company",
+      entityId: company.id,
+      details: { roles },
+    });
+
+    res.json({ roles });
   },
 );
 

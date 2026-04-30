@@ -41,6 +41,7 @@ export function OnboardingPage() {
   const [commercialRegistration, setCr] = useState("");
   const [companyCategoryId, setCompanyCategoryId] = useState("");
   const [selectedActionIds, setSelectedActionIds] = useState<Set<string>>(new Set());
+  const [selectedRoles, setSelectedRoles] = useState<Set<"producer" | "buyer" | "carrier">>(new Set(["producer"]));
   const [otherActionDesc, setOtherActionDesc] = useState("");
   const [licenseNumber, setLicenseNumber] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -91,6 +92,15 @@ export function OnboardingPage() {
     setError(null);
   };
 
+  const toggleRole = (role: "producer" | "buyer" | "carrier") => {
+    setSelectedRoles((prev) => {
+      const next = new Set(prev);
+      if (next.has(role)) next.delete(role);
+      else next.add(role);
+      return next;
+    });
+  };
+
   const otherAction = actions.find((a) => a.key === "other");
   const hasOtherSelected = otherAction ? selectedActionIds.has(otherAction.id) : false;
 
@@ -132,6 +142,7 @@ export function OnboardingPage() {
         ...(commercialRegistration.trim() ? { commercialRegistration: commercialRegistration.trim() } : {}),
         ...(companyCategoryId ? { company_category_id: companyCategoryId } : {}),
         action_ids: Array.from(selectedActionIds),
+        roles: Array.from(selectedRoles),
         accepted_terms: true,
         ...(licenseNumber.trim() ? { license_number: licenseNumber.trim() } : {}),
       };
@@ -244,6 +255,43 @@ export function OnboardingPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* ── Section 1b: MWAN Roles ── */}
+        <fieldset>
+          <legend className="mb-1 block text-sm font-medium text-foreground">
+            {t("onboarding.form.roles")} *
+          </legend>
+          <p className="mb-3 text-xs text-muted-foreground">{t("onboarding.form.roles.hint")}</p>
+          <div className="grid gap-2 sm:grid-cols-3">
+            {(["producer", "buyer", "carrier"] as const).map((role) => {
+              const selected = selectedRoles.has(role);
+              return (
+                <button
+                  key={role}
+                  type="button"
+                  onClick={() => toggleRole(role)}
+                  className={`flex items-start gap-3 rounded-lg border p-3 text-start transition-colors ${
+                    selected
+                      ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+                      : "border-border bg-card hover:border-primary/40"
+                  }`}
+                >
+                  <span className={`mt-0.5 shrink-0 ${selected ? "text-primary" : "text-muted-foreground"}`}>
+                    {selected ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
+                  </span>
+                  <div>
+                    <div className={`text-sm font-medium ${selected ? "text-primary" : "text-foreground"}`}>
+                      {t(`role.${role}`)}
+                    </div>
+                    <div className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                      {t(`onboarding.form.roles.${role}.desc`)}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
 
         {/* ── Section 2: Actions multi-select ── */}
         <fieldset>

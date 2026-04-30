@@ -161,6 +161,29 @@ const SECONDARY_CARDS = [
   { titleKey: "contracts.title",           descKey: "contracts.subtitle",           icon: ClipboardList, href: "/contracts" },
 ] as const;
 
+function CarrierSection({ t, Arrow }: { t: (k: string) => string; Arrow: typeof ArrowLeft }) {
+  return (
+    <div className="mb-4">
+      <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+        {t("dashboard.carrier.title")}
+      </p>
+      <Link to="/transport-requests">
+        <div className="group flex cursor-pointer items-center gap-3.5 rounded-xl border-2 border-amber-500/25 bg-amber-50/60 dark:bg-amber-950/20 px-4 py-3.5 transition-all hover:border-amber-500/45 hover:bg-amber-50">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 text-amber-600">
+            <Truck className="h-5 w-5" />
+          </span>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-medium text-amber-600/80">{t("role.carrier")}</p>
+            <h3 className="text-sm font-bold text-foreground">{t("transport.title")}</h3>
+            <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{t("dashboard.carrier.desc")}</p>
+          </div>
+          <Arrow className="h-4 w-4 shrink-0 text-amber-600 opacity-60 transition-opacity group-hover:opacity-100" />
+        </div>
+      </Link>
+    </div>
+  );
+}
+
 export function DashboardPage() {
   const { t, lang } = useT();
   const Arrow = lang === "ar" ? ArrowLeft : ArrowRight;
@@ -178,6 +201,9 @@ export function DashboardPage() {
   }
 
   const company = me.company;
+  // roles[] is returned by the API but not yet in generated types — safe cast
+  const companyRoles: string[] = ((company as unknown) as Record<string, unknown>).roles as string[] ?? [];
+  const isCarrier = companyRoles.includes("carrier");
 
   return (
     <AppLayout showSignOut>
@@ -224,6 +250,9 @@ export function DashboardPage() {
 
       {/* ── Context-aware next-action nudge ── */}
       {stats && <NextActionBanner stats={stats} t={t} Arrow={Arrow} />}
+
+      {/* ── Carrier transport section (shown when company has carrier role) ── */}
+      {isCarrier && <CarrierSection t={t} Arrow={Arrow} />}
 
       {/* ── Primary action cards (blue = produce, green = buy) ── */}
       <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
