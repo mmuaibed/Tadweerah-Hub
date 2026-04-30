@@ -344,9 +344,9 @@ router.get(
 
 /**
  * PUT /companies/mine/roles
- * Body: { roles: ("producer" | "buyer" | "carrier")[] }
- * Atomically replaces the company's role list.
- * Also syncs the legacy `type` field to the first role for backward compat.
+ * Body: { roles: ("generator" | "receiver" | "transporter")[] }
+ * Atomically replaces the company's MWAN role list.
+ * Also syncs the legacy `type` field (producer/buyer/carrier) for backward compat.
  */
 router.put(
   "/companies/mine/roles",
