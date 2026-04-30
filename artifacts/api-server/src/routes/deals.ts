@@ -107,8 +107,8 @@ router.get(
  * Producer confirms payment received.
  * Requires `payment_reference` (bank transfer ID / transaction number) in body.
  * Optional: `payment_proof_url` (URL of uploaded document).
- * For by_weight deals: `actual_quantity` also required to compute final_amount.
- * For fixed deals: `actual_quantity` must NOT be sent.
+ * NOTE: actual_quantity is no longer collected here — it is entered at dispatch
+ *       (when the weighbridge reading is available) for by_weight deals.
  */
 router.post(
   "/deals/:deal_id/confirm-payment",
@@ -151,83 +151,21 @@ router.post(
 
     const now = new Date();
 
-    if (deal.settlement_type === "fixed") {
-      if (req.body?.actual_quantity !== undefined) {
-        throw new HttpError(
-          400,
-          "ActualQuantityForbidden",
-          "actual_quantity must not be sent for fixed-price deals",
-        );
-      }
-
-      const [updated] = await db
-        .update(dealsTable)
-        .set({
-          status: "payment_confirmed",
-          payment_confirmed_at: now,
-          payment_confirmed_by: company.id,
-          payment_reference: payment_reference.trim(),
-          payment_proof_url,
-          updated_at: now,
-        })
-        .where(eq(dealsTable.id, dealId))
-        .returning();
-
-      const counterpartyId = updated.buyer_company_id;
-      const [counterparty] = await db
-        .select({ name: companiesTable.name, contactPhone: companiesTable.contactPhone, city: companiesTable.city })
-        .from(companiesTable)
-        .where(eq(companiesTable.id, counterpartyId))
-        .limit(1);
-
-      void logAudit({
-        userId: (req as AuthedCompanyRequest).userId,
-        companyId: company.id,
-        action: "deal.payment_confirmed",
-        entityType: "deal",
-        entityId: dealId,
-        details: { settlement_type: "fixed" },
-      });
-      void notifyDealStageChange({
-        companyId: updated.buyer_company_id,
-        dealId,
-        listingId: updated.listing_id,
-        type: "deal_payment_confirmed",
-        title_ar: "تم تأكيد الدفع",
-        title_en: "Payment Confirmed",
-        body_ar: "قام المنتج بتأكيد استلام الدفع، يرجى انتظار شحن البضاعة",
-        body_en: "The producer confirmed payment receipt. Awaiting dispatch.",
-      });
-
-      return res.json(serializeDeal(updated, counterparty!));
-    }
-
-    // by_weight
-    const rawQty = req.body?.actual_quantity;
-    if (rawQty === undefined || rawQty === null) {
+    // Both fixed and by_weight: record payment reference now.
+    // For by_weight, actual_quantity and final_amount are set at confirm-dispatch
+    // (weighbridge happens at pickup, not before payment).
+    if (req.body?.actual_quantity !== undefined) {
       throw new HttpError(
-        422,
-        "ActualQuantityRequired",
-        "actual_quantity is required for by_weight deals",
+        400,
+        "ActualQuantityForbidden",
+        "actual_quantity must not be sent at payment confirmation — enter it at dispatch after weighbridge reading",
       );
     }
-    const qty = Number(rawQty);
-    if (!isFinite(qty) || qty <= 0) {
-      throw new HttpError(
-        422,
-        "ActualQuantityInvalid",
-        "actual_quantity must be a positive number",
-      );
-    }
-
-    const finalAmount = Number(deal.price_per_unit) * qty;
 
     const [updated] = await db
       .update(dealsTable)
       .set({
         status: "payment_confirmed",
-        actual_quantity: String(qty),
-        final_amount: String(finalAmount),
         payment_confirmed_at: now,
         payment_confirmed_by: company.id,
         payment_reference: payment_reference.trim(),
@@ -249,7 +187,7 @@ router.post(
       action: "deal.payment_confirmed",
       entityType: "deal",
       entityId: dealId,
-      details: { settlement_type: "by_weight", actual_quantity: qty, final_amount: finalAmount },
+      details: { settlement_type: deal.settlement_type },
     });
     void notifyDealStageChange({
       companyId: updated.buyer_company_id,
@@ -270,6 +208,8 @@ router.post(
  * POST /deals/:deal_id/confirm-dispatch
  * Producer confirms goods have been dispatched.
  * Requires status = 'payment_confirmed'.
+ * For by_weight deals: `actual_quantity` is required here (weighbridge at pickup).
+ * Final amount is computed and stored at this point.
  */
 router.post(
   "/deals/:deal_id/confirm-dispatch",
@@ -298,15 +238,44 @@ router.post(
     }
 
     const now = new Date();
+    const dispatchUpdate: Partial<typeof dealsTable.$inferInsert> = {
+      status: "dispatched",
+      dispatched_at: now,
+      dispatched_by: company.id,
+      updated_at: now,
+    };
+
+    // For by_weight deals, actual_quantity (weighbridge) is required at dispatch
+    if (deal.settlement_type === "by_weight") {
+      const rawQty = req.body?.actual_quantity;
+      if (rawQty === undefined || rawQty === null) {
+        throw new HttpError(
+          422,
+          "ActualQuantityRequired",
+          "actual_quantity is required for by_weight deals at dispatch (weighbridge reading)",
+        );
+      }
+      const qty = Number(rawQty);
+      if (!isFinite(qty) || qty <= 0) {
+        throw new HttpError(
+          422,
+          "ActualQuantityInvalid",
+          "actual_quantity must be a positive number",
+        );
+      }
+      dispatchUpdate.actual_quantity = String(qty);
+      dispatchUpdate.final_amount = String(Number(deal.price_per_unit) * qty);
+    } else if (req.body?.actual_quantity !== undefined) {
+      throw new HttpError(
+        400,
+        "ActualQuantityForbidden",
+        "actual_quantity must not be sent for fixed-price deals",
+      );
+    }
 
     const [updated] = await db
       .update(dealsTable)
-      .set({
-        status: "dispatched",
-        dispatched_at: now,
-        dispatched_by: company.id,
-        updated_at: now,
-      })
+      .set(dispatchUpdate)
       .where(eq(dealsTable.id, dealId))
       .returning();
 

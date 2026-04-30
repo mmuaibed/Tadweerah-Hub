@@ -57,6 +57,9 @@ export const transportRequestsTable = pgTable("transport_requests", {
   /** Waste description to appear on MWAN manifest (plain text for MVP). */
   waste_description: text("waste_description"),
 
+  /** Vehicle plate number — required before marking pickup/in-transit. */
+  vehicle_plate: text("vehicle_plate"),
+
   notes: text("notes"),
 
   planned_pickup_at: timestamp("planned_pickup_at", { withTimezone: true }),

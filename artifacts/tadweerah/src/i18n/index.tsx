@@ -569,6 +569,12 @@ const translations: Record<string, Record<Language, string>> = {
   "deal.field.payment_proof_url": { ar: "إرفاق إثبات الدفع (اختياري)", en: "Attach Payment Proof (Optional)" },
   "deal.field.payment_proof_url.placeholder": { ar: "رابط الصورة أو الوثيقة", en: "Image or document URL" },
   "deal.error.payment_reference_required": { ar: "رقم مرجع الدفع مطلوب", en: "Payment reference is required" },
+  "deal.field.actual_quantity.dispatch_hint": { ar: "أدخل الكمية من قراءة الميزان عند الاستلام", en: "Enter quantity from weighbridge reading at pickup" },
+  "deal.error.quantity_required_for_dispatch": { ar: "الكمية الفعلية (قراءة الوزن) مطلوبة لتأكيد الإرسال", en: "Actual quantity (weighbridge reading) is required to confirm dispatch" },
+  "transport.create.vehicle_plate": { ar: "لوحة المركبة", en: "Vehicle Plate" },
+  "transport.create.vehicle_plate.hint": { ar: "مطلوب قبل تأكيد بدء رحلة النقل", en: "Required before confirming pickup / in-transit" },
+  "cr.gate.listing": { ar: "السجل التجاري مطلوب قبل إنشاء الإعلانات. يرجى تحديث ملف شركتك.", en: "Commercial Registration is required before creating listings. Update your company profile." },
+  "cr.gate.offer": { ar: "السجل التجاري مطلوب قبل تقديم العروض. يرجى تحديث ملف شركتك.", en: "Commercial Registration is required before submitting offers. Update your company profile." },
 
   // Item 2 — Self-bidding warning
   "offer.warning.already_top": {

@@ -24,6 +24,7 @@ function serializeTR(tr: typeof transportRequestsTable.$inferSelect) {
     pickup_city: tr.pickup_city ?? undefined,
     delivery_city: tr.delivery_city ?? undefined,
     waste_description: tr.waste_description ?? undefined,
+    vehicle_plate: tr.vehicle_plate ?? undefined,
     notes: tr.notes ?? undefined,
     planned_pickup_at: tr.planned_pickup_at?.toISOString() ?? undefined,
     actual_pickup_at: tr.actual_pickup_at?.toISOString() ?? undefined,
@@ -96,6 +97,10 @@ router.post(
       typeof req.body?.waste_description === "string"
         ? req.body.waste_description.trim() || null
         : null;
+    const vehiclePlate =
+      typeof req.body?.vehicle_plate === "string"
+        ? req.body.vehicle_plate.trim() || null
+        : null;
     const notes =
       typeof req.body?.notes === "string" ? req.body.notes.trim() || null : null;
     const plannedPickupAt =
@@ -111,6 +116,7 @@ router.post(
         pickup_city: pickupCity,
         delivery_city: deliveryCity,
         waste_description: wasteDescription,
+        vehicle_plate: vehiclePlate,
         notes,
         planned_pickup_at: plannedPickupAt,
       })
@@ -323,6 +329,23 @@ router.patch(
     // When accepting, assign transporter
     if (action === "accept") {
       updates.transporter_company_id = company.id;
+    }
+
+    // vehicle_plate can be set/updated on any transition
+    if (typeof req.body?.vehicle_plate === "string") {
+      updates.vehicle_plate = (req.body.vehicle_plate as string).trim() || null;
+    }
+
+    // pickup requires vehicle_plate to be present (on the row or provided now)
+    if (action === "pickup") {
+      const effectivePlate = updates.vehicle_plate ?? row.vehicle_plate;
+      if (!effectivePlate) {
+        res.status(422).json({
+          error: "VehiclePlateRequired",
+          message: "vehicle_plate is required before marking pickup / in-transit",
+        });
+        return;
+      }
     }
 
     // Allow partial update of optional fields during any transition

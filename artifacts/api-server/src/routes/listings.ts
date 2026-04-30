@@ -483,9 +483,14 @@ router.post(
     const { company } = req as AuthedCompanyRequest;
     const data = parsed.data;
 
-    // CHARTER RULE: POST /listings is always allowed for any authenticated company.
-    // No eligibility checks (license, capability, category) are permitted here.
-    // All eligibility enforcement lives exclusively in POST /offers.
+    // CR gate: Commercial Registration is required to create listings
+    if (!company.commercialRegistration) {
+      throw new HttpError(
+        422,
+        "CommercialRegistrationRequired",
+        "Commercial Registration is required before creating listings. Update your company profile.",
+      );
+    }
 
     // Extra fields not in generated schema (safe to read directly from body)
     const saleType: "auction" | "direct" = req.body.sale_type === "direct" ? "direct" : "auction";

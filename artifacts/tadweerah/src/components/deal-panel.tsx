@@ -484,6 +484,7 @@ function CreateTransportRequestForm({
   const [pickupCity, setPickupCity] = useState(defaultPickupCity);
   const [deliveryCity, setDeliveryCity] = useState(defaultDeliveryCity);
   const [wasteDesc, setWasteDesc] = useState(defaultWasteDesc);
+  const [vehiclePlate, setVehiclePlate] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
@@ -504,6 +505,7 @@ function CreateTransportRequestForm({
           pickup_city: pickupCity.trim() || null,
           delivery_city: deliveryCity.trim() || null,
           waste_description: wasteDesc.trim() || null,
+          vehicle_plate: vehiclePlate.trim() || null,
         }),
       });
       if (res.status === 409) {
@@ -582,6 +584,19 @@ function CreateTransportRequestForm({
                 placeholder={t("transport.create.waste_desc")}
                 className="h-8 text-sm"
               />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-foreground mb-1 block">
+                {t("transport.create.vehicle_plate")}
+              </label>
+              <Input
+                value={vehiclePlate}
+                onChange={(e) => setVehiclePlate(e.target.value)}
+                placeholder="e.g. 1234 ABC"
+                className="h-8 text-sm font-mono uppercase"
+                dir="ltr"
+              />
+              <p className="text-[10px] text-muted-foreground mt-0.5">{t("transport.create.vehicle_plate.hint")}</p>
             </div>
           </div>
           {error && (
@@ -826,15 +841,20 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
       setError(t("deal.error.payment_reference_required"));
       return;
     }
+    setError(null);
+    setPendingAction("confirm-payment");
+  }
+
+  function requestConfirmDispatch() {
     if (deal.settlement_type === "by_weight") {
       const qty = parseFloat(actualQty);
       if (!actualQty || isNaN(qty) || qty <= 0) {
-        setError(t("deal.error.invalid_state"));
+        setError(t("deal.error.quantity_required_for_dispatch"));
         return;
       }
     }
     setError(null);
-    setPendingAction("confirm-payment");
+    setPendingAction("confirm-dispatch");
   }
 
   function handleConfirmed() {
@@ -846,10 +866,9 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
       if (paymentProofUrl.trim()) {
         body.payment_proof_url = paymentProofUrl.trim();
       }
-      if (deal.settlement_type === "by_weight") {
-        body.actual_quantity = parseFloat(actualQty);
-      }
       executeAction("confirm-payment", body);
+    } else if (pendingAction === "confirm-dispatch" && deal.settlement_type === "by_weight") {
+      executeAction("confirm-dispatch", { actual_quantity: parseFloat(actualQty) });
     } else {
       executeAction(pendingAction);
     }
@@ -1170,22 +1189,6 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
                   />
                 </div>
 
-                {deal.settlement_type === "by_weight" && (
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min={0}
-                      step="any"
-                      value={actualQty}
-                      onChange={(e) => setActualQty(e.target.value)}
-                      placeholder={t("deal.field.quantity.placeholder")}
-                      className="flex-1 h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary text-start"
-                      dir="ltr"
-                    />
-                    <span className="text-sm text-muted-foreground shrink-0">{unit}</span>
-                  </div>
-                )}
-
                 <Button
                   className="w-full"
                   onClick={requestConfirmPayment}
@@ -1198,14 +1201,37 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
             )}
 
             {role === "producer" && deal.status === "payment_confirmed" && (
-              <Button
-                className="w-full"
-                onClick={() => setPendingAction("confirm-dispatch")}
-                disabled={loading}
-              >
-                {loading && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
-                {t("deal.action.confirm_dispatch")}
-              </Button>
+              <div className="space-y-3">
+                {deal.settlement_type === "by_weight" && (
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-foreground">
+                      {t("deal.field.actual_quantity")} *
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min={0}
+                        step="any"
+                        value={actualQty}
+                        onChange={(e) => { setActualQty(e.target.value); setError(null); }}
+                        placeholder={t("deal.field.quantity.placeholder")}
+                        className="flex-1 h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary text-start"
+                        dir="ltr"
+                      />
+                      <span className="text-sm text-muted-foreground shrink-0">{unit}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{t("deal.field.actual_quantity.dispatch_hint")}</p>
+                  </div>
+                )}
+                <Button
+                  className="w-full"
+                  onClick={requestConfirmDispatch}
+                  disabled={loading}
+                >
+                  {loading && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
+                  {t("deal.action.confirm_dispatch")}
+                </Button>
+              </div>
             )}
 
             {role === "buyer" && deal.status === "dispatched" && (

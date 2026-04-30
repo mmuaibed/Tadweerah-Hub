@@ -381,6 +381,15 @@ router.post(
     );
     const { company } = req as AuthedCompanyRequest;
 
+    // CR gate: Commercial Registration is required to submit offers
+    if (!company.commercialRegistration) {
+      throw new HttpError(
+        422,
+        "CommercialRegistrationRequired",
+        "Commercial Registration is required before submitting offers. Update your company profile.",
+      );
+    }
+
     const parsed = SubmitOfferBody.safeParse(req.body);
     if (!parsed.success) {
       throw new HttpError(
