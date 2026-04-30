@@ -1,0 +1,118 @@
+Please run a low-cost Smart Path Verification for the current MVP.
+
+Do NOT do repeated browser testing.
+Do NOT add new features.
+Use API checks, DB checks, route/code inspection, typecheck, and only 1–2 screenshots if absolutely needed.
+
+Goal:
+Verify that every major user journey can move from one stage to the next without getting stuck in a dead end.
+
+For each scenario, report:
+- Start condition
+- Steps / API or DB checks used
+- Expected next state
+- Actual next state
+- PASS / FAIL
+- If FAIL: where the journey gets stuck
+- Severity
+- Minimal fix required
+
+Test these journeys:
+
+1. Registration → Onboarding → Dashboard
+- Generator only
+- Receiver only
+- Transporter only
+- Multi-role
+Verify roles[] are saved, /api/me returns them, and dashboard modules are reachable.
+
+2. Company profile update journey
+- Update roles
+- Update CR/license/contact fields
+Verify dashboard updates and CR gates behave correctly.
+
+3. Generator marketplace journey
+- Company with CR creates listing
+- Company without CR is blocked from creating listing
+- Listing appears correctly for eligible receivers.
+
+4. Receiver offer journey
+- Receiver with CR submits offer
+- Receiver without CR is blocked
+- Ineligible receiver is blocked with clear error
+- Offer status becomes pending.
+
+5. Offer acceptance journey
+- Generator accepts one offer
+- Accepted offer becomes accepted
+- Other pending offers become rejected
+- Listing closes
+- Deal is created
+Verify the user can continue from Deal to Payment stage.
+
+6. Deal payment journey
+- Fixed deal payment confirmation
+- By-weight deal payment confirmation without actual_quantity
+Verify payment succeeds and deal moves to payment_confirmed.
+
+7. Dispatch journey
+- Dispatch without transport_request must be blocked
+- Dispatch with transport_request but no vehicle_plate must be blocked
+- Dispatch with vehicle_plate must pass
+- By-weight deal requires actual_quantity at dispatch
+Verify deal moves to dispatched / in_transit correctly.
+
+8. Receipt and closure journey
+- Buyer confirms receipt
+- Deal closes correctly
+- Audit/event records exist if applicable
+Verify no further required action is impossible.
+
+9. Transport request journey
+- Platform-managed transport
+- Self-managed transport
+- Self-managed requires transporter_name for readiness
+- Platform mode requires assigned platform transporter for readiness
+- vehicle_plate check works for both.
+
+10. MWAN-ready journey
+- MWAN summary loads for deal
+- Readiness score is computed
+- Missing fields are listed
+- Missing fields correspond to actual missing data
+- self_managed and platform transport are evaluated differently.
+
+11. Negative/dead-end checks
+Check that no journey can reach a state where the next required action is impossible:
+- Deal payment_confirmed but no way to create transport request
+- Transport request exists but cannot be updated with plate
+- By-weight deal cannot finalize amount
+- Receiver cannot confirm receipt
+- Company can remove all roles
+- Suspended/rejected/ineligible company can enter new deal
+- Rejected offer can be accepted
+- Dispatch can happen without vehicle plate
+- Closed/cancelled deal can still be modified
+
+12. Expiry checks if available
+- Deal expiry logic still works
+- Expired deals cannot continue incorrectly
+- Notifications/audit logs are created if already implemented.
+
+Low-cost method:
+- Prefer DB transaction tests with rollback.
+- Prefer direct API calls with seeded test data.
+- Prefer code inspection only for UI gating.
+- Avoid browser tests except one final smoke screenshot if needed.
+
+Final output required:
+1. Scenario checklist table.
+2. PASS/FAIL summary.
+3. Dead-end risk map.
+4. Top critical gaps only.
+5. Recommendation:
+   - ready for pilot
+   - ready after fixes
+   - not ready
+
+Please keep the report factual and avoid proposing large new features unless a journey is blocked.
