@@ -35,6 +35,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useT } from "@/i18n";
 import { dealRef } from "@/lib/listing-ref";
 import {
@@ -1285,7 +1291,8 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
   const [copied, setCopied] = useState(false);
   const [copiedManifest, setCopiedManifest] = useState(false);
   const [trFormOpen, setTrFormOpen] = useState(false);
-  const [payFormOpen, setPayFormOpen] = useState(true);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [timelineOpen, setTimelineOpen] = useState(false);
 
   // Share cache key with MwanSummaryPanel — no extra network call
   const { data: mwanHeaderData } = useQuery<MwanSummary>({
@@ -1306,13 +1313,6 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
     navigator.clipboard.writeText(ref).catch(() => {});
     setCopiedManifest(true);
     setTimeout(() => setCopiedManifest(false), 2000);
-  }
-
-  function openTrFormAndScroll() {
-    setTrFormOpen(true);
-    setTimeout(() => {
-      document.getElementById(`tr-form-${deal.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 50);
   }
 
   function copyDealRef() {
@@ -1429,8 +1429,25 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
 
   const activeDialog = pendingAction ? confirmDialogProps[pendingAction] : null;
 
+  /* ── helpers ── */
+  const mwanScore = mwanHeaderData ? (() => {
+    const [ready, total] = mwanHeaderData.readiness_score.split("/").map(Number);
+    const color = ready === total ? "bg-green-100 text-green-800"
+      : ready >= 10 ? "bg-amber-100 text-amber-800"
+      : "bg-red-100 text-red-700";
+    return (
+      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${color}`}>
+        <span className="h-1.5 w-1.5 rounded-full bg-current" />
+        {mwanHeaderData.readiness_score} {t("mwan.header.score_label")}
+      </span>
+    );
+  })() : null;
+
+  const canOpenTrModal = ["payment_confirmed", "dispatched", "completed"].includes(deal.status);
+
   return (
     <>
+      {/* ── Confirm-action dialog ── */}
       {activeDialog && (
         <ConfirmDialog
           open={!!pendingAction}
@@ -1464,412 +1481,151 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
         </ConfirmDialog>
       )}
 
-      <div className="rounded-xl border border-primary/20 bg-primary/5 space-y-0 overflow-hidden">
-        {/* Header */}
-        <div className="px-4 py-3 bg-primary/10 space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="min-w-0 flex-1">
-              <span className="font-semibold text-primary text-sm">{t("deal.panel.title")}</span>
-              {(listingMaterial || deal.counterparty?.name) && (
-                <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                  <p className="text-xs text-primary/70 truncate">
-                    {[listingMaterial, deal.counterparty?.name].filter(Boolean).join(" · ")}
-                  </p>
-                  {deal.counterparty?.is_verified && (
-                    <span className="inline-flex items-center gap-0.5 rounded-full bg-green-100 text-green-800 text-[9px] font-bold px-1.5 py-0.5 shrink-0">
-                      <Check className="h-2.5 w-2.5" />{t("company.verified")}
-                    </span>
-                  )}
-                </div>
-              )}
-              <div className="flex flex-wrap items-center gap-2 mt-1.5">
-                {/* Deal ref */}
-                <span className="text-sm font-bold font-mono text-primary tracking-wider" dir="ltr">
-                  {dealRef(deal.id, deal.created_at)}
+      {/* ── Modal: Deal Details ── */}
+      <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{lang === "ar" ? "تفاصيل الصفقة" : "Deal Details"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pb-2">
+            {/* Financial summary */}
+            <div className="rounded-lg border border-border p-3 space-y-1.5">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                {lang === "ar" ? "الملخص المالي" : "Financial Summary"}
+              </p>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
+                <span className="text-muted-foreground">{t("deal.settlement.label")}</span>
+                <span className="font-medium text-end">{t(`deal.settlement.${deal.settlement_type}`)}</span>
+
+                <span className="text-muted-foreground">{t("deal.field.price_per_unit")}</span>
+                <span className="font-medium text-end">
+                  {deal.price_per_unit.toLocaleString()} {t("listing.sar")} / {unit}
                 </span>
-                <button
-                  type="button"
-                  onClick={copyDealRef}
-                  className="flex items-center gap-1 text-primary/60 hover:text-primary transition-colors"
-                  aria-label={t("deal.ref.copy")}
-                >
-                  {copied
-                    ? <Check className="h-3.5 w-3.5 text-green-600" />
-                    : <Copy className="h-3.5 w-3.5" />}
-                  {copied && <span className="text-[10px] text-green-600 font-medium">{t("deal.ref.copied")}</span>}
-                </button>
-                {/* Manifest ref */}
-                {mwanHeaderData?.transport?.manifest_ref && (
+
+                <span className="text-muted-foreground">{t("deal.field.estimated_amount")}</span>
+                <span className="font-semibold text-primary text-end">
+                  {deal.estimated_amount.toLocaleString()} {t("listing.sar")}
+                </span>
+
+                {deal.actual_quantity != null && (
                   <>
-                    <span className="text-primary/30 text-xs">·</span>
-                    <span className="text-xs font-bold font-mono text-primary/80" dir="ltr">
-                      {mwanHeaderData.transport.manifest_ref}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => copyManifestRef(mwanHeaderData.transport!.manifest_ref!)}
-                      className="flex items-center gap-1 text-primary/50 hover:text-primary transition-colors"
-                      aria-label={t("deal.manifest_ref.copy")}
-                    >
-                      {copiedManifest
-                        ? <Check className="h-3 w-3 text-green-600" />
-                        : <Copy className="h-3 w-3" />}
-                    </button>
+                    <span className="text-muted-foreground">{t("deal.field.actual_quantity")}</span>
+                    <span className="font-semibold text-end">{deal.actual_quantity.toLocaleString()} {unit}</span>
                   </>
                 )}
-              </div>
-            </div>
-            <div className="flex flex-col items-end gap-1.5 shrink-0">
-              <Badge variant={statusBadgeVariant(deal.status)}>
-                {statusLabel(deal.status)}
-              </Badge>
-              {/* MWAN score badge */}
-              {mwanHeaderData && (() => {
-                const [ready, total] = mwanHeaderData.readiness_score.split("/").map(Number);
-                const color = ready === total
-                  ? "bg-green-100 text-green-800"
-                  : ready >= 10
-                  ? "bg-amber-100 text-amber-800"
-                  : "bg-red-100 text-red-700";
-                return (
-                  <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${color}`}>
-                    <span className="h-1.5 w-1.5 rounded-full bg-current" />
-                    {mwanHeaderData.readiness_score} {t("mwan.header.score_label")}
-                  </span>
-                );
-              })()}
-            </div>
-          </div>
-
-          {pricingModel === "revenue_share" && revenueSharePct != null && (
-            <div className="flex items-center gap-1.5 text-xs text-primary/80 font-medium border border-primary/20 rounded-md px-2 py-1 bg-primary/5 w-fit">
-              <Percent className="h-3 w-3 shrink-0" />
-              <span>{t("listing.pricing_model.revenue_share")} — {revenueSharePct}%</span>
-            </div>
-          )}
-
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 text-xs text-primary/80 font-medium">
-              {role === "producer"
-                ? <UserCog className="h-3.5 w-3.5 shrink-0" />
-                : <UserCheck className="h-3.5 w-3.5 shrink-0" />}
-              <span>{t(`deal.role.${role}`)}</span>
-            </div>
-            {deal.status !== "completed" && (
-              <div className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${
-                isMyTurn
-                  ? "bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-200"
-                  : "bg-muted text-muted-foreground"
-              }`}>
-                {isMyTurn
-                  ? <><AlertCircle className="h-3 w-3 shrink-0" />{t("deal.role.your_turn")}</>
-                  : <><Clock className="h-3 w-3 shrink-0" />{t("deal.role.not_your_turn")}</>
-                }
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* V6 — Compliance badge (completed deals) */}
-        {deal.status === "completed" && (
-          <div className="px-4 py-2.5 flex items-center gap-2 bg-green-50 border-b border-green-200/60">
-            <Shield className="h-4 w-4 text-green-700 shrink-0" />
-            <div className="flex-1 min-w-0">
-              <span className="text-xs font-semibold text-green-800">{t("deal.compliance.badge")}</span>
-              <span className="mx-2 text-green-400 text-xs">·</span>
-              <span className="text-xs text-green-700">{t("deal.compliance.tagline")}</span>
-            </div>
-            {listingRef && (
-              <span className="text-[10px] text-green-600 font-mono shrink-0">{listingRef}</span>
-            )}
-          </div>
-        )}
-
-        {/* V5 — Smart contextual message */}
-        {deal.status === "completed" && (
-          <div className="px-4 py-2 bg-muted/30 border-b border-border">
-            <p className="text-xs text-muted-foreground">{t("deal.smart.deal_completed")}</p>
-          </div>
-        )}
-
-        {/* Contact — prominent congratulations card */}
-        {deal.counterparty && (
-          <div className="border-b border-green-200">
-            <div className="px-4 py-3 flex items-start gap-3 bg-green-50">
-              <CheckCircle2 className="h-5 w-5 text-green-700 shrink-0 mt-0.5" />
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-bold text-green-900">{t("deal.contact.congratulations")}</p>
-                <p className="text-xs text-green-700 mt-0.5">{t("deal.contact.can_now_contact")}</p>
-                <p className="text-xs text-green-600 mt-1 font-medium">{t("deal.contact.recorded_hint")}</p>
-              </div>
-            </div>
-            <div className="px-4 py-3 bg-background">
-              <p className="text-[11px] font-medium text-muted-foreground mb-1.5">{t("deal.contact.counterparty_label")}</p>
-              <div className="flex items-center gap-2 flex-wrap">
-                <p className="font-bold text-base text-foreground leading-tight">{deal.counterparty.name}</p>
-                {deal.counterparty.is_verified && (
-                  <span className="inline-flex items-center gap-0.5 rounded-full bg-green-100 text-green-800 text-[10px] font-bold px-2 py-0.5 shrink-0">
-                    <Check className="h-3 w-3" />{t("company.verified")}
-                  </span>
+                {deal.final_amount != null && (
+                  <>
+                    <span className="text-muted-foreground font-semibold">{t("deal.field.final_amount")}</span>
+                    <span className="font-bold text-primary text-end">{deal.final_amount.toLocaleString()} {t("listing.sar")}</span>
+                  </>
                 )}
+                {pricingModel === "revenue_share" && revenueSharePct != null && (
+                  <>
+                    <span className="text-muted-foreground">{t("listing.pricing_model.revenue_share")}</span>
+                    <span className="font-medium text-end">{revenueSharePct}%</span>
+                  </>
+                )}
+                <span className="text-muted-foreground">{t("deal.created_on")}</span>
+                <span className="font-medium text-end text-xs">
+                  {new Date(deal.created_at).toLocaleDateString(lang === "ar" ? "ar-SA" : "en-US", { year: "numeric", month: "short", day: "numeric" })}
+                </span>
               </div>
-              {deal.counterparty.contact_phone ? (
-                <a
-                  href={`tel:${deal.counterparty.contact_phone}`}
-                  dir="ltr"
-                  className="inline-flex items-center gap-2 mt-2 text-primary font-bold text-lg hover:underline"
-                >
-                  <Phone className="h-4 w-4 shrink-0" />
-                  {deal.counterparty.contact_phone}
-                </a>
-              ) : (
-                <p className="text-sm text-amber-700 font-medium mt-2 flex items-center gap-1.5">
-                  <Phone className="h-3.5 w-3.5 shrink-0 opacity-60" />
-                  {t("deal.contact.phone_missing")}
-                </p>
+              {deal.settlement_type === "by_weight" && deal.final_amount == null && (
+                <p className="text-xs text-muted-foreground mt-1">{t("deal.disclaimer")}</p>
               )}
-              <p className="text-[10px] text-muted-foreground/60 mt-3 border-t border-border pt-2">
-                <a href="mailto:info@tadweerah.com" className="hover:text-primary transition-colors">
-                  {t("support.deal_panel")}
-                </a>
-              </p>
             </div>
-          </div>
-        )}
-
-        {/* Settlement summary */}
-        <div className="px-4 py-3 space-y-2 border-b border-primary/10 bg-background">
-          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-            <span className="text-muted-foreground">{t("deal.settlement.label")}</span>
-            <span className="font-medium text-end">
-              {t(`deal.settlement.${deal.settlement_type}`)}
-            </span>
-
-            <span className="text-muted-foreground">{t("deal.field.price_per_unit")}</span>
-            <span className="font-medium text-end">
-              {deal.price_per_unit.toLocaleString()} {t("listing.sar")} / {unit}
-            </span>
-
-            <span className="text-muted-foreground">{t("deal.field.estimated_amount")}</span>
-            <span className="font-medium text-end">
-              {deal.estimated_amount.toLocaleString()} {t("listing.sar")}
-            </span>
-
-            {deal.actual_quantity != null && (
-              <>
-                <span className="text-muted-foreground">{t("deal.field.actual_quantity")}</span>
-                <span className="font-semibold text-end">
-                  {deal.actual_quantity.toLocaleString()} {unit}
-                </span>
-              </>
-            )}
-
-            {deal.final_amount != null && (
-              <>
-                <span className="text-muted-foreground font-semibold">{t("deal.field.final_amount")}</span>
-                <span className="font-bold text-primary text-end">
-                  {deal.final_amount.toLocaleString()} {t("listing.sar")}
-                </span>
-              </>
-            )}
-
-            <span className="text-muted-foreground">{t("deal.created_on")}</span>
-            <span className="font-medium text-end text-xs">
-              {new Date(deal.created_at).toLocaleDateString(lang === "ar" ? "ar-SA" : "en-US", {
-                year: "numeric", month: "short", day: "numeric",
-              })}
-            </span>
-          </div>
-          {deal.settlement_type === "by_weight" && deal.final_amount == null && (
-            <p className="text-xs text-muted-foreground">{t("deal.disclaimer")}</p>
-          )}
-        </div>
-
-        {/* Status stepper */}
-        <div className="px-4 py-3 border-b border-primary/10 bg-background space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground">{t("deal.stepper.title")}</span>
-            <span className="text-xs text-muted-foreground">
-              {currentStepIndex + 1} / {STATUS_STEPS.length}
-            </span>
-          </div>
-          <div className="flex items-center gap-0">
-            {STATUS_STEPS.map((step, i) => {
-              const done = i <= currentStepIndex;
-              const isCurrent = i === currentStepIndex && deal.status !== "completed";
-              const isLast = i === STATUS_STEPS.length - 1;
-              return (
-                <div key={step} className="flex items-center flex-1">
-                  <div className="flex flex-col items-center gap-1 flex-1">
-                    {isCurrent ? (
-                      <div className="relative flex items-center justify-center">
-                        <div className="absolute h-8 w-8 rounded-full bg-primary/20 animate-pulse" />
-                        <CheckCircle2 className="h-5 w-5 text-primary shrink-0 relative" />
-                      </div>
-                    ) : done ? (
-                      <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
-                    ) : (
-                      <Circle className="h-5 w-5 text-muted-foreground/30 shrink-0" />
-                    )}
-                    <span
-                      className={`text-center text-[10px] leading-tight ${
-                        isCurrent
-                          ? "text-primary font-bold"
-                          : done
-                            ? "text-primary/70 font-medium"
-                            : "text-muted-foreground/50"
-                      }`}
-                      style={{ maxWidth: "60px" }}
-                    >
-                      {statusLabel(step)}
-                    </span>
-                  </div>
-                  {!isLast && (
-                    <div
-                      className={`h-0.5 flex-1 mx-1 mb-5 rounded-full ${i < currentStepIndex ? "bg-primary" : "bg-muted"}`}
-                    />
+            {/* Material info */}
+            {(listingMaterial || listingCategory || listingQuantity != null) && (
+              <div className="rounded-lg border border-border p-3 space-y-1.5">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                  {lang === "ar" ? "معلومات المادة" : "Material Info"}
+                </p>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
+                  {listingCategory && (
+                    <><span className="text-muted-foreground">{lang === "ar" ? "الفئة" : "Category"}</span>
+                    <span className="font-medium text-end">{listingCategory}</span></>
+                  )}
+                  {listingMaterial && (
+                    <><span className="text-muted-foreground">{t("deal.print.material")}</span>
+                    <span className="font-medium text-end">{listingMaterial}</span></>
+                  )}
+                  {listingQuantity != null && (
+                    <><span className="text-muted-foreground">{t("deal.print.quantity")}</span>
+                    <span className="font-medium text-end">{listingQuantity.toLocaleString()} {unit}</span></>
                   )}
                 </div>
-              );
-            })}
+              </div>
+            )}
+            {/* Deal value summary (producer auction) */}
+            {role === "producer" && pricingModel !== "revenue_share" && deal.listing_id && (
+              <DealValueSummary
+                listingId={deal.listing_id}
+                acceptedPricePerUnit={deal.price_per_unit}
+                estimatedAmount={deal.estimated_amount}
+                unit={unit}
+              />
+            )}
+            {/* MWAN Panel */}
+            <MwanSummaryPanel dealId={deal.id} onRequestOpenTrForm={() => { setDetailsOpen(false); setTimeout(() => setTrFormOpen(true), 100); }} />
           </div>
-        </div>
+        </DialogContent>
+      </Dialog>
 
-        {/* Role-based actions */}
-        {deal.status !== "completed" && (
-          <div className="px-4 py-3 space-y-3 border-b border-primary/10 bg-background">
-            <div className={`rounded-md px-3 py-2 text-xs leading-relaxed ${
-              isMyTurn
-                ? "bg-amber-50 border border-amber-200 text-amber-800"
-                : "bg-muted/60 text-muted-foreground"
-            }`}>
-              {t(`deal.stage.action.${deal.status}.${role}`)}
+      {/* ── Modal: Governance Timeline ── */}
+      <Dialog open={timelineOpen} onOpenChange={setTimelineOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{lang === "ar" ? "سجل الحوكمة" : "Governance Log"}</DialogTitle>
+          </DialogHeader>
+          <div className="overflow-x-auto">
+            {/* Compact table instead of vertical list */}
+            <table className="w-full text-sm border-collapse">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-start py-1.5 px-2 text-xs font-semibold text-muted-foreground">{lang === "ar" ? "الحدث" : "Event"}</th>
+                  <th className="text-start py-1.5 px-2 text-xs font-semibold text-muted-foreground">{lang === "ar" ? "التاريخ" : "Date"}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { label: t("deal.timeline.offer_accepted"), ts: deal.created_at },
+                  { label: t("deal.timeline.payment_confirmed"), ts: deal.payment_confirmed_at },
+                  { label: t("deal.timeline.dispatched"), ts: deal.dispatched_at },
+                  { label: t("deal.timeline.received"), ts: deal.received_at },
+                ].map((row, i) => (
+                  <tr key={i} className="border-b border-border/50 last:border-0">
+                    <td className="py-2 px-2">
+                      <div className="flex items-center gap-2">
+                        <span className={`h-2 w-2 rounded-full shrink-0 ${row.ts ? "bg-primary" : "bg-muted-foreground/30"}`} />
+                        <span className={row.ts ? "text-foreground font-medium" : "text-muted-foreground/50"}>{row.label}</span>
+                      </div>
+                    </td>
+                    <td className="py-2 px-2 text-xs text-muted-foreground font-mono">
+                      {row.ts
+                        ? new Date(row.ts).toLocaleString(lang === "ar" ? "ar-SA" : "en-US", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
+                        : <span className="text-muted-foreground/40">{t("deal.timeline.pending_label")}</span>
+                      }
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {deal.payment_reference && (
+            <div className="mt-3 rounded-md bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+              <span className="font-medium">{lang === "ar" ? "رقم الدفعة:" : "Payment ref:"}</span>{" "}
+              <span className="font-mono" dir="ltr">{deal.payment_reference}</span>
             </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
-            {role === "producer" && deal.status === "active" && (
-              <div className="rounded-lg border border-primary/20 bg-primary/3 overflow-hidden">
-                <button
-                  type="button"
-                  onClick={() => setPayFormOpen((v) => !v)}
-                  className="w-full flex items-center justify-between px-3 py-2.5 text-xs font-semibold text-primary hover:bg-primary/5 transition-colors"
-                >
-                  <span>{t("deal.action.confirm_payment")}</span>
-                  {payFormOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-                </button>
-                {payFormOpen && (
-                  <div className="px-3 pb-3 space-y-3 border-t border-primary/10">
-                    <div className="space-y-1 pt-3">
-                      <label className="text-xs font-medium text-foreground">
-                        {t("deal.field.payment_reference")} *
-                      </label>
-                      <input
-                        type="text"
-                        value={paymentRef}
-                        onChange={(e) => { setPaymentRef(e.target.value); setError(null); }}
-                        placeholder={t("deal.field.payment_reference.placeholder")}
-                        className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                        dir="ltr"
-                        autoComplete="off"
-                      />
-                      <p className="text-xs text-muted-foreground">{t("deal.field.payment_reference.hint")}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-xs font-medium text-muted-foreground">
-                        {t("deal.field.payment_proof_url")}
-                      </label>
-                      <input
-                        type="url"
-                        value={paymentProofUrl}
-                        onChange={(e) => setPaymentProofUrl(e.target.value)}
-                        placeholder={t("deal.field.payment_proof_url.placeholder")}
-                        className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                        dir="ltr"
-                      />
-                    </div>
-                    <Button className="w-full" onClick={requestConfirmPayment} disabled={loading}>
-                      {loading && pendingAction === null && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
-                      {t("deal.action.confirm_payment")}
-                    </Button>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {role === "producer" && deal.status === "payment_confirmed" && (
-              <div className="space-y-3">
-                {deal.settlement_type === "by_weight" && (
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium text-foreground">
-                      {t("deal.field.actual_quantity")} *
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        min={0}
-                        step="any"
-                        value={actualQty}
-                        onChange={(e) => { setActualQty(e.target.value); setError(null); }}
-                        placeholder={t("deal.field.quantity.placeholder")}
-                        className="flex-1 h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary text-start"
-                        dir="ltr"
-                      />
-                      <span className="text-sm text-muted-foreground shrink-0">{unit}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">{t("deal.field.actual_quantity.dispatch_hint")}</p>
-                  </div>
-                )}
-                <Button
-                  className="w-full"
-                  onClick={requestConfirmDispatch}
-                  disabled={loading}
-                >
-                  {loading && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
-                  {t("deal.action.confirm_dispatch")}
-                </Button>
-              </div>
-            )}
-
-            {role === "buyer" && deal.status === "dispatched" && (
-              <Button
-                className="w-full"
-                onClick={() => setPendingAction("confirm-receipt")}
-                disabled={loading}
-              >
-                {loading && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
-                {t("deal.action.confirm_receipt")}
-              </Button>
-            )}
-
-            {(deal.status as string) !== "completed" && !isMyTurn && waitingText && (
-              <div className="rounded-md bg-muted/60 px-3 py-2 text-xs text-muted-foreground text-center leading-relaxed">
-                {waitingText}
-              </div>
-            )}
-
-            {error && (
-              <div className="flex items-start gap-2 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-                <span>{error}</span>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* V1 — Deal Value Summary (producer only, auction only) */}
-        {role === "producer" && pricingModel !== "revenue_share" && deal.listing_id && (
-          <DealValueSummary
-            listingId={deal.listing_id}
-            acceptedPricePerUnit={deal.price_per_unit}
-            estimatedAmount={deal.estimated_amount}
-            unit={unit}
-          />
-        )}
-
-        {/* V2 — Governance Timeline */}
-        <GovernanceTimeline deal={deal} lang={lang} />
-
-        {/* V3b — Create Transport Request (payment_confirmed+ only, pre-filled) */}
-        {["payment_confirmed", "dispatched", "completed"].includes(deal.status) && (
+      {/* ── Modal: Transport Request ── */}
+      <Dialog open={trFormOpen} onOpenChange={setTrFormOpen}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{lang === "ar" ? "طلب النقل" : "Transport Request"}</DialogTitle>
+          </DialogHeader>
           <CreateTransportRequestForm
             dealId={deal.id}
             defaultPickupCity={listingCity ?? ""}
@@ -1877,16 +1633,274 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
             defaultWasteDesc={listingDescription ?? listingMaterial ?? ""}
             defaultCategoryId={listingCategoryId ?? ""}
             defaultSubcategoryId={listingSubcategoryId ?? ""}
-            externalOpen={trFormOpen || undefined}
-            onExternalOpen={() => setTrFormOpen(true)}
+            externalOpen
+            onExternalOpen={() => {}}
           />
-        )}
+        </DialogContent>
+      </Dialog>
 
-        {/* V3a — MWAN Summary Panel (all statuses — score badge shows proactive readiness) */}
-        <MwanSummaryPanel dealId={deal.id} onRequestOpenTrForm={openTrFormAndScroll} />
+      {/* ── MAIN PANEL ── */}
+      <div className="rounded-xl border border-primary/20 bg-background overflow-hidden">
 
-        {/* V3 — Print Report button */}
-        <div className="px-4 py-3 bg-muted/10 border-t border-border">
+        {/* 1. COMPACT HEADER */}
+        <div className="px-4 py-3 bg-primary/10 space-y-1.5">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 flex-wrap min-w-0">
+              <span className="text-sm font-bold font-mono text-primary tracking-wider" dir="ltr">
+                {dealRef(deal.id, deal.created_at)}
+              </span>
+              <button
+                type="button"
+                onClick={copyDealRef}
+                className="flex items-center gap-1 text-primary/60 hover:text-primary transition-colors"
+                aria-label={t("deal.ref.copy")}
+              >
+                {copied ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
+                {copied && <span className="text-[10px] text-green-600 font-medium">{t("deal.ref.copied")}</span>}
+              </button>
+              {mwanHeaderData?.transport?.manifest_ref && (
+                <>
+                  <span className="text-primary/30 text-xs">·</span>
+                  <span className="text-xs font-mono text-primary/70" dir="ltr">{mwanHeaderData.transport.manifest_ref}</span>
+                  <button type="button" onClick={() => copyManifestRef(mwanHeaderData.transport!.manifest_ref!)} className="text-primary/50 hover:text-primary">
+                    {copiedManifest ? <Check className="h-3 w-3 text-green-600" /> : <Copy className="h-3 w-3" />}
+                  </button>
+                </>
+              )}
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              {mwanScore}
+              <Badge variant={statusBadgeVariant(deal.status)}>{statusLabel(deal.status)}</Badge>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-primary/70 flex-wrap">
+            {role === "producer" ? <UserCog className="h-3 w-3 shrink-0" /> : <UserCheck className="h-3 w-3 shrink-0" />}
+            <span className="font-medium">{t(`deal.role.${role}`)}</span>
+            {listingMaterial && <><span className="opacity-40">·</span><span>{listingMaterial}</span></>}
+            {deal.counterparty?.name && <><span className="opacity-40">·</span><span>{deal.counterparty.name}</span></>}
+            {deal.counterparty?.is_verified && (
+              <span className="inline-flex items-center gap-0.5 rounded-full bg-green-100 text-green-800 text-[9px] font-bold px-1.5 py-0.5">
+                <Check className="h-2.5 w-2.5" />{t("company.verified")}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* 2. HORIZONTAL STEPPER */}
+        <div className="px-4 py-2.5 bg-primary/5 border-b border-primary/10">
+          <div className="flex items-center gap-0">
+            {STATUS_STEPS.map((step, i) => {
+              const done = i <= currentStepIndex;
+              const isCurrent = i === currentStepIndex && deal.status !== "completed";
+              const isLast = i === STATUS_STEPS.length - 1;
+              return (
+                <div key={step} className="flex items-center flex-1">
+                  <div className="flex flex-col items-center gap-0.5 flex-1">
+                    {isCurrent ? (
+                      <div className="relative flex items-center justify-center">
+                        <div className="absolute h-6 w-6 rounded-full bg-primary/20 animate-pulse" />
+                        <CheckCircle2 className="h-4 w-4 text-primary shrink-0 relative" />
+                      </div>
+                    ) : done ? (
+                      <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+                    ) : (
+                      <Circle className="h-4 w-4 text-muted-foreground/30 shrink-0" />
+                    )}
+                    <span className={`text-center text-[9px] leading-tight font-medium truncate w-full px-0.5 ${
+                      isCurrent ? "text-primary font-bold" : done ? "text-primary/70" : "text-muted-foreground/40"
+                    }`}>
+                      {statusLabel(step)}
+                    </span>
+                  </div>
+                  {!isLast && (
+                    <div className={`h-0.5 flex-shrink-0 w-3 mx-0.5 mb-3.5 rounded-full ${i < currentStepIndex ? "bg-primary" : "bg-muted"}`} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 3. ACTION HERO CARD */}
+        <div className="p-4 space-y-3">
+
+          {/* Contact strip — always visible */}
+          {deal.counterparty && (
+            <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2.5 flex items-center gap-3">
+              <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-[11px] text-green-700 font-medium leading-tight">{t("deal.contact.can_now_contact")}</p>
+                <p className="text-sm font-bold text-green-900 leading-tight mt-0.5">{deal.counterparty.name}</p>
+              </div>
+              {deal.counterparty.contact_phone ? (
+                <a
+                  href={`tel:${deal.counterparty.contact_phone}`}
+                  dir="ltr"
+                  className="flex items-center gap-1.5 text-primary font-bold text-base hover:underline shrink-0"
+                >
+                  <Phone className="h-4 w-4 shrink-0" />
+                  {deal.counterparty.contact_phone}
+                </a>
+              ) : (
+                <span className="text-xs text-amber-700 font-medium shrink-0">{t("deal.contact.phone_missing")}</span>
+              )}
+            </div>
+          )}
+
+          {/* Completed hero */}
+          {deal.status === "completed" && (
+            <div className="rounded-xl border-2 border-green-300 bg-green-50 p-5 text-center space-y-2">
+              <Shield className="h-10 w-10 text-green-600 mx-auto" />
+              <p className="font-bold text-green-800 text-base">{t("deal.compliance.badge")}</p>
+              <p className="text-xs text-green-700">{t("deal.compliance.tagline")}</p>
+              {listingRef && <p className="text-[10px] text-green-600 font-mono">{listingRef}</p>}
+            </div>
+          )}
+
+          {/* Active action section */}
+          {deal.status !== "completed" && (
+            <div className={`rounded-xl border-2 p-4 space-y-3 ${
+              isMyTurn ? "border-primary/40 bg-primary/5" : "border-border bg-muted/20"
+            }`}>
+              {/* Status label */}
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-semibold text-foreground leading-snug">
+                  {t(`deal.stage.action.${deal.status}.${role}`)}
+                </p>
+                <span className={`flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full font-medium shrink-0 ${
+                  isMyTurn ? "bg-amber-100 text-amber-800" : "bg-muted text-muted-foreground"
+                }`}>
+                  {isMyTurn
+                    ? <><AlertCircle className="h-3 w-3 shrink-0" />{t("deal.role.your_turn")}</>
+                    : <><Clock className="h-3 w-3 shrink-0" />{t("deal.role.not_your_turn")}</>
+                  }
+                </span>
+              </div>
+
+              {/* Producer + active: payment form */}
+              {role === "producer" && deal.status === "active" && (
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-foreground">
+                      {t("deal.field.payment_reference")} *
+                    </label>
+                    <input
+                      type="text"
+                      value={paymentRef}
+                      onChange={(e) => { setPaymentRef(e.target.value); setError(null); }}
+                      placeholder={t("deal.field.payment_reference.placeholder")}
+                      className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                      dir="ltr"
+                      autoComplete="off"
+                    />
+                    <p className="text-xs text-muted-foreground">{t("deal.field.payment_reference.hint")}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      {t("deal.field.payment_proof_url")}
+                    </label>
+                    <input
+                      type="url"
+                      value={paymentProofUrl}
+                      onChange={(e) => setPaymentProofUrl(e.target.value)}
+                      placeholder={t("deal.field.payment_proof_url.placeholder")}
+                      className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                      dir="ltr"
+                    />
+                  </div>
+                  <Button className="w-full" onClick={requestConfirmPayment} disabled={loading}>
+                    {loading && pendingAction === null && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
+                    {t("deal.action.confirm_payment")}
+                  </Button>
+                </div>
+              )}
+
+              {/* Producer + payment_confirmed: dispatch */}
+              {role === "producer" && deal.status === "payment_confirmed" && (
+                <div className="space-y-3">
+                  {deal.settlement_type === "by_weight" && (
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-foreground">
+                        {t("deal.field.actual_quantity")} *
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min={0}
+                          step="any"
+                          value={actualQty}
+                          onChange={(e) => { setActualQty(e.target.value); setError(null); }}
+                          placeholder={t("deal.field.quantity.placeholder")}
+                          className="flex-1 h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                          dir="ltr"
+                        />
+                        <span className="text-sm text-muted-foreground shrink-0">{unit}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">{t("deal.field.actual_quantity.dispatch_hint")}</p>
+                    </div>
+                  )}
+                  <Button className="w-full" onClick={requestConfirmDispatch} disabled={loading}>
+                    {loading && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
+                    {t("deal.action.confirm_dispatch")}
+                  </Button>
+                </div>
+              )}
+
+              {/* Buyer + dispatched: receipt */}
+              {role === "buyer" && deal.status === "dispatched" && (
+                <Button className="w-full" onClick={() => setPendingAction("confirm-receipt")} disabled={loading}>
+                  {loading && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
+                  {t("deal.action.confirm_receipt")}
+                </Button>
+              )}
+
+              {/* Waiting state */}
+              {!isMyTurn && waitingText && (
+                <p className="text-xs text-muted-foreground text-center leading-relaxed">{waitingText}</p>
+              )}
+
+              {/* Error */}
+              {error && (
+                <div className="flex items-start gap-2 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                  <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                  <span>{error}</span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* 4. INFO BUTTONS ROW */}
+        <div className="px-4 pb-4 grid grid-cols-3 gap-2">
+          <button
+            type="button"
+            onClick={() => setDetailsOpen(true)}
+            className="flex flex-col items-center gap-1 rounded-lg border border-border bg-background px-2 py-2.5 text-xs font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground transition-colors"
+          >
+            <FileTextIcon className="h-4 w-4 text-primary/60" />
+            <span>{lang === "ar" ? "تفاصيل الصفقة" : "Deal Details"}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setTimelineOpen(true)}
+            className="flex flex-col items-center gap-1 rounded-lg border border-border bg-background px-2 py-2.5 text-xs font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground transition-colors"
+          >
+            <Clock className="h-4 w-4 text-primary/60" />
+            <span>{lang === "ar" ? "سجل الحوكمة" : "Governance"}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setTrFormOpen(true)}
+            disabled={!canOpenTrModal}
+            className="flex flex-col items-center gap-1 rounded-lg border border-border bg-background px-2 py-2.5 text-xs font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Truck className="h-4 w-4 text-primary/60" />
+            <span>{lang === "ar" ? "طلب النقل" : "Transport"}</span>
+          </button>
+        </div>
+
+        {/* 5. PRINT BUTTON */}
+        <div className="px-4 pb-4 border-t border-border pt-3">
           <button
             type="button"
             onClick={() =>
