@@ -433,7 +433,10 @@ function BuyerOfferSection({
   const highestPrice = summary?.highest_price ?? 0;
 
   function mapOfferError(err: unknown): string {
-    const code = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "";
+    // The API returns { error: <message>, code: <machine code> }.
+    // We must read `code`, not `error` (which is the human-readable message).
+    const data = (err as { response?: { data?: { code?: string; error?: string } } })?.response?.data;
+    const code = data?.code ?? data?.error ?? "";
     if (code === "CompanyIncomplete")    return t("offer.error.CompanyIncomplete");
     if (code === "CompanyPending")       return t("offer.error.CompanyPending");
     if (code === "CompanyExpired")       return t("offer.error.CompanyExpired");
@@ -445,6 +448,9 @@ function BuyerOfferSection({
     if (code === "AlreadyTopBidder")     return t("offer.error.AlreadyTopBidder");
     if (code === "OfferSubmissionBlocked") return t("offer.error.OfferSubmissionBlocked");
     if (code === "CommercialRegistrationRequired") return t("offer.error.CommercialRegistrationRequired");
+    if (code === "TermsRequired")        return t("offer.error.TermsRequired");
+    if (code === "Forbidden")            return t("offer.error.Forbidden");
+    if (code === "ListingClosed")        return t("offer.error.ListingClosed");
     return t("offer.error.generic");
   }
 

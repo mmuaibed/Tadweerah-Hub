@@ -1320,6 +1320,18 @@ const translations: Record<string, Record<Language, string>> = {
     ar: "السجل التجاري مطلوب لتقديم العروض. أضفه في ملف شركتك أولاً.",
     en: "Commercial Registration is required before submitting offers. Add it in your company profile.",
   },
+  "offer.error.TermsRequired": {
+    ar: "يجب قبول الشروط والأحكام خلال تسجيل الشركة قبل تقديم أي عرض.",
+    en: "You must accept the Terms & Conditions during company registration before submitting offers.",
+  },
+  "offer.error.Forbidden": {
+    ar: "لا يمكنك تقديم عرض على إعلانك الخاص.",
+    en: "You cannot submit an offer on your own listing.",
+  },
+  "offer.error.ListingClosed": {
+    ar: "هذا الإعلان مغلق ولم يعد يقبل عروضاً.",
+    en: "This listing is closed and no longer accepting offers.",
+  },
 
   /* ── UX Polish: Receipt Confirmation Dialog ── */
   "deal.receipt_dialog.producer": { ar: "المنتج (الشركة)", en: "Producer (Company)" },
