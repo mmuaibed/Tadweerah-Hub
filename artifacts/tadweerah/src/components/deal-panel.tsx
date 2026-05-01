@@ -12,7 +12,6 @@ import {
   UserCog,
   Percent,
   Printer,
-  TrendingUp,
   Shield,
   Copy,
   Check,
@@ -46,11 +45,9 @@ import {
 import { useT } from "@/i18n";
 import { dealRef } from "@/lib/listing-ref";
 import {
-  useGetListingOffers,
-  useGetOffersSummary,
   useGetMaterialCategories,
 } from "@workspace/api-client-react";
-import type { ListingOffer, MaterialCategory } from "@workspace/api-client-react";
+import type { MaterialCategory } from "@workspace/api-client-react";
 
 export type DealStatus = "active" | "payment_confirmed" | "dispatched" | "completed";
 export type SettlementType = "fixed" | "by_weight";
@@ -101,6 +98,8 @@ interface DealPanelProps {
   myPhone?: string;
   /** Listing city — pre-fills transport request pickup city */
   listingCity?: string;
+  /** Sale type (auction / direct) for deal info panel */
+  listingSaleType?: string;
   /** Counterparty (buyer/receiver) city — pre-fills transport request delivery city */
   counterpartyCity?: string;
   /** Listing description — pre-fills transport request waste description */
@@ -123,6 +122,14 @@ const STATUS_STEPS: DealStatus[] = [
   "dispatched",
   "completed",
 ];
+
+const TR_STEPS = [
+  { key: "transport_request_created", ar: "إنشاء طلب نقل", en: "Create transport request" },
+  { key: "transporter_assigned", ar: "تعيين ناقل", en: "Assign transporter" },
+  { key: "vehicle_plate_set", ar: "تحديد المركبة", en: "Set vehicle plate" },
+  { key: "pickup_city_set", ar: "تحديد موقع الاستلام", en: "Set pickup location" },
+  { key: "delivery_city_set", ar: "تحديد موقع التسليم", en: "Set delivery location" },
+] as const;
 
 class DealApiError extends Error {
   code: string;
@@ -162,241 +169,6 @@ function formatDate(iso: string | null, lang: string): string {
     hour: "2-digit",
     minute: "2-digit",
   });
-}
-
-/** V1 — Deal value summary: shows financial benefit of auction competition */
-function DealValueSummary({
-  listingId,
-  acceptedPricePerUnit,
-  estimatedAmount,
-  unit,
-}: {
-  listingId: string;
-  acceptedPricePerUnit: number;
-  estimatedAmount: number;
-  unit: string;
-}) {
-  const { t } = useT();
-  const { data: summary } = useGetOffersSummary(listingId);
-  const { data: offersRaw } = useGetListingOffers(listingId);
-  const offers = (offersRaw ?? []) as ListingOffer[];
-
-  if (!summary || summary.count === 0) return null;
-
-  const sorted = [...offers].sort(
-    (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-  );
-  const firstPrice = sorted[0]?.price_per_unit ?? null;
-  const gained = firstPrice != null ? acceptedPricePerUnit - firstPrice : 0;
-
-  return (
-    <div className="mx-4 mb-3 rounded-xl border border-secondary/30 bg-secondary/5 p-3 space-y-2">
-      <div className="flex items-center gap-1.5 text-xs font-semibold text-secondary">
-        <TrendingUp className="h-3.5 w-3.5 shrink-0" />
-        {t("deal.value_summary.title")}
-      </div>
-
-      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
-        <span className="text-muted-foreground">{t("deal.value_summary.offers_count")}</span>
-        <span className="font-bold text-end text-foreground">{summary.count}</span>
-
-        {firstPrice != null && firstPrice !== acceptedPricePerUnit && (
-          <>
-            <span className="text-muted-foreground">{t("deal.value_summary.first_price")}</span>
-            <span className="font-medium text-end text-muted-foreground">
-              {firstPrice.toLocaleString()} {t("deal.value_summary.sar")}
-            </span>
-
-            <span className="text-muted-foreground">{t("deal.value_summary.accepted_price")}</span>
-            <span className="font-bold text-end text-secondary">
-              {acceptedPricePerUnit.toLocaleString()} {t("deal.value_summary.sar")}
-            </span>
-
-            <span className="text-muted-foreground">{t("deal.value_summary.value_gained")}</span>
-            <span className="font-bold text-end text-green-700">
-              +{(gained).toLocaleString()} {t("deal.value_summary.sar")} / {unit}
-            </span>
-          </>
-        )}
-      </div>
-
-      {firstPrice != null && gained > 0 ? (
-        <p className="text-[10px] text-secondary/80 leading-snug">
-          {t("deal.value_summary.competition_note")}
-        </p>
-      ) : firstPrice != null ? (
-        <p className="text-[10px] text-muted-foreground leading-snug">
-          {t("deal.value_summary.no_change")}
-        </p>
-      ) : null}
-    </div>
-  );
-}
-
-// ── Next Step Banner ──────────────────────────────────────────────────────────
-
-function NextStepBanner({
-  deal,
-  role,
-  onOpenTrForm,
-}: {
-  deal: DealInfo;
-  role: "producer" | "buyer";
-  onOpenTrForm: () => void;
-}) {
-  const { t } = useT();
-  if (deal.status === "completed") return null;
-
-  const needsTrForm =
-    role === "producer" &&
-    deal.status === "payment_confirmed";
-
-  const icon = needsTrForm ? <Truck className="h-4 w-4 shrink-0" /> : <Clock className="h-4 w-4 shrink-0" />;
-  const text = t(`deal.next_step.${deal.status}.${role}`);
-
-  return (
-    <div className={`flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium border-t ${
-      needsTrForm
-        ? "bg-primary/5 border-primary/15 text-primary"
-        : "bg-muted/40 border-border text-muted-foreground"
-    }`}>
-      {icon}
-      <span className="flex-1 min-w-0">{text}</span>
-      {needsTrForm && (
-        <button
-          type="button"
-          onClick={onOpenTrForm}
-          className="shrink-0 rounded-md bg-primary px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-primary/90 transition-colors"
-        >
-          {t("deal.next_step.open_tr_form")}
-        </button>
-      )}
-    </div>
-  );
-}
-
-// ── Deal Progress Bar ─────────────────────────────────────────────────────────
-
-function DealProgressBar({ deal }: { deal: DealInfo }) {
-  const { t } = useT();
-
-  const stages: { key: DealStatus | "active"; label: string; done: boolean }[] = [
-    { key: "active",             label: t("deal.progress.active"),   done: true },
-    { key: "payment_confirmed",  label: t("deal.progress.payment"),  done: !!deal.payment_confirmed_at },
-    { key: "dispatched",         label: t("deal.progress.dispatch"), done: !!deal.dispatched_at },
-    { key: "completed",          label: t("deal.progress.delivery"), done: deal.status === "completed" },
-  ];
-
-  const currentIdx = stages.reduce((acc, s, i) => (s.done ? i : acc), 0);
-
-  return (
-    <div className="px-4 py-3 border-t border-primary/10 bg-primary/5">
-      <div className="flex items-center gap-0">
-        {stages.map((stage, i) => {
-          const isActive = i === currentIdx && deal.status !== "completed";
-          const isDone = stage.done;
-          return (
-            <div key={stage.key} className="flex items-center flex-1 min-w-0">
-              <div className="flex flex-col items-center gap-0.5 flex-1 min-w-0">
-                <div className={[
-                  "flex h-6 w-6 items-center justify-center rounded-full shrink-0 text-[10px] font-bold transition-colors",
-                  isDone && !isActive ? "bg-primary text-white" :
-                  isActive ? "bg-primary text-white ring-2 ring-primary/30 ring-offset-1" :
-                  "bg-muted border-2 border-muted-foreground/20 text-muted-foreground/40",
-                ].join(" ")}>
-                  {isDone ? <CheckCircle2 className="h-3.5 w-3.5" /> : <span>{i + 1}</span>}
-                </div>
-                <p className={`text-center text-[9px] leading-tight font-medium truncate w-full px-0.5 ${
-                  isDone ? "text-primary" : "text-muted-foreground/40"
-                }`}>
-                  {stage.label}
-                </p>
-              </div>
-              {i < stages.length - 1 && (
-                <div className={`h-0.5 flex-shrink-0 w-4 mx-0.5 mb-3 rounded-full transition-colors ${
-                  stages[i + 1]?.done ? "bg-primary/60" : "bg-muted-foreground/20"
-                }`} />
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-/** V2 — Proper governance timeline replacing the old flat timestamp list */
-function GovernanceTimeline({
-  deal,
-  lang,
-}: {
-  deal: DealInfo;
-  lang: string;
-}) {
-  const { t } = useT();
-
-  const steps: { key: string; label: string; ts: string | null }[] = [
-    { key: "offer_accepted", label: t("deal.timeline.offer_accepted"), ts: deal.created_at },
-    { key: "payment_confirmed", label: t("deal.timeline.payment_confirmed"), ts: deal.payment_confirmed_at },
-    { key: "dispatched", label: t("deal.timeline.dispatched"), ts: deal.dispatched_at },
-    { key: "received", label: t("deal.timeline.received"), ts: deal.received_at },
-  ];
-
-  const completedCount = steps.filter((s) => s.ts !== null).length;
-
-  return (
-    <div className="px-4 py-3 space-y-2 bg-muted/20 border-t border-primary/10">
-      <p className="text-xs font-semibold text-muted-foreground">{t("deal.timeline.title")}</p>
-      <div className="space-y-0">
-        {steps.map((step, i) => {
-          const done = step.ts !== null;
-          const isCurrent = done && (i === completedCount - 1) && deal.status !== "completed";
-          const isLast = i === steps.length - 1;
-          return (
-            <div key={step.key} className="flex gap-3">
-              {/* Icon column */}
-              <div className="flex flex-col items-center">
-                <div className={`mt-0.5 flex h-5 w-5 items-center justify-center rounded-full shrink-0 ${
-                  done
-                    ? isCurrent
-                      ? "bg-primary text-white ring-2 ring-primary/30"
-                      : "bg-primary/80 text-white"
-                    : "border-2 border-muted-foreground/20 bg-background"
-                }`}>
-                  {done ? (
-                    <CheckCircle2 className="h-3 w-3" />
-                  ) : (
-                    <Circle className="h-2.5 w-2.5 text-muted-foreground/30" />
-                  )}
-                </div>
-                {!isLast && (
-                  <div className={`w-0.5 flex-1 min-h-4 mt-0.5 ${done ? "bg-primary/50" : "bg-muted-foreground/15"}`} />
-                )}
-              </div>
-              {/* Content column */}
-              <div className={`pb-3 min-w-0 ${isLast ? "" : ""}`}>
-                <p className={`text-xs font-medium leading-tight ${done ? "text-foreground" : "text-muted-foreground/50"}`}>
-                  {step.label}
-                </p>
-                {done && step.ts ? (
-                  <p className="text-[10px] text-muted-foreground mt-0.5">
-                    {formatDate(step.ts, lang)}
-                  </p>
-                ) : (
-                  <p className="text-[10px] text-muted-foreground/40 mt-0.5">{t("deal.timeline.pending_label")}</p>
-                )}
-                {step.key === "payment_confirmed" && deal.payment_reference && (
-                  <p className="text-[10px] text-muted-foreground mt-0.5 font-mono" dir="ltr">
-                    {deal.payment_reference}
-                  </p>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
 }
 
 // ── V3a — MWAN Summary Panel ──────────────────────────────────────────────────
@@ -1285,7 +1057,7 @@ function printDealReport(
   }
 }
 
-export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSharePct, listingRef, listingMaterial, listingQuantity, myCompanyName, listingCategory, myPhone, listingCity, counterpartyCity, listingDescription, listingCategoryId, listingSubcategoryId, offersPanel, listingInfoPanel }: DealPanelProps) {
+export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSharePct, listingRef, listingMaterial, listingQuantity, myCompanyName, listingCategory, myPhone, listingCity, listingSaleType, counterpartyCity, listingDescription, listingCategoryId, listingSubcategoryId, offersPanel, listingInfoPanel }: DealPanelProps) {
   const { t, lang } = useT();
   const { getToken } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -1298,7 +1070,6 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
   const [copiedManifest, setCopiedManifest] = useState(false);
   const [trFormOpen, setTrFormOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const [timelineOpen, setTimelineOpen] = useState(false);
   const [offersOpen, setOffersOpen] = useState(false);
   const [listingInfoOpen, setListingInfoOpen] = useState(false);
 
@@ -1438,15 +1209,21 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
   const activeDialog = pendingAction ? confirmDialogProps[pendingAction] : null;
 
   /* ── helpers ── */
-  const mwanScore = mwanHeaderData ? (() => {
+  const mwanRemainingText = mwanHeaderData ? (() => {
     const [ready, total] = mwanHeaderData.readiness_score.split("/").map(Number);
-    const color = ready === total ? "bg-green-100 text-green-800"
-      : ready >= 10 ? "bg-amber-100 text-amber-800"
-      : "bg-red-100 text-red-700";
+    const remaining = total - ready;
+    if (remaining <= 0) {
+      return (
+        <span className="text-[10px] text-green-700 font-medium">
+          {lang === "ar" ? "البيان الإلكتروني مكتمل ✓" : "e-Manifest complete ✓"}
+        </span>
+      );
+    }
     return (
-      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${color}`}>
-        <span className="h-1.5 w-1.5 rounded-full bg-current" />
-        {mwanHeaderData.readiness_score} {t("mwan.header.score_label")}
+      <span className="text-[10px] text-muted-foreground">
+        {lang === "ar"
+          ? `متبقي ${remaining} عنصر لإكمال البيان الإلكتروني`
+          : `${remaining} items remaining for e-manifest`}
       </span>
     );
   })() : null;
@@ -1540,89 +1317,7 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
                 <p className="text-xs text-muted-foreground mt-1">{t("deal.disclaimer")}</p>
               )}
             </div>
-            {/* Material info */}
-            {(listingMaterial || listingCategory || listingQuantity != null) && (
-              <div className="rounded-lg border border-border p-3 space-y-1.5">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-                  {lang === "ar" ? "معلومات المادة" : "Material Info"}
-                </p>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
-                  {listingCategory && (
-                    <><span className="text-muted-foreground">{lang === "ar" ? "الفئة" : "Category"}</span>
-                    <span className="font-medium text-end">{listingCategory}</span></>
-                  )}
-                  {listingMaterial && (
-                    <><span className="text-muted-foreground">{t("deal.print.material")}</span>
-                    <span className="font-medium text-end">{listingMaterial}</span></>
-                  )}
-                  {listingQuantity != null && (
-                    <><span className="text-muted-foreground">{t("deal.print.quantity")}</span>
-                    <span className="font-medium text-end">{listingQuantity.toLocaleString()} {unit}</span></>
-                  )}
-                </div>
-              </div>
-            )}
-            {/* Deal value summary (producer auction) */}
-            {role === "producer" && pricingModel !== "revenue_share" && deal.listing_id && (
-              <DealValueSummary
-                listingId={deal.listing_id}
-                acceptedPricePerUnit={deal.price_per_unit}
-                estimatedAmount={deal.estimated_amount}
-                unit={unit}
-              />
-            )}
-            {/* MWAN Panel */}
-            <MwanSummaryPanel dealId={deal.id} onRequestOpenTrForm={() => { setDetailsOpen(false); setTimeout(() => setTrFormOpen(true), 100); }} />
           </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* ── Modal: Governance Timeline ── */}
-      <Dialog open={timelineOpen} onOpenChange={setTimelineOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{lang === "ar" ? "سجل الحوكمة" : "Governance Log"}</DialogTitle>
-          </DialogHeader>
-          <div className="overflow-x-auto">
-            {/* Compact table instead of vertical list */}
-            <table className="w-full text-sm border-collapse">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="text-start py-1.5 px-2 text-xs font-semibold text-muted-foreground">{lang === "ar" ? "الحدث" : "Event"}</th>
-                  <th className="text-start py-1.5 px-2 text-xs font-semibold text-muted-foreground">{lang === "ar" ? "التاريخ" : "Date"}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[
-                  { label: t("deal.timeline.offer_accepted"), ts: deal.created_at },
-                  { label: t("deal.timeline.payment_confirmed"), ts: deal.payment_confirmed_at },
-                  { label: t("deal.timeline.dispatched"), ts: deal.dispatched_at },
-                  { label: t("deal.timeline.received"), ts: deal.received_at },
-                ].map((row, i) => (
-                  <tr key={i} className="border-b border-border/50 last:border-0">
-                    <td className="py-2 px-2">
-                      <div className="flex items-center gap-2">
-                        <span className={`h-2 w-2 rounded-full shrink-0 ${row.ts ? "bg-primary" : "bg-muted-foreground/30"}`} />
-                        <span className={row.ts ? "text-foreground font-medium" : "text-muted-foreground/50"}>{row.label}</span>
-                      </div>
-                    </td>
-                    <td className="py-2 px-2 text-xs text-muted-foreground font-mono">
-                      {row.ts
-                        ? new Date(row.ts).toLocaleString(lang === "ar" ? "ar-SA" : "en-US", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
-                        : <span className="text-muted-foreground/40">{t("deal.timeline.pending_label")}</span>
-                      }
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          {deal.payment_reference && (
-            <div className="mt-3 rounded-md bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-              <span className="font-medium">{lang === "ar" ? "رقم الدفعة:" : "Payment ref:"}</span>{" "}
-              <span className="font-mono" dir="ltr">{deal.payment_reference}</span>
-            </div>
-          )}
         </DialogContent>
       </Dialog>
 
@@ -1711,17 +1406,17 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
               </span>
             )}
           </div>
-          {mwanHeaderData && (
+          {mwanRemainingText && (
             <div className="flex items-center gap-1.5">
-              {mwanScore}
-              <span className="text-[10px] text-muted-foreground">
-                {lang === "ar" ? "بند مطلوب للبيان الإلكتروني" : "items required for e-manifest"}
-              </span>
+              {mwanRemainingText}
             </div>
           )}
         </div>
 
-        {/* 2. CURRENT ACTION CARD — prominent, comes first */}
+        {/* 2. TWO-COLUMN: action card (left) + deal info & transport (right) */}
+        <div className="grid grid-cols-1 md:grid-cols-[3fr_2fr] divide-y md:divide-y-0 md:divide-x divide-border">
+
+        {/* ── LEFT: action card ── */}
         <div className="p-4">
 
           {/* Completed state */}
@@ -1913,6 +1608,105 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
           )}
         </div>
 
+        {/* ── RIGHT: deal info + transport ── */}
+        <div className="p-4 space-y-5 bg-muted/5">
+          {/* Deal Info */}
+          <div className="space-y-2.5">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              {lang === "ar" ? "معلومات الصفقة" : "Deal Info"}
+            </p>
+            <div className="space-y-2">
+              {listingMaterial && (
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs text-muted-foreground">{lang === "ar" ? "نوع المادة" : "Material"}</span>
+                  <span className="text-xs font-medium">{listingMaterial}</span>
+                </div>
+              )}
+              {listingQuantity != null && (
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs text-muted-foreground">{lang === "ar" ? "الكمية" : "Quantity"}</span>
+                  <span className="text-xs font-medium">{listingQuantity.toLocaleString()} {unit}</span>
+                </div>
+              )}
+              {listingCity && (
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs text-muted-foreground">{lang === "ar" ? "المدينة" : "City"}</span>
+                  <span className="text-xs font-medium">{listingCity}</span>
+                </div>
+              )}
+              {listingSaleType && (
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs text-muted-foreground">{lang === "ar" ? "نوع البيع" : "Sale Type"}</span>
+                  <span className="text-xs font-medium">{t(`listing.sale_type.${listingSaleType}`)}</span>
+                </div>
+              )}
+              <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-border">
+                <span className="text-xs text-muted-foreground">
+                  {deal.settlement_type === "fixed"
+                    ? (lang === "ar" ? "إجمالي الصفقة" : "Deal Total")
+                    : (lang === "ar" ? "سعر الوحدة" : "Unit Price")}
+                </span>
+                <span className="text-sm font-bold text-primary">
+                  {deal.settlement_type === "fixed"
+                    ? `${(deal.final_amount ?? deal.estimated_amount).toLocaleString()} ${lang === "ar" ? "ر.س" : "SAR"}`
+                    : `${deal.price_per_unit.toLocaleString()} ${lang === "ar" ? "ر.س" : "SAR"}/${unit}`}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Transport */}
+          <div className="space-y-2.5">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              {lang === "ar" ? "النقل" : "Transport"}
+            </p>
+            {!mwanHeaderData?.transport ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground rounded-lg border border-border bg-muted/20 px-3 py-2.5">
+                  <Truck className="h-4 w-4 shrink-0" />
+                  <span>{lang === "ar" ? "لا يوجد نقل مطلوب" : "No transport required"}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setTrFormOpen(true)}
+                  className="w-full flex items-center justify-center gap-1.5 text-[11px] text-primary/70 hover:text-primary font-medium py-1"
+                >
+                  <Truck className="h-3 w-3 shrink-0" />
+                  {lang === "ar" ? "+ إنشاء طلب نقل" : "+ Create transport request"}
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {TR_STEPS.map((step) => {
+                  const done = mwanHeaderData?.checks[step.key] ?? false;
+                  return (
+                    <div key={step.key} className="flex items-center gap-2">
+                      {done
+                        ? <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />
+                        : <Circle className="h-3.5 w-3.5 text-muted-foreground/30 shrink-0" />}
+                      <span className={`text-xs ${done ? "text-foreground" : "text-muted-foreground/60"}`}>
+                        {lang === "ar" ? step.ar : step.en}
+                      </span>
+                    </div>
+                  );
+                })}
+                {mwanHeaderData.transport.manifest_ref && (
+                  <div className="flex items-center gap-2 rounded-md border border-primary/20 bg-primary/5 px-2.5 py-1.5 mt-2">
+                    <FileTextIcon className="h-3 w-3 text-primary shrink-0" />
+                    <span className="text-[10px] font-mono text-primary font-bold flex-1" dir="ltr">
+                      {mwanHeaderData.transport.manifest_ref}
+                    </span>
+                    <button type="button" onClick={() => copyManifestRef(mwanHeaderData.transport!.manifest_ref!)} className="text-primary/50 hover:text-primary">
+                      {copiedManifest ? <Check className="h-3 w-3 text-green-600" /> : <Copy className="h-3 w-3" />}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+        </div>{/* end two-column grid */}
+
         {/* 3. HORIZONTAL STEPPER */}
         <div className="px-4 py-3 bg-muted/30 border-t border-border">
           <div className="flex items-center gap-0">
@@ -1977,14 +1771,6 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
           >
             <FileTextIcon className="h-4 w-4 text-primary/60 shrink-0" />
             <span>{lang === "ar" ? "تفاصيل الصفقة" : "Deal Details"}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setTimelineOpen(true)}
-            className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2.5 text-xs font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground transition-colors"
-          >
-            <Clock className="h-4 w-4 text-primary/60 shrink-0" />
-            <span>{lang === "ar" ? "سجل الحوكمة" : "Governance"}</span>
           </button>
         </div>
 

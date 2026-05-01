@@ -1459,7 +1459,7 @@ export function ListingDetailPage() {
   );
 
   return (
-    <AppLayout showSignOut title={materialLabel} subtitle={subtitleNode} actions={backButton} width={isDealMode ? undefined : "wide"}>
+    <AppLayout showSignOut title={materialLabel} subtitle={subtitleNode} actions={backButton} width="wide">
       {/* Dialogs */}
       <ConfirmDialog
         open={confirmOpen}
@@ -1502,7 +1502,7 @@ export function ListingDetailPage() {
 
       {/* ══ DEAL MODE: single-column execution dashboard ══ */}
       {isDealMode ? (
-        <div className="max-w-lg mx-auto pb-8">
+        <div className="pb-8">
           <DealPanel
             deal={activeDeal}
             role={role as "producer" | "buyer"}
@@ -1517,6 +1517,7 @@ export function ListingDetailPage() {
             myCompanyName={me?.company?.name}
             myPhone={(me as { company?: { contactPhone?: string } } | undefined)?.company?.contactPhone}
             listingCity={(listing as typeof listing & { city?: string }).city}
+            listingSaleType={(listing as typeof listing & { sale_type?: string }).sale_type}
             counterpartyCity={activeDeal.counterparty?.city}
             listingDescription={(listing as typeof listing & { description?: string }).description}
             listingCategoryId={listing.material_category_id ?? undefined}
