@@ -46,6 +46,7 @@ export function ListingCard({
   const myRank = (listing as WasteListing & { my_rank?: number }).my_rank;
   const myOfferPrice = (listing as WasteListing & { my_offer_price?: string | number | null }).my_offer_price;
   const highestOfferPrice = (listing as WasteListing & { highest_offer_price?: number | null }).highest_offer_price;
+  const highestOfferTotal = (listing as WasteListing & { highest_offer_total?: number | null }).highest_offer_total;
   const requiredServices = (listing as WasteListing & { required_services?: Array<{ id: string; name_ar: string; name_en: string; requires_license?: boolean }> }).required_services ?? [];
   const targetingType = (listing as WasteListing & { targeting_type?: string }).targeting_type ?? "open";
   const eligibleCompanyType = (listing as WasteListing & { eligible_company_type?: string }).eligible_company_type ?? "ALL";
@@ -53,6 +54,19 @@ export function ListingCard({
   const materialCategoryNameEn = (listing as WasteListing & { material_category_name_en?: string | null }).material_category_name_en;
   const materialCategoryName = lang === "ar" ? materialCategoryNameAr : materialCategoryNameEn;
   const offersCount = (listing as WasteListing & { offer_count?: number }).offer_count ?? 0;
+
+  const isFixed = listing.pricing_model === "fixed";
+  const qty = Number(listing.quantity);
+  const unitLabel = listing.unit ? ` / ${t(`unit.${listing.unit}`)}` : "";
+
+  function fmtOffer(pricePerUnit: number | null | undefined, total?: number | null): string | null {
+    if (pricePerUnit == null) return null;
+    if (isFixed) {
+      const tot = total ?? Number(pricePerUnit) * qty;
+      return `${tot.toLocaleString()} ${t("listing.sar")}`;
+    }
+    return `${Number(pricePerUnit).toLocaleString()} ${t("listing.sar")}${unitLabel}`;
+  }
 
   const inner = (
     <Card
@@ -232,14 +246,14 @@ export function ListingCard({
               </div>
               {myOfferPrice != null && (
                 <span className="text-xs font-medium">
-                  {t("listing.bid.mine.label")}: {Number(myOfferPrice).toLocaleString()} {t("listing.sar")}
+                  {t("listing.bid.mine.label")}: {fmtOffer(Number(myOfferPrice))}
                 </span>
               )}
             </div>
             {myRank > 1 && highestOfferPrice != null && (
               <p className="text-xs text-muted-foreground ps-5">
-                {t("listing.bid.highest.label")}:{" "}
-                <span className="font-semibold">{Number(highestOfferPrice).toLocaleString()} {t("listing.sar")}</span>
+                {isFixed ? (lang === "ar" ? "الإجمالي" : "Total") : t("listing.bid.highest.label")}:{" "}
+                <span className="font-semibold">{fmtOffer(highestOfferPrice, highestOfferTotal)}</span>
               </p>
             )}
           </div>
@@ -250,9 +264,9 @@ export function ListingCard({
           <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2">
             <TrendingUp className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
             <span className="text-xs text-muted-foreground">
-              {t("listing.bid.highest.label")}:{" "}
+              {isFixed ? (lang === "ar" ? "الإجمالي" : "Total") : t("listing.bid.highest.label")}:{" "}
               <span className="font-semibold text-foreground">
-                {Number(highestOfferPrice).toLocaleString()} {t("listing.sar")}
+                {fmtOffer(highestOfferPrice, highestOfferTotal)}
               </span>
             </span>
           </div>

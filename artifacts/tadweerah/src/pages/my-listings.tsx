@@ -301,6 +301,8 @@ export function MyListingsPage() {
                   {(listing.offer_count ?? 0) > 0 && (() => {
                     const highestPpu = (listing as WasteListing & { highest_offer_price?: number | null }).highest_offer_price;
                     const highestTotal = (listing as WasteListing & { highest_offer_total?: number | null }).highest_offer_total;
+                    const isFixed = listing.pricing_model === "fixed";
+                    const qty = Number(listing.quantity);
                     return (
                       <div className="rounded-lg border border-secondary/30 bg-secondary/5 px-3 py-2 space-y-1">
                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -310,7 +312,8 @@ export function MyListingsPage() {
                             {t("myListings.offersCount")}
                           </span>
                         </div>
-                        {highestPpu != null && (
+                        {/* Fixed → show total only; per-weight → show unit price only */}
+                        {!isFixed && highestPpu != null && (
                           <div className="flex items-center justify-between text-xs ps-5">
                             <span className="text-muted-foreground">{t("myListings.highestOffer.label")}:</span>
                             <span className="font-semibold text-foreground">
@@ -319,11 +322,11 @@ export function MyListingsPage() {
                             </span>
                           </div>
                         )}
-                        {highestTotal != null && (
+                        {isFixed && (highestTotal != null || highestPpu != null) && (
                           <div className="flex items-center justify-between text-xs ps-5">
                             <span className="text-muted-foreground">{t("myListings.highestOffer.total")}:</span>
-                            <span className="font-medium text-foreground">
-                              {Number(highestTotal).toLocaleString()} {t("listing.sar")}
+                            <span className="font-semibold text-foreground">
+                              {(highestTotal ?? (Number(highestPpu) * qty)).toLocaleString()} {t("listing.sar")}
                             </span>
                           </div>
                         )}
