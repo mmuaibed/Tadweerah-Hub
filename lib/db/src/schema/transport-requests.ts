@@ -4,6 +4,7 @@ import {
   timestamp,
   uuid,
   pgEnum,
+  boolean,
 } from "drizzle-orm/pg-core";
 import { companiesTable } from "./companies";
 import { dealsTable } from "./deals";
@@ -122,6 +123,12 @@ export const transportRequestsTable = pgTable("transport_requests", {
    * the operations queue; can later hold a specific ops user ID.
    */
   ops_assigned_to: text("ops_assigned_to"),
+
+  /**
+   * Set to true after the ops notification email is successfully dispatched.
+   * Allows ops to identify TRs where email delivery may have failed.
+   */
+  email_sent: boolean("email_sent").notNull().default(false),
 
   planned_pickup_at: timestamp("planned_pickup_at", { withTimezone: true }),
   actual_pickup_at:  timestamp("actual_pickup_at",  { withTimezone: true }),

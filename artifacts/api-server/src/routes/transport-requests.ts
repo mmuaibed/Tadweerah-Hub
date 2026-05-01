@@ -177,55 +177,67 @@ router.post(
 
     res.status(201).json(serializeTR(created));
 
-    // ── Fire-and-forget ops email notification (platform mode only) ──────────
-    // Runs after response is sent. Any failure is logged but never affects the TR.
-    if (transportMode === "platform") {
-      void (async () => {
-        try {
-          const [listing, producerCo, buyerCo] = await Promise.all([
-            db
-              .select({
-                material: wasteListingsTable.material,
-                quantity: wasteListingsTable.quantity,
-                city: wasteListingsTable.city,
-              })
-              .from(wasteListingsTable)
-              .where(eq(wasteListingsTable.id, deal.listing_id))
-              .limit(1)
-              .then((rows) => rows[0] ?? null),
-            db
-              .select({ name: companiesTable.name, contactPhone: companiesTable.contactPhone })
-              .from(companiesTable)
-              .where(eq(companiesTable.id, deal.producer_company_id))
-              .limit(1)
-              .then((rows) => rows[0] ?? null),
-            db
-              .select({ name: companiesTable.name, contactPhone: companiesTable.contactPhone })
-              .from(companiesTable)
-              .where(eq(companiesTable.id, deal.buyer_company_id))
-              .limit(1)
-              .then((rows) => rows[0] ?? null),
-          ]);
+    // ── Fire-and-forget ops email notification (all modes) ───────────────────
+    // Sent for every TR regardless of mode — ops must be notified even for
+    // self_managed requests (to log, track, and follow up if needed).
+    // Runs after response is sent; failures are logged but never affect the TR.
+    void (async () => {
+      try {
+        const [listing, producerCo, buyerCo] = await Promise.all([
+          db
+            .select({
+              material: wasteListingsTable.material,
+              quantity: wasteListingsTable.quantity,
+              unit: wasteListingsTable.unit,
+              city: wasteListingsTable.city,
+            })
+            .from(wasteListingsTable)
+            .where(eq(wasteListingsTable.id, deal.listing_id))
+            .limit(1)
+            .then((rows) => rows[0] ?? null),
+          db
+            .select({ name: companiesTable.name, contactPhone: companiesTable.contactPhone })
+            .from(companiesTable)
+            .where(eq(companiesTable.id, deal.producer_company_id))
+            .limit(1)
+            .then((rows) => rows[0] ?? null),
+          db
+            .select({ name: companiesTable.name, contactPhone: companiesTable.contactPhone })
+            .from(companiesTable)
+            .where(eq(companiesTable.id, deal.buyer_company_id))
+            .limit(1)
+            .then((rows) => rows[0] ?? null),
+        ]);
 
-          await sendTransportRequestNotification({
-            dealId: created.deal_id,
-            manifestRef: created.manifest_ref ?? null,
-            pickupCity: created.pickup_city ?? null,
-            deliveryCity: created.delivery_city ?? null,
-            wasteDescription: created.waste_description ?? null,
-            quantity: listing?.quantity ?? null,
-            material: listing?.material ?? null,
-            requestedAt: created.created_at.toISOString(),
-            producerName: producerCo?.name ?? "—",
-            producerPhone: producerCo?.contactPhone ?? "—",
-            buyerName: buyerCo?.name ?? "—",
-            buyerPhone: buyerCo?.contactPhone ?? "—",
-          });
-        } catch (err) {
-          console.error("[transport-request] ops email dispatch error for deal:", created.deal_id, err);
+        const emailSent = await sendTransportRequestNotification({
+          dealId: created.deal_id,
+          listingId: deal.listing_id,
+          transportMode,
+          manifestRef: created.manifest_ref ?? null,
+          pickupCity: created.pickup_city ?? null,
+          deliveryCity: created.delivery_city ?? null,
+          wasteDescription: created.waste_description ?? null,
+          quantity: listing?.quantity ?? null,
+          unit: listing?.unit ?? null,
+          material: listing?.material ?? null,
+          requestedAt: created.created_at.toISOString(),
+          producerName: producerCo?.name ?? "—",
+          producerPhone: producerCo?.contactPhone ?? "—",
+          buyerName: buyerCo?.name ?? "—",
+          buyerPhone: buyerCo?.contactPhone ?? "—",
+        });
+
+        // Mark email_sent flag so ops can identify any delivery failures
+        if (emailSent) {
+          await db
+            .update(transportRequestsTable)
+            .set({ email_sent: true })
+            .where(eq(transportRequestsTable.id, created.id));
         }
-      })();
-    }
+      } catch (err) {
+        req.log?.error({ err, dealId: created.deal_id }, "[transport-request] ops email dispatch error");
+      }
+    })();
   },
 );
 

@@ -230,11 +230,14 @@ export async function sendSupportNotification(p: SupportNotificationParams): Pro
 
 interface TransportRequestNotificationParams {
   dealId: string;
+  listingId: string;
+  transportMode: "platform" | "self_managed";
   manifestRef: string | null;
   pickupCity: string | null;
   deliveryCity: string | null;
   wasteDescription: string | null;
   quantity: string | null;
+  unit: string | null;
   material: string | null;
   requestedAt: string;
   producerName: string;
@@ -244,15 +247,21 @@ interface TransportRequestNotificationParams {
 }
 
 function buildTransportRequestHtml(p: TransportRequestNotificationParams): string {
-  const dealLink = `${BASE_URL}/dashboard`;
+  const dealLink = `${BASE_URL}/listings/${p.listingId}`;
+  const isPlatform = p.transportMode === "platform";
+  const quantityLabel = p.quantity
+    ? `${p.quantity}${p.unit ? " " + p.unit : " طن"}`
+    : "—";
+
   const rows: [string, string][] = [
     ["رقم الصفقة / Deal ID", p.dealId],
+    ["نوع النقل / Transport Mode", isPlatform ? "منصة (Platform)" : "ذاتي (Self-Managed)"],
     ...(p.manifestRef ? [["رقم البيان / Manifest Ref", p.manifestRef] as [string, string]] : []),
     ["المادة / Material", p.material ?? "—"],
-    ["الكمية / Quantity", p.quantity ? `${p.quantity} طن` : "—"],
+    ["الكمية / Quantity", quantityLabel],
     ["مدينة الاستلام / Pickup City", p.pickupCity ?? "—"],
     ["مدينة التسليم / Delivery City", p.deliveryCity ?? "—"],
-    ["المادة — تفاصيل / Waste Description", p.wasteDescription ?? "—"],
+    ...(p.wasteDescription ? [["وصف المادة / Waste Description", p.wasteDescription] as [string, string]] : []),
     ["البائع / Seller", p.producerName],
     ["جوال البائع / Seller Phone", p.producerPhone],
     ["المشتري / Buyer", p.buyerName],
@@ -268,6 +277,12 @@ function buildTransportRequestHtml(p: TransportRequestNotificationParams): strin
       </tr>`)
     .join("");
 
+  const headerNote = isPlatform
+    ? `<p style="margin:0 0 20px;font-size:14px;color:#64748b;">اختار المنتج خدمة "رتّب النقل لي" — يرجى التنسيق مع ناقل مناسب والتواصل مع الطرفين.</p>
+       <p style="margin:0 0 8px;font-size:14px;color:#475569;direction:ltr;text-align:left;">Platform request — please arrange a carrier and follow up with both parties.</p>`
+    : `<p style="margin:0 0 20px;font-size:14px;color:#64748b;">طلب نقل ذاتي — سيتولى المنتج أو المشتري ترتيب النقل بشكل مستقل. للمتابعة فقط.</p>
+       <p style="margin:0 0 8px;font-size:14px;color:#475569;direction:ltr;text-align:left;">Self-managed transport — parties handle their own logistics. For tracking purposes.</p>`;
+
   return `<!DOCTYPE html>
 <html dir="rtl" lang="ar">
 <head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1.0" />
@@ -278,12 +293,11 @@ function buildTransportRequestHtml(p: TransportRequestNotificationParams): strin
     <table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08);">
       <tr><td style="background:#1d4ed8;padding:20px 32px;">
         <p style="margin:0;color:#fff;font-size:20px;font-weight:700;">تدويرة · Tadweerah</p>
-        <p style="margin:4px 0 0;color:#bfdbfe;font-size:13px;">🚛 طلب نقل جديد يحتاج تنسيق</p>
+        <p style="margin:4px 0 0;color:#bfdbfe;font-size:13px;">🚛 طلب نقل جديد${isPlatform ? " — يحتاج تنسيق" : " — ذاتي"}</p>
       </td></tr>
       <tr><td style="padding:28px 32px 16px;">
-        <p style="margin:0 0 4px;font-size:17px;font-weight:700;color:#1e293b;">طلب نقل جديد من منتج</p>
-        <p style="margin:0 0 20px;font-size:14px;color:#64748b;">اختار المنتج خدمة "رتّب النقل لي" — يرجى التنسيق مع ناقل مناسب والتواصل مع الطرفين.</p>
-        <p style="margin:0 0 8px;font-size:14px;color:#475569;direction:ltr;text-align:left;">A new platform transport request requires coordination. Please arrange a carrier and follow up with both parties.</p>
+        <p style="margin:0 0 4px;font-size:17px;font-weight:700;color:#1e293b;">طلب نقل جديد</p>
+        ${headerNote}
       </td></tr>
       <tr><td style="padding:0 32px 24px;">
         <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;">
@@ -292,7 +306,7 @@ function buildTransportRequestHtml(p: TransportRequestNotificationParams): strin
       </td></tr>
       <tr><td style="padding:0 32px 28px;">
         <a href="${dealLink}" style="display:inline-block;background:#1d4ed8;color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600;">
-          فتح لوحة تحكم تدويرة &rarr;
+          فتح الصفقة في تدويرة &rarr;
         </a>
       </td></tr>
       <tr><td style="background:#f8fafc;padding:16px 32px;border-top:1px solid #e2e8f0;">
@@ -306,28 +320,35 @@ function buildTransportRequestHtml(p: TransportRequestNotificationParams): strin
 </body></html>`;
 }
 
+/**
+ * Sends an ops notification email for every new transport request.
+ * Returns true if the email was successfully dispatched, false otherwise.
+ */
 export async function sendTransportRequestNotification(
   p: TransportRequestNotificationParams,
-): Promise<void> {
+): Promise<boolean> {
   const opsEmail = process.env.TRANSPORT_REQUEST_EMAIL;
   if (!resend) {
     console.info("[email] RESEND_API_KEY not set — skipping transport request notification for deal:", p.dealId);
-    return;
+    return false;
   }
   if (!opsEmail) {
     console.info("[email] TRANSPORT_REQUEST_EMAIL not set — skipping transport request notification for deal:", p.dealId);
-    return;
+    return false;
   }
   try {
+    const modeTag = p.transportMode === "platform" ? "PLATFORM" : "SELF";
     await resend.emails.send({
       from: FROM,
       to: opsEmail,
-      subject: `[TADWEERAH][TRANSPORT][Deal #${p.dealId}] طلب نقل جديد`,
+      subject: `[TRANSPORT REQUEST][${modeTag}] - Deal #${p.dealId}`,
       html: buildTransportRequestHtml(p),
     });
     console.info("[email] transport request notification sent for deal:", p.dealId);
+    return true;
   } catch (err) {
     console.error("[email] transport request notification FAILED for deal:", p.dealId, err);
+    return false;
   }
 }
 

@@ -1253,6 +1253,9 @@ const translations: Record<string, Record<Language, string>> = {
   "dashboard.pending.action.confirm_payment": { ar: "تأكيد استلام الدفع", en: "Confirm Payment Received" },
   "dashboard.pending.action.confirm_dispatch": { ar: "تأكيد إرسال البضاعة", en: "Confirm Goods Dispatch" },
   "dashboard.pending.action.confirm_receipt": { ar: "تأكيد استلام البضاعة", en: "Confirm Goods Receipt" },
+  "dashboard.pending.action.choose_transport": { ar: "اختر طريقة النقل", en: "Choose Transport" },
+  "dashboard.pending.action.transport_pending_producer": { ar: "في انتظار طلب النقل", en: "Transport Pending" },
+  "dashboard.pending.action.transport_pending_buyer": { ar: "في انتظار طلب النقل", en: "Transport Pending" },
 
   // ── Transport Requests Page ────────────────────────────────────────────────
   "transport.title": { ar: "طلبات النقل", en: "Transport Requests" },

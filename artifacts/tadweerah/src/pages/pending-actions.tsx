@@ -60,6 +60,21 @@ const ACTION_COLOR: Record<string, { badge: string; border: string; dot: string 
     border: "border-s-secondary",
     dot: "bg-secondary",
   },
+  choose_transport: {
+    badge: "bg-violet-100 text-violet-700 border-violet-200",
+    border: "border-s-violet-400",
+    dot: "bg-violet-400",
+  },
+  transport_pending_producer: {
+    badge: "bg-orange-100 text-orange-700 border-orange-200",
+    border: "border-s-orange-400",
+    dot: "bg-orange-400",
+  },
+  transport_pending_buyer: {
+    badge: "bg-orange-100 text-orange-700 border-orange-200",
+    border: "border-s-orange-400",
+    dot: "bg-orange-400",
+  },
 };
 
 export function PendingActionsPage() {
