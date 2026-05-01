@@ -374,7 +374,7 @@ export function OnboardingPage() {
   ══════════════════════════════════════════════════════════════ */
   if (outerStep === "company" || isSignedIn) {
     return (
-      <AppLayout showSignOut={isSignedIn} width="narrow" title={t("onboarding.title")} subtitle={t("onboarding.subtitle")}>
+      <AppLayout showSignOut={isSignedIn} width="wide" title={t("onboarding.title")} subtitle={t("onboarding.subtitle")}>
         <StepIndicator labels={companyStepLabels} activeIndex={companySubStep - 1} />
 
         <form
@@ -383,7 +383,7 @@ export function OnboardingPage() {
         >
           {/* ─── Sub-step 1: Basic Info ─────────────────────────── */}
           {companySubStep === 1 && (
-            <div className="space-y-4">
+            <div className="mx-auto max-w-2xl space-y-4">
               {/* B2B notice */}
               <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-medium text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
                 <span className="shrink-0">⚠</span>
@@ -495,15 +495,14 @@ export function OnboardingPage() {
 
           {/* ─── Sub-step 2: Activities + Roles ────────────────── */}
           {companySubStep === 2 && (
-            <div className="space-y-3">
-              {/* Activities */}
+            <div className="grid gap-6 lg:grid-cols-[3fr_2fr]">
+
+              {/* ── Column 1: Activities ─────────────────────────────── */}
               <div>
-                <div className="mb-2">
-                  <h3 className="text-sm font-semibold text-foreground">{t("onboarding.form.actions")} *</h3>
-                  <p className="mt-0.5 text-xs text-muted-foreground">{t("onboarding.form.actions.hint")}</p>
-                </div>
+                <h3 className="mb-1 text-sm font-semibold text-foreground">{t("onboarding.form.actions")} *</h3>
+                <p className="mb-3 text-xs text-muted-foreground">{t("onboarding.form.actions.hint")}</p>
                 {lookupLoading ? (
-                  <div className="flex h-16 items-center justify-center text-sm text-muted-foreground">
+                  <div className="flex h-24 items-center justify-center text-sm text-muted-foreground">
                     <Loader2 className="me-2 h-4 w-4 animate-spin" /> {t("onboarding.form.actions.loading")}
                   </div>
                 ) : lookupError ? (
@@ -512,7 +511,7 @@ export function OnboardingPage() {
                     <button type="button" className="text-xs underline" onClick={() => window.location.reload()}>{t("common.retry")}</button>
                   </div>
                 ) : (
-                  <div className="grid gap-1.5 sm:grid-cols-3">
+                  <div className="grid gap-2 sm:grid-cols-2">
                     {actions.map(action => {
                       const selected = selectedActionIds.has(action.id);
                       const label = lang === "ar" ? action.name_ar : action.name_en;
@@ -523,14 +522,14 @@ export function OnboardingPage() {
                           <button
                             type="button"
                             onClick={() => toggleAction(action.id, action.key)}
-                            className="flex w-full items-start gap-2 px-3 py-2.5 text-start"
+                            className="flex w-full items-start gap-3 p-3 text-start"
                           >
                             <span className={`mt-0.5 shrink-0 ${selected ? "text-primary" : "text-muted-foreground"}`}>
                               {selected ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
                             </span>
                             <div>
-                              <div className={`text-sm font-medium leading-tight ${selected ? "text-primary" : "text-foreground"}`}>{label}</div>
-                              {desc && <div className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-muted-foreground">{desc}</div>}
+                              <div className={`text-sm font-medium ${selected ? "text-primary" : "text-foreground"}`}>{label}</div>
+                              {desc && <div className="mt-0.5 text-xs leading-snug text-muted-foreground line-clamp-2">{desc}</div>}
                             </div>
                           </button>
                           {isOther && selected && (
@@ -552,11 +551,11 @@ export function OnboardingPage() {
                 )}
               </div>
 
-              {/* Roles */}
-              <fieldset>
+              {/* ── Column 2: Roles ──────────────────────────────────── */}
+              <fieldset className="flex flex-col">
                 <legend className="mb-1 block text-sm font-semibold text-foreground">{t("onboarding.form.roles")} *</legend>
-                <p className="mb-2 text-xs text-muted-foreground">{t("onboarding.form.roles.hint")}</p>
-                <div className="grid gap-1.5 sm:grid-cols-3">
+                <p className="mb-3 text-xs text-muted-foreground">{t("onboarding.form.roles.hint")}</p>
+                <div className="flex flex-col gap-2">
                   {(["generator", "receiver", "transporter"] as const).map(role => {
                     const selected = selectedRoles.has(role);
                     return (
@@ -564,26 +563,27 @@ export function OnboardingPage() {
                         key={role}
                         type="button"
                         onClick={() => toggleRole(role)}
-                        className={`flex items-start gap-2 rounded-lg border px-3 py-2.5 text-start transition-colors ${selected ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "border-border bg-card hover:border-primary/40"}`}
+                        className={`flex items-start gap-3 rounded-lg border p-3 text-start transition-colors ${selected ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "border-border bg-card hover:border-primary/40"}`}
                       >
                         <span className={`mt-0.5 shrink-0 ${selected ? "text-primary" : "text-muted-foreground"}`}>
                           {selected ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
                         </span>
                         <div>
-                          <div className={`text-sm font-medium leading-tight ${selected ? "text-primary" : "text-foreground"}`}>{t(`role.${role}`)}</div>
-                          <div className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-muted-foreground">{t(`onboarding.form.roles.${role}.desc`)}</div>
+                          <div className={`text-sm font-medium ${selected ? "text-primary" : "text-foreground"}`}>{t(`role.${role}`)}</div>
+                          <div className="mt-0.5 text-xs leading-snug text-muted-foreground">{t(`onboarding.form.roles.${role}.desc`)}</div>
                         </div>
                       </button>
                     );
                   })}
                 </div>
               </fieldset>
+
             </div>
           )}
 
           {/* ─── Sub-step 3: Licenses ───────────────────────────── */}
           {companySubStep === 3 && (
-            <div>
+            <div className="mx-auto max-w-2xl">
               <div className="mb-4">
                 <h3 className="text-sm font-semibold text-foreground">{t("onboarding.form.license_number")}</h3>
                 <p className="mt-0.5 text-xs text-muted-foreground">{t("license.hint")}</p>
@@ -707,7 +707,7 @@ export function OnboardingPage() {
 
           {/* ─── Sub-step 4: Summary + Terms ───────────────────── */}
           {companySubStep === 4 && (
-            <div className="space-y-5">
+            <div className="mx-auto max-w-2xl space-y-5">
               <Card className="border-card-border bg-card">
                 <CardContent className="p-5 space-y-3">
                   <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">
@@ -780,7 +780,7 @@ export function OnboardingPage() {
           )}
 
           {/* ─── Navigation ─────────────────────────────────────── */}
-          <div className="mt-6 flex gap-3">
+          <div className={`mt-6 flex gap-3 ${companySubStep !== 2 ? "mx-auto max-w-2xl" : ""}`}>
             {companySubStep > 1 && (
               <Button type="button" variant="outline" className="gap-1.5" onClick={goBackSubStep}>
                 <ChevronLeft className="h-4 w-4 rtl:rotate-180" />
