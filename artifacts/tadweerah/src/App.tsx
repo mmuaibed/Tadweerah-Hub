@@ -31,6 +31,7 @@ import { ContractsPage } from "@/pages/contracts";
 import { ContractNewPage } from "@/pages/contract-new";
 import { ContractDetailPage } from "@/pages/contract-detail";
 import { TransportRequestsPage } from "@/pages/transport-requests";
+import { PendingActionsPage } from "@/pages/pending-actions";
 import { AdminPage } from "@/pages/admin";
 import NotFound from "@/pages/not-found";
 
@@ -265,6 +266,9 @@ function ClerkProviderWithRoutes() {
             </Route>
             <Route path="/transport-requests">
               <CompanyRoute><TransportRequestsPage /></CompanyRoute>
+            </Route>
+            <Route path="/pending-actions">
+              <CompanyRoute><PendingActionsPage /></CompanyRoute>
             </Route>
             <Route path="/admin">
               <AdminPage />
