@@ -201,7 +201,7 @@ export function OnboardingPage() {
     const phoneClean = phoneVal.replace(/[\s\-().+]/g, "");
     if (!/^\d{7,15}$/.test(phoneClean)) return t("onboarding.form.phone.invalid");
     if (!commercialRegistration.trim()) return t("onboarding.form.cr.required");
-    if (companyCategoryId === "__other__" && !companyCategoryOther.trim())
+    if (categories.find(c => c.id === companyCategoryId)?.key === "other" && !companyCategoryOther.trim())
       return lang === "ar" ? "يرجى كتابة تصنيف الشركة" : "Please describe your company category";
     return null;
   };
@@ -237,8 +237,8 @@ export function OnboardingPage() {
         city: city.trim(),
         contactPhone: contactPhone.trim(),
         ...(commercialRegistration.trim() ? { commercialRegistration: commercialRegistration.trim() } : {}),
-        ...(companyCategoryId && companyCategoryId !== "__other__" ? { company_category_id: companyCategoryId } : {}),
-        ...(companyCategoryId === "__other__" && companyCategoryOther.trim() ? { company_category_other: companyCategoryOther.trim() } : {}),
+        ...(companyCategoryId ? { company_category_id: companyCategoryId } : {}),
+        ...(categories.find(c => c.id === companyCategoryId)?.key === "other" && companyCategoryOther.trim() ? { company_category_other: companyCategoryOther.trim() } : {}),
         action_ids: Array.from(selectedActionIds),
         roles: Array.from(selectedRoles),
         accepted_terms: true,
@@ -471,12 +471,11 @@ export function OnboardingPage() {
                         {categories.map(cat => (
                           <option key={cat.id} value={cat.id}>{lang === "ar" ? cat.name_ar : cat.name_en}</option>
                         ))}
-                        <option value="__other__">{lang === "ar" ? "أخرى" : "Other"}</option>
                       </select>
                       <ChevronDown className="pointer-events-none absolute start-3 top-2.5 h-4 w-4 text-muted-foreground" />
                     </div>
-                    {/* Free-text when "Other" is selected — required */}
-                    {companyCategoryId === "__other__" && (
+                    {/* Free-text when the DB "other" category is selected — required */}
+                    {categories.find(c => c.id === companyCategoryId)?.key === "other" && (
                       <Input
                         id="ob-category-other"
                         name="company-category-other"
