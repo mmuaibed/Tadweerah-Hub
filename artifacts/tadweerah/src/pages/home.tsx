@@ -1,98 +1,174 @@
 import { SignInButton, SignUpButton } from "@clerk/react";
-import { Recycle, ShoppingBag, Truck, ArrowLeft, ArrowRight, CheckCircle2 } from "lucide-react";
+import {
+  Recycle,
+  ShoppingBag,
+  Truck,
+  ArrowLeft,
+  ArrowRight,
+  Building2,
+  FileCheck,
+  BadgeCheck,
+  LayoutDashboard,
+  Lock,
+  TrendingUp,
+  type LucideIcon,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { AppLayout } from "@/components/app-layout";
 import { useT } from "@/i18n";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
+type WhyPoint = { key: string; icon: LucideIcon; bold?: boolean };
+
+const WHY_POINTS: WhyPoint[] = [
+  { key: "home.why.p1", icon: Building2, bold: true },
+  { key: "home.why.p2", icon: FileCheck },
+  { key: "home.why.p3", icon: BadgeCheck },
+  { key: "home.why.p4", icon: LayoutDashboard },
+  { key: "home.why.p5", icon: Lock },
+  { key: "home.why.p6", icon: TrendingUp },
+];
+
+const USER_GROUPS = [
+  {
+    icon: Recycle,
+    titleKey: "home.feature1.title",
+    valueKey: "home.for.producers.value",
+  },
+  {
+    icon: ShoppingBag,
+    titleKey: "home.feature2.title",
+    valueKey: "home.for.buyers.value",
+  },
+  {
+    icon: Truck,
+    titleKey: "home.feature3.title",
+    valueKey: "home.for.transporters.value",
+  },
+] as const;
+
 export function HomePage() {
   const { t, lang } = useT();
   const Arrow = lang === "ar" ? ArrowLeft : ArrowRight;
-
-  const features = [
-    { icon: Recycle, title: t("home.feature1.title"), desc: t("home.feature1.desc") },
-    { icon: ShoppingBag, title: t("home.feature2.title"), desc: t("home.feature2.desc") },
-    { icon: Truck, title: t("home.feature3.title"), desc: t("home.feature3.desc") },
-  ];
-
-  const solves = [
-    t("home.solves.1"),
-    t("home.solves.2"),
-    t("home.solves.3"),
-  ];
+  const onboardingUrl = `${basePath}/onboarding/company`;
 
   return (
     <AppLayout>
-      {/* Hero */}
-      <section className="flex flex-col items-center pt-12 pb-10 text-center sm:pt-20 sm:pb-14">
-        <span className="mb-10 inline-flex items-center gap-2 rounded-full border border-border bg-card px-5 py-2 text-xs font-medium text-muted-foreground tracking-wide">
-          {t("app.tagline")}
+      {/* ── Hero: badge → logo → headline → CTAs ── */}
+      <section className="flex flex-col items-center pt-4 pb-3 text-center sm:pt-5">
+
+        {/* Saudi green badge */}
+        <span className="mb-3 inline-flex items-center rounded-full border-2 border-green-300 bg-green-100 px-5 py-2 text-xs font-bold text-green-900 tracking-wide">
+          {t("home.badge")}
         </span>
 
+        {/* Logo */}
         <img
           src={`${basePath}/logo.png`}
           alt="Tadweerah | تدويرة"
-          className="mb-10 w-[18rem] max-w-[85vw] h-auto sm:w-[26rem] md:w-[32rem]"
+          className="mb-5 w-[9rem] max-w-[60vw] h-auto sm:w-[13rem] md:w-[15rem]"
           style={{ mixBlendMode: "multiply" }}
         />
 
-        <p className="max-w-2xl text-pretty text-base text-muted-foreground sm:text-lg leading-relaxed">
-          {t("app.description")}
-        </p>
+        {/* Main headline */}
+        <h1 className="text-lg font-bold text-foreground leading-snug sm:whitespace-nowrap sm:text-xl">
+          {t("home.headline")}
+        </h1>
 
-        <div className="mt-10 flex flex-col gap-3 sm:flex-row">
-          <SignUpButton mode="modal" forceRedirectUrl={`${basePath}/onboarding/company`}>
-            <Button size="lg" className="gap-2 px-8">
+        {/* CTAs */}
+        <div className="mt-8 flex flex-col gap-2 sm:flex-row">
+          <SignUpButton mode="modal" forceRedirectUrl={onboardingUrl}>
+            <Button size="lg" className="gap-2 px-7 font-bold">
               {t("action.getstarted")}
               <Arrow className="h-4 w-4" />
             </Button>
           </SignUpButton>
           <SignInButton mode="modal">
-            <Button size="lg" variant="outline" className="px-8">
+            <Button
+              size="lg"
+              variant="outline"
+              className="border-gray-400 px-7 hover:border-primary/60 hover:bg-muted/50"
+            >
               {t("action.signin")}
             </Button>
           </SignInButton>
         </div>
 
-        {/* Trust line */}
-        <p className="mt-5 text-xs text-muted-foreground/70 tracking-wide">
-          {t("home.trust_line")}
-        </p>
+        {/* No-account prompt */}
+        <div className="mt-3">
+          <SignUpButton mode="modal" forceRedirectUrl={onboardingUrl}>
+            <button
+              type="button"
+              className="text-xs text-muted-foreground hover:text-primary underline underline-offset-2 transition-colors"
+            >
+              {t("home.no_account_prompt")}
+            </button>
+          </SignUpButton>
+        </div>
       </section>
 
-      {/* What it solves */}
-      <section className="mb-10 rounded-xl border border-border bg-card px-6 py-6 sm:px-8">
-        <h2 className="mb-4 text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-          {t("home.solves.title")}
-        </h2>
-        <ul className="space-y-3">
-          {solves.map((text, i) => (
-            <li key={i} className="flex items-start gap-3 text-sm text-foreground leading-relaxed">
-              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-secondary" />
-              <span>{text}</span>
-            </li>
-          ))}
-        </ul>
-      </section>
+      {/* ── 2-column: Why + For ── */}
+      <section className="mt-1 grid gap-5 pb-3 lg:grid-cols-2">
 
-      {/* Feature cards */}
-      <section className="grid gap-4 pb-16 sm:grid-cols-3 sm:gap-6">
-        {features.map(({ icon: Icon, title, desc }) => (
-          <Card key={title} className="border-card-border bg-card transition-shadow hover:shadow-md">
-            <CardContent className="flex flex-col items-start gap-4 p-6">
-              <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-secondary/10 text-secondary">
+        {/* Column 1 → visual RIGHT in Arabic RTL — "Why Tadweerah?" */}
+        <div className="flex flex-col gap-2.5">
+          <h2 className="text-lg font-bold text-foreground sm:text-xl">
+            {t("home.why.title")}
+          </h2>
+
+          <div className="rounded-xl border border-border bg-card p-4 lg:flex-1">
+            <ul className="flex flex-col gap-3.5 lg:h-full lg:justify-between lg:gap-0">
+              {WHY_POINTS.map(({ key, icon: Icon, bold }) => (
+                <li key={key} className="flex items-center gap-3">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                    <Icon className="h-3.5 w-3.5" />
+                  </span>
+                  <span
+                    className={`text-sm leading-snug ${
+                      bold
+                        ? "font-semibold text-foreground"
+                        : "font-medium text-foreground/85"
+                    }`}
+                  >
+                    {t(key)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        {/* Column 2 → visual LEFT in Arabic RTL — "Who is this for?" */}
+        <div className="flex flex-col gap-2.5">
+          <h2 className="text-lg font-bold text-foreground sm:text-xl">
+            {t("home.for.title")}
+          </h2>
+
+          {USER_GROUPS.map(({ icon: Icon, titleKey, valueKey }) => (
+            <div
+              key={titleKey}
+              className="flex items-center gap-3.5 rounded-xl border border-border bg-card px-4 py-3.5 transition-shadow hover:shadow-sm"
+            >
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                 <Icon className="h-5 w-5" />
               </span>
-              <div>
-                <h3 className="text-lg font-semibold text-card-foreground">{title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{desc}</p>
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-foreground">{t(titleKey)}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground leading-snug">
+                  {t(valueKey)}
+                </p>
               </div>
-            </CardContent>
-          </Card>
-        ))}
+            </div>
+          ))}
+        </div>
+
       </section>
+
+      {/* B2B description footer */}
+      <p className="mt-1 pb-3 text-center text-base text-muted-foreground/90">
+        {t("home.description")}
+      </p>
     </AppLayout>
   );
 }

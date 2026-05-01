@@ -99,6 +99,7 @@ const translations: Record<string, Record<Language, string>> = {
   "action.signout": { ar: "تسجيل الخروج", en: "Sign Out" },
   "action.getstarted": { ar: "ابدأ الآن", en: "Get Started" },
   "action.register_company": { ar: "سجّل شركتك مجاناً", en: "Register Your Company — Free" },
+  "home.no_account_prompt": { ar: "ليس لديك حساب؟ أنشئ حساب شركتك الآن", en: "No account? Create your company account now" },
   "action.cancel": { ar: "إلغاء", en: "Cancel" },
   "action.close": { ar: "إغلاق", en: "Close" },
   "action.back": { ar: "رجوع", en: "Back" },
