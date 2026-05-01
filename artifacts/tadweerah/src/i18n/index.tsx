@@ -659,6 +659,7 @@ const translations: Record<string, Record<Language, string>> = {
   "deal.transport.smart.skip_confirm_title": { ar: "تأكيد: لا تحتاج نقل؟", en: "Confirm: No Transport Needed?" },
   "deal.transport.smart.skip_confirm_desc": { ar: "هل أنت متأكد أن هذه الصفقة لا تحتاج إلى خدمة نقل؟ يمكنك التواصل مع فريق تدويرة لاحقاً إذا احتجت مساعدة.", en: "Are you sure this deal doesn't require transport? You can contact the Tadweerah team later if you need assistance." },
   "deal.transport.smart.skip_confirm_ok": { ar: "نعم، لا أحتاج نقل", en: "Yes, No Transport Needed" },
+  "deal.transport.smart.dispatched_no_tr": { ar: "لم يتم ترتيب نقل لهذه الصفقة. البضاعة في طريقها إليك.", en: "No transport was arranged for this deal. Goods are on their way to you." },
   "deal.step_current.active.producer": { ar: "الخطوة الحالية: تأكيد الدفع", en: "Current step: Confirm Payment" },
   "deal.step_current.payment_confirmed.producer": { ar: "الخطوة الحالية: إرسال البضاعة", en: "Current step: Dispatch Goods" },
   "deal.step_current.dispatched.buyer": { ar: "الخطوة الحالية: تأكيد الاستلام", en: "Current step: Confirm Receipt" },
@@ -1245,6 +1246,12 @@ const translations: Record<string, Record<Language, string>> = {
   "dashboard.carrier.title": { ar: "طلبات النقل", en: "Transport Requests" },
   "dashboard.carrier.desc": { ar: "عرض وقبول طلبات نقل النفايات المتاحة", en: "Browse and accept available waste transport jobs" },
   "dashboard.carrier.available_cta": { ar: "تصفح الطلبات المتاحة", en: "Browse Available Jobs" },
+  "dashboard.pending.title": { ar: "إجراءات معلقة", en: "Pending Actions" },
+  "dashboard.pending.empty": { ar: "لا توجد إجراءات معلقة حالياً", en: "No pending actions right now" },
+  "dashboard.pending.cta": { ar: "اتخذ الإجراء", en: "Take Action" },
+  "dashboard.pending.action.confirm_payment": { ar: "تأكيد استلام الدفع", en: "Confirm Payment Received" },
+  "dashboard.pending.action.confirm_dispatch": { ar: "تأكيد إرسال البضاعة", en: "Confirm Goods Dispatch" },
+  "dashboard.pending.action.confirm_receipt": { ar: "تأكيد استلام البضاعة", en: "Confirm Goods Receipt" },
 
   // ── Transport Requests Page ────────────────────────────────────────────────
   "transport.title": { ar: "طلبات النقل", en: "Transport Requests" },

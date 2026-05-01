@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, eq, or } from "drizzle-orm";
+import { and, eq, inArray, or } from "drizzle-orm";
 import { clerkClient } from "@clerk/express";
 import {
   db,
@@ -624,4 +624,71 @@ router.post(
   },
 );
 
+/**
+ * GET /deals/pending
+ * Returns deals where the current user/company needs to take action.
+ * Producer: status = active (confirm payment) or payment_confirmed (confirm dispatch)
+ * Buyer:    status = dispatched (confirm receipt)
+ */
+router.get(
+  "/deals/pending",
+  requireAuth,
+  requireCompany(),
+  async (req, res) => {
+    const { company } = req as AuthedCompanyRequest;
+
+    const producerDeals = await db
+      .select({
+        id: dealsTable.id,
+        listing_id: dealsTable.listing_id,
+        status: dealsTable.status,
+        material: wasteListingsTable.material,
+        city: wasteListingsTable.city,
+        updated_at: dealsTable.updated_at,
+      })
+      .from(dealsTable)
+      .leftJoin(wasteListingsTable, eq(dealsTable.listing_id, wasteListingsTable.id))
+      .where(
+        and(
+          eq(dealsTable.producer_company_id, company.id),
+          inArray(dealsTable.status, ["active", "payment_confirmed"]),
+        ),
+      )
+      .orderBy(dealsTable.updated_at);
+
+    const buyerDeals = await db
+      .select({
+        id: dealsTable.id,
+        listing_id: dealsTable.listing_id,
+        status: dealsTable.status,
+        material: wasteListingsTable.material,
+        city: wasteListingsTable.city,
+        updated_at: dealsTable.updated_at,
+      })
+      .from(dealsTable)
+      .leftJoin(wasteListingsTable, eq(dealsTable.listing_id, wasteListingsTable.id))
+      .where(
+        and(
+          eq(dealsTable.buyer_company_id, company.id),
+          inArray(dealsTable.status, ["dispatched"]),
+        ),
+      )
+      .orderBy(dealsTable.updated_at);
+
+    const actionMap: Record<string, string> = {
+      active: "confirm_payment",
+      payment_confirmed: "confirm_dispatch",
+      dispatched: "confirm_receipt",
+    };
+
+    const deals = [
+      ...producerDeals.map((d) => ({ ...d, role: "producer" as const, action_needed: actionMap[d.status] ?? d.status, updated_at: d.updated_at.toISOString() })),
+      ...buyerDeals.map((d) => ({ ...d, role: "buyer" as const, action_needed: actionMap[d.status] ?? d.status, updated_at: d.updated_at.toISOString() })),
+    ].sort((a, b) => a.updated_at.localeCompare(b.updated_at));
+
+    res.json({ deals });
+  },
+);
+
 export default router;
+

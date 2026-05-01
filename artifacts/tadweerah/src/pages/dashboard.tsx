@@ -20,6 +20,8 @@ import {
   Sparkles,
   Bell,
   ClipboardList,
+  Clock,
+  AlertCircle,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { AppLayout } from "@/components/app-layout";
@@ -48,6 +50,105 @@ function useDashboardStats() {
     },
     staleTime: 60_000,
   });
+}
+
+interface PendingDeal {
+  id: string;
+  listing_id: string;
+  status: string;
+  role: "producer" | "buyer";
+  action_needed: string;
+  material: string | null;
+  city: string | null;
+  updated_at: string;
+}
+
+function usePendingDeals() {
+  const { getToken } = useAuth();
+  return useQuery<{ deals: PendingDeal[] }>({
+    queryKey: ["pending-deals"],
+    queryFn: async () => {
+      const token = await getToken();
+      const res = await fetch("/api/deals/pending", {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("pending fetch failed");
+      return res.json() as Promise<{ deals: PendingDeal[] }>;
+    },
+    staleTime: 30_000,
+  });
+}
+
+function PendingActionsSection({
+  t, Arrow,
+}: { t: (k: string) => string; Arrow: typeof ArrowLeft }) {
+  const { data, isLoading } = usePendingDeals();
+  const deals = data?.deals ?? [];
+
+  const actionColorMap: Record<string, string> = {
+    confirm_payment: "text-amber-700 bg-amber-50 border-amber-200",
+    confirm_dispatch: "text-blue-700 bg-blue-50 border-blue-200",
+    confirm_receipt: "text-secondary bg-secondary/5 border-secondary/20",
+  };
+
+  return (
+    <div className="mb-4">
+      <div className="flex items-center gap-1.5 mb-2">
+        <Clock className="h-3 w-3 text-muted-foreground" />
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          {t("dashboard.pending.title")}
+        </p>
+        {deals.length > 0 && (
+          <span className="ms-auto inline-flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground">
+            {deals.length}
+          </span>
+        )}
+      </div>
+
+      {isLoading && (
+        <div className="flex items-center justify-center py-3">
+          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+        </div>
+      )}
+
+      {!isLoading && deals.length === 0 && (
+        <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/20 px-3 py-2.5">
+          <AlertCircle className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <p className="text-xs text-muted-foreground">{t("dashboard.pending.empty")}</p>
+        </div>
+      )}
+
+      {!isLoading && deals.length > 0 && (
+        <div className="space-y-2">
+          {deals.map((deal) => {
+            const actionKey = `dashboard.pending.action.${deal.action_needed}`;
+            const colorClass = actionColorMap[deal.action_needed] ?? "text-foreground bg-muted/20 border-border";
+            const materialLabel = deal.material
+              ? t(`material.${deal.material}`)
+              : deal.id.slice(0, 8);
+            return (
+              <Link key={deal.id} to={`/listings/${deal.listing_id}`}>
+                <div className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 cursor-pointer transition-all hover:shadow-sm ${colorClass}`}>
+                  <Package className="h-3.5 w-3.5 shrink-0 opacity-70" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold truncate">{materialLabel}</p>
+                    {deal.city && (
+                      <p className="text-[10px] opacity-70">{deal.city}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <span className="text-[10px] font-medium">{t(actionKey)}</span>
+                    <Arrow className="h-3 w-3 opacity-60" />
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function StatPill({
@@ -247,6 +348,9 @@ export function DashboardPage() {
           </div>
         </div>
       )}
+
+      {/* ── Pending actions — deals requiring current user's action ── */}
+      <PendingActionsSection t={t} Arrow={Arrow} />
 
       {/* ── Context-aware next-action nudge ── */}
       {stats && <NextActionBanner stats={stats} t={t} Arrow={Arrow} />}

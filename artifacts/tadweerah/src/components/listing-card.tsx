@@ -14,6 +14,7 @@ import {
   TrendingDown,
   Lock,
   MessageSquare,
+  Calendar,
 } from "lucide-react";
 import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
@@ -144,6 +145,17 @@ export function ListingCard({
             <MapPin className="h-4 w-4 shrink-0" />
             <span>{listing.city}</span>
           </div>
+          {listing.created_at && (
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 shrink-0" />
+              <span>
+                {new Date(listing.created_at).toLocaleDateString(
+                  lang === "ar" ? "ar-SA" : "en-US",
+                  { year: "numeric", month: "short", day: "numeric" },
+                )}
+              </span>
+            </div>
+          )}
           {listing.price_hint != null && (
             <div className="flex items-center gap-2">
               <Tag className="h-4 w-4 shrink-0" />

@@ -1065,6 +1065,7 @@ function printDealReport(
 interface SmartTransportBodyProps {
   tr: MwanSummary["transport"];
   trDecision: string | null;
+  dealStatus: DealStatus;
   smartTrLoading: boolean;
   smartTrError: string | null;
   skipConfirmOpen: boolean;
@@ -1075,7 +1076,7 @@ interface SmartTransportBodyProps {
 }
 
 function SmartTransportBody({
-  tr, trDecision, smartTrLoading, smartTrError,
+  tr, trDecision, dealStatus, smartTrLoading, smartTrError,
   skipConfirmOpen, setSkipConfirmOpen,
   onArrange, onSkipConfirm, t,
 }: SmartTransportBodyProps): React.ReactNode {
@@ -1117,12 +1118,23 @@ function SmartTransportBody({
     );
   }
 
-  /* Opted out — with undo option */
+  /* Opted out */
   if (trDecision === "not_required") {
     return (
       <div className="rounded-lg bg-muted/20 border border-border px-3 py-2.5 space-y-1">
         <p className="text-xs text-muted-foreground leading-relaxed">
           {t("deal.transport.smart.not_required")}
+        </p>
+      </div>
+    );
+  }
+
+  /* Goods already dispatched with no transport arranged — informational only */
+  if (dealStatus === "dispatched") {
+    return (
+      <div className="rounded-lg bg-muted/20 border border-border px-3 py-2.5">
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          {t("deal.transport.smart.dispatched_no_tr")}
         </p>
       </div>
     );
@@ -1973,6 +1985,7 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
                 {deal.status !== "active" && SmartTransportBody({
                   tr: mwanHeaderData?.transport ?? null,
                   trDecision: mwanHeaderData?.transport_decision ?? null,
+                  dealStatus: deal.status,
                   smartTrLoading,
                   smartTrError,
                   skipConfirmOpen,
