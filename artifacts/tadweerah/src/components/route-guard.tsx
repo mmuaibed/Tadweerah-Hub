@@ -9,9 +9,10 @@ interface RouteGuardProps {
 }
 
 export function RouteGuard({ requireCompany, children }: RouteGuardProps) {
-  const { data: me, isLoading } = useGetMe();
+  const { data: me, isLoading, isError } = useGetMe();
 
-  if (isLoading) {
+  // Show spinner while loading OR on API error (don't make routing decisions on stale/failed data)
+  if (isLoading || isError) {
     return (
       <div className="flex min-h-[100dvh] items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -19,7 +20,12 @@ export function RouteGuard({ requireCompany, children }: RouteGuardProps) {
     );
   }
 
-  if (requireCompany && (!me || !me.company)) {
+  // Safeguard: if user has a company, NEVER redirect to onboarding
+  if (requireCompany && me?.company) {
+    return <>{children}</>;
+  }
+
+  if (requireCompany && !me?.company) {
     return <Redirect to="/onboarding/company" />;
   }
 

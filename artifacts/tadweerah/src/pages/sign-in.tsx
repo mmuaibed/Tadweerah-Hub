@@ -25,29 +25,30 @@ export function SignInPage() {
   const [isPending, setIsPending] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
+  /* ── Clerk error helper ── */
+  const clerkErrMsg = (e: unknown) => {
+    const ce = (e as { errors?: { message: string }[] }).errors?.[0];
+    return ce?.message ?? t("signin.error.generic");
+  };
+
   /* ── Normal sign-in ── */
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setIsPending(true);
     try {
-      const { error: signInError } = await signIn.create({
-        identifier: email.trim(),
-        password,
-      });
-      if (signInError) {
-        setError(signInError.message ?? t("signin.error.generic"));
-        return;
-      }
-      if (signIn.status === "complete") {
-        await signIn.finalize();
+      const { error: createErr } = await signIn!.create({ identifier: email.trim(), password });
+      if (createErr) { setError(createErr.message ?? t("signin.error.generic")); return; }
+
+      if (signIn!.status === "complete") {
+        const { error: finalErr } = await signIn!.finalize();
+        if (finalErr) { setError(finalErr.message ?? t("signin.error.generic")); return; }
         navigate("/dashboard");
       } else {
         setError(t("signin.error.incomplete"));
       }
-    } catch (err: unknown) {
-      const e2 = (err as { errors?: { message: string }[] }).errors?.[0];
-      setError(e2?.message ?? t("signin.error.generic"));
+    } catch (err) {
+      setError(clerkErrMsg(err));
     } finally {
       setIsPending(false);
     }
@@ -59,22 +60,15 @@ export function SignInPage() {
     setError(null);
     setIsPending(true);
     try {
-      // Step 1: identify the account by email
-      const { error: createErr } = await signIn.create({ identifier: resetEmail.trim() });
-      if (createErr) {
-        setError(createErr.message ?? t("signin.error.generic"));
-        return;
-      }
-      // Step 2: send the password reset code (sendCode takes no arguments)
-      const { error: sendErr } = await signIn.resetPasswordEmailCode.sendCode();
-      if (sendErr) {
-        setError(sendErr.message ?? t("signin.error.generic"));
-        return;
-      }
+      const { error: createErr } = await signIn!.create({ identifier: resetEmail.trim() });
+      if (createErr) { setError(createErr.message ?? t("signin.error.generic")); return; }
+
+      const { error: sendErr } = await signIn!.resetPasswordEmailCode.sendCode();
+      if (sendErr) { setError(sendErr.message ?? t("signin.error.generic")); return; }
+
       setStep("forgot-code");
-    } catch (err: unknown) {
-      const e2 = (err as { errors?: { message: string }[] }).errors?.[0];
-      setError(e2?.message ?? t("signin.error.generic"));
+    } catch (err) {
+      setError(clerkErrMsg(err));
     } finally {
       setIsPending(false);
     }
@@ -84,39 +78,26 @@ export function SignInPage() {
   const handleForgotReset = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (newPassword.length < 8) {
-      setError(t("onboarding.account.password.hint"));
-      return;
-    }
+    if (newPassword.length < 8) { setError(t("onboarding.account.password.hint")); return; }
     setIsPending(true);
     try {
-      // Verify the reset code
-      const { error: verifyErr } = await signIn.resetPasswordEmailCode.verifyCode({
-        code: resetCode.trim(),
-      });
-      if (verifyErr) {
-        setError(verifyErr.message ?? t("signin.error.generic"));
-        return;
-      }
-      // Submit the new password
-      const { error: passErr } = await signIn.resetPasswordEmailCode.submitPassword({
+      const { error: verifyErr } = await signIn!.resetPasswordEmailCode.verifyCode({ code: resetCode.trim() });
+      if (verifyErr) { setError(verifyErr.message ?? t("signin.error.generic")); return; }
+
+      const { error: passErr } = await signIn!.resetPasswordEmailCode.submitPassword({
         password: newPassword,
         signOutOfOtherSessions: true,
       });
-      if (passErr) {
-        setError(passErr.message ?? t("signin.error.generic"));
-        return;
+      if (passErr) { setError(passErr.message ?? t("signin.error.generic")); return; }
+
+      if (signIn!.status === "complete") {
+        const { error: finalErr } = await signIn!.finalize();
+        if (!finalErr) { navigate("/dashboard"); return; }
       }
-      if (signIn.status === "complete") {
-        await signIn.finalize();
-        navigate("/dashboard");
-      } else {
-        setSuccessMsg(t("signin.reset.success"));
-        setTimeout(() => { setStep("credentials"); setSuccessMsg(null); }, 2000);
-      }
-    } catch (err: unknown) {
-      const e2 = (err as { errors?: { message: string }[] }).errors?.[0];
-      setError(e2?.message ?? t("signin.error.generic"));
+      setSuccessMsg(t("signin.reset.success"));
+      setTimeout(() => { setStep("credentials"); setSuccessMsg(null); }, 2000);
+    } catch (err) {
+      setError(clerkErrMsg(err));
     } finally {
       setIsPending(false);
     }
