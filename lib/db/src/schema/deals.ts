@@ -112,6 +112,14 @@ export const dealsTable = pgTable(
      */
     pre_expiry_notified: boolean("pre_expiry_notified").notNull().default(false),
 
+    /**
+     * Transport Smart-Assist decision.
+     * null      = no decision yet (default)
+     * 'not_required' = producer/buyer explicitly opted out of transport
+     * When a transport_request is created, this field stays null (transport exists).
+     */
+    transport_decision: text("transport_decision"),
+
     created_at: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

@@ -189,6 +189,7 @@ interface MwanSummary {
   deal_status: string;
   is_manifest_ready: boolean;
   readiness_score: string;
+  transport_decision: string | null;
   checks: Record<string, boolean>;
   generator: { name: string; city: string | null; commercial_registration?: string; license_number?: string; license_status?: string } | null;
   receiver: { name: string; city: string | null; commercial_registration?: string; license_number?: string; license_status?: string } | null;
@@ -1061,6 +1062,7 @@ function printDealReport(
 export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSharePct, listingRef, listingMaterial, listingQuantity, myCompanyName, listingCategory, myPhone, listingCity, listingSaleType, counterpartyCity, listingDescription, listingCategoryId, listingSubcategoryId, offersPanel, listingInfoPanel }: DealPanelProps) {
   const { t, lang } = useT();
   const { getToken } = useAuth();
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [actualQty, setActualQty] = useState("");
@@ -1071,6 +1073,8 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
   const [proofUploadError, setProofUploadError] = useState<string | null>(null);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
+  const [smartTrLoading, setSmartTrLoading] = useState(false);
+  const [smartTrError, setSmartTrError] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [copied, setCopied] = useState(false);
@@ -1147,6 +1151,65 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
     setIsDraggingOver(false);
     const file = e.dataTransfer.files[0];
     if (file) handleFileSelect(file);
+  }
+
+  async function handleSmartTransportRequest() {
+    setSmartTrLoading(true);
+    setSmartTrError(null);
+    try {
+      const authToken = await getToken();
+      const res = await fetch(`/api/deals/${deal.id}/transport-request`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          transport_mode: "platform",
+          pickup_city: listingCity ?? "",
+          delivery_city: counterpartyCity ?? deal.counterparty?.city ?? "",
+          waste_description: listingDescription ?? listingMaterial ?? "",
+          waste_category_id: listingCategoryId ?? undefined,
+          waste_subcategory_id: listingSubcategoryId ?? undefined,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({})) as Record<string, string>;
+        throw new Error(err.message ?? "failed");
+      }
+      await queryClient.invalidateQueries({ queryKey: ["mwan-summary", deal.id] });
+    } catch (e) {
+      setSmartTrError(e instanceof Error ? e.message : t("deal.error.generic"));
+    } finally {
+      setSmartTrLoading(false);
+    }
+  }
+
+  async function handleSkipTransport() {
+    setSmartTrLoading(true);
+    setSmartTrError(null);
+    try {
+      const authToken = await getToken();
+      const res = await fetch(`/api/deals/${deal.id}/transport-decision`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
+        credentials: "include",
+        body: JSON.stringify({ decision: "not_required" }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({})) as Record<string, string>;
+        throw new Error(err.message ?? "failed");
+      }
+      await queryClient.invalidateQueries({ queryKey: ["mwan-summary", deal.id] });
+    } catch (e) {
+      setSmartTrError(e instanceof Error ? e.message : t("deal.error.generic"));
+    } finally {
+      setSmartTrLoading(false);
+    }
   }
 
   const currentStepIndex = STATUS_STEPS.indexOf(deal.status);
@@ -1706,29 +1769,6 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
                       </button>
                     </div>
                   )}
-                  {/* Transport CTA (if no transport yet) */}
-                  {!mwanHeaderData?.transport && (
-                    <div className="rounded-xl border-2 border-primary/25 bg-primary/5 p-4 space-y-3">
-                      <p className="text-sm font-bold text-foreground">
-                        {t("deal.transport.need_transport")}
-                      </p>
-                      <Button
-                        className="w-full h-10 font-semibold"
-                        onClick={() => setTrFormOpen(true)}
-                      >
-                        <Truck className="me-2 h-4 w-4 shrink-0" />
-                        {t("deal.transport.create_btn")}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        className="w-full h-9 text-muted-foreground text-sm"
-                        onClick={() => setShowPaymentSuccess(false)}
-                      >
-                        {t("deal.transport.skip_btn")}
-                      </Button>
-                    </div>
-                  )}
-
                   {deal.settlement_type === "by_weight" && (
                     <div className="space-y-1">
                       <label className="text-xs font-medium text-foreground">
@@ -1779,44 +1819,134 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
               )}
             </div>
           )}
+
+          {/* ── SMART-ASSIST TRANSPORT STEP ── */}
+          {deal.status !== "completed" && (
+            <div className={`mt-4 rounded-xl border-2 overflow-hidden ${
+              deal.status === "active"
+                ? "border-border bg-muted/10 opacity-60"
+                : "border-primary/25 bg-primary/5"
+            }`}>
+              {/* Section header */}
+              <div className={`px-4 py-2.5 flex items-center gap-2 border-b ${
+                deal.status === "active" ? "border-border bg-muted/20" : "border-primary/15 bg-primary/10"
+              }`}>
+                <Truck className={`h-4 w-4 shrink-0 ${deal.status === "active" ? "text-muted-foreground" : "text-primary"}`} />
+                <p className={`text-sm font-bold ${deal.status === "active" ? "text-muted-foreground" : "text-foreground"}`}>
+                  {deal.status === "active"
+                    ? (lang === "ar" ? "خطوة النقل" : "Transport Step")
+                    : t("deal.transport.smart.section_title")}
+                </p>
+              </div>
+
+              <div className="px-4 py-4 space-y-3">
+                {/* LOCKED state — before payment */}
+                {deal.status === "active" && (
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    {t("deal.transport.smart.locked")}
+                  </p>
+                )}
+
+                {/* ACTIVE states — after payment */}
+                {deal.status !== "active" && (() => {
+                  const tr = mwanHeaderData?.transport;
+                  const trDecision = mwanHeaderData?.transport_decision;
+
+                  /* Transport exists: show status */
+                  if (tr) {
+                    const statusMap: Record<string, string> = {
+                      pending:        t("deal.transport.smart.requested"),
+                      accepted:       t("deal.transport.smart.assigned"),
+                      manifest_ready: t("deal.transport.smart.assigned"),
+                      in_transit:     t("deal.transport.smart.in_progress"),
+                      delivered:      t("deal.transport.smart.completed_tr"),
+                      closed:         t("deal.transport.smart.completed_tr"),
+                      cancelled:      t("deal.transport.smart.cancelled"),
+                    };
+                    const statusText = statusMap[tr.status] ?? tr.status;
+                    const isActive = ["pending", "accepted", "manifest_ready", "in_transit"].includes(tr.status);
+                    return (
+                      <div className="space-y-2">
+                        <div className={`flex items-center gap-2 rounded-lg px-3 py-2.5 ${
+                          isActive ? "bg-green-50 border border-green-200" : "bg-muted/30 border border-border"
+                        }`}>
+                          <CheckCircle2 className={`h-4 w-4 shrink-0 ${isActive ? "text-green-600" : "text-muted-foreground"}`} />
+                          <span className={`text-sm font-semibold ${isActive ? "text-green-800" : "text-foreground"}`}>
+                            {statusText}
+                          </span>
+                        </div>
+                        {["pending"].includes(tr.status) && (
+                          <p className="text-xs text-muted-foreground leading-relaxed">
+                            {t("deal.transport.smart.requested_desc")}
+                          </p>
+                        )}
+                        {tr.manifest_ref && (
+                          <div className="flex items-center gap-2 rounded-md border border-primary/20 bg-primary/5 px-2.5 py-1.5">
+                            <FileTextIcon className="h-3 w-3 text-primary shrink-0" />
+                            <span className="text-[10px] font-mono text-primary font-bold flex-1" dir="ltr">{tr.manifest_ref}</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
+
+                  /* Opted out */
+                  if (trDecision === "not_required") {
+                    return (
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        {t("deal.transport.smart.not_required")}
+                      </p>
+                    );
+                  }
+
+                  /* No decision yet: show prompt */
+                  return (
+                    <div className="space-y-3">
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        {t("deal.transport.smart.desc")}
+                      </p>
+                      {smartTrError && (
+                        <div className="flex items-start gap-2 rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                          <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                          <span>{smartTrError}</span>
+                        </div>
+                      )}
+                      <Button
+                        className="w-full h-11 text-sm font-bold"
+                        onClick={handleSmartTransportRequest}
+                        disabled={smartTrLoading}
+                      >
+                        {smartTrLoading
+                          ? <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                          : <Truck className="me-2 h-4 w-4 shrink-0" />}
+                        {t("deal.transport.smart.arrange_btn")}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        className="w-full h-9 text-sm text-muted-foreground"
+                        onClick={handleSkipTransport}
+                        disabled={smartTrLoading}
+                      >
+                        {t("deal.transport.smart.skip_btn")}
+                      </Button>
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* ── RIGHT: transport + deal info ── */}
         <div className="p-4 space-y-5 bg-muted/5">
 
-          {/* Transport — first for priority */}
-          <div className="space-y-2.5">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-              {lang === "ar" ? "النقل" : "Transport"}
-            </p>
-            {!mwanHeaderData?.transport ? (
-              /* No transport: prompt with two actions */
-              <div className="rounded-xl border-2 border-dashed border-primary/20 bg-primary/3 p-4 space-y-3">
-                <div className="flex items-center gap-2">
-                  <Truck className="h-4 w-4 text-primary/60 shrink-0" />
-                  <p className="text-sm font-semibold text-foreground">
-                    {t("deal.transport.need_transport")}
-                  </p>
-                </div>
-                <Button
-                  className="w-full h-9 text-sm font-semibold"
-                  onClick={() => setTrFormOpen(true)}
-                >
-                  <Truck className="me-1.5 h-3.5 w-3.5 shrink-0" />
-                  {t("deal.transport.create_btn")}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full text-muted-foreground text-xs"
-                  onClick={() => {}}
-                >
-                  {t("deal.transport.skip_btn")}
-                </Button>
-              </div>
-            ) : (
-              /* Transport exists: show step checklist */
-              <div className="space-y-2">
+          {/* MWAN Readiness — shown only when transport exists */}
+          {mwanHeaderData?.transport && (
+            <div className="space-y-2.5">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                {lang === "ar" ? "جاهزية مَوَن" : "MWAN Readiness"}
+              </p>
+              <div className="space-y-1.5">
                 {TR_STEPS.map((step) => {
                   const done = mwanHeaderData?.checks[step.key] ?? false;
                   return (
@@ -1831,7 +1961,7 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
                   );
                 })}
                 {mwanHeaderData.transport.manifest_ref && (
-                  <div className="flex items-center gap-2 rounded-md border border-primary/20 bg-primary/5 px-2.5 py-1.5 mt-2">
+                  <div className="flex items-center gap-2 rounded-md border border-primary/20 bg-primary/5 px-2.5 py-1.5 mt-1">
                     <FileTextIcon className="h-3 w-3 text-primary shrink-0" />
                     <span className="text-[10px] font-mono text-primary font-bold flex-1" dir="ltr">
                       {mwanHeaderData.transport.manifest_ref}
@@ -1842,11 +1972,11 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
                   </div>
                 )}
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
-          {/* Deal Info — after transport */}
-          <div className="space-y-2.5 border-t border-border pt-4">
+          {/* Deal Info */}
+          <div className={`space-y-2.5 ${mwanHeaderData?.transport ? "border-t border-border pt-4" : ""}`}>
             <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
               {lang === "ar" ? "معلومات الصفقة" : "Deal Info"}
             </p>

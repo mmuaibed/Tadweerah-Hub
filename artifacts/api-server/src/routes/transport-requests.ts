@@ -168,6 +168,82 @@ router.post(
   },
 );
 
+// ── PATCH /deals/:dealId/transport-decision ───────────────────────────────────
+// Record the deal party's transport Smart-Assist decision (not_required).
+// Body: { decision: "not_required" }
+
+router.patch(
+  "/deals/:dealId/transport-decision",
+  requireAuth,
+  requireCompany(),
+  async (req, res) => {
+    const { company } = req as AuthedCompanyRequest;
+    const dealId = req.params.dealId as string;
+    const decision = req.body?.decision as string | undefined;
+
+    if (decision !== "not_required") {
+      res.status(400).json({ error: "BadRequest", message: "decision must be 'not_required'" });
+      return;
+    }
+
+    const [deal] = await db
+      .select({
+        id: dealsTable.id,
+        status: dealsTable.status,
+        producer_company_id: dealsTable.producer_company_id,
+        buyer_company_id: dealsTable.buyer_company_id,
+        transport_decision: dealsTable.transport_decision,
+      })
+      .from(dealsTable)
+      .where(eq(dealsTable.id, dealId))
+      .limit(1);
+
+    if (!deal) {
+      res.status(404).json({ error: "NotFound", message: "Deal not found" });
+      return;
+    }
+
+    const isParty =
+      deal.producer_company_id === company.id || deal.buyer_company_id === company.id;
+    if (!isParty) {
+      res.status(403).json({ error: "Forbidden", message: "Not a party to this deal" });
+      return;
+    }
+
+    const allowedStatuses = ["payment_confirmed", "dispatched", "completed"];
+    if (!allowedStatuses.includes(deal.status)) {
+      res.status(422).json({
+        error: "UnprocessableEntity",
+        message: "Transport decision can only be set after payment is confirmed",
+      });
+      return;
+    }
+
+    // Check for existing transport request — can't opt out if one already exists
+    const [existingTr] = await db
+      .select({ id: transportRequestsTable.id })
+      .from(transportRequestsTable)
+      .where(eq(transportRequestsTable.deal_id, dealId))
+      .limit(1);
+
+    if (existingTr) {
+      res.status(409).json({
+        error: "Conflict",
+        message: "A transport request already exists for this deal",
+      });
+      return;
+    }
+
+    const [updated] = await db
+      .update(dealsTable)
+      .set({ transport_decision: "not_required", updated_at: new Date() })
+      .where(eq(dealsTable.id, dealId))
+      .returning({ id: dealsTable.id, transport_decision: dealsTable.transport_decision });
+
+    res.json({ deal_id: updated.id, transport_decision: updated.transport_decision });
+  },
+);
+
 // ── GET /transport-requests/mine ──────────────────────────────────────────────
 // Returns all transport requests where this company is creator, transporter,
 // producer of the deal, or buyer of the deal.
@@ -439,6 +515,7 @@ router.get(
         payment_confirmed_at: dealsTable.payment_confirmed_at,
         created_at: dealsTable.created_at,
         listing_id: dealsTable.listing_id,
+        transport_decision: dealsTable.transport_decision,
       })
       .from(dealsTable)
       .where(eq(dealsTable.id, dealId))
@@ -612,6 +689,7 @@ router.get(
       deal_status: deal.status,
       is_manifest_ready: isManifestReady,
       readiness_score: `${readyCount}/${totalCount}`,
+      transport_decision: deal.transport_decision ?? null,
       checks,
       generator: generator
         ? {
