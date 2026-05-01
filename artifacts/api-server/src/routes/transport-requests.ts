@@ -1004,45 +1004,77 @@ router.get(
 
     // Subtitle right
     doc.fillColor("#bfdbfe").fontSize(9).font("Helvetica")
-       .text("سجل الصفقة التجارية  /  Deal Record", ML, 48, { width: PW, align: "right" });
+       .text("سجل العملية التجارية  /  Transaction Record", ML, 48, { width: PW, align: "right" });
 
     Y = HEADER_H;
 
     // ─────────────────────────────────────────────────────────────────────────
-    // 2. DEAL SUMMARY BAR
+    // 2. DEAL HIGHLIGHT BOX  (ref header + 3-column summary)
     // ─────────────────────────────────────────────────────────────────────────
-    const SUMBAR_H = 48;
-    doc.rect(0, Y, W, SUMBAR_H).fill("#f8fafc");
-    doc.moveTo(0, Y).lineTo(W, Y).strokeColor(border).lineWidth(0.5).stroke();
-    doc.moveTo(0, Y + SUMBAR_H).lineTo(W, Y + SUMBAR_H).strokeColor(border).lineWidth(0.5).stroke();
-
-    // Ref
-    const refLabel = tr.manifest_ref ?? `#${dealId.slice(0, 8).toUpperCase()}`;
-    doc.fillColor(blue).fontSize(12).font("Helvetica-Bold")
-       .text(refLabel, ML, Y + 16, { lineBreak: false });
-
-    // Date
     const todayStr = new Date().toISOString().split("T")[0]!;
+    const refLabel = tr.manifest_ref ?? `#${dealId.slice(0, 8).toUpperCase()}`;
+
+    // Ref / date sub-bar
+    const REFBAR_H = 32;
+    doc.rect(0, Y, W, REFBAR_H).fill("#f1f5f9");
+    doc.moveTo(0, Y + REFBAR_H).lineTo(W, Y + REFBAR_H).strokeColor(border).lineWidth(0.5).stroke();
+    doc.fillColor(blue).fontSize(11).font("Helvetica-Bold")
+       .text(refLabel, ML, Y + 9, { lineBreak: false });
     doc.fillColor(muted).fontSize(8).font("Helvetica")
-       .text(`Generated: ${todayStr}`, ML + 140, Y + 20, { lineBreak: false });
+       .text(`تاريخ التقرير: ${todayStr}  /  Report Date: ${todayStr}`, ML, Y + 12, { width: PW, align: "right" });
+    Y += REFBAR_H;
 
-    // Status badge (right side)
-    const statusLabel = deal.status === "completed"   ? "مكتملة / Completed"
-                      : deal.status === "dispatched"  ? "في الطريق / Dispatched"
-                      : deal.status === "payment_confirmed" ? "مؤكدة / Confirmed"
-                      : deal.status === "active"      ? "نشطة / Active"
-                      : deal.status === "cancelled"   ? "ملغاة / Cancelled"
+    // 3-column highlight cards
+    const statusLabel = deal.status === "completed"          ? "مكتملة  /  Completed"
+                      : deal.status === "dispatched"         ? "في الطريق  /  Dispatched"
+                      : deal.status === "payment_confirmed"  ? "مؤكدة  /  Confirmed"
+                      : deal.status === "active"             ? "نشطة  /  Active"
+                      : deal.status === "cancelled"          ? "ملغاة  /  Cancelled"
                       : deal.status.toUpperCase();
-    const badgeColor = deal.status === "completed"  ? green
-                     : deal.status === "dispatched" ? blue
-                     : deal.status === "cancelled"  ? "#dc2626"
-                     : amber;
-    const badgeX = W - MR - 120;
-    doc.roundedRect(badgeX, Y + 12, 120, 22, 4).fill(badgeColor);
-    doc.fillColor(white).fontSize(8).font("Helvetica-Bold")
-       .text(statusLabel, badgeX, Y + 19, { width: 120, align: "center" });
+    const statusColor = deal.status === "completed"  ? green
+                      : deal.status === "dispatched" ? blue
+                      : deal.status === "cancelled"  ? "#dc2626"
+                      : amber;
 
-    Y += SUMBAR_H + 16;
+    const dealValue = deal.final_amount
+      ? `${Number(deal.final_amount).toLocaleString()} ريال`
+      : deal.estimated_amount
+        ? `${Number(deal.estimated_amount).toLocaleString()} ريال`
+        : "—";
+    const completionDate = deal.received_at
+      ? new Date(deal.received_at).toLocaleDateString("ar-SA", { year: "numeric", month: "long", day: "numeric" })
+      : deal.dispatched_at
+        ? new Date(deal.dispatched_at).toLocaleDateString("ar-SA", { year: "numeric", month: "long", day: "numeric" })
+        : "—";
+
+    const CARD_TOP   = Y + 12;
+    const CARD_H     = 60;
+    const NCOLS      = 3;
+    const COL_W      = PW / NCOLS;
+
+    type SumCard = { titleAr: string; titleEn: string; value: string; color: string };
+    const sumCards: SumCard[] = [
+      { titleAr: "الحالة", titleEn: "Status",          value: statusLabel,    color: statusColor },
+      { titleAr: "قيمة الصفقة", titleEn: "Deal Value", value: dealValue,      color: blue },
+      { titleAr: "تاريخ الإتمام", titleEn: "Completion", value: completionDate, color: ink },
+    ];
+
+    sumCards.forEach((card, i) => {
+      const cx = ML + COL_W * i;
+      // Card background
+      doc.rect(cx, CARD_TOP, COL_W - 6, CARD_H).fill("#f8fafc");
+      doc.rect(cx, CARD_TOP, COL_W - 6, CARD_H).strokeColor(border).lineWidth(0.5).stroke();
+      // Top colour accent line
+      doc.rect(cx, CARD_TOP, COL_W - 6, 3).fill(card.color);
+      // Labels
+      doc.fillColor(muted).fontSize(7).font("Helvetica")
+         .text(`${card.titleAr}  /  ${card.titleEn}`, cx + 6, CARD_TOP + 10, { width: COL_W - 18 });
+      // Value
+      doc.fillColor(card.color).fontSize(10).font("Helvetica-Bold")
+         .text(card.value, cx + 6, CARD_TOP + 24, { width: COL_W - 18 });
+    });
+
+    Y = CARD_TOP + CARD_H + 18;
 
     // ─────────────────────────────────────────────────────────────────────────
     // Helpers
@@ -1112,28 +1144,22 @@ router.get(
 
     const qty = deal.actual_quantity ?? deal.estimated_amount;
     const qtyStr = qty ? `${Number(qty).toLocaleString()} ${listing?.unit ?? ""}`.trim() : undefined;
-    const valueStr = deal.final_amount
-      ? `${Number(deal.final_amount).toLocaleString()} ريال`
-      : deal.estimated_amount
-        ? `${Number(deal.estimated_amount).toLocaleString()} ريال (تقديري)`
-        : undefined;
 
     // Category row (top-level parent, e.g., "معادن / Metals")
     if (cat) {
       row("الفئة / Category:", `${cat.name_ar}${cat.name_en ? "  /  " + cat.name_en : ""}`);
     }
-    // Subcategory = specific material name (e.g., "حديد صافي / Clean Iron")
+    // Material name = subcategory (specific, e.g., "حديد وصلب / Iron & Steel")
     if (subCat) {
-      row("الفئة الفرعية / Subcategory:", `${subCat.name_ar}${subCat.name_en ? "  /  " + subCat.name_en : ""}`, { bold: true });
+      row("المادة / Material:", `${subCat.name_ar}${subCat.name_en ? "  /  " + subCat.name_en : ""}`, { bold: true });
     } else if (!cat && trCat) {
-      // Fallback: TR override only, no listing category
+      // Fallback: TR override only
       row("الفئة / Category:", `${trCat.name_ar}${trCat.name_en ? "  /  " + trCat.name_en : ""}`);
     }
-    // Regulatory fields from the most specific record
+    // Regulatory fields from most specific record
     if (regCat?.regulatory_code) row("الكود التنظيمي / Reg. Code:", regCat.regulatory_code);
     if (regCat?.physical_state)  row("الحالة المادية / Physical State:", regCat.physical_state);
     row("الكمية / Quantity:", qtyStr, { bold: true });
-    row("قيمة الصفقة / Deal Value:", valueStr, { bold: true });
 
     // Description block (full-width if present)
     if (listing?.description) {
@@ -1263,13 +1289,18 @@ router.get(
     // ─────────────────────────────────────────────────────────────────────────
     // 8. FOOTER
     // ─────────────────────────────────────────────────────────────────────────
-    const FOOTER_H = 28;
+    const FOOTER_H = 36;
     const footerY = H - FOOTER_H;
     doc.rect(0, footerY, W, FOOTER_H).fill(blueDark);
-    doc.fillColor("#93c5fd").fontSize(7.5).font("Helvetica")
+    doc.fillColor("#93c5fd").fontSize(8).font("Helvetica-Bold")
        .text(
-         `منصة تدويرة للنفايات الصناعية  ·  www.tadweerah.com  ·  Generated ${todayStr}`,
-         ML, footerY + 10, { width: PW, align: "center" },
+         "منصة تدويرة للنفايات الصناعية",
+         ML, footerY + 8, { width: PW, align: "center" },
+       );
+    doc.fillColor("#bfdbfe").fontSize(7.5).font("Helvetica")
+       .text(
+         `info@tadweerah.com  ·  www.tadweerah.com  ·  تاريخ التقرير: ${todayStr}`,
+         ML, footerY + 20, { width: PW, align: "center" },
        );
 
     doc.end();
