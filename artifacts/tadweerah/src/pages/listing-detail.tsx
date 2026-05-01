@@ -1459,7 +1459,7 @@ export function ListingDetailPage() {
   );
 
   return (
-    <AppLayout showSignOut title={materialLabel} subtitle={subtitleNode} actions={backButton} width={isDealMode ? "default" : "wide"}>
+    <AppLayout showSignOut title={materialLabel} subtitle={subtitleNode} actions={backButton} width={isDealMode ? undefined : "wide"}>
       {/* Dialogs */}
       <ConfirmDialog
         open={confirmOpen}

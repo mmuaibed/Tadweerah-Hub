@@ -1451,8 +1451,6 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
     );
   })() : null;
 
-  const canOpenTrModal = ["payment_confirmed", "dispatched", "completed"].includes(deal.status);
-
   return (
     <>
       {/* ── Confirm-action dialog ── */}
@@ -1675,7 +1673,7 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
       <div className="rounded-xl border border-primary/20 bg-background overflow-hidden">
 
         {/* 1. COMPACT HEADER */}
-        <div className="px-4 py-3 bg-primary/10 space-y-1.5">
+        <div className="px-4 py-3 bg-primary/10 space-y-1">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 flex-wrap min-w-0">
               <span className="text-sm font-bold font-mono text-primary tracking-wider" dir="ltr">
@@ -1700,10 +1698,7 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
                 </>
               )}
             </div>
-            <div className="flex items-center gap-1.5 shrink-0">
-              {mwanScore}
-              <Badge variant={statusBadgeVariant(deal.status)}>{statusLabel(deal.status)}</Badge>
-            </div>
+            <Badge variant={statusBadgeVariant(deal.status)}>{statusLabel(deal.status)}</Badge>
           </div>
           <div className="flex items-center gap-2 text-xs text-primary/70 flex-wrap">
             {role === "producer" ? <UserCog className="h-3 w-3 shrink-0" /> : <UserCheck className="h-3 w-3 shrink-0" />}
@@ -1716,10 +1711,210 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
               </span>
             )}
           </div>
+          {mwanHeaderData && (
+            <div className="flex items-center gap-1.5">
+              {mwanScore}
+              <span className="text-[10px] text-muted-foreground">
+                {lang === "ar" ? "بند مطلوب للبيان الإلكتروني" : "items required for e-manifest"}
+              </span>
+            </div>
+          )}
         </div>
 
-        {/* 2. HORIZONTAL STEPPER */}
-        <div className="px-4 py-2.5 bg-primary/5 border-b border-primary/10">
+        {/* 2. CURRENT ACTION CARD — prominent, comes first */}
+        <div className="p-4">
+
+          {/* Completed state */}
+          {deal.status === "completed" && (
+            <div className="rounded-xl border-2 border-green-300 bg-green-50 p-5 text-center space-y-3">
+              <Shield className="h-10 w-10 text-green-600 mx-auto" />
+              <div>
+                <p className="font-bold text-green-800 text-base">{t("deal.compliance.badge")}</p>
+                <p className="text-xs text-green-700 mt-0.5">{t("deal.compliance.tagline")}</p>
+                {listingRef && <p className="text-[10px] text-green-600 font-mono mt-1">{listingRef}</p>}
+              </div>
+              <div className="rounded-lg border border-green-200 bg-white px-4 py-2.5 flex items-center justify-between gap-2">
+                <span className="text-sm text-muted-foreground">
+                  {lang === "ar" ? "إجمالي الصفقة" : "Deal Total"}
+                </span>
+                <span className="text-lg font-bold text-foreground">
+                  {(deal.final_amount ?? deal.estimated_amount ?? 0).toLocaleString()} {lang === "ar" ? "ر.س" : "SAR"}
+                </span>
+              </div>
+              {deal.counterparty?.contact_phone && (
+                <a
+                  href={`tel:${deal.counterparty.contact_phone}`}
+                  dir="ltr"
+                  className="inline-flex items-center gap-1.5 text-primary text-sm font-medium hover:underline"
+                >
+                  <Phone className="h-3.5 w-3.5" />{deal.counterparty.contact_phone}
+                </a>
+              )}
+            </div>
+          )}
+
+          {/* Active action */}
+          {deal.status !== "completed" && (
+            <div className={`rounded-xl border-2 p-5 space-y-4 ${
+              isMyTurn ? "border-primary/50 bg-primary/5" : "border-border bg-muted/15"
+            }`}>
+
+              {/* Action title + turn indicator */}
+              <div className="flex items-start justify-between gap-3">
+                <p className="text-base font-bold text-foreground leading-snug flex-1">
+                  {t(`deal.stage.action.${deal.status}.${role}`)}
+                </p>
+                <span className={`flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full font-semibold shrink-0 ${
+                  isMyTurn ? "bg-amber-100 text-amber-800" : "bg-muted text-muted-foreground"
+                }`}>
+                  {isMyTurn
+                    ? <><AlertCircle className="h-3 w-3 shrink-0" />{t("deal.role.your_turn")}</>
+                    : <><Clock className="h-3 w-3 shrink-0" />{t("deal.role.not_your_turn")}</>
+                  }
+                </span>
+              </div>
+
+              {/* Price summary */}
+              <div className="rounded-lg bg-background border border-border px-4 py-3 flex items-center justify-between gap-2">
+                {deal.settlement_type === "fixed" ? (
+                  <>
+                    <span className="text-sm text-muted-foreground">
+                      {lang === "ar" ? "إجمالي الصفقة" : "Deal Total"}
+                    </span>
+                    <span className="text-xl font-bold text-foreground">
+                      {(deal.final_amount ?? deal.estimated_amount ?? 0).toLocaleString()} <span className="text-sm font-medium text-muted-foreground">{lang === "ar" ? "ر.س" : "SAR"}</span>
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-sm text-muted-foreground">
+                      {lang === "ar" ? "سعر الوحدة" : "Unit Price"}
+                    </span>
+                    <span className="text-xl font-bold text-foreground">
+                      {deal.price_per_unit.toLocaleString()} <span className="text-sm font-medium text-muted-foreground">{lang === "ar" ? "ر.س" : "SAR"}/{unit}</span>
+                    </span>
+                  </>
+                )}
+              </div>
+
+              {/* Contact info */}
+              {deal.counterparty && (
+                <div className="flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 px-3 py-2.5">
+                  <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] text-green-700 font-medium leading-tight">{t("deal.contact.can_now_contact")}</p>
+                    <p className="text-sm font-bold text-green-900 leading-tight mt-0.5">{deal.counterparty.name}</p>
+                  </div>
+                  {deal.counterparty.contact_phone ? (
+                    <a
+                      href={`tel:${deal.counterparty.contact_phone}`}
+                      dir="ltr"
+                      className="flex items-center gap-1.5 text-primary font-bold text-sm hover:underline shrink-0"
+                    >
+                      <Phone className="h-4 w-4 shrink-0" />
+                      {deal.counterparty.contact_phone}
+                    </a>
+                  ) : (
+                    <span className="text-xs text-amber-700 font-medium shrink-0">{t("deal.contact.phone_missing")}</span>
+                  )}
+                </div>
+              )}
+
+              {/* Producer + active: payment form */}
+              {role === "producer" && deal.status === "active" && (
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-foreground">
+                      {t("deal.field.payment_reference")} *
+                    </label>
+                    <input
+                      type="text"
+                      value={paymentRef}
+                      onChange={(e) => { setPaymentRef(e.target.value); setError(null); }}
+                      placeholder={t("deal.field.payment_reference.placeholder")}
+                      className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                      dir="ltr"
+                      autoComplete="off"
+                    />
+                    <p className="text-xs text-muted-foreground">{t("deal.field.payment_reference.hint")}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      {t("deal.field.payment_proof_url")}
+                    </label>
+                    <input
+                      type="url"
+                      value={paymentProofUrl}
+                      onChange={(e) => setPaymentProofUrl(e.target.value)}
+                      placeholder={t("deal.field.payment_proof_url.placeholder")}
+                      className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                      dir="ltr"
+                    />
+                  </div>
+                  <Button className="w-full h-11 text-base font-bold" onClick={requestConfirmPayment} disabled={loading}>
+                    {loading && pendingAction === null && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
+                    {t("deal.action.confirm_payment")}
+                  </Button>
+                </div>
+              )}
+
+              {/* Producer + payment_confirmed: dispatch */}
+              {role === "producer" && deal.status === "payment_confirmed" && (
+                <div className="space-y-3">
+                  {deal.settlement_type === "by_weight" && (
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-foreground">
+                        {t("deal.field.actual_quantity")} *
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min={0}
+                          step="any"
+                          value={actualQty}
+                          onChange={(e) => { setActualQty(e.target.value); setError(null); }}
+                          placeholder={t("deal.field.quantity.placeholder")}
+                          className="flex-1 h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                          dir="ltr"
+                        />
+                        <span className="text-sm text-muted-foreground shrink-0">{unit}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">{t("deal.field.actual_quantity.dispatch_hint")}</p>
+                    </div>
+                  )}
+                  <Button className="w-full h-11 text-base font-bold" onClick={requestConfirmDispatch} disabled={loading}>
+                    {loading && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
+                    {t("deal.action.confirm_dispatch")}
+                  </Button>
+                </div>
+              )}
+
+              {/* Buyer + dispatched: receipt */}
+              {role === "buyer" && deal.status === "dispatched" && (
+                <Button className="w-full h-11 text-base font-bold" onClick={() => setPendingAction("confirm-receipt")} disabled={loading}>
+                  {loading && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
+                  {t("deal.action.confirm_receipt")}
+                </Button>
+              )}
+
+              {/* Waiting state */}
+              {!isMyTurn && waitingText && (
+                <p className="text-sm text-muted-foreground text-center leading-relaxed py-1">{waitingText}</p>
+              )}
+
+              {/* Error */}
+              {error && (
+                <div className="flex items-start gap-2 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                  <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                  <span>{error}</span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* 3. HORIZONTAL STEPPER */}
+        <div className="px-4 py-3 bg-muted/30 border-t border-border">
           <div className="flex items-center gap-0">
             {STATUS_STEPS.map((step, i) => {
               const done = i <= currentStepIndex;
@@ -1753,164 +1948,15 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
           </div>
         </div>
 
-        {/* 3. ACTION HERO CARD */}
-        <div className="p-4 space-y-3">
-
-          {/* Contact strip — always visible */}
-          {deal.counterparty && (
-            <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2.5 flex items-center gap-3">
-              <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-[11px] text-green-700 font-medium leading-tight">{t("deal.contact.can_now_contact")}</p>
-                <p className="text-sm font-bold text-green-900 leading-tight mt-0.5">{deal.counterparty.name}</p>
-              </div>
-              {deal.counterparty.contact_phone ? (
-                <a
-                  href={`tel:${deal.counterparty.contact_phone}`}
-                  dir="ltr"
-                  className="flex items-center gap-1.5 text-primary font-bold text-base hover:underline shrink-0"
-                >
-                  <Phone className="h-4 w-4 shrink-0" />
-                  {deal.counterparty.contact_phone}
-                </a>
-              ) : (
-                <span className="text-xs text-amber-700 font-medium shrink-0">{t("deal.contact.phone_missing")}</span>
-              )}
-            </div>
-          )}
-
-          {/* Completed hero */}
-          {deal.status === "completed" && (
-            <div className="rounded-xl border-2 border-green-300 bg-green-50 p-5 text-center space-y-2">
-              <Shield className="h-10 w-10 text-green-600 mx-auto" />
-              <p className="font-bold text-green-800 text-base">{t("deal.compliance.badge")}</p>
-              <p className="text-xs text-green-700">{t("deal.compliance.tagline")}</p>
-              {listingRef && <p className="text-[10px] text-green-600 font-mono">{listingRef}</p>}
-            </div>
-          )}
-
-          {/* Active action section */}
-          {deal.status !== "completed" && (
-            <div className={`rounded-xl border-2 p-4 space-y-3 ${
-              isMyTurn ? "border-primary/40 bg-primary/5" : "border-border bg-muted/20"
-            }`}>
-              {/* Status label */}
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-sm font-semibold text-foreground leading-snug">
-                  {t(`deal.stage.action.${deal.status}.${role}`)}
-                </p>
-                <span className={`flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full font-medium shrink-0 ${
-                  isMyTurn ? "bg-amber-100 text-amber-800" : "bg-muted text-muted-foreground"
-                }`}>
-                  {isMyTurn
-                    ? <><AlertCircle className="h-3 w-3 shrink-0" />{t("deal.role.your_turn")}</>
-                    : <><Clock className="h-3 w-3 shrink-0" />{t("deal.role.not_your_turn")}</>
-                  }
-                </span>
-              </div>
-
-              {/* Producer + active: payment form */}
-              {role === "producer" && deal.status === "active" && (
-                <div className="space-y-3">
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium text-foreground">
-                      {t("deal.field.payment_reference")} *
-                    </label>
-                    <input
-                      type="text"
-                      value={paymentRef}
-                      onChange={(e) => { setPaymentRef(e.target.value); setError(null); }}
-                      placeholder={t("deal.field.payment_reference.placeholder")}
-                      className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                      dir="ltr"
-                      autoComplete="off"
-                    />
-                    <p className="text-xs text-muted-foreground">{t("deal.field.payment_reference.hint")}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium text-muted-foreground">
-                      {t("deal.field.payment_proof_url")}
-                    </label>
-                    <input
-                      type="url"
-                      value={paymentProofUrl}
-                      onChange={(e) => setPaymentProofUrl(e.target.value)}
-                      placeholder={t("deal.field.payment_proof_url.placeholder")}
-                      className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                      dir="ltr"
-                    />
-                  </div>
-                  <Button className="w-full" onClick={requestConfirmPayment} disabled={loading}>
-                    {loading && pendingAction === null && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
-                    {t("deal.action.confirm_payment")}
-                  </Button>
-                </div>
-              )}
-
-              {/* Producer + payment_confirmed: dispatch */}
-              {role === "producer" && deal.status === "payment_confirmed" && (
-                <div className="space-y-3">
-                  {deal.settlement_type === "by_weight" && (
-                    <div className="space-y-1">
-                      <label className="text-xs font-medium text-foreground">
-                        {t("deal.field.actual_quantity")} *
-                      </label>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="number"
-                          min={0}
-                          step="any"
-                          value={actualQty}
-                          onChange={(e) => { setActualQty(e.target.value); setError(null); }}
-                          placeholder={t("deal.field.quantity.placeholder")}
-                          className="flex-1 h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                          dir="ltr"
-                        />
-                        <span className="text-sm text-muted-foreground shrink-0">{unit}</span>
-                      </div>
-                      <p className="text-xs text-muted-foreground">{t("deal.field.actual_quantity.dispatch_hint")}</p>
-                    </div>
-                  )}
-                  <Button className="w-full" onClick={requestConfirmDispatch} disabled={loading}>
-                    {loading && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
-                    {t("deal.action.confirm_dispatch")}
-                  </Button>
-                </div>
-              )}
-
-              {/* Buyer + dispatched: receipt */}
-              {role === "buyer" && deal.status === "dispatched" && (
-                <Button className="w-full" onClick={() => setPendingAction("confirm-receipt")} disabled={loading}>
-                  {loading && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
-                  {t("deal.action.confirm_receipt")}
-                </Button>
-              )}
-
-              {/* Waiting state */}
-              {!isMyTurn && waitingText && (
-                <p className="text-xs text-muted-foreground text-center leading-relaxed">{waitingText}</p>
-              )}
-
-              {/* Error */}
-              {error && (
-                <div className="flex items-start gap-2 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                  <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-                  <span>{error}</span>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* 4. INFO BUTTONS ROW */}
-        <div className={`px-4 pb-4 grid gap-2 ${(offersPanel || listingInfoPanel) ? "grid-cols-2" : "grid-cols-3"}`}>
+        {/* 4. POPUP BUTTONS ROW — 2-col grid, no transport */}
+        <div className="px-4 py-3 border-t border-border grid grid-cols-2 gap-2">
           {listingInfoPanel && (
             <button
               type="button"
               onClick={() => setListingInfoOpen(true)}
-              className="flex flex-col items-center gap-1 rounded-lg border border-border bg-background px-2 py-2.5 text-xs font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground transition-colors"
+              className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2.5 text-xs font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground transition-colors"
             >
-              <Package className="h-4 w-4 text-primary/60" />
+              <Package className="h-4 w-4 text-primary/60 shrink-0" />
               <span>{lang === "ar" ? "معلومات الإعلان" : "Listing Info"}</span>
             </button>
           )}
@@ -1918,36 +1964,27 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
             <button
               type="button"
               onClick={() => setOffersOpen(true)}
-              className="flex flex-col items-center gap-1 rounded-lg border border-border bg-background px-2 py-2.5 text-xs font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground transition-colors"
+              className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2.5 text-xs font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground transition-colors"
             >
-              <InboxIcon className="h-4 w-4 text-primary/60" />
+              <InboxIcon className="h-4 w-4 text-primary/60 shrink-0" />
               <span>{lang === "ar" ? "العروض الواردة" : "Offers"}</span>
             </button>
           )}
           <button
             type="button"
             onClick={() => setDetailsOpen(true)}
-            className="flex flex-col items-center gap-1 rounded-lg border border-border bg-background px-2 py-2.5 text-xs font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground transition-colors"
+            className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2.5 text-xs font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground transition-colors"
           >
-            <FileTextIcon className="h-4 w-4 text-primary/60" />
+            <FileTextIcon className="h-4 w-4 text-primary/60 shrink-0" />
             <span>{lang === "ar" ? "تفاصيل الصفقة" : "Deal Details"}</span>
           </button>
           <button
             type="button"
             onClick={() => setTimelineOpen(true)}
-            className="flex flex-col items-center gap-1 rounded-lg border border-border bg-background px-2 py-2.5 text-xs font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground transition-colors"
+            className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2.5 text-xs font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground transition-colors"
           >
-            <Clock className="h-4 w-4 text-primary/60" />
+            <Clock className="h-4 w-4 text-primary/60 shrink-0" />
             <span>{lang === "ar" ? "سجل الحوكمة" : "Governance"}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setTrFormOpen(true)}
-            disabled={!canOpenTrModal}
-            className={`flex flex-col items-center gap-1 rounded-lg border border-border bg-background px-2 py-2.5 text-xs font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${(offersPanel || listingInfoPanel) ? "" : ""}`}
-          >
-            <Truck className="h-4 w-4 text-primary/60" />
-            <span>{lang === "ar" ? "طلب النقل" : "Transport"}</span>
           </button>
         </div>
 
