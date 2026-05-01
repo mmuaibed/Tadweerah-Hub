@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useState, useRef, useCallback, type ReactNode } from "react";
 import { useAuth } from "@clerk/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -10,7 +10,6 @@ import {
   Clock,
   UserCheck,
   UserCog,
-  Percent,
   Printer,
   Shield,
   Copy,
@@ -24,6 +23,8 @@ import {
   Download,
   Inbox as InboxIcon,
   Package,
+  X,
+  Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -1064,8 +1065,14 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
   const [error, setError] = useState<string | null>(null);
   const [actualQty, setActualQty] = useState("");
   const [paymentRef, setPaymentRef] = useState("");
-  const [paymentProofUrl, setPaymentProofUrl] = useState("");
+  const [paymentProofFile, setPaymentProofFile] = useState<File | null>(null);
+  const [paymentProofPreviewUrl, setPaymentProofPreviewUrl] = useState<string | null>(null);
+  const [paymentProofDataUrl, setPaymentProofDataUrl] = useState<string | null>(null);
+  const [proofUploadError, setProofUploadError] = useState<string | null>(null);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [copied, setCopied] = useState(false);
   const [copiedManifest, setCopiedManifest] = useState(false);
   const [trFormOpen, setTrFormOpen] = useState(false);
@@ -1101,6 +1108,47 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
     setTimeout(() => setCopied(false), 2000);
   }
 
+  const handleFileSelect = useCallback((file: File) => {
+    const allowed = ["image/jpeg", "image/png", "application/pdf"];
+    if (!allowed.includes(file.type)) {
+      setProofUploadError(t("deal.upload.error.type"));
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setProofUploadError(t("deal.upload.error.size"));
+      return;
+    }
+    setProofUploadError(null);
+    setPaymentProofFile(file);
+    if (file.type !== "application/pdf") {
+      const objUrl = URL.createObjectURL(file);
+      setPaymentProofPreviewUrl(objUrl);
+    } else {
+      setPaymentProofPreviewUrl(null);
+    }
+    // Pre-read as data URL for submission
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setPaymentProofDataUrl(e.target?.result as string ?? null);
+    };
+    reader.readAsDataURL(file);
+  }, [t]);
+
+  function clearProofFile() {
+    if (paymentProofPreviewUrl) URL.revokeObjectURL(paymentProofPreviewUrl);
+    setPaymentProofFile(null);
+    setPaymentProofPreviewUrl(null);
+    setPaymentProofDataUrl(null);
+    setProofUploadError(null);
+  }
+
+  function handleDropZoneDrop(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    setIsDraggingOver(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handleFileSelect(file);
+  }
+
   const currentStepIndex = STATUS_STEPS.indexOf(deal.status);
 
   async function executeAction(
@@ -1114,6 +1162,9 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
       const authToken = await getToken();
       const updated = await callDealApi(deal.id, action, body, authToken);
       onUpdate(updated);
+      if (action === "confirm-payment") {
+        setShowPaymentSuccess(true);
+      }
     } catch (e) {
       if (e instanceof DealApiError) {
         const CODE_TO_I18N: Record<string, string> = {
@@ -1159,8 +1210,8 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
       const body: Record<string, unknown> = {
         payment_reference: paymentRef.trim(),
       };
-      if (paymentProofUrl.trim()) {
-        body.payment_proof_url = paymentProofUrl.trim();
+      if (paymentProofDataUrl) {
+        body.payment_proof_url = paymentProofDataUrl;
       }
       executeAction("confirm-payment", body);
     } else if (pendingAction === "confirm-dispatch" && deal.settlement_type === "by_weight") {
@@ -1462,10 +1513,14 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
                 <span className={`flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full font-semibold shrink-0 ${
                   isMyTurn ? "bg-amber-100 text-amber-800" : "bg-muted text-muted-foreground"
                 }`}>
-                  {isMyTurn
-                    ? <><AlertCircle className="h-3 w-3 shrink-0" />{t("deal.role.your_turn")}</>
-                    : <><Clock className="h-3 w-3 shrink-0" />{t("deal.role.not_your_turn")}</>
-                  }
+                  {isMyTurn ? (
+                    <>
+                      <AlertCircle className="h-3 w-3 shrink-0" />
+                      {t(`deal.step_current.${deal.status}.${role}` as Parameters<typeof t>[0]) || t("deal.role.your_turn")}
+                    </>
+                  ) : (
+                    <><Clock className="h-3 w-3 shrink-0" />{t("deal.role.not_your_turn")}</>
+                  )}
                 </span>
               </div>
 
@@ -1517,9 +1572,10 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
 
               {/* Producer + active: payment form */}
               {role === "producer" && deal.status === "active" && (
-                <div className="space-y-3">
+                <div className="space-y-4">
+                  {/* Payment reference */}
                   <div className="space-y-1">
-                    <label className="text-xs font-medium text-foreground">
+                    <label className="text-xs font-semibold text-foreground">
                       {t("deal.field.payment_reference")} *
                     </label>
                     <input
@@ -1533,29 +1589,146 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
                     />
                     <p className="text-xs text-muted-foreground">{t("deal.field.payment_reference.hint")}</p>
                   </div>
-                  <div className="space-y-1">
+
+                  {/* File upload */}
+                  <div className="space-y-1.5">
                     <label className="text-xs font-medium text-muted-foreground">
-                      {t("deal.field.payment_proof_url")}
+                      {t("deal.upload.label")}
                     </label>
+                    {/* Hidden file input */}
                     <input
-                      type="url"
-                      value={paymentProofUrl}
-                      onChange={(e) => setPaymentProofUrl(e.target.value)}
-                      placeholder={t("deal.field.payment_proof_url.placeholder")}
-                      className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                      dir="ltr"
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,application/pdf"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleFileSelect(file);
+                        e.target.value = "";
+                      }}
                     />
+
+                    {paymentProofFile ? (
+                      /* File preview */
+                      <div className="flex items-center gap-3 rounded-lg border border-primary/25 bg-primary/5 px-3 py-2.5">
+                        {paymentProofPreviewUrl ? (
+                          <img
+                            src={paymentProofPreviewUrl}
+                            alt="proof"
+                            className="h-10 w-10 rounded object-cover border border-border shrink-0"
+                          />
+                        ) : (
+                          <div className="h-10 w-10 rounded border border-border bg-muted flex items-center justify-center shrink-0">
+                            <FileTextIcon className="h-5 w-5 text-muted-foreground" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-foreground truncate" dir="ltr">
+                            {paymentProofFile.name}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {(paymentProofFile.size / 1024).toFixed(0)} KB
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={clearProofFile}
+                          className="shrink-0 rounded-full p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                          aria-label={t("deal.upload.remove")}
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      /* Drop zone */
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => fileInputRef.current?.click()}
+                        onKeyDown={(e) => e.key === "Enter" && fileInputRef.current?.click()}
+                        onDragOver={(e) => { e.preventDefault(); setIsDraggingOver(true); }}
+                        onDragLeave={() => setIsDraggingOver(false)}
+                        onDrop={handleDropZoneDrop}
+                        className={`cursor-pointer rounded-lg border-2 border-dashed px-4 py-4 text-center transition-colors ${
+                          isDraggingOver
+                            ? "border-primary bg-primary/10"
+                            : "border-border bg-muted/20 hover:border-primary/40 hover:bg-muted/40"
+                        }`}
+                      >
+                        <Upload className="h-5 w-5 mx-auto mb-1.5 text-muted-foreground" />
+                        <p className="text-xs text-muted-foreground">
+                          {t("deal.upload.drop_hint")}{" "}
+                          <span className="text-primary font-medium underline-offset-2 hover:underline">
+                            {t("deal.upload.browse")}
+                          </span>
+                        </p>
+                        <p className="text-[10px] text-muted-foreground/60 mt-0.5">
+                          {t("deal.upload.hint")}
+                        </p>
+                      </div>
+                    )}
+
+                    {proofUploadError && (
+                      <p className="text-xs text-destructive">{proofUploadError}</p>
+                    )}
                   </div>
-                  <Button className="w-full h-11 text-base font-bold" onClick={requestConfirmPayment} disabled={loading}>
-                    {loading && pendingAction === null && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
+
+                  {/* Confirm button */}
+                  <Button
+                    className="w-full h-11 text-base font-bold"
+                    onClick={requestConfirmPayment}
+                    disabled={loading || !paymentRef.trim()}
+                  >
+                    {loading && pendingAction === null ? (
+                      <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                    ) : null}
                     {t("deal.action.confirm_payment")}
                   </Button>
                 </div>
               )}
 
-              {/* Producer + payment_confirmed: dispatch */}
+              {/* Producer + payment_confirmed: success + dispatch */}
               {role === "producer" && deal.status === "payment_confirmed" && (
                 <div className="space-y-3">
+                  {/* Success banner (transient) */}
+                  {showPaymentSuccess && (
+                    <div className="flex items-center gap-2 rounded-lg border border-green-300 bg-green-50 px-3 py-2.5">
+                      <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
+                      <span className="text-sm font-semibold text-green-800 flex-1">
+                        {t("deal.payment.success")}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setShowPaymentSuccess(false)}
+                        className="text-green-600/60 hover:text-green-800 shrink-0"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  )}
+                  {/* Transport CTA (if no transport yet) */}
+                  {!mwanHeaderData?.transport && (
+                    <div className="rounded-xl border-2 border-primary/25 bg-primary/5 p-4 space-y-3">
+                      <p className="text-sm font-bold text-foreground">
+                        {t("deal.transport.need_transport")}
+                      </p>
+                      <Button
+                        className="w-full h-10 font-semibold"
+                        onClick={() => setTrFormOpen(true)}
+                      >
+                        <Truck className="me-2 h-4 w-4 shrink-0" />
+                        {t("deal.transport.create_btn")}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        className="w-full h-9 text-muted-foreground text-sm"
+                        onClick={() => setShowPaymentSuccess(false)}
+                      >
+                        {t("deal.transport.skip_btn")}
+                      </Button>
+                    </div>
+                  )}
+
                   {deal.settlement_type === "by_weight" && (
                     <div className="space-y-1">
                       <label className="text-xs font-medium text-foreground">
@@ -1608,10 +1781,72 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
           )}
         </div>
 
-        {/* ── RIGHT: deal info + transport ── */}
+        {/* ── RIGHT: transport + deal info ── */}
         <div className="p-4 space-y-5 bg-muted/5">
-          {/* Deal Info */}
+
+          {/* Transport — first for priority */}
           <div className="space-y-2.5">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              {lang === "ar" ? "النقل" : "Transport"}
+            </p>
+            {!mwanHeaderData?.transport ? (
+              /* No transport: prompt with two actions */
+              <div className="rounded-xl border-2 border-dashed border-primary/20 bg-primary/3 p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Truck className="h-4 w-4 text-primary/60 shrink-0" />
+                  <p className="text-sm font-semibold text-foreground">
+                    {t("deal.transport.need_transport")}
+                  </p>
+                </div>
+                <Button
+                  className="w-full h-9 text-sm font-semibold"
+                  onClick={() => setTrFormOpen(true)}
+                >
+                  <Truck className="me-1.5 h-3.5 w-3.5 shrink-0" />
+                  {t("deal.transport.create_btn")}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full text-muted-foreground text-xs"
+                  onClick={() => {}}
+                >
+                  {t("deal.transport.skip_btn")}
+                </Button>
+              </div>
+            ) : (
+              /* Transport exists: show step checklist */
+              <div className="space-y-2">
+                {TR_STEPS.map((step) => {
+                  const done = mwanHeaderData?.checks[step.key] ?? false;
+                  return (
+                    <div key={step.key} className="flex items-center gap-2">
+                      {done
+                        ? <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />
+                        : <Circle className="h-3.5 w-3.5 text-muted-foreground/30 shrink-0" />}
+                      <span className={`text-xs ${done ? "text-foreground" : "text-muted-foreground/60"}`}>
+                        {lang === "ar" ? step.ar : step.en}
+                      </span>
+                    </div>
+                  );
+                })}
+                {mwanHeaderData.transport.manifest_ref && (
+                  <div className="flex items-center gap-2 rounded-md border border-primary/20 bg-primary/5 px-2.5 py-1.5 mt-2">
+                    <FileTextIcon className="h-3 w-3 text-primary shrink-0" />
+                    <span className="text-[10px] font-mono text-primary font-bold flex-1" dir="ltr">
+                      {mwanHeaderData.transport.manifest_ref}
+                    </span>
+                    <button type="button" onClick={() => copyManifestRef(mwanHeaderData.transport!.manifest_ref!)} className="text-primary/50 hover:text-primary">
+                      {copiedManifest ? <Check className="h-3 w-3 text-green-600" /> : <Copy className="h-3 w-3" />}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Deal Info — after transport */}
+          <div className="space-y-2.5 border-t border-border pt-4">
             <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
               {lang === "ar" ? "معلومات الصفقة" : "Deal Info"}
             </p>
@@ -1653,56 +1888,6 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
                 </span>
               </div>
             </div>
-          </div>
-
-          {/* Transport */}
-          <div className="space-y-2.5">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-              {lang === "ar" ? "النقل" : "Transport"}
-            </p>
-            {!mwanHeaderData?.transport ? (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground rounded-lg border border-border bg-muted/20 px-3 py-2.5">
-                  <Truck className="h-4 w-4 shrink-0" />
-                  <span>{lang === "ar" ? "لا يوجد نقل مطلوب" : "No transport required"}</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setTrFormOpen(true)}
-                  className="w-full flex items-center justify-center gap-1.5 text-[11px] text-primary/70 hover:text-primary font-medium py-1"
-                >
-                  <Truck className="h-3 w-3 shrink-0" />
-                  {lang === "ar" ? "+ إنشاء طلب نقل" : "+ Create transport request"}
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {TR_STEPS.map((step) => {
-                  const done = mwanHeaderData?.checks[step.key] ?? false;
-                  return (
-                    <div key={step.key} className="flex items-center gap-2">
-                      {done
-                        ? <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />
-                        : <Circle className="h-3.5 w-3.5 text-muted-foreground/30 shrink-0" />}
-                      <span className={`text-xs ${done ? "text-foreground" : "text-muted-foreground/60"}`}>
-                        {lang === "ar" ? step.ar : step.en}
-                      </span>
-                    </div>
-                  );
-                })}
-                {mwanHeaderData.transport.manifest_ref && (
-                  <div className="flex items-center gap-2 rounded-md border border-primary/20 bg-primary/5 px-2.5 py-1.5 mt-2">
-                    <FileTextIcon className="h-3 w-3 text-primary shrink-0" />
-                    <span className="text-[10px] font-mono text-primary font-bold flex-1" dir="ltr">
-                      {mwanHeaderData.transport.manifest_ref}
-                    </span>
-                    <button type="button" onClick={() => copyManifestRef(mwanHeaderData.transport!.manifest_ref!)} className="text-primary/50 hover:text-primary">
-                      {copiedManifest ? <Check className="h-3 w-3 text-green-600" /> : <Copy className="h-3 w-3" />}
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
         </div>
         </div>{/* end two-column grid */}
