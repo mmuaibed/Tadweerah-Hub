@@ -1942,8 +1942,8 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
             </div>
           )}
 
-          {/* ── SMART-ASSIST TRANSPORT STEP ── */}
-          {deal.status !== "completed" && (
+          {/* ── SMART-ASSIST TRANSPORT STEP — buyer only ── */}
+          {role === "buyer" && deal.status !== "completed" && (
             <div className={`mt-4 rounded-xl border-2 overflow-hidden ${
               deal.status === "active"
                 ? "border-border bg-muted/10 opacity-60"

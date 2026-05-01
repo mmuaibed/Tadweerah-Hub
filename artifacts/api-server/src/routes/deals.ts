@@ -255,28 +255,7 @@ router.post(
       );
     }
 
-    // Vehicle plate must be on the linked transport request before dispatch
-    const [tr] = await db
-      .select({ id: transportRequestsTable.id, vehicle_plate: transportRequestsTable.vehicle_plate })
-      .from(transportRequestsTable)
-      .where(eq(transportRequestsTable.deal_id, dealId))
-      .limit(1);
-
-    if (!tr) {
-      throw new HttpError(
-        422,
-        "TransportRequestRequired",
-        "A transport request must be created for this deal before confirming dispatch.",
-      );
-    }
-    if (!tr.vehicle_plate || tr.vehicle_plate.trim() === "") {
-      throw new HttpError(
-        422,
-        "VehiclePlateRequired",
-        "Vehicle plate number must be set on the transport request before confirming dispatch.",
-      );
-    }
-
+    // Transport is optional — dispatch does not depend on transport request status.
     const now = new Date();
     const dispatchUpdate: Partial<typeof dealsTable.$inferInsert> = {
       status: "dispatched",
