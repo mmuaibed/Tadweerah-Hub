@@ -56,10 +56,10 @@ export function HomePage() {
   return (
     <AppLayout>
       {/* ── Hero: badge → logo → headline → CTAs ── */}
-      <section className="flex flex-col items-center pt-4 pb-3 text-center sm:pt-5">
+      <section className="flex flex-col items-center pt-1 pb-2 text-center">
 
         {/* Saudi green badge */}
-        <span className="mb-3 inline-flex items-center rounded-full border-2 border-green-300 bg-green-100 px-5 py-2 text-xs font-bold text-green-900 tracking-wide">
+        <span className="mb-2 inline-flex items-center rounded-full border-2 border-green-300 bg-green-100 px-5 py-1.5 text-xs font-bold text-green-900 tracking-wide">
           {t("home.badge")}
         </span>
 
@@ -67,17 +67,17 @@ export function HomePage() {
         <img
           src={`${basePath}/logo.png`}
           alt="Tadweerah | تدويرة"
-          className="mb-5 w-[9rem] max-w-[60vw] h-auto sm:w-[13rem] md:w-[15rem]"
+          className="mb-2 w-[8rem] max-w-[55vw] h-auto sm:w-[11rem] md:w-[13rem]"
           style={{ mixBlendMode: "multiply" }}
         />
 
         {/* Main headline */}
-        <h1 className="text-lg font-bold text-foreground leading-snug sm:whitespace-nowrap sm:text-xl">
+        <h1 className="text-base font-bold text-foreground leading-snug sm:whitespace-nowrap sm:text-lg">
           {t("home.headline")}
         </h1>
 
         {/* CTAs */}
-        <div className="mt-8 flex flex-col gap-2 sm:flex-row">
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row">
           <SignUpButton mode="modal" forceRedirectUrl={onboardingUrl}>
             <Button size="lg" className="gap-2 px-7 font-bold">
               {t("action.getstarted")}
@@ -96,7 +96,7 @@ export function HomePage() {
         </div>
 
         {/* No-account prompt */}
-        <div className="mt-3">
+        <div className="mt-2">
           <SignUpButton mode="modal" forceRedirectUrl={onboardingUrl}>
             <button
               type="button"
@@ -109,23 +109,23 @@ export function HomePage() {
       </section>
 
       {/* ── 2-column: Why + For ── */}
-      <section className="mt-1 grid gap-5 pb-3 lg:grid-cols-2">
+      <section className="mt-1 grid gap-3 pb-2 lg:grid-cols-2">
 
         {/* Column 1 → visual RIGHT in Arabic RTL — "Why Tadweerah?" */}
-        <div className="flex flex-col gap-2.5">
-          <h2 className="text-lg font-bold text-foreground sm:text-xl">
+        <div className="flex flex-col gap-1.5">
+          <h2 className="text-base font-bold text-foreground sm:text-lg">
             {t("home.why.title")}
           </h2>
 
-          <div className="rounded-xl border border-border bg-card p-4 lg:flex-1">
-            <ul className="flex flex-col gap-3.5 lg:h-full lg:justify-between lg:gap-0">
+          <div className="rounded-xl border border-border bg-card p-3 lg:flex-1">
+            <ul className="flex flex-col gap-2 lg:h-full lg:justify-between lg:gap-0">
               {WHY_POINTS.map(({ key, icon: Icon, bold }) => (
-                <li key={key} className="flex items-center gap-3">
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-                    <Icon className="h-3.5 w-3.5" />
+                <li key={key} className="flex items-center gap-2.5">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                    <Icon className="h-3 w-3" />
                   </span>
                   <span
-                    className={`text-sm leading-snug ${
+                    className={`text-xs leading-snug ${
                       bold
                         ? "font-semibold text-foreground"
                         : "font-medium text-foreground/85"
@@ -140,18 +140,18 @@ export function HomePage() {
         </div>
 
         {/* Column 2 → visual LEFT in Arabic RTL — "Who is this for?" */}
-        <div className="flex flex-col gap-2.5">
-          <h2 className="text-lg font-bold text-foreground sm:text-xl">
+        <div className="flex flex-col gap-1.5">
+          <h2 className="text-base font-bold text-foreground sm:text-lg">
             {t("home.for.title")}
           </h2>
 
           {USER_GROUPS.map(({ icon: Icon, titleKey, valueKey }) => (
             <div
               key={titleKey}
-              className="flex items-center gap-3.5 rounded-xl border border-border bg-card px-4 py-3.5 transition-shadow hover:shadow-sm"
+              className="flex items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5 transition-shadow hover:shadow-sm"
             >
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <Icon className="h-5 w-5" />
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <Icon className="h-4 w-4" />
               </span>
               <div className="min-w-0">
                 <p className="text-sm font-bold text-foreground">{t(titleKey)}</p>
@@ -166,7 +166,7 @@ export function HomePage() {
       </section>
 
       {/* B2B description footer */}
-      <p className="mt-1 pb-3 text-center text-base text-muted-foreground/90">
+      <p className="mt-1 pb-2 text-center text-sm text-muted-foreground/90">
         {t("home.description")}
       </p>
     </AppLayout>
