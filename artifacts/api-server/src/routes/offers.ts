@@ -25,7 +25,7 @@ import {
 import { HttpError, assertUuid } from "../middlewares/errorHandler";
 import { listingRef } from "../lib/listing-ref";
 import { logAudit } from "../lib/audit";
-import { computeCompanyLicenseValidity } from "../lib/license-validity";
+import { checkPureEligibility, type EligibilityReason } from "../lib/eligibility";
 import {
   notifyOfferReceived,
   notifyOutbid,
@@ -426,23 +426,9 @@ router.post(
     if (!listing) {
       throw new HttpError(404, "NotFound", "Listing not found");
     }
-    if (listing.status !== "open") {
-      throw new HttpError(
-        409,
-        "ListingClosed",
-        "This listing is no longer accepting offers",
-      );
-    }
-    if (listing.company_id === company.id) {
-      throw new HttpError(
-        403,
-        "Forbidden",
-        "You cannot submit an offer on your own listing",
-      );
-    }
 
-    // ── Commercial Registration gate ─────────────────────────────────────────
-    // CR is required to enter binding commercial deals.
+    // ── Commercial Registration gate ──────────────────────────────────────────
+    // CR is required for binding commercial deals (separate from eligibility).
     if (!company.commercialRegistration) {
       throw new HttpError(
         422,
@@ -452,65 +438,34 @@ router.post(
     }
     // ── End CR gate ───────────────────────────────────────────────────────────
 
-    // ── Terms & Conditions gate ───────────────────────────────────────────────
-    // Buyer must have accepted T&C during onboarding before submitting any offer.
-    if (!company.accepted_terms_at) {
-      throw new HttpError(
-        403,
-        "TermsRequired",
-        "You must accept the Terms & Conditions during onboarding before submitting offers.",
-      );
-    }
-    // ── End T&C gate ──────────────────────────────────────────────────────────
-
-    // ── Offer submission block gate ───────────────────────────────────────────
-    // Companies with repeated receipt failures are blocked from submitting offers.
-    // Admin must manually clear the block via PATCH /admin/companies/:id/unblock-offers.
-    if (company.offer_submission_blocked) {
-      throw new HttpError(
-        403,
-        "OfferSubmissionBlocked",
-        "Your company is currently blocked from submitting offers due to repeated receipt failures. Please contact support.",
-      );
-    }
-    // ── End offer submission block gate ───────────────────────────────────────
-
-    // ── Company approval gate ─────────────────────────────────────────────────
-    // Only approved companies may submit offers.
-    if (!company.license_status) {
-      throw new HttpError(
-        403,
-        "CompanyIncomplete",
-        "Your company profile is incomplete. Complete your company data and submit it for review before submitting offers.",
-      );
-    }
-    if (company.license_status === "pending") {
-      throw new HttpError(
-        403,
-        "CompanyPending",
-        "Your company is currently under review. You will be able to submit offers once your company is approved.",
-      );
-    }
-    if (company.license_status === "expired") {
-      throw new HttpError(
-        403,
-        "CompanyExpired",
-        "Your company license has expired. Please renew your license before submitting offers.",
-      );
-    }
-    // ── End approval gate ─────────────────────────────────────────────────────
-
-    // ── Targeting gate ────────────────────────────────────────────────────────
-    // Enforce that this company is allowed to bid on the listing.
-    if (listing.targeting_type === "specific_company") {
-      if (listing.target_company_id !== company.id) {
-        throw new HttpError(
-          403,
-          "TargetingRestricted",
-          "This listing is a private deal and was not directed to your company",
-        );
+    // ── Rules Engine — pure stateless eligibility ──────────────────────────────
+    // All stateless checks are centralized here. DB-dependent checks follow below.
+    {
+      const pureResult = checkPureEligibility(listing, company);
+      if (!pureResult.allowed) {
+        const reasonMessages: Record<EligibilityReason, [number, string]> = {
+          OwnListing:             [403, "You cannot submit an offer on your own listing"],
+          ListingClosed:          [409, "This listing is no longer accepting offers"],
+          TermsNotAccepted:       [403, "You must accept the Terms & Conditions before submitting offers"],
+          OfferSubmissionBlocked: [403, "Your company is blocked from submitting offers. Please contact support."],
+          CompanyIncomplete:      [403, "Complete your company profile and submit it for review before placing offers"],
+          CompanyPending:         [403, "Your company is under review. You can submit offers once approved"],
+          CompanyRejected:        [403, "Your company registration has been rejected. Please contact support"],
+          CompanyExpired:         [403, "Your company license has expired. Please renew before submitting offers"],
+          LicenseRequired:        [403, "This listing is available only to companies with an approved MWAN license"],
+          LicenseExpired:         [403, "Your MWAN license has expired. Renew it to submit offers on this listing"],
+          TargetingRestricted:    [403, "This listing is a private deal and was not directed to your company"],
+          MissingCapability:      [403, "Your company does not have a required service for this listing"],
+          SensitiveMaterial:      [403, "This listing requires an approved license due to its sensitive material category"],
+        };
+        const [status, message] = reasonMessages[pureResult.reason!];
+        throw new HttpError(status, pureResult.reason!, message);
       }
-    } else if (listing.targeting_type === "category") {
+    }
+    // ── End Rules Engine ──────────────────────────────────────────────────────
+
+    // ── Targeting gate (category) — DB lookup ────────────────────────────────
+    if (listing.targeting_type === "category") {
       // The buyer's category must be in listing_target_categories
       const [allowed] = await db
         .select({ listing_id: listingTargetCategoriesTable.listing_id })
@@ -535,24 +490,7 @@ router.post(
     // targeting_type = 'open' → all companies may bid
     // ── End targeting gate ────────────────────────────────────────────────────
 
-    // ── Eligibility gate (MWAN license + expiry) ─────────────────────────────
-    // LICENSED_ONLY listings require:
-    //   1. license_number is set AND license_status = 'approved'
-    //   2. license_validity is Active or ExpiringSoon (not Expired)
-    if (listing.eligible_company_type === "LICENSED_ONLY") {
-      const hasApprovedLicense =
-        Boolean(company.license_number) &&
-        company.license_status === "approved";
-      const validity = computeCompanyLicenseValidity(company.licenses_json);
-      const isEligible = hasApprovedLicense && validity !== "Expired";
-      if (!isEligible) {
-        const reason = !hasApprovedLicense
-          ? "This listing is available only to companies with an approved MWAN license."
-          : "Your MWAN license has expired. Please renew it to submit offers on this listing.";
-        throw new HttpError(403, "EligibilityRequired", reason);
-      }
-    }
-    // ── End eligibility gate ──────────────────────────────────────────────────
+    // (LICENSED_ONLY eligibility is now handled by the Rules Engine above)
 
     // ── Item 4: Required services gate ────────────────────────────────────────
     // Fetch any capability requirements on this listing

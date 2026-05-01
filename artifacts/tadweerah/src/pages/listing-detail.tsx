@@ -66,6 +66,8 @@ import { AppLayout } from "@/components/app-layout";
 import { EmptyState } from "@/components/empty-state";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { DealPanel, type DealInfo } from "@/components/deal-panel";
+import { EligibilityBlock } from "@/components/eligibility-block";
+import { useEligibility } from "@/hooks/use-eligibility";
 import { useT } from "@/i18n";
 import { listingRef } from "@/lib/listing-ref";
 
@@ -1131,16 +1133,28 @@ export function ListingDetailPage() {
   const activeDeal: DealInfo | null = dealOverride ?? rawDeal;
   const isOpen = listing?.status === "open";
 
-  // Bidding eligibility — LICENSED_ONLY listings require an approved, non-expired MWAN license
+  // ── Rules Engine — centralised eligibility decision ───────────────────────
   const eligibleCompanyType = (listing as unknown as { eligible_company_type?: string })?.eligible_company_type ?? "ALL";
-  const viewerLicenseStatus = (me?.company as unknown as { license_status?: string } | undefined)?.license_status;
-  const viewerLicenseNumber = (me?.company as unknown as { license_number?: string | null } | undefined)?.license_number;
-  const viewerLicenseValidity = (me?.company as unknown as { license_validity?: string } | undefined)?.license_validity ?? "None";
-  const hasApprovedLicense = !!viewerLicenseNumber && viewerLicenseStatus === "approved";
-  // Expired licenses are treated the same as unlicensed for LICENSED_ONLY listings
-  const isViewerLicensed = hasApprovedLicense && viewerLicenseValidity !== "Expired";
-  const isEligibilityBlocked = !isOwner && eligibleCompanyType === "LICENSED_ONLY" && !isViewerLicensed;
-  const isBlockedDueToExpiry = !isOwner && eligibleCompanyType === "LICENSED_ONLY" && hasApprovedLicense && viewerLicenseValidity === "Expired";
+  const eligibilityListing = listing
+    ? {
+        status: listing.status,
+        company_id: listing.company_id,
+        eligible_company_type: eligibleCompanyType,
+        targeting_type: (listing as unknown as { targeting_type?: string }).targeting_type,
+        target_company_id: (listing as unknown as { target_company_id?: string }).target_company_id,
+      }
+    : null;
+  const eligibilityCompany = me?.company
+    ? {
+        id: me.company.id,
+        license_status: (me.company as unknown as { license_status?: string }).license_status,
+        license_number: (me.company as unknown as { license_number?: string }).license_number,
+        license_validity: (me.company as unknown as { license_validity?: string }).license_validity,
+        accepted_terms_at: (me.company as unknown as { accepted_terms_at?: string }).accepted_terms_at,
+        offer_submission_blocked: (me.company as unknown as { offer_submission_blocked?: boolean }).offer_submission_blocked,
+      }
+    : null;
+  const eligibilityDecision = useEligibility(eligibilityListing, eligibilityCompany);
 
   const fromParam = new URLSearchParams(search).get("from");
   const backPath =
@@ -1548,28 +1562,8 @@ export function ListingDetailPage() {
         {/* Buyer: submit / improve / status */}
         {role === "buyer" && (
           <div className="pb-4">
-            {isEligibilityBlocked ? (
-              <div className={`rounded-lg border p-4 space-y-1.5 ${
-                isBlockedDueToExpiry
-                  ? "border-red-200 bg-red-50"
-                  : "border-blue-200 bg-blue-50"
-              }`}>
-                <div className={`flex items-center gap-2 font-semibold text-sm ${
-                  isBlockedDueToExpiry ? "text-red-700" : "text-blue-700"
-                }`}>
-                  <Shield className="h-4 w-4 shrink-0" />
-                  {isBlockedDueToExpiry
-                    ? t("listing.eligible.blocked.expired.title")
-                    : t("listing.eligible.blocked.title")}
-                </div>
-                <p className={`text-xs leading-relaxed ${
-                  isBlockedDueToExpiry ? "text-red-700/80" : "text-blue-700/80"
-                }`}>
-                  {isBlockedDueToExpiry
-                    ? t("listing.eligible.blocked.expired.desc")
-                    : t("listing.eligible.blocked.desc")}
-                </p>
-              </div>
+            {!eligibilityDecision.allowed ? (
+              <EligibilityBlock decision={eligibilityDecision} />
             ) : (
               <BuyerOfferSection
                 wasteListingId={wasteListingId}

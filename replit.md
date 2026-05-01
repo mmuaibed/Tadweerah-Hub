@@ -2,7 +2,24 @@
 
 Tadweerah (تدويرة) is a Saudi B2B MVP platform designed to connect waste producers, recycling buyers, and licensed transporters. Its core purpose is to streamline the recycling process by providing a centralized marketplace for waste listings, offers, and deal management within the Saudi Arabian market. Key capabilities include user authentication, company onboarding (with MWAN-aligned multi-role classification), waste listing management, a buyer marketplace, an offer/bidding system, deal lifecycle management, and transport request orchestration aligned with MWAN eManifest requirements.
 
-## Latest Changes — License Multi-Support + Sign-in Improvements
+## Latest Changes — Centralised Eligibility Rules Engine
+
+**Status:** Active development.
+
+**What changed in this session:**
+- `artifacts/api-server/src/lib/eligibility.ts` — new pure **Rules Engine** (`checkPureEligibility`) covering all 13 `EligibilityReason` codes; replaces scattered gates in routes. DB-dependent checks (capability, sensitive material) remain in-route post-engine.
+- `artifacts/api-server/src/routes/offers.ts` — updated to call `checkPureEligibility()`, maps reason codes to HTTP errors.
+- `artifacts/tadweerah/src/lib/eligibility.ts` — frontend mirror of the engine; `checkEligibility()` runs on already-loaded data with no network calls.
+- `artifacts/tadweerah/src/hooks/use-eligibility.ts` — React hook wrapping the engine; returns `{ allowed, reason, title, message, severity }` using i18n.
+- `artifacts/tadweerah/src/components/eligibility-block.tsx` — shared UI banner component driven by the hook's `EligibilityDecision`.
+- `artifacts/tadweerah/src/pages/listing-detail.tsx` — replaced scattered `isEligibilityBlocked` / `isBlockedDueToExpiry` vars with `useEligibility()` hook + `<EligibilityBlock>`.
+- `artifacts/tadweerah/src/i18n/index.tsx` — added canonical `eligibility.<Reason>.title/.desc` keys for all 13 reasons (AR + EN).
+
+**EligibilityReason codes:** `OwnListing | ListingClosed | CompanyIncomplete | CompanyPending | CompanyRejected | CompanyExpired | OfferSubmissionBlocked | TermsNotAccepted | LicenseRequired | LicenseExpired | MissingCapability | SensitiveMaterial | TargetingRestricted`
+
+---
+
+## Previous Changes — License Multi-Support + Sign-in Improvements
 
 **Status:** Active development.
 
