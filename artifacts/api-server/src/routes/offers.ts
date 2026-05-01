@@ -416,6 +416,7 @@ router.post(
         targeting_type: wasteListingsTable.targeting_type,
         target_company_id: wasteListingsTable.target_company_id,
         material_category_id: wasteListingsTable.material_category_id,
+        eligible_company_type: wasteListingsTable.eligible_company_type,
       })
       .from(wasteListingsTable)
       .where(eq(wasteListingsTable.id, listingId))
@@ -532,6 +533,24 @@ router.post(
     }
     // targeting_type = 'open' → all companies may bid
     // ── End targeting gate ────────────────────────────────────────────────────
+
+    // ── Eligibility gate (MWAN license) ──────────────────────────────────────
+    // LICENSED_ONLY listings require an approved MWAN license.
+    // A company is considered licensed when:
+    //   license_number is set AND license_status = 'approved'
+    if (listing.eligible_company_type === "LICENSED_ONLY") {
+      const isLicensed =
+        Boolean(company.license_number) &&
+        company.license_status === "approved";
+      if (!isLicensed) {
+        throw new HttpError(
+          403,
+          "EligibilityRequired",
+          "This listing is available only to companies with an approved MWAN license. Update your company profile to include a valid license number.",
+        );
+      }
+    }
+    // ── End eligibility gate ──────────────────────────────────────────────────
 
     // ── Item 4: Required services gate ────────────────────────────────────────
     // Fetch any capability requirements on this listing

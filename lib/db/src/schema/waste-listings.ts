@@ -83,6 +83,24 @@ export const targetingTypeEnum = pgEnum("targeting_type", [
   "specific_company",
 ]);
 
+/**
+ * Controls which companies are eligible to submit offers on a listing.
+ *
+ * ALL          — any registered company (including unlicensed traders)
+ * LICENSED_ONLY — only companies with an approved MWAN license
+ *                 (license_number != null AND license_status = 'approved')
+ *
+ * Visibility (shown to everyone) is separate from eligibility (who can bid).
+ * LICENSED_ONLY listings are still visible in the marketplace but show a
+ * "MWAN licensed companies only" badge and block offer submission for others.
+ *
+ * Immutable once published — producer must close + re-list to change.
+ */
+export const eligibleCompanyTypeEnum = pgEnum("eligible_company_type", [
+  "ALL",
+  "LICENSED_ONLY",
+]);
+
 export const wasteListingsTable = pgTable("waste_listings", {
   id: uuid("id").primaryKey().defaultRandom(),
   company_id: uuid("company_id")
@@ -182,6 +200,16 @@ export const wasteListingsTable = pgTable("waste_listings", {
     () => companiesTable.id,
     { onDelete: "set null" },
   ),
+
+  /**
+   * Eligibility filter for offer submission.
+   * ALL          — open to all registered companies (default, maximises liquidity)
+   * LICENSED_ONLY — only MWAN-approved companies may submit offers
+   * Immutable once published. Show badge in marketplace; enforce in offer API.
+   */
+  eligible_company_type: eligibleCompanyTypeEnum("eligible_company_type")
+    .notNull()
+    .default("ALL"),
 });
 
 export type WasteListing = typeof wasteListingsTable.$inferSelect;

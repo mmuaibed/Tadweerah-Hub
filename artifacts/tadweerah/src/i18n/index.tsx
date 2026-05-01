@@ -675,6 +675,15 @@ const translations: Record<string, Record<Language, string>> = {
   // Item 6 — Sale type
   "listing.sale_type.auction": { ar: "مزاد مفتوح", en: "Open Auction" },
   "listing.sale_type.direct": { ar: "بيع مباشر", en: "Direct Sale" },
+  "listing.form.eligibleCompanyType": { ar: "من يمكنه التقديم على هذا الإعلان؟", en: "Who can submit offers on this listing?" },
+  "listing.form.eligibleCompanyType.hint": { ar: "يمكنك تخصيص الإعلان للشركات المرخصة من موان فقط، أو فتحه لجميع الشركات المسجلة", en: "You can restrict this listing to MWAN-licensed companies or open it to all registered companies" },
+  "listing.eligible.ALL.label": { ar: "الجميع", en: "All companies" },
+  "listing.eligible.ALL.desc": { ar: "أي شركة مسجلة في المنصة يمكنها تقديم عرض — يزيد من السيولة والمنافسة", en: "Any registered company on the platform can submit an offer — maximises liquidity and competition" },
+  "listing.eligible.LICENSED_ONLY.label": { ar: "الشركات المرخصة من موان فقط", en: "MWAN-licensed companies only" },
+  "listing.eligible.LICENSED_ONLY.desc": { ar: "فقط الشركات التي لديها ترخيص معتمد من موان — يوفر ضمانًا إضافيًا للامتثال", en: "Only companies with an approved MWAN license — provides additional compliance assurance" },
+  "listing.eligible.badge": { ar: "الشركات المرخصة من موان فقط", en: "MWAN-licensed companies only" },
+  "listing.eligible.blocked.title": { ar: "هذا الإعلان للشركات المرخصة فقط", en: "This listing is for licensed companies only" },
+  "listing.eligible.blocked.desc": { ar: "هذا الإعلان متاح فقط للشركات التي لديها ترخيص معتمد من موان. لتقديم عرض، يجب أن تمتلك رقم ترخيص معتمد من مَوَن.", en: "This listing is available only to companies with an approved MWAN license. To submit an offer, your company must have an approved MWAN license number." },
   "listing.form.saleType": { ar: "نوع البيع", en: "Sale Type" },
   "listing.form.saleType.auction.hint": {
     ar: "يتنافس المشترون بأسعار متزايدة — المنتج يختار أفضل عرض.",

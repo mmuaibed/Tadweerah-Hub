@@ -49,6 +49,7 @@ export function ListingCard({
   const highestOfferPrice = (listing as WasteListing & { highest_offer_price?: number | null }).highest_offer_price;
   const requiredServices = (listing as WasteListing & { required_services?: Array<{ id: string; name_ar: string; name_en: string; requires_license?: boolean }> }).required_services ?? [];
   const targetingType = (listing as WasteListing & { targeting_type?: string }).targeting_type ?? "open";
+  const eligibleCompanyType = (listing as WasteListing & { eligible_company_type?: string }).eligible_company_type ?? "ALL";
   const materialCategoryNameAr = (listing as WasteListing & { material_category_name_ar?: string | null }).material_category_name_ar;
   const materialCategoryNameEn = (listing as WasteListing & { material_category_name_en?: string | null }).material_category_name_en;
   const materialCategoryName = lang === "ar" ? materialCategoryNameAr : materialCategoryNameEn;
@@ -104,6 +105,12 @@ export function ListingCard({
               <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700">
                 <Lock className="h-2.5 w-2.5" />
                 {t(`listing.targeting.${targetingType}`)}
+              </span>
+            )}
+            {eligibleCompanyType === "LICENSED_ONLY" && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-700">
+                <Shield className="h-2.5 w-2.5" />
+                {t("listing.eligible.badge")}
               </span>
             )}
           </div>

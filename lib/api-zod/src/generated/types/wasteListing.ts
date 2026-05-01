@@ -5,6 +5,7 @@
  * Tadweerah API
  * OpenAPI spec version: 0.1.0
  */
+import type { EligibleCompanyType } from "./eligibleCompanyType";
 import type { ListingRequiredService } from "./listingRequiredService";
 import type { ListingVisibility } from "./listingVisibility";
 import type { PricingModel } from "./pricingModel";
@@ -40,6 +41,7 @@ Represents the percentage of the buyer's resale revenue paid to the producer.
    */
   required_services?: ListingRequiredService[];
   visibility?: ListingVisibility;
+  eligible_company_type?: EligibleCompanyType;
   /** The calling buyer's current offer price_per_unit on this listing. Only included in GET /listings (marketplace) responses. Null/absent if the buyer has no offer.
    */
   my_offer_price?: number;

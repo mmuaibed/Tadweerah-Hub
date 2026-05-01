@@ -41,6 +41,7 @@ import {
   Lock,
   Info,
   AlertCircle,
+  Shield,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -1130,6 +1131,13 @@ export function ListingDetailPage() {
   const activeDeal: DealInfo | null = dealOverride ?? rawDeal;
   const isOpen = listing?.status === "open";
 
+  // Bidding eligibility — LICENSED_ONLY listings require an approved MWAN license
+  const eligibleCompanyType = (listing as unknown as { eligible_company_type?: string })?.eligible_company_type ?? "ALL";
+  const viewerLicenseStatus = (me?.company as unknown as { license_status?: string } | undefined)?.license_status;
+  const viewerLicenseNumber = (me?.company as unknown as { license_number?: string | null } | undefined)?.license_number;
+  const isViewerLicensed = !!viewerLicenseNumber && viewerLicenseStatus === "approved";
+  const isEligibilityBlocked = !isOwner && eligibleCompanyType === "LICENSED_ONLY" && !isViewerLicensed;
+
   const fromParam = new URLSearchParams(search).get("from");
   const backPath =
     fromParam === "participations"
@@ -1382,6 +1390,14 @@ export function ListingDetailPage() {
           );
         })()}
 
+        {/* Eligibility banner — LICENSED_ONLY */}
+        {eligibleCompanyType === "LICENSED_ONLY" && (
+          <div className="flex items-start gap-2.5 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+            <Shield className="h-4 w-4 shrink-0 mt-0.5 text-blue-500" />
+            <span>{t("listing.eligible.badge")}</span>
+          </div>
+        )}
+
         {/* Details */}
         <div className="rounded-xl border border-border bg-card px-5 divide-y divide-border">
           {categoryLabel && (
@@ -1528,15 +1544,27 @@ export function ListingDetailPage() {
         {/* Buyer: submit / improve / status */}
         {role === "buyer" && (
           <div className="pb-4">
-            <BuyerOfferSection
-              wasteListingId={wasteListingId}
-              listingQuantity={quantity}
-              isOpen={!!isOpen}
-              onSuccess={() => {
-                queryClient.invalidateQueries({ queryKey: getGetListingOffersQueryKey(wasteListingId) });
-                queryClient.invalidateQueries({ queryKey: getGetOffersSummaryQueryKey(wasteListingId) });
-              }}
-            />
+            {isEligibilityBlocked ? (
+              <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 space-y-1.5">
+                <div className="flex items-center gap-2 text-blue-700 font-semibold text-sm">
+                  <Shield className="h-4 w-4 shrink-0" />
+                  {t("listing.eligible.blocked.title")}
+                </div>
+                <p className="text-xs text-blue-700/80 leading-relaxed">
+                  {t("listing.eligible.blocked.desc")}
+                </p>
+              </div>
+            ) : (
+              <BuyerOfferSection
+                wasteListingId={wasteListingId}
+                listingQuantity={quantity}
+                isOpen={!!isOpen}
+                onSuccess={() => {
+                  queryClient.invalidateQueries({ queryKey: getGetListingOffersQueryKey(wasteListingId) });
+                  queryClient.invalidateQueries({ queryKey: getGetOffersSummaryQueryKey(wasteListingId) });
+                }}
+              />
+            )}
           </div>
         )}
       </div>

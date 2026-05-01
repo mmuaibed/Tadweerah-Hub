@@ -27,6 +27,7 @@ export * from "./deal";
 export * from "./dealCounterparty";
 export * from "./dealSettlementType";
 export * from "./dealStatus";
+export * from "./eligibleCompanyType";
 export * from "./getNotificationsParams";
 export * from "./healthStatus";
 export * from "./inviteCompanyMemberBody";

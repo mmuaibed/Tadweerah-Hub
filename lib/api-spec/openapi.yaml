@@ -1184,6 +1184,18 @@ components:
         Controls whether a listing appears in the public marketplace feed.
         CURRENTLY READ-ONLY: all listings default to "public".
 
+    EligibleCompanyType:
+      type: string
+      enum: [ALL, LICENSED_ONLY]
+      description: |
+        Controls which companies may submit offers on this listing.
+        ALL          — any registered company (default; maximises liquidity).
+        LICENSED_ONLY — only companies with an approved MWAN license
+                        (license_number non-null AND license_status = approved).
+        Visibility is separate from eligibility: LICENSED_ONLY listings are visible
+        to all buyers in the marketplace but show a badge and block offer submission
+        for unlicensed companies. Immutable once published.
+
     PricingModel:
       type: string
       enum: [fixed, by_weight, revenue_share]
@@ -1244,6 +1256,8 @@ components:
             $ref: "#/components/schemas/ListingRequiredService"
         visibility:
           $ref: "#/components/schemas/ListingVisibility"
+        eligible_company_type:
+          $ref: "#/components/schemas/EligibleCompanyType"
         my_offer_price:
           type: number
           description: >
@@ -1323,6 +1337,11 @@ components:
           description: |
             UUIDs of capabilities that buyers must have to submit an offer.
             Leave empty (or omit) for no restrictions.
+        eligible_company_type:
+          $ref: "#/components/schemas/EligibleCompanyType"
+          description: |
+            Restricts who may submit offers. Defaults to ALL if not supplied.
+            Immutable once published.
       required: [material, quantity, unit, city]
 
     OfferStatus:

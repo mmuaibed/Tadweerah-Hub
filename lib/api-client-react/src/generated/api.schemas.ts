@@ -159,6 +159,24 @@ export const ListingVisibility = {
 } as const;
 
 /**
+ * Controls which companies may submit offers on this listing.
+ALL          — any registered company (default; maximises liquidity).
+LICENSED_ONLY — only companies with an approved MWAN license
+                (license_number non-null AND license_status = approved).
+Visibility is separate from eligibility: LICENSED_ONLY listings are visible
+to all buyers in the marketplace but show a badge and block offer submission
+for unlicensed companies. Immutable once published.
+
+ */
+export type EligibleCompanyType =
+  (typeof EligibleCompanyType)[keyof typeof EligibleCompanyType];
+
+export const EligibleCompanyType = {
+  ALL: "ALL",
+  LICENSED_ONLY: "LICENSED_ONLY",
+} as const;
+
+/**
  * Governs how price_per_unit is interpreted and what settlement mechanics apply.
 Immutable once a listing is published.
 fixed: price_per_unit × quantity = agreed commercial amount.
@@ -216,6 +234,7 @@ Represents the percentage of the buyer's resale revenue paid to the producer.
    */
   required_services?: ListingRequiredService[];
   visibility?: ListingVisibility;
+  eligible_company_type?: EligibleCompanyType;
   /** The calling buyer's current offer price_per_unit on this listing. Only included in GET /listings (marketplace) responses. Null/absent if the buyer has no offer.
    */
   my_offer_price?: number;
@@ -269,6 +288,10 @@ Percentage of buyer's resale revenue paid to the producer. Range: 0–100.
 Leave empty (or omit) for no restrictions.
  */
   required_service_ids?: string[];
+  /** Restricts who may submit offers. Defaults to ALL if not supplied.
+Immutable once published.
+ */
+  eligible_company_type?: EligibleCompanyType;
 }
 
 export type OfferStatus = (typeof OfferStatus)[keyof typeof OfferStatus];

@@ -286,6 +286,12 @@ export const ListMarketplaceListingsResponseItem = zod.object({
     .describe(
       'Controls whether a listing appears in the public marketplace feed.\nCURRENTLY READ-ONLY: all listings default to \"public\".\n',
     ),
+  eligible_company_type: zod
+    .enum(["ALL", "LICENSED_ONLY"])
+    .optional()
+    .describe(
+      "Controls which companies may submit offers on this listing.\nALL          — any registered company (default; maximises liquidity).\nLICENSED_ONLY — only companies with an approved MWAN license\n                (license_number non-null AND license_status = approved).\nVisibility is separate from eligibility: LICENSED_ONLY listings are visible\nto all buyers in the marketplace but show a badge and block offer submission\nfor unlicensed companies. Immutable once published.\n",
+    ),
   my_offer_price: zod
     .number()
     .optional()
@@ -391,6 +397,12 @@ export const CreateWasteListingBody = zod.object({
     .describe(
       "UUIDs of capabilities that buyers must have to submit an offer.\nLeave empty (or omit) for no restrictions.\n",
     ),
+  eligible_company_type: zod
+    .enum(["ALL", "LICENSED_ONLY"])
+    .optional()
+    .describe(
+      "Restricts who may submit offers. Defaults to ALL if not supplied.\nImmutable once published.\n",
+    ),
 });
 
 /**
@@ -482,6 +494,12 @@ export const ListMyListingsResponseItem = zod.object({
     .optional()
     .describe(
       'Controls whether a listing appears in the public marketplace feed.\nCURRENTLY READ-ONLY: all listings default to \"public\".\n',
+    ),
+  eligible_company_type: zod
+    .enum(["ALL", "LICENSED_ONLY"])
+    .optional()
+    .describe(
+      "Controls which companies may submit offers on this listing.\nALL          — any registered company (default; maximises liquidity).\nLICENSED_ONLY — only companies with an approved MWAN license\n                (license_number non-null AND license_status = approved).\nVisibility is separate from eligibility: LICENSED_ONLY listings are visible\nto all buyers in the marketplace but show a badge and block offer submission\nfor unlicensed companies. Immutable once published.\n",
     ),
   my_offer_price: zod
     .number()
@@ -600,6 +618,12 @@ export const GetWasteListingResponse = zod.object({
     .describe(
       'Controls whether a listing appears in the public marketplace feed.\nCURRENTLY READ-ONLY: all listings default to \"public\".\n',
     ),
+  eligible_company_type: zod
+    .enum(["ALL", "LICENSED_ONLY"])
+    .optional()
+    .describe(
+      "Controls which companies may submit offers on this listing.\nALL          — any registered company (default; maximises liquidity).\nLICENSED_ONLY — only companies with an approved MWAN license\n                (license_number non-null AND license_status = approved).\nVisibility is separate from eligibility: LICENSED_ONLY listings are visible\nto all buyers in the marketplace but show a badge and block offer submission\nfor unlicensed companies. Immutable once published.\n",
+    ),
   my_offer_price: zod
     .number()
     .optional()
@@ -715,6 +739,12 @@ export const CloseWasteListingResponse = zod.object({
     .optional()
     .describe(
       'Controls whether a listing appears in the public marketplace feed.\nCURRENTLY READ-ONLY: all listings default to \"public\".\n',
+    ),
+  eligible_company_type: zod
+    .enum(["ALL", "LICENSED_ONLY"])
+    .optional()
+    .describe(
+      "Controls which companies may submit offers on this listing.\nALL          — any registered company (default; maximises liquidity).\nLICENSED_ONLY — only companies with an approved MWAN license\n                (license_number non-null AND license_status = approved).\nVisibility is separate from eligibility: LICENSED_ONLY listings are visible\nto all buyers in the marketplace but show a badge and block offer submission\nfor unlicensed companies. Immutable once published.\n",
     ),
   my_offer_price: zod
     .number()

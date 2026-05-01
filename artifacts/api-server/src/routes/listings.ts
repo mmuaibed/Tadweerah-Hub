@@ -101,6 +101,7 @@ function serialize(
     revenue_share_pct?: string | null;
     targeting_type?: string | null;
     target_company_id?: string | null;
+    eligible_company_type?: string | null;
   };
   return {
     id: row.id,
@@ -125,6 +126,7 @@ function serialize(
     visibility: row.visibility,
     targeting_type: r.targeting_type ?? "open",
     target_company_id: r.target_company_id ?? null,
+    eligible_company_type: (r.eligible_company_type ?? "ALL") as "ALL" | "LICENSED_ONLY",
     target_category_ids: targetCategoryIds ?? [],
     image_url: row.image_url ?? undefined,
     created_at: row.created_at.toISOString(),
@@ -225,6 +227,7 @@ const baseSelect = {
   visibility: wasteListingsTable.visibility,
   targeting_type: wasteListingsTable.targeting_type,
   target_company_id: wasteListingsTable.target_company_id,
+  eligible_company_type: wasteListingsTable.eligible_company_type,
   image_url: wasteListingsTable.image_url,
   created_at: wasteListingsTable.created_at,
   closed_at: wasteListingsTable.closed_at,
@@ -612,6 +615,10 @@ router.post(
       ? (req.body.required_service_ids as unknown[]).filter((v): v is string => typeof v === "string")
       : [];
 
+    // eligible_company_type: who can submit offers — defaults to ALL
+    const eligibleCompanyType: "ALL" | "LICENSED_ONLY" =
+      req.body.eligible_company_type === "LICENSED_ONLY" ? "LICENSED_ONLY" : "ALL";
+
     const [created] = await db
       .insert(wasteListingsTable)
       .values({
@@ -631,6 +638,7 @@ router.post(
         revenue_share_pct: revenueSharePct,
         targeting_type: targetingType,
         target_company_id: targetCompanyId,
+        eligible_company_type: eligibleCompanyType,
       })
       .returning();
 

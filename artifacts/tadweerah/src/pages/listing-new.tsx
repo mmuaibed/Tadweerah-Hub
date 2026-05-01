@@ -110,6 +110,7 @@ export function ListingNewPage() {
   const [priceHint, setPriceHint] = useState("");
   const [pricingModel, setPricingModel] = useState<PricingModel>("fixed");
   const [saleType, setSaleType] = useState<SaleType>("auction");
+  const [eligibleCompanyType, setEligibleCompanyType] = useState<"ALL" | "LICENSED_ONLY">("ALL");
   const [revenueSharePct, setRevenueSharePct] = useState("");
   const [requiredServiceIds, setRequiredServiceIds] = useState<Set<string>>(new Set());
   const [targetingType, setTargetingType] = useState<TargetingType>("open");
@@ -248,6 +249,7 @@ export function ListingNewPage() {
           ...(requiredServiceIds.size > 0
             ? { required_service_ids: Array.from(requiredServiceIds) }
             : {}),
+          eligible_company_type: eligibleCompanyType,
           ...(saleType === "direct" ? { targeting_type: targetingType } : {}),
           ...(saleType === "direct" && targetingType === "specific_company" && selectedCompany
             ? { target_company_id: selectedCompany.id }
@@ -686,6 +688,39 @@ export function ListingNewPage() {
                   </div>
                 </div>
               )}
+
+              {/* ── Eligible Company Type ── */}
+              <div className="space-y-1.5 pt-1">
+                <Label>{t("listing.form.eligibleCompanyType")}</Label>
+                <p className="text-xs text-muted-foreground">{t("listing.form.eligibleCompanyType.hint")}</p>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {(["ALL", "LICENSED_ONLY"] as const).map((opt) => {
+                    const active = eligibleCompanyType === opt;
+                    return (
+                      <button
+                        key={opt}
+                        type="button"
+                        onClick={() => setEligibleCompanyType(opt)}
+                        className={`flex items-start gap-3 rounded-lg border p-3 text-start transition-colors ${
+                          active ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "border-border bg-card hover:border-primary/40"
+                        }`}
+                      >
+                        <span className={`mt-0.5 h-4 w-4 shrink-0 rounded-full border-2 flex items-center justify-center ${active ? "border-primary" : "border-muted-foreground/40"}`}>
+                          {active && <span className="h-2 w-2 rounded-full bg-primary" />}
+                        </span>
+                        <div>
+                          <div className={`text-sm font-medium ${active ? "text-primary" : "text-foreground"}`}>
+                            {t(`listing.eligible.${opt}.label`)}
+                          </div>
+                          <div className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                            {t(`listing.eligible.${opt}.desc`)}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
             </CardContent>
           </Card>

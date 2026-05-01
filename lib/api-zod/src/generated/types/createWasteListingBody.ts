@@ -5,6 +5,7 @@
  * Tadweerah API
  * OpenAPI spec version: 0.1.0
  */
+import type { EligibleCompanyType } from "./eligibleCompanyType";
 import type { PricingModel } from "./pricingModel";
 import type { SaleType } from "./saleType";
 import type { WasteMaterial } from "./wasteMaterial";
@@ -49,4 +50,8 @@ Percentage of buyer's resale revenue paid to the producer. Range: 0–100.
 Leave empty (or omit) for no restrictions.
  */
   required_service_ids?: string[];
+  /** Restricts who may submit offers. Defaults to ALL if not supplied.
+Immutable once published.
+ */
+  eligible_company_type?: EligibleCompanyType;
 }
