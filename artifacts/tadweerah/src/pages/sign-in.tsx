@@ -184,15 +184,6 @@ export function SignInPage() {
                 </Button>
               </form>
 
-              <p className="text-center text-sm text-muted-foreground">
-                {t("signin.no_account")}{" "}
-                <a
-                  href="/onboarding/company"
-                  className="font-medium text-primary underline underline-offset-2 hover:text-primary/80"
-                >
-                  {t("signin.create_company")}
-                </a>
-              </p>
             </>
           )}
 

@@ -1,4 +1,3 @@
-import { SignInButton } from "@clerk/react";
 import { useLocation } from "wouter";
 import {
   Recycle,
@@ -84,15 +83,14 @@ export function HomePage() {
             {t("action.getstarted")}
             <Arrow className="h-4 w-4" />
           </Button>
-          <SignInButton mode="modal">
-            <Button
-              size="lg"
-              variant="outline"
-              className="border-gray-400 px-7 hover:border-primary/60 hover:bg-muted/50"
-            >
-              {t("action.signin")}
-            </Button>
-          </SignInButton>
+          <Button
+            size="lg"
+            variant="outline"
+            className="border-gray-400 px-7 hover:border-primary/60 hover:bg-muted/50"
+            onClick={() => navigate("/sign-in")}
+          >
+            {t("action.signin")}
+          </Button>
         </div>
 
         {/* No-account prompt */}
