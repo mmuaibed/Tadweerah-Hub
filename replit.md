@@ -1,5 +1,21 @@
 # Overview
 
+## Latest Changes — 6 UX/Ops Improvements
+
+**Status:** Active development.
+
+**What changed in this session:**
+1. **i18n — Transport messaging**: Removed all "فريق تدويرة" references from `deal.transport.smart.*` keys. Now uses "تم تسجيل طلب النقل — سيتم التنسيق قريبًا" phrasing. Updated `skip_confirm_desc` to remove "Tadweerah team" references.
+2. **Confirm receipt button color**: Changed from red/destructive to **green** (`bg-green-600 hover:bg-green-700`). Also removed `destructive={true}` from the confirm dialog for receipt. File: `deal-panel.tsx`.
+3. **Action ownership labels**: Simplified i18n labels — `deal.role.your_turn` → "مطلوب منك", `deal.role.not_your_turn` → "بانتظار الطرف الآخر". Added new `deal.role.processing` → "قيد المعالجة". File: `i18n/index.tsx`.
+4. **DB schema**: Added `ops_assigned_to text` column to `transport_requests` table (`lib/db/src/schema/transport-requests.ts`). Migration applied via `drizzle-kit push`.
+5. **Auto-assignment**: When a transport request is created with `transport_mode = "platform"`, `ops_assigned_to` is automatically set to `"platform-ops"`. File: `api-server/routes/transport-requests.ts`.
+6. **Admin ops queue**: Added `GET /api/admin/transport-requests/pending` endpoint (protected by `X-Admin-Key`). Returns all platform-ops assigned pending TRs joined with company name. Added "طلبات النقل" tab to admin page UI with card-based list view. Files: `api-server/routes/admin.ts`, `pages/admin.tsx`.
+
+---
+
+# Overview (original)
+
 Tadweerah (تدويرة) is a Saudi B2B MVP platform designed to connect waste producers, recycling buyers, and licensed transporters. Its core purpose is to streamline the recycling process by providing a centralized marketplace for waste listings, offers, and deal management within the Saudi Arabian market. Key capabilities include user authentication, company onboarding (with MWAN-aligned multi-role classification), waste listing management, a buyer marketplace, an offer/bidding system, deal lifecycle management, and transport request orchestration aligned with MWAN eManifest requirements.
 
 ## Latest Changes — Step-by-Step Onboarding Flow

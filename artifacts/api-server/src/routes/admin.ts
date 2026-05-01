@@ -8,7 +8,7 @@
  * GET    /admin/audit-log?entityType=&entityId=&action=&limit=100&offset=0
  */
 import { Router, type Request, type Response, type NextFunction } from "express";
-import { and, desc, eq, ilike, isNull, or, sql } from "drizzle-orm";
+import { and, desc, eq, ilike, isNotNull, isNull, or, sql } from "drizzle-orm";
 import {
   db,
   companiesTable,
@@ -559,6 +559,56 @@ router.get("/admin/deals", requireAdminKey, async (req, res) => {
   });
 
   res.json(result);
+});
+
+// ── GET /admin/transport-requests/pending ─────────────────────────────────────
+// Returns platform-managed transport requests (ops_assigned_to = "platform-ops")
+// that are still pending (no transporter assigned, status = pending).
+// Query params: limit (default 50), offset (default 0)
+
+router.get("/admin/transport-requests/pending", requireAdminKey, async (req, res) => {
+  const limit  = Math.min(Number(req.query.limit)  || 50, 200);
+  const offset = Number(req.query.offset) || 0;
+
+  const rows = await db
+    .select({
+      id:                    transportRequestsTable.id,
+      manifest_ref:          transportRequestsTable.manifest_ref,
+      status:                transportRequestsTable.status,
+      transport_mode:        transportRequestsTable.transport_mode,
+      ops_assigned_to:       transportRequestsTable.ops_assigned_to,
+      pickup_city:           transportRequestsTable.pickup_city,
+      delivery_city:         transportRequestsTable.delivery_city,
+      waste_description:     transportRequestsTable.waste_description,
+      planned_pickup_at:     transportRequestsTable.planned_pickup_at,
+      notes:                 transportRequestsTable.notes,
+      created_at:            transportRequestsTable.created_at,
+      deal_id:               transportRequestsTable.deal_id,
+      created_by_company_id: transportRequestsTable.created_by_company_id,
+      company_name:          companiesTable.name,
+    })
+    .from(transportRequestsTable)
+    .leftJoin(companiesTable, eq(transportRequestsTable.created_by_company_id, companiesTable.id))
+    .where(
+      and(
+        eq(transportRequestsTable.ops_assigned_to, "platform-ops"),
+        eq(transportRequestsTable.status, "pending"),
+      ),
+    )
+    .orderBy(desc(transportRequestsTable.created_at))
+    .limit(limit)
+    .offset(offset);
+
+  res.json({
+    data: rows.map((r) => ({
+      ...r,
+      planned_pickup_at: r.planned_pickup_at?.toISOString() ?? null,
+      created_at: r.created_at.toISOString(),
+    })),
+    limit,
+    offset,
+    count: rows.length,
+  });
 });
 
 export default router;

@@ -8,6 +8,8 @@ import {
   LogOut,
   Building2,
   FileText,
+  Truck,
+  MapPin,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,6 +36,22 @@ interface AdminCompany {
   license_status: string | null;
   commercial_registration: string | null;
   created_at: string;
+}
+
+interface PendingTransportRequest {
+  id: string;
+  manifest_ref: string | null;
+  status: string;
+  transport_mode: string;
+  ops_assigned_to: string | null;
+  pickup_city: string | null;
+  delivery_city: string | null;
+  waste_description: string | null;
+  planned_pickup_at: string | null;
+  notes: string | null;
+  created_at: string;
+  deal_id: string;
+  company_name: string | null;
 }
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
@@ -66,7 +84,7 @@ export function AdminPage() {
   const dir = lang === "ar" ? "rtl" : "ltr";
 
   const [adminKey, setAdminKey] = useState(() => sessionStorage.getItem("tdw_admin_key") ?? "");
-  const [tab, setTab] = useState<"deals" | "companies">("companies");
+  const [tab, setTab] = useState<"deals" | "companies" | "transport">("companies");
 
   /* Deals state */
   const [deals, setDeals] = useState<AdminDeal[] | null>(null);
@@ -81,6 +99,11 @@ export function AdminPage() {
   const [licenseFilter, setLicenseFilter] = useState("");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [pendingStatus, setPendingStatus] = useState<Record<string, string>>({});
+
+  /* Transport requests state */
+  const [transportReqs, setTransportReqs] = useState<PendingTransportRequest[] | null>(null);
+  const [transportLoading, setTransportLoading] = useState(false);
+  const [transportError, setTransportError] = useState<string | null>(null);
 
   function logout() {
     sessionStorage.removeItem("tdw_admin_key");
@@ -147,6 +170,22 @@ export function AdminPage() {
       setCompaniesError(e instanceof Error ? e.message : t("admin.error.generic"));
     } finally {
       setCompaniesLoading(false);
+    }
+  }
+
+  async function fetchPendingTransport() {
+    setTransportLoading(true);
+    setTransportError(null);
+    try {
+      const res = await callAdmin("/transport-requests/pending");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json() as { data: PendingTransportRequest[] };
+      sessionStorage.setItem("tdw_admin_key", adminKey.trim());
+      setTransportReqs(json.data);
+    } catch (e) {
+      setTransportError(e instanceof Error ? e.message : t("admin.error.generic"));
+    } finally {
+      setTransportLoading(false);
     }
   }
 
@@ -223,7 +262,7 @@ export function AdminPage() {
 
         {/* Tabs */}
         <div className="flex gap-1 border-b border-border">
-          {(["companies", "deals"] as const).map((t2) => (
+          {(["companies", "deals", "transport"] as const).map((t2) => (
             <button
               key={t2}
               onClick={() => setTab(t2)}
@@ -235,7 +274,9 @@ export function AdminPage() {
             >
               {t2 === "companies"
                 ? <><Building2 className="h-4 w-4" />{t("admin.tab.companies")}</>
-                : <><FileText className="h-4 w-4" />{t("admin.tab.deals")}</>
+                : t2 === "deals"
+                  ? <><FileText className="h-4 w-4" />{t("admin.tab.deals")}</>
+                  : <><Truck className="h-4 w-4" />{lang === "ar" ? "طلبات النقل" : "Transport Requests"}</>
               }
             </button>
           ))}
@@ -469,6 +510,100 @@ export function AdminPage() {
                         ))}
                       </tbody>
                     </table>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Transport Requests Tab ─────────────────────────────────────────── */}
+        {tab === "transport" && (
+          <div className="space-y-4">
+            <div className="rounded-xl border border-border bg-white p-4 flex flex-wrap gap-3 items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-foreground">
+                  {lang === "ar" ? "طلبات النقل المعلقة (platform-ops)" : "Pending Platform Transport Requests"}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {lang === "ar"
+                    ? "الطلبات التي اختار فيها المنتج 'رتّب النقل لي' وتحتاج تنسيقًا"
+                    : "Requests where the producer chose 'Arrange Transport for Me' and need coordination"}
+                </p>
+              </div>
+              <Button onClick={() => void fetchPendingTransport()} disabled={transportLoading}>
+                {transportLoading
+                  ? <><Loader2 className="h-4 w-4 me-2 animate-spin" />{t("admin.loading")}</>
+                  : <><RefreshCw className="h-4 w-4 me-2" />{lang === "ar" ? "تحميل الطلبات" : "Load Requests"}</>
+                }
+              </Button>
+            </div>
+
+            {transportError && (
+              <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                <AlertCircle className="h-4 w-4 shrink-0" />{transportError}
+              </div>
+            )}
+
+            {transportReqs !== null && (
+              <div className="rounded-xl border border-border bg-white overflow-hidden">
+                <div className="px-4 py-3 border-b border-border">
+                  <p className="text-sm font-semibold text-foreground">
+                    {transportReqs.length > 0
+                      ? (lang === "ar" ? `${transportReqs.length} طلب معلق` : `${transportReqs.length} pending requests`)
+                      : (lang === "ar" ? "لا توجد طلبات معلقة" : "No pending requests")}
+                  </p>
+                </div>
+                {transportReqs.length === 0 ? (
+                  <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+                    {lang === "ar" ? "لا توجد طلبات نقل معلقة حاليًا." : "No pending transport requests at this time."}
+                  </div>
+                ) : (
+                  <div className="divide-y divide-border">
+                    {transportReqs.map((tr) => (
+                      <div key={tr.id} className="px-4 py-4 flex flex-col gap-2 hover:bg-muted/10 transition-colors">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {tr.manifest_ref && (
+                              <span className="font-mono text-xs font-bold text-primary" dir="ltr">{tr.manifest_ref}</span>
+                            )}
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold rounded-full bg-amber-100 text-amber-800 px-2 py-0.5">
+                              <Truck className="h-3 w-3" />
+                              {lang === "ar" ? "معلق" : "Pending"}
+                            </span>
+                          </div>
+                          <span className="text-xs text-muted-foreground shrink-0">{formatDate(tr.created_at)}</span>
+                        </div>
+
+                        {tr.company_name && (
+                          <p className="text-sm font-medium text-foreground">{tr.company_name}</p>
+                        )}
+
+                        {(tr.pickup_city || tr.delivery_city) && (
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <MapPin className="h-3 w-3 shrink-0" />
+                            <span dir="rtl">
+                              {tr.pickup_city ?? "—"} → {tr.delivery_city ?? "—"}
+                            </span>
+                          </div>
+                        )}
+
+                        {tr.waste_description && (
+                          <p className="text-xs text-muted-foreground line-clamp-2">{tr.waste_description}</p>
+                        )}
+
+                        {tr.planned_pickup_at && (
+                          <p className="text-xs text-muted-foreground">
+                            {lang === "ar" ? "موعد الاستلام المخطط: " : "Planned pickup: "}
+                            {formatDate(tr.planned_pickup_at)}
+                          </p>
+                        )}
+
+                        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/60 mt-0.5">
+                          <span dir="ltr" className="font-mono">deal: {tr.deal_id.slice(0, 8)}…</span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>

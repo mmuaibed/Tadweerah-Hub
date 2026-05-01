@@ -170,6 +170,7 @@ router.post(
         manifest_ref: manifestRef,
         pickup_facility_name: pickupFacilityName,
         delivery_facility_name: deliveryFacilityName,
+        ops_assigned_to: transportMode === "platform" ? "platform-ops" : null,
       })
       .returning();
 

@@ -1488,7 +1488,7 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
           confirmLabel={activeDialog.label}
           onConfirm={handleConfirmed}
           isPending={loading}
-          destructive={pendingAction === "confirm-receipt"}
+          destructive={false}
         >
           {pendingAction === "confirm-receipt" && (
             <div className="rounded-lg border border-border bg-muted/30 px-4 py-3 text-sm space-y-1.5 my-2">
@@ -1933,7 +1933,11 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
 
               {/* Buyer + dispatched: receipt */}
               {role === "buyer" && deal.status === "dispatched" && (
-                <Button className="w-full h-11 text-base font-bold" onClick={() => setPendingAction("confirm-receipt")} disabled={loading}>
+                <Button
+                  className="w-full h-11 text-base font-bold bg-green-600 hover:bg-green-700 text-white border-0"
+                  onClick={() => setPendingAction("confirm-receipt")}
+                  disabled={loading}
+                >
                   {loading && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
                   {t("deal.action.confirm_receipt")}
                 </Button>

@@ -116,6 +116,13 @@ export const transportRequestsTable = pgTable("transport_requests", {
 
   notes: text("notes"),
 
+  /**
+   * Internal ops assignment — set automatically when a platform transport
+   * request is created via Smart-Assist. Value "platform-ops" marks it for
+   * the operations queue; can later hold a specific ops user ID.
+   */
+  ops_assigned_to: text("ops_assigned_to"),
+
   planned_pickup_at: timestamp("planned_pickup_at", { withTimezone: true }),
   actual_pickup_at:  timestamp("actual_pickup_at",  { withTimezone: true }),
   delivered_at:      timestamp("delivered_at",       { withTimezone: true }),
