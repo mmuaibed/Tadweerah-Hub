@@ -512,7 +512,7 @@ export function OnboardingPage() {
                     <button type="button" className="text-xs underline" onClick={() => window.location.reload()}>{t("common.retry")}</button>
                   </div>
                 ) : (
-                  <div className="grid gap-2 sm:grid-cols-2">
+                  <div className="grid gap-2 sm:grid-cols-3">
                     {actions.map(action => {
                       const selected = selectedActionIds.has(action.id);
                       const label = lang === "ar" ? action.name_ar : action.name_en;
