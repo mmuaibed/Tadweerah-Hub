@@ -71,3 +71,6 @@ channel = "stable-25_05"
 
 [userenv.development]
 ADMIN_API_KEY = "tdw-admin-dev"
+
+[userenv.shared]
+TRANSPORT_REQUEST_EMAIL = "info@tadweerah.com"

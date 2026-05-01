@@ -11,6 +11,7 @@ import {
 } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requireCompany, type AuthedCompanyRequest } from "../middlewares/requireCompany";
+import { sendTransportRequestNotification } from "../lib/email";
 
 const router: IRouter = Router();
 
@@ -175,6 +176,56 @@ router.post(
       .returning();
 
     res.status(201).json(serializeTR(created));
+
+    // ── Fire-and-forget ops email notification (platform mode only) ──────────
+    // Runs after response is sent. Any failure is logged but never affects the TR.
+    if (transportMode === "platform") {
+      void (async () => {
+        try {
+          const [listing, producerCo, buyerCo] = await Promise.all([
+            db
+              .select({
+                material: wasteListingsTable.material,
+                quantity: wasteListingsTable.quantity,
+                city: wasteListingsTable.city,
+              })
+              .from(wasteListingsTable)
+              .where(eq(wasteListingsTable.id, deal.listing_id))
+              .limit(1)
+              .then((rows) => rows[0] ?? null),
+            db
+              .select({ name: companiesTable.name, contactPhone: companiesTable.contactPhone })
+              .from(companiesTable)
+              .where(eq(companiesTable.id, deal.producer_company_id))
+              .limit(1)
+              .then((rows) => rows[0] ?? null),
+            db
+              .select({ name: companiesTable.name, contactPhone: companiesTable.contactPhone })
+              .from(companiesTable)
+              .where(eq(companiesTable.id, deal.buyer_company_id))
+              .limit(1)
+              .then((rows) => rows[0] ?? null),
+          ]);
+
+          await sendTransportRequestNotification({
+            dealId: created.deal_id,
+            manifestRef: created.manifest_ref ?? null,
+            pickupCity: created.pickup_city ?? null,
+            deliveryCity: created.delivery_city ?? null,
+            wasteDescription: created.waste_description ?? null,
+            quantity: listing?.quantity ?? null,
+            material: listing?.material ?? null,
+            requestedAt: created.created_at.toISOString(),
+            producerName: producerCo?.name ?? "—",
+            producerPhone: producerCo?.contactPhone ?? "—",
+            buyerName: buyerCo?.name ?? "—",
+            buyerPhone: buyerCo?.contactPhone ?? "—",
+          });
+        } catch (err) {
+          console.error("[transport-request] ops email dispatch error for deal:", created.deal_id, err);
+        }
+      })();
+    }
   },
 );
 

@@ -226,6 +226,111 @@ export async function sendSupportNotification(p: SupportNotificationParams): Pro
   }
 }
 
+// ─── Transport Request Ops Notification ───────────────────────────────────────
+
+interface TransportRequestNotificationParams {
+  dealId: string;
+  manifestRef: string | null;
+  pickupCity: string | null;
+  deliveryCity: string | null;
+  wasteDescription: string | null;
+  quantity: string | null;
+  material: string | null;
+  requestedAt: string;
+  producerName: string;
+  producerPhone: string;
+  buyerName: string;
+  buyerPhone: string;
+}
+
+function buildTransportRequestHtml(p: TransportRequestNotificationParams): string {
+  const dealLink = `${BASE_URL}/dashboard`;
+  const rows: [string, string][] = [
+    ["رقم الصفقة / Deal ID", p.dealId],
+    ...(p.manifestRef ? [["رقم البيان / Manifest Ref", p.manifestRef] as [string, string]] : []),
+    ["المادة / Material", p.material ?? "—"],
+    ["الكمية / Quantity", p.quantity ? `${p.quantity} طن` : "—"],
+    ["مدينة الاستلام / Pickup City", p.pickupCity ?? "—"],
+    ["مدينة التسليم / Delivery City", p.deliveryCity ?? "—"],
+    ["المادة — تفاصيل / Waste Description", p.wasteDescription ?? "—"],
+    ["البائع / Seller", p.producerName],
+    ["جوال البائع / Seller Phone", p.producerPhone],
+    ["المشتري / Buyer", p.buyerName],
+    ["جوال المشتري / Buyer Phone", p.buyerPhone],
+    ["وقت الطلب / Requested At", p.requestedAt],
+  ];
+
+  const tableRows = rows
+    .map(([label, value]) => `
+      <tr>
+        <td style="padding:8px 12px;font-size:13px;color:#64748b;border-bottom:1px solid #f1f5f9;white-space:nowrap;min-width:160px;">${label}</td>
+        <td style="padding:8px 12px;font-size:13px;color:#1e293b;font-weight:600;border-bottom:1px solid #f1f5f9;">${value}</td>
+      </tr>`)
+    .join("");
+
+  return `<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<title>طلب نقل جديد</title></head>
+<body style="margin:0;padding:0;background:#f4f7fb;font-family:'Tajawal',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f7fb;padding:32px 0;">
+  <tr><td align="center">
+    <table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08);">
+      <tr><td style="background:#1d4ed8;padding:20px 32px;">
+        <p style="margin:0;color:#fff;font-size:20px;font-weight:700;">تدويرة · Tadweerah</p>
+        <p style="margin:4px 0 0;color:#bfdbfe;font-size:13px;">🚛 طلب نقل جديد يحتاج تنسيق</p>
+      </td></tr>
+      <tr><td style="padding:28px 32px 16px;">
+        <p style="margin:0 0 4px;font-size:17px;font-weight:700;color:#1e293b;">طلب نقل جديد من منتج</p>
+        <p style="margin:0 0 20px;font-size:14px;color:#64748b;">اختار المنتج خدمة "رتّب النقل لي" — يرجى التنسيق مع ناقل مناسب والتواصل مع الطرفين.</p>
+        <p style="margin:0 0 8px;font-size:14px;color:#475569;direction:ltr;text-align:left;">A new platform transport request requires coordination. Please arrange a carrier and follow up with both parties.</p>
+      </td></tr>
+      <tr><td style="padding:0 32px 24px;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;">
+          ${tableRows}
+        </table>
+      </td></tr>
+      <tr><td style="padding:0 32px 28px;">
+        <a href="${dealLink}" style="display:inline-block;background:#1d4ed8;color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600;">
+          فتح لوحة تحكم تدويرة &rarr;
+        </a>
+      </td></tr>
+      <tr><td style="background:#f8fafc;padding:16px 32px;border-top:1px solid #e2e8f0;">
+        <p style="margin:0;font-size:11px;color:#94a3b8;text-align:center;">
+          Tadweerah Ops — Auto-generated transport notification · هذا البريد أُرسل تلقائياً
+        </p>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body></html>`;
+}
+
+export async function sendTransportRequestNotification(
+  p: TransportRequestNotificationParams,
+): Promise<void> {
+  const opsEmail = process.env.TRANSPORT_REQUEST_EMAIL;
+  if (!resend) {
+    console.info("[email] RESEND_API_KEY not set — skipping transport request notification for deal:", p.dealId);
+    return;
+  }
+  if (!opsEmail) {
+    console.info("[email] TRANSPORT_REQUEST_EMAIL not set — skipping transport request notification for deal:", p.dealId);
+    return;
+  }
+  try {
+    await resend.emails.send({
+      from: FROM,
+      to: opsEmail,
+      subject: `[TADWEERAH][TRANSPORT][Deal #${p.dealId}] طلب نقل جديد`,
+      html: buildTransportRequestHtml(p),
+    });
+    console.info("[email] transport request notification sent for deal:", p.dealId);
+  } catch (err) {
+    console.error("[email] transport request notification FAILED for deal:", p.dealId, err);
+  }
+}
+
 export async function sendDealCompletionEmail(p: DealCompletionParams): Promise<void> {
   if (!resend) {
     console.info("[email] RESEND_API_KEY not set — skipping deal completion email to:", p.to);
