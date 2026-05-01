@@ -2,7 +2,6 @@ import {
   Recycle,
   Package,
   MapPin,
-  Calendar,
   Tag,
   Building2,
   ChevronLeft,
@@ -55,11 +54,6 @@ export function ListingCard({
   const materialCategoryName = lang === "ar" ? materialCategoryNameAr : materialCategoryNameEn;
   const offersCount = (listing as WasteListing & { offer_count?: number }).offer_count ?? 0;
 
-  const dateStr = new Date(listing.created_at).toLocaleDateString(
-    lang === "ar" ? "ar-SA" : "en-US",
-    { year: "numeric", month: "short", day: "numeric" },
-  );
-
   const inner = (
     <Card
       className={`border-card-border bg-card overflow-hidden transition-shadow ${
@@ -81,7 +75,7 @@ export function ListingCard({
         )}
       </div>
 
-      <CardContent className="flex flex-col gap-4 p-5">
+      <CardContent className="flex flex-col gap-3 p-4">
         {/* Header row */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2">
@@ -190,10 +184,6 @@ export function ListingCard({
               <span>{listing.company_name ?? "—"}</span>
             </div>
           )}
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 shrink-0" />
-            <span>{dateStr}</span>
-          </div>
           {isOpen && (
             <div className="flex items-center gap-2">
               <MessageSquare className="h-4 w-4 shrink-0" />
@@ -205,12 +195,6 @@ export function ListingCard({
             </div>
           )}
         </div>
-
-        {listing.description && (
-          <p className="line-clamp-3 border-t border-border pt-3 text-sm text-muted-foreground">
-            {listing.description}
-          </p>
-        )}
 
         {/* Required services badges */}
         {requiredServices.length > 0 && (
