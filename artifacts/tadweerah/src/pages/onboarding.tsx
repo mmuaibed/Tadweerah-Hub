@@ -775,12 +775,12 @@ export function OnboardingPage() {
                   />
                   <span className="text-sm text-foreground leading-relaxed">
                     {t("onboarding.terms.label")}{" "}
-                    <Link href="/terms" target="_blank"
+                    <a href="/terms" target="_blank" rel="noopener noreferrer"
                       className="text-primary underline underline-offset-2 hover:text-primary/80"
                       onClick={e => e.stopPropagation()}
                     >
                       {t("onboarding.terms.link")}
-                    </Link>
+                    </a>
                   </span>
                 </label>
               </div>

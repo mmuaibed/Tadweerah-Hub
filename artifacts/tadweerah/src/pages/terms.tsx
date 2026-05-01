@@ -1,9 +1,19 @@
 import { AppLayout } from "@/components/app-layout";
 import { useT } from "@/i18n";
 import { ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export function TermsPage() {
   const { t } = useT();
+
+  const handleReturn = () => {
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      window.close();
+    }
+  };
+
   return (
     <AppLayout
       width="wide"
@@ -11,14 +21,6 @@ export function TermsPage() {
       subtitle={t("terms.subtitle")}
     >
       <div className="mx-auto max-w-[1000px] space-y-4 text-foreground">
-        <button
-          type="button"
-          onClick={() => window.history.back()}
-          className="mb-2 flex items-center gap-1 text-sm text-primary hover:text-primary/80 transition-colors"
-        >
-          <ChevronRight className="h-4 w-4 rtl:rotate-0 ltr:rotate-180" />
-          {t("common.back")}
-        </button>
         <section className="space-y-1.5">
           <h2 className="text-base font-semibold text-foreground">{t("terms.section1.title")}</h2>
           <p className="text-muted-foreground" style={{ lineHeight: 1.75 }}>{t("terms.section1.body")}</p>
@@ -51,6 +53,19 @@ export function TermsPage() {
               {t("terms.support")}
             </a>
           </p>
+        </div>
+
+        {/* Return button — at bottom, prominent */}
+        <div className="pt-2">
+          <Button
+            type="button"
+            variant="outline"
+            className="gap-2"
+            onClick={handleReturn}
+          >
+            <ChevronRight className="h-4 w-4" />
+            {t("common.back")}
+          </Button>
         </div>
       </div>
     </AppLayout>
