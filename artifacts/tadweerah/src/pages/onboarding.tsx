@@ -523,12 +523,15 @@ export function OnboardingPage() {
                           <button
                             type="button"
                             onClick={() => toggleAction(action.id, action.key)}
-                            className="flex w-full items-center gap-2 px-3 py-2 text-start"
+                            className="flex w-full items-start gap-2 px-3 py-2.5 text-start"
                           >
-                            <span className={`shrink-0 ${selected ? "text-primary" : "text-muted-foreground"}`}>
+                            <span className={`mt-0.5 shrink-0 ${selected ? "text-primary" : "text-muted-foreground"}`}>
                               {selected ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
                             </span>
-                            <span className={`text-sm font-medium leading-tight ${selected ? "text-primary" : "text-foreground"}`}>{label}</span>
+                            <div>
+                              <div className={`text-sm font-medium leading-tight ${selected ? "text-primary" : "text-foreground"}`}>{label}</div>
+                              {desc && <div className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-muted-foreground">{desc}</div>}
+                            </div>
                           </button>
                           {isOther && selected && (
                             <div className="border-t border-border px-3 pb-3 pt-2">
@@ -561,12 +564,15 @@ export function OnboardingPage() {
                         key={role}
                         type="button"
                         onClick={() => toggleRole(role)}
-                        className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-start transition-colors ${selected ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "border-border bg-card hover:border-primary/40"}`}
+                        className={`flex items-start gap-2 rounded-lg border px-3 py-2.5 text-start transition-colors ${selected ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "border-border bg-card hover:border-primary/40"}`}
                       >
-                        <span className={`shrink-0 ${selected ? "text-primary" : "text-muted-foreground"}`}>
+                        <span className={`mt-0.5 shrink-0 ${selected ? "text-primary" : "text-muted-foreground"}`}>
                           {selected ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
                         </span>
-                        <span className={`text-sm font-medium leading-tight ${selected ? "text-primary" : "text-foreground"}`}>{t(`role.${role}`)}</span>
+                        <div>
+                          <div className={`text-sm font-medium leading-tight ${selected ? "text-primary" : "text-foreground"}`}>{t(`role.${role}`)}</div>
+                          <div className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-muted-foreground">{t(`onboarding.form.roles.${role}.desc`)}</div>
+                        </div>
                       </button>
                     );
                   })}
