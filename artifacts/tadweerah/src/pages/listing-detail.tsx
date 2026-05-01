@@ -1381,18 +1381,18 @@ export function ListingDetailPage() {
       )}
 
       {/* ── 3-column horizontal layout ── */}
-      <div className="grid grid-cols-[2fr_1.1fr_2fr] gap-4 h-[calc(100dvh-8rem)] min-h-0">
+      <div className="grid grid-cols-[1.3fr_1.2fr_2.5fr] gap-4 h-[calc(100dvh-8rem)] min-h-0">
 
         {/* ── LEFT: image + title + description + what's next ── */}
         <div className="flex flex-col gap-3 min-h-0 overflow-y-auto">
           {/* Image */}
           {imageUrl ? (
-            <div className="w-full overflow-hidden rounded-xl border border-border shrink-0">
-              <img src={imageUrl} alt={materialLabel} className="w-full object-cover" style={{ maxHeight: "38%" }} />
+            <div className="w-full h-[240px] overflow-hidden rounded-xl border border-border shrink-0">
+              <img src={imageUrl} alt={materialLabel} className="h-full w-full object-cover" />
             </div>
           ) : (
-            <div className="w-full rounded-xl border border-border bg-muted/30 flex items-center justify-center shrink-0" style={{ height: "38%" }}>
-              <Recycle className="h-12 w-12 text-muted-foreground/30" />
+            <div className="w-full h-[240px] rounded-xl border border-border bg-muted/30 flex items-center justify-center shrink-0">
+              <Recycle className="h-10 w-10 text-muted-foreground/30" />
             </div>
           )}
 
