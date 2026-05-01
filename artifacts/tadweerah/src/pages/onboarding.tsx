@@ -200,6 +200,9 @@ export function OnboardingPage() {
     if (!phoneVal) return t("onboarding.form.phone.required");
     const phoneClean = phoneVal.replace(/[\s\-().+]/g, "");
     if (!/^\d{7,15}$/.test(phoneClean)) return t("onboarding.form.phone.invalid");
+    if (!commercialRegistration.trim()) return t("onboarding.form.cr.required");
+    if (companyCategoryId === "__other__" && !companyCategoryOther.trim())
+      return lang === "ar" ? "يرجى كتابة تصنيف الشركة" : "Please describe your company category";
     return null;
   };
 
@@ -380,96 +383,115 @@ export function OnboardingPage() {
         >
           {/* ─── Sub-step 1: Basic Info ─────────────────────────── */}
           {companySubStep === 1 && (
-            <Card className="border-card-border bg-card">
-              <CardContent className="space-y-5 p-6">
-                <div className="space-y-2">
-                  <Label htmlFor="ob-name">{t("onboarding.form.name")} *</Label>
-                  <Input
-                    id="ob-name"
-                    name="company-name"
-                    autoComplete="off"
-                    autoCorrect="off"
-                    autoCapitalize="off"
-                    spellCheck={false}
-                    minLength={2}
-                    maxLength={120}
-                    value={name}
-                    onChange={e => setName(e.target.value)}
-                  />
-                </div>
-                <div className="grid gap-5 sm:grid-cols-2">
+            <div className="space-y-4">
+              {/* B2B notice */}
+              <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-medium text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+                <span className="shrink-0">⚠</span>
+                {t("onboarding.form.b2b_notice")}
+              </div>
+
+              <Card className="border-card-border bg-card">
+                <CardContent className="space-y-5 p-6">
+                  {/* Company name */}
                   <div className="space-y-2">
-                    <Label htmlFor="ob-city">{t("onboarding.form.city")} *</Label>
+                    <Label htmlFor="ob-name">{t("onboarding.form.name")} *</Label>
                     <Input
-                      id="ob-city"
-                      name="company-city"
+                      id="ob-name"
+                      name="company-name"
                       autoComplete="off"
+                      autoCorrect="off"
+                      autoCapitalize="off"
+                      spellCheck={false}
                       minLength={2}
-                      maxLength={80}
-                      value={city}
-                      onChange={e => setCity(e.target.value)}
+                      maxLength={120}
+                      value={name}
+                      onChange={e => setName(e.target.value)}
                     />
                   </div>
+
+                  {/* City + Mobile */}
+                  <div className="grid gap-5 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="ob-city">{t("onboarding.form.city")} *</Label>
+                      <Input
+                        id="ob-city"
+                        name="company-city"
+                        autoComplete="off"
+                        minLength={2}
+                        maxLength={80}
+                        value={city}
+                        onChange={e => setCity(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="ob-phone">{t("onboarding.form.phone")} *</Label>
+                      <Input
+                        id="ob-phone"
+                        name="company-phone"
+                        type="tel"
+                        autoComplete="off"
+                        inputMode="tel"
+                        placeholder="05xxxxxxxx"
+                        dir="ltr"
+                        minLength={9}
+                        maxLength={15}
+                        value={contactPhone}
+                        onChange={e => setPhone(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Commercial Registration — REQUIRED */}
                   <div className="space-y-2">
-                    <Label htmlFor="ob-phone">{t("onboarding.form.phone")} *</Label>
+                    <Label htmlFor="ob-cr">{t("onboarding.form.cr")} *</Label>
                     <Input
-                      id="ob-phone"
-                      name="company-phone"
-                      type="tel"
+                      id="ob-cr"
+                      name="company-cr"
                       autoComplete="off"
-                      minLength={6}
-                      maxLength={20}
-                      value={contactPhone}
-                      onChange={e => setPhone(e.target.value)}
+                      maxLength={40}
+                      value={commercialRegistration}
+                      onChange={e => setCr(e.target.value)}
                     />
+                    <p className="text-xs text-amber-700 dark:text-amber-400 font-medium">
+                      {t("onboarding.form.cr.hint")}
+                    </p>
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="ob-cr">{t("onboarding.form.cr")}</Label>
-                  <Input
-                    id="ob-cr"
-                    name="company-cr"
-                    autoComplete="off"
-                    maxLength={40}
-                    value={commercialRegistration}
-                    onChange={e => setCr(e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground">{t("onboarding.mwan.cr_hint")}</p>
-                </div>
-                {/* Category */}
-                <div className="space-y-2">
-                  <Label htmlFor="ob-category">{t("onboarding.form.category")}</Label>
-                  <div className="relative">
-                    <select
-                      id="ob-category"
-                      value={companyCategoryId}
-                      onChange={e => { setCompanyCategoryId(e.target.value); setCompanyCategoryOther(""); }}
-                      className="w-full h-9 appearance-none rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                    >
-                      <option value="">{t("onboarding.form.category.placeholder")}</option>
-                      {categories.map(cat => (
-                        <option key={cat.id} value={cat.id}>{lang === "ar" ? cat.name_ar : cat.name_en}</option>
-                      ))}
-                      <option value="__other__">{lang === "ar" ? "أخرى" : "Other"}</option>
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute start-3 top-2.5 h-4 w-4 text-muted-foreground" />
+
+                  {/* Category */}
+                  <div className="space-y-2">
+                    <Label htmlFor="ob-category">{t("onboarding.form.category")}</Label>
+                    <div className="relative">
+                      <select
+                        id="ob-category"
+                        value={companyCategoryId}
+                        onChange={e => { setCompanyCategoryId(e.target.value); setCompanyCategoryOther(""); }}
+                        className="w-full h-9 appearance-none rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                      >
+                        <option value="">{t("onboarding.form.category.placeholder")}</option>
+                        {categories.map(cat => (
+                          <option key={cat.id} value={cat.id}>{lang === "ar" ? cat.name_ar : cat.name_en}</option>
+                        ))}
+                        <option value="__other__">{lang === "ar" ? "أخرى" : "Other"}</option>
+                      </select>
+                      <ChevronDown className="pointer-events-none absolute start-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                    </div>
+                    {/* Free-text when "Other" is selected — required */}
+                    {companyCategoryId === "__other__" && (
+                      <Input
+                        id="ob-category-other"
+                        name="company-category-other"
+                        autoComplete="off"
+                        maxLength={100}
+                        placeholder={lang === "ar" ? "اكتب تصنيف شركتك... *" : "Describe your company category... *"}
+                        value={companyCategoryOther}
+                        onChange={e => setCompanyCategoryOther(e.target.value)}
+                        className="mt-2 border-primary/50 focus:ring-primary"
+                      />
+                    )}
                   </div>
-                  {/* Show free-text field when "Other" is selected */}
-                  {companyCategoryId === "__other__" && (
-                    <Input
-                      id="ob-category-other"
-                      name="company-category-other"
-                      autoComplete="off"
-                      maxLength={100}
-                      placeholder={lang === "ar" ? "اكتب تصنيف شركتك..." : "Describe your company category..."}
-                      value={companyCategoryOther}
-                      onChange={e => setCompanyCategoryOther(e.target.value)}
-                      className="mt-2"
-                    />
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
           )}
 
           {/* ─── Sub-step 2: Activities + Roles ────────────────── */}
