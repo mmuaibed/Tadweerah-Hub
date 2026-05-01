@@ -1412,8 +1412,54 @@ export function ListingDetailPage() {
     </span>
   );
 
+  const isDealMode = !!(activeDeal && (role === "producer" || role === "buyer"));
+
+  const listingInfoPanel = (
+    <div className="space-y-3">
+      {imageUrl ? (
+        <div className="w-full h-[180px] overflow-hidden rounded-xl border border-border">
+          <img src={imageUrl} alt={materialLabel} className="h-full w-full object-cover" />
+        </div>
+      ) : (
+        <div className="w-full h-[120px] rounded-xl border border-border bg-muted/30 flex items-center justify-center">
+          <Recycle className="h-8 w-8 text-muted-foreground/30" />
+        </div>
+      )}
+      {listing.description && (
+        <p className="text-sm text-foreground/80 leading-relaxed">{listing.description}</p>
+      )}
+      <div className="rounded-xl border border-border bg-card divide-y divide-border">
+        {categoryLabel && (
+          <CompactRow icon={<Recycle className="h-3.5 w-3.5 text-secondary/70" />} label={t("listing.category")} value={categoryLabel} />
+        )}
+        <CompactRow
+          icon={<Package className="h-3.5 w-3.5" />}
+          label={t("listing.quantity")}
+          value={`${listing.quantity} ${listing.unit ? t(`unit.${listing.unit}`) : ""}`}
+        />
+        <CompactRow icon={<MapPin className="h-3.5 w-3.5" />} label={t("listing.city")} value={listing.city} />
+        {listing.price_hint != null && (
+          <CompactRow icon={<Tag className="h-3.5 w-3.5" />} label={t("listing.priceHint")} value={`${listing.price_hint} ${t("listing.sar")}`} />
+        )}
+        <CompactRow
+          icon={saleType === "auction" ? <Gavel className="h-3.5 w-3.5" /> : <ShoppingBag className="h-3.5 w-3.5" />}
+          label={t("listing.form.saleType")}
+          value={t(`listing.sale_type.${saleType}`)}
+        />
+        {listing.pricing_model && listing.pricing_model !== "fixed" && (
+          <CompactRow icon={<Scale className="h-3.5 w-3.5" />} label={t("listing.form.pricingModel")} value={t(`listing.pricing_model.${listing.pricing_model}`)} />
+        )}
+        {listing.pricing_model === "revenue_share" && listing.revenue_share_pct != null && (
+          <CompactRow icon={<Percent className="h-3.5 w-3.5" />} label={t("listing.form.revenue_share_pct")} value={`${listing.revenue_share_pct}%`} />
+        )}
+        <CompactRow icon={<Building2 className="h-3.5 w-3.5" />} label={t("listing.detail.publishedBy")} value={listing.company_name} />
+        <CompactRow icon={<Calendar className="h-3.5 w-3.5" />} label={t("listing.publishedOn")} value={dateStr} />
+      </div>
+    </div>
+  );
+
   return (
-    <AppLayout showSignOut title={materialLabel} subtitle={subtitleNode} actions={backButton} width="wide">
+    <AppLayout showSignOut title={materialLabel} subtitle={subtitleNode} actions={backButton} width={isDealMode ? "default" : "wide"}>
       {/* Dialogs */}
       <ConfirmDialog
         open={confirmOpen}
@@ -1454,7 +1500,42 @@ export function ListingDetailPage() {
         </div>
       )}
 
-      {/* ── 3-column horizontal layout ── */}
+      {/* ══ DEAL MODE: single-column execution dashboard ══ */}
+      {isDealMode ? (
+        <div className="max-w-lg mx-auto pb-8">
+          <DealPanel
+            deal={activeDeal}
+            role={role as "producer" | "buyer"}
+            unit={listing?.unit ?? ""}
+            onUpdate={(updated) => setDealOverride(updated)}
+            pricingModel={(listing as typeof listing & { pricing_model?: string }).pricing_model}
+            revenueSharePct={(listing as typeof listing & { revenue_share_pct?: number | null }).revenue_share_pct}
+            listingRef={ref}
+            listingMaterial={materialLabel}
+            listingCategory={categoryLabel ?? undefined}
+            listingQuantity={quantity}
+            myCompanyName={me?.company?.name}
+            myPhone={(me as { company?: { contactPhone?: string } } | undefined)?.company?.contactPhone}
+            listingCity={(listing as typeof listing & { city?: string }).city}
+            counterpartyCity={activeDeal.counterparty?.city}
+            listingDescription={(listing as typeof listing & { description?: string }).description}
+            listingCategoryId={listing.material_category_id ?? undefined}
+            listingSubcategoryId={(listing as typeof listing & { material_subcategory_id?: string }).material_subcategory_id ?? undefined}
+            offersPanel={role === "producer" && isOwner ? (
+              <ProducerOffersPanel
+                wasteListingId={wasteListingId}
+                listingQuantity={quantity}
+                listingIsOpen={!!isOpen}
+                pricingModel={listing.pricing_model}
+                unit={listing.unit ?? undefined}
+                onAfterAction={invalidateListing}
+                onPendingCountChange={setPendingOfferCount}
+              />
+            ) : undefined}
+            listingInfoPanel={listingInfoPanel}
+          />
+        </div>
+      ) : (
       <div className="grid grid-cols-[1.3fr_1.2fr_2.5fr] gap-4 h-[calc(100dvh-8rem)] min-h-0">
 
         {/* ── LEFT: image + title + description + what's next ── */}
@@ -1653,6 +1734,7 @@ export function ListingDetailPage() {
           )}
         </div>
       </div>
+      )}
     </AppLayout>
   );
 }

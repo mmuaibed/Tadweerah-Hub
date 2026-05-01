@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useAuth } from "@clerk/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -23,6 +23,8 @@ import {
   MapPin,
   Tag,
   Download,
+  Inbox as InboxIcon,
+  Package,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -107,6 +109,10 @@ interface DealPanelProps {
   listingCategoryId?: string;
   /** Material subcategory ID from listing — pre-selects taxonomy in TR form */
   listingSubcategoryId?: string;
+  /** ReactNode rendered inside the "العروض الواردة" modal (producer only) */
+  offersPanel?: ReactNode;
+  /** ReactNode rendered inside the "معلومات الإعلان" modal */
+  listingInfoPanel?: ReactNode;
 }
 
 type PendingAction = "confirm-payment" | "confirm-dispatch" | "confirm-receipt" | null;
@@ -1279,7 +1285,7 @@ function printDealReport(
   }
 }
 
-export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSharePct, listingRef, listingMaterial, listingQuantity, myCompanyName, listingCategory, myPhone, listingCity, counterpartyCity, listingDescription, listingCategoryId, listingSubcategoryId }: DealPanelProps) {
+export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSharePct, listingRef, listingMaterial, listingQuantity, myCompanyName, listingCategory, myPhone, listingCity, counterpartyCity, listingDescription, listingCategoryId, listingSubcategoryId, offersPanel, listingInfoPanel }: DealPanelProps) {
   const { t, lang } = useT();
   const { getToken } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -1293,6 +1299,8 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
   const [trFormOpen, setTrFormOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [timelineOpen, setTimelineOpen] = useState(false);
+  const [offersOpen, setOffersOpen] = useState(false);
+  const [listingInfoOpen, setListingInfoOpen] = useState(false);
 
   // Share cache key with MwanSummaryPanel — no extra network call
   const { data: mwanHeaderData } = useQuery<MwanSummary>({
@@ -1639,6 +1647,30 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
         </DialogContent>
       </Dialog>
 
+      {/* ── Modal: Offers Panel ── */}
+      {offersPanel && (
+        <Dialog open={offersOpen} onOpenChange={setOffersOpen}>
+          <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{lang === "ar" ? "العروض الواردة" : "Incoming Offers"}</DialogTitle>
+            </DialogHeader>
+            {offersPanel}
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* ── Modal: Listing Info ── */}
+      {listingInfoPanel && (
+        <Dialog open={listingInfoOpen} onOpenChange={setListingInfoOpen}>
+          <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{lang === "ar" ? "معلومات الإعلان" : "Listing Info"}</DialogTitle>
+            </DialogHeader>
+            {listingInfoPanel}
+          </DialogContent>
+        </Dialog>
+      )}
+
       {/* ── MAIN PANEL ── */}
       <div className="rounded-xl border border-primary/20 bg-background overflow-hidden">
 
@@ -1871,7 +1903,27 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
         </div>
 
         {/* 4. INFO BUTTONS ROW */}
-        <div className="px-4 pb-4 grid grid-cols-3 gap-2">
+        <div className={`px-4 pb-4 grid gap-2 ${(offersPanel || listingInfoPanel) ? "grid-cols-2" : "grid-cols-3"}`}>
+          {listingInfoPanel && (
+            <button
+              type="button"
+              onClick={() => setListingInfoOpen(true)}
+              className="flex flex-col items-center gap-1 rounded-lg border border-border bg-background px-2 py-2.5 text-xs font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground transition-colors"
+            >
+              <Package className="h-4 w-4 text-primary/60" />
+              <span>{lang === "ar" ? "معلومات الإعلان" : "Listing Info"}</span>
+            </button>
+          )}
+          {offersPanel && (
+            <button
+              type="button"
+              onClick={() => setOffersOpen(true)}
+              className="flex flex-col items-center gap-1 rounded-lg border border-border bg-background px-2 py-2.5 text-xs font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground transition-colors"
+            >
+              <InboxIcon className="h-4 w-4 text-primary/60" />
+              <span>{lang === "ar" ? "العروض الواردة" : "Offers"}</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setDetailsOpen(true)}
@@ -1892,7 +1944,7 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
             type="button"
             onClick={() => setTrFormOpen(true)}
             disabled={!canOpenTrModal}
-            className="flex flex-col items-center gap-1 rounded-lg border border-border bg-background px-2 py-2.5 text-xs font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className={`flex flex-col items-center gap-1 rounded-lg border border-border bg-background px-2 py-2.5 text-xs font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${(offersPanel || listingInfoPanel) ? "" : ""}`}
           >
             <Truck className="h-4 w-4 text-primary/60" />
             <span>{lang === "ar" ? "طلب النقل" : "Transport"}</span>
