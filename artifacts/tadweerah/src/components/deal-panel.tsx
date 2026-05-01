@@ -1091,6 +1091,7 @@ function printDealReport(
     listingQuantity?: number;
     myCompanyName?: string;
     myPhone?: string;
+    pricingModel?: string;
   },
 ) {
   const producerName = role === "producer"
@@ -1132,6 +1133,8 @@ function printDealReport(
   const marginStart = dir === "rtl" ? "margin-right" : "margin-left";
   const totalValue = (deal.final_amount ?? deal.estimated_amount).toLocaleString();
   const ref = dealRef(deal.id, deal.created_at);
+  const isFixed = opts.pricingModel === "fixed";
+  const sarLabel = lang === "ar" ? "ريال" : "SAR";
 
   const html = `<!DOCTYPE html>
 <html dir="${dir}" lang="${lang}">
@@ -1141,45 +1144,48 @@ function printDealReport(
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:Tajawal,Arial,sans-serif;color:#111;padding:36px;direction:${dir};font-size:13px;background:#fff}
-    .header{display:flex;align-items:center;gap:16px;margin-bottom:24px;padding-bottom:20px;border-bottom:3px solid #16a34a}
-    .logo-icon{width:48px;height:48px;background:linear-gradient(135deg,#1e40af,#16a34a);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;font-weight:700;flex-shrink:0;text-align:center;line-height:48px}
-    .logo-name{font-size:22px;font-weight:700;color:#1e40af}
-    .logo-tag{font-size:11px;color:#6b7280}
-    .ref-box{${marginStart}:auto;text-align:${dir === "rtl" ? "right" : "left"}}
+    .header{display:flex;align-items:center;gap:16px;margin-bottom:24px;padding-bottom:16px;border-bottom:3px solid #16a34a}
+    .logo-icon{width:44px;height:44px;background:linear-gradient(135deg,#1e40af,#16a34a);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;font-weight:700;flex-shrink:0;line-height:1}
+    .logo-block{display:flex;flex-direction:column;justify-content:center;gap:2px}
+    .logo-name{font-size:20px;font-weight:700;color:#1e40af;line-height:1.2}
+    .logo-tag{font-size:10px;color:#6b7280;line-height:1.3}
+    .ref-box{${marginStart}:auto;text-align:end}
     .ref-label{font-size:10px;color:#6b7280}
-    .ref-value{font-size:16px;font-weight:700;color:#1e40af;font-family:monospace;direction:ltr;display:block}
-    .doc-note{background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:10px 14px;margin-bottom:20px;font-size:11px;color:#1d4ed8}
-    .total-box{background:#f0fdf4;border:2px solid #16a34a;border-radius:10px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:12px}
-    .total-label{font-size:11px;color:#4b7a58;margin-bottom:2px}
-    .total-value{font-size:26px;font-weight:700;color:#1e40af}
+    .ref-value{font-size:15px;font-weight:700;color:#1e40af;font-family:monospace;direction:ltr;display:block;margin-top:2px}
+    .doc-note{background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:10px 14px;margin-bottom:16px;font-size:11px;color:#1d4ed8}
+    .total-box{background:#f0fdf4;border:2px solid #16a34a;border-radius:10px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .total-left{display:flex;flex-direction:column;gap:4px}
+    .total-label{font-size:11px;color:#4b7a58}
+    .total-value{font-size:24px;font-weight:700;color:#1e40af}
+    .total-sub{font-size:11px;color:#6b7280;margin-top:2px}
     .total-status{display:inline-block;background:#dcfce7;border:1px solid #86efac;color:#166534;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600}
-    table{width:100%;border-collapse:collapse;margin-bottom:20px}
-    td{padding:8px 10px;border:1px solid #e5e7eb;vertical-align:top}
+    table{width:100%;border-collapse:collapse;margin-bottom:16px}
+    td{padding:7px 10px;border:1px solid #e5e7eb;vertical-align:top}
     td:first-child{font-weight:600;background:#f9fafb;width:36%;color:#374151}
-    .phone-cell{font-family:monospace;font-size:14px;direction:ltr;color:#1e40af;font-weight:700;display:block;margin-top:2px}
-    h2{font-size:12px;font-weight:700;color:#1e40af;margin:20px 0 8px;border-bottom:2px solid #dbeafe;padding-bottom:4px;text-transform:uppercase;letter-spacing:0.05em}
+    .phone-cell{font-family:monospace;font-size:14px;direction:ltr;color:#1e40af;font-weight:700;display:block;margin-top:3px}
+    h2{font-size:11px;font-weight:700;color:#1e40af;margin:16px 0 6px;border-bottom:2px solid #dbeafe;padding-bottom:4px;text-transform:uppercase;letter-spacing:0.05em}
     .timeline-row{display:flex;gap:12px;margin-bottom:8px;align-items:flex-start}
     .tl-dot{width:10px;height:10px;border-radius:50%;background:#1e40af;margin-top:3px;flex-shrink:0}
     .tl-dot.pending{background:#d1d5db}
     .tl-label{font-size:12px;font-weight:600}
     .tl-ts{font-size:11px;color:#6b7280}
-    .footer{margin-top:32px;border-top:1px solid #e5e7eb;padding-top:14px;text-align:center;font-size:11px;color:#9ca3af}
+    .footer{margin-top:28px;border-top:1px solid #e5e7eb;padding-top:12px;text-align:center;font-size:11px;color:#9ca3af}
     .footer strong{color:#6b7280}
-    @media print{body{padding:20px}}
+    @media print{body{padding:20px}@page{margin:1cm}}
   </style>
 </head>
 <body>
 
   <div class="header">
     <div class="logo-icon">ت</div>
-    <div>
+    <div class="logo-block">
       <div class="logo-name">تدويرة</div>
       <div class="logo-tag">Tadweerah · منصة إدارة المواد القابلة للتدوير</div>
     </div>
     <div class="ref-box">
       <div class="ref-label">${lang === "ar" ? "رقم مرجع الصفقة" : "Deal Reference"}</div>
       <span class="ref-value">${ref}</span>
-      ${opts.listingRef ? `<div class="ref-label" style="margin-top:4px">${opts.listingRef}</div>` : ""}
+      ${opts.listingRef ? `<div class="ref-label" style="margin-top:3px">${opts.listingRef}</div>` : ""}
     </div>
   </div>
 
@@ -1190,9 +1196,12 @@ function printDealReport(
   </div>
 
   <div class="total-box">
-    <div>
-      <div class="total-label">${lang === "ar" ? "القيمة الإجمالية للصفقة" : "Total Deal Value"}</div>
-      <div class="total-value">${totalValue} ${lang === "ar" ? "ريال" : "SAR"}</div>
+    <div class="total-left">
+      <div class="total-label">${isFixed
+        ? (lang === "ar" ? "إجمالي الصفقة" : "Total Deal Value")
+        : (lang === "ar" ? "القيمة الإجمالية المقدّرة" : "Estimated Total Value")}</div>
+      <div class="total-value">${totalValue} ${sarLabel}</div>
+      ${!isFixed ? `<div class="total-sub">${deal.price_per_unit.toLocaleString()} ${sarLabel} / ${unit}</div>` : ""}
     </div>
     <div><span class="total-status">${statusMap[deal.status]}</span></div>
   </div>
@@ -1224,8 +1233,12 @@ function printDealReport(
     ${opts.listingCategory ? `<tr><td>${lang === "ar" ? "الفئة" : "Category"}</td><td>${opts.listingCategory}</td></tr>` : ""}
     ${opts.listingMaterial ? `<tr><td>${t("deal.print.material")}</td><td>${opts.listingMaterial}</td></tr>` : ""}
     ${opts.listingQuantity != null ? `<tr><td>${t("deal.print.quantity")}</td><td>${opts.listingQuantity.toLocaleString()} ${unit}</td></tr>` : ""}
-    <tr><td>${t("deal.print.price_per_unit")}</td><td>${deal.price_per_unit.toLocaleString()} ${lang === "ar" ? "ريال" : "SAR"} / ${unit}</td></tr>
-    <tr><td>${t("deal.print.total_value")}</td><td style="font-weight:700;color:#1e40af">${totalValue} ${lang === "ar" ? "ريال" : "SAR"}</td></tr>
+    ${isFixed
+      ? `<tr><td>${lang === "ar" ? "إجمالي الصفقة" : "Total Deal Value"}</td><td style="font-weight:700;color:#1e40af">${totalValue} ${sarLabel}</td></tr>`
+      : `<tr><td>${t("deal.print.price_per_unit")}</td><td>${deal.price_per_unit.toLocaleString()} ${sarLabel} / ${unit}</td></tr>
+    <tr><td>${lang === "ar" ? "الإجمالي المقدَّر" : "Estimated Total"}</td><td style="font-weight:700;color:#1e40af">${totalValue} ${sarLabel}</td></tr>`}
+    ${deal.actual_quantity != null ? `<tr><td>${lang === "ar" ? "الكمية الفعلية" : "Actual Quantity"}</td><td>${deal.actual_quantity.toLocaleString()} ${unit}</td></tr>` : ""}
+    ${deal.final_amount != null ? `<tr><td>${lang === "ar" ? "الإجمالي النهائي" : "Final Amount"}</td><td style="font-weight:700;color:#16a34a">${deal.final_amount.toLocaleString()} ${sarLabel}</td></tr>` : ""}
     ${deal.payment_reference ? `<tr><td>${lang === "ar" ? "رقم الدفعة" : "Payment Reference"}</td><td>${deal.payment_reference}</td></tr>` : ""}
   </table>
 
@@ -1244,7 +1257,12 @@ function printDealReport(
     &nbsp;·&nbsp; ${lang === "ar" ? "وُثِّقت عبر المنصة" : "Documented via platform"}
     &nbsp;|&nbsp; ${t("deal.print.generated_at")}: ${new Date().toLocaleString(lang === "ar" ? "ar-SA" : "en-US")}
   </div>
-  <script>window.onload=function(){window.print()}<\/script>
+  <script>
+    window.onload = function() {
+      window.print();
+      window.addEventListener('afterprint', function() { window.close(); });
+    };
+  <\/script>
 </body>
 </html>`;
 
@@ -1267,6 +1285,7 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
   const [copied, setCopied] = useState(false);
   const [copiedManifest, setCopiedManifest] = useState(false);
   const [trFormOpen, setTrFormOpen] = useState(false);
+  const [payFormOpen, setPayFormOpen] = useState(true);
 
   // Share cache key with MwanSummaryPanel — no extra network call
   const { data: mwanHeaderData } = useQuery<MwanSummary>({
@@ -1728,45 +1747,51 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
             </div>
 
             {role === "producer" && deal.status === "active" && (
-              <div className="space-y-3">
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-foreground">
-                    {t("deal.field.payment_reference")} *
-                  </label>
-                  <input
-                    type="text"
-                    value={paymentRef}
-                    onChange={(e) => { setPaymentRef(e.target.value); setError(null); }}
-                    placeholder={t("deal.field.payment_reference.placeholder")}
-                    className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                    dir="ltr"
-                    autoComplete="off"
-                  />
-                  <p className="text-xs text-muted-foreground">{t("deal.field.payment_reference.hint")}</p>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-muted-foreground">
-                    {t("deal.field.payment_proof_url")}
-                  </label>
-                  <input
-                    type="url"
-                    value={paymentProofUrl}
-                    onChange={(e) => setPaymentProofUrl(e.target.value)}
-                    placeholder={t("deal.field.payment_proof_url.placeholder")}
-                    className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                    dir="ltr"
-                  />
-                </div>
-
-                <Button
-                  className="w-full"
-                  onClick={requestConfirmPayment}
-                  disabled={loading}
+              <div className="rounded-lg border border-primary/20 bg-primary/3 overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setPayFormOpen((v) => !v)}
+                  className="w-full flex items-center justify-between px-3 py-2.5 text-xs font-semibold text-primary hover:bg-primary/5 transition-colors"
                 >
-                  {loading && pendingAction === null && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
-                  {t("deal.action.confirm_payment")}
-                </Button>
+                  <span>{t("deal.action.confirm_payment")}</span>
+                  {payFormOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                </button>
+                {payFormOpen && (
+                  <div className="px-3 pb-3 space-y-3 border-t border-primary/10">
+                    <div className="space-y-1 pt-3">
+                      <label className="text-xs font-medium text-foreground">
+                        {t("deal.field.payment_reference")} *
+                      </label>
+                      <input
+                        type="text"
+                        value={paymentRef}
+                        onChange={(e) => { setPaymentRef(e.target.value); setError(null); }}
+                        placeholder={t("deal.field.payment_reference.placeholder")}
+                        className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                        dir="ltr"
+                        autoComplete="off"
+                      />
+                      <p className="text-xs text-muted-foreground">{t("deal.field.payment_reference.hint")}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground">
+                        {t("deal.field.payment_proof_url")}
+                      </label>
+                      <input
+                        type="url"
+                        value={paymentProofUrl}
+                        onChange={(e) => setPaymentProofUrl(e.target.value)}
+                        placeholder={t("deal.field.payment_proof_url.placeholder")}
+                        className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                        dir="ltr"
+                      />
+                    </div>
+                    <Button className="w-full" onClick={requestConfirmPayment} disabled={loading}>
+                      {loading && pendingAction === null && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
+                      {t("deal.action.confirm_payment")}
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
 
@@ -1830,12 +1855,6 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
           </div>
         )}
 
-        {/* Next Step Banner */}
-        <NextStepBanner deal={deal} role={role} onOpenTrForm={openTrFormAndScroll} />
-
-        {/* Deal Progress Bar */}
-        <DealProgressBar deal={deal} />
-
         {/* V1 — Deal Value Summary (producer only, auction only) */}
         {role === "producer" && pricingModel !== "revenue_share" && deal.listing_id && (
           <DealValueSummary
@@ -1878,6 +1897,7 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
                 listingQuantity,
                 myCompanyName,
                 myPhone,
+                pricingModel,
               })
             }
             className="flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-background px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
