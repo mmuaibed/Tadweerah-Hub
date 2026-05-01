@@ -1,4 +1,5 @@
-import { SignInButton, SignUpButton } from "@clerk/react";
+import { SignInButton } from "@clerk/react";
+import { useLocation } from "wouter";
 import {
   Recycle,
   ShoppingBag,
@@ -50,8 +51,9 @@ const USER_GROUPS = [
 
 export function HomePage() {
   const { t, lang } = useT();
+  const [, navigate] = useLocation();
   const Arrow = lang === "ar" ? ArrowLeft : ArrowRight;
-  const onboardingUrl = `${basePath}/onboarding/company`;
+  const goToOnboarding = () => navigate("/onboarding/company");
 
   return (
     <AppLayout>
@@ -78,12 +80,10 @@ export function HomePage() {
 
         {/* CTAs */}
         <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-          <SignUpButton mode="modal" forceRedirectUrl={onboardingUrl}>
-            <Button size="lg" className="gap-2 px-7 font-bold">
-              {t("action.getstarted")}
-              <Arrow className="h-4 w-4" />
-            </Button>
-          </SignUpButton>
+          <Button size="lg" className="gap-2 px-7 font-bold" onClick={goToOnboarding}>
+            {t("action.getstarted")}
+            <Arrow className="h-4 w-4" />
+          </Button>
           <SignInButton mode="modal">
             <Button
               size="lg"
@@ -97,14 +97,13 @@ export function HomePage() {
 
         {/* No-account prompt */}
         <div className="mt-2">
-          <SignUpButton mode="modal" forceRedirectUrl={onboardingUrl}>
-            <button
-              type="button"
-              className="text-xs text-muted-foreground hover:text-primary underline underline-offset-2 transition-colors"
-            >
-              {t("home.no_account_prompt")}
-            </button>
-          </SignUpButton>
+          <button
+            type="button"
+            onClick={goToOnboarding}
+            className="text-xs text-muted-foreground hover:text-primary underline underline-offset-2 transition-colors"
+          >
+            {t("home.no_account_prompt")}
+          </button>
         </div>
       </section>
 
