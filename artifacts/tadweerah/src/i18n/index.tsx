@@ -201,6 +201,7 @@ const translations: Record<string, Record<Language, string>> = {
   "onboarding.form.actions.error": { ar: "تعذّر تحميل الأنشطة", en: "Failed to load activities" },
   "onboarding.form.actions.empty": { ar: "لا توجد أنشطة متاحة", en: "No activities available" },
   "common.retry": { ar: "إعادة المحاولة", en: "Retry" },
+  "common.back": { ar: "العودة للصفحة السابقة", en: "Go Back" },
   "onboarding.form.actions.other_desc": { ar: "وصف النشاط الآخر", en: "Describe the other activity" },
   "onboarding.form.actions.other_required": { ar: "الرجاء وصف النشاط الآخر", en: "Please describe the other activity" },
   "onboarding.form.actions.other_placeholder": { ar: "صف ما تقوم به شركتك...", en: "Describe what your company does..." },
