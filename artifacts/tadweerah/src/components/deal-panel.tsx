@@ -1059,6 +1059,127 @@ function printDealReport(
   }
 }
 
+// ── SmartTransportBody ──────────────────────────────────────────────────────
+// Extracted as a plain function (not a React component) to guarantee stable
+// event bindings and avoid IIFE reconciliation surprises in the parent render.
+interface SmartTransportBodyProps {
+  tr: MwanSummary["transport"];
+  trDecision: string | null;
+  smartTrLoading: boolean;
+  smartTrError: string | null;
+  skipConfirmOpen: boolean;
+  setSkipConfirmOpen: (v: boolean) => void;
+  onArrange: () => void;
+  onSkipConfirm: () => void;
+  t: (k: string) => string;
+}
+
+function SmartTransportBody({
+  tr, trDecision, smartTrLoading, smartTrError,
+  skipConfirmOpen, setSkipConfirmOpen,
+  onArrange, onSkipConfirm, t,
+}: SmartTransportBodyProps): React.ReactNode {
+  /* Transport exists: show status */
+  if (tr) {
+    const statusMap: Record<string, string> = {
+      pending:        t("deal.transport.smart.requested"),
+      accepted:       t("deal.transport.smart.assigned"),
+      manifest_ready: t("deal.transport.smart.assigned"),
+      in_transit:     t("deal.transport.smart.in_progress"),
+      delivered:      t("deal.transport.smart.completed_tr"),
+      closed:         t("deal.transport.smart.completed_tr"),
+      cancelled:      t("deal.transport.smart.cancelled"),
+    };
+    const statusText = statusMap[tr.status] ?? tr.status;
+    const isActive = ["pending", "accepted", "manifest_ready", "in_transit"].includes(tr.status);
+    return (
+      <div className="space-y-2">
+        <div className={`flex items-center gap-2 rounded-lg px-3 py-2.5 ${
+          isActive ? "bg-green-50 border border-green-200" : "bg-muted/30 border border-border"
+        }`}>
+          <CheckCircle2 className={`h-4 w-4 shrink-0 ${isActive ? "text-green-600" : "text-muted-foreground"}`} />
+          <span className={`text-sm font-semibold ${isActive ? "text-green-800" : "text-foreground"}`}>
+            {statusText}
+          </span>
+        </div>
+        {tr.status === "pending" && (
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            {t("deal.transport.smart.requested_desc")}
+          </p>
+        )}
+        {tr.manifest_ref && (
+          <div className="flex items-center gap-2 rounded-md border border-primary/20 bg-primary/5 px-2.5 py-1.5">
+            <FileTextIcon className="h-3 w-3 text-primary shrink-0" />
+            <span className="text-[10px] font-mono text-primary font-bold flex-1" dir="ltr">{tr.manifest_ref}</span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  /* Opted out — with undo option */
+  if (trDecision === "not_required") {
+    return (
+      <div className="rounded-lg bg-muted/20 border border-border px-3 py-2.5 space-y-1">
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          {t("deal.transport.smart.not_required")}
+        </p>
+      </div>
+    );
+  }
+
+  /* No decision yet: prompt */
+  return (
+    <>
+      {/* Confirmation dialog for skip — irreversible action needs explicit consent */}
+      <ConfirmDialog
+        open={skipConfirmOpen}
+        onOpenChange={setSkipConfirmOpen}
+        title={t("deal.transport.smart.skip_confirm_title")}
+        description={t("deal.transport.smart.skip_confirm_desc")}
+        confirmLabel={t("deal.transport.smart.skip_confirm_ok")}
+        onConfirm={() => { setSkipConfirmOpen(false); onSkipConfirm(); }}
+        isPending={smartTrLoading}
+      />
+      <div className="space-y-3">
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          {t("deal.transport.smart.desc")}
+        </p>
+        {smartTrError && (
+          <div className="flex items-start gap-2 rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">
+            <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+            <span>{smartTrError}</span>
+          </div>
+        )}
+        {/* PRIMARY: arrange transport */}
+        <Button
+          type="button"
+          className="w-full h-11 text-sm font-bold"
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onArrange(); }}
+          disabled={smartTrLoading}
+        >
+          {smartTrLoading
+            ? <Loader2 className="me-2 h-4 w-4 animate-spin" />
+            : <Truck className="me-2 h-4 w-4 shrink-0" />}
+          {t("deal.transport.smart.arrange_btn")}
+        </Button>
+        {/* SECONDARY: opt-out requires explicit confirmation */}
+        <div className="border-t border-border/50 pt-2">
+          <Button
+            type="button"
+            variant="ghost"
+            className="w-full h-9 text-xs text-muted-foreground/70 hover:text-muted-foreground"
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSkipConfirmOpen(true); }}
+            disabled={smartTrLoading}
+          >
+            {t("deal.transport.smart.skip_btn")}
+          </Button>
+        </div>
+      </div>
+    </>
+  );
+}
+
 export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSharePct, listingRef, listingMaterial, listingQuantity, myCompanyName, listingCategory, myPhone, listingCity, listingSaleType, counterpartyCity, listingDescription, listingCategoryId, listingSubcategoryId, offersPanel, listingInfoPanel }: DealPanelProps) {
   const { t, lang } = useT();
   const { getToken } = useAuth();
@@ -1081,6 +1202,7 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
   const [copiedManifest, setCopiedManifest] = useState(false);
   const [trFormOpen, setTrFormOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [skipConfirmOpen, setSkipConfirmOpen] = useState(false);
   const [offersOpen, setOffersOpen] = useState(false);
   const [listingInfoOpen, setListingInfoOpen] = useState(false);
 
@@ -1848,90 +1970,17 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
                 )}
 
                 {/* ACTIVE states — after payment */}
-                {deal.status !== "active" && (() => {
-                  const tr = mwanHeaderData?.transport;
-                  const trDecision = mwanHeaderData?.transport_decision;
-
-                  /* Transport exists: show status */
-                  if (tr) {
-                    const statusMap: Record<string, string> = {
-                      pending:        t("deal.transport.smart.requested"),
-                      accepted:       t("deal.transport.smart.assigned"),
-                      manifest_ready: t("deal.transport.smart.assigned"),
-                      in_transit:     t("deal.transport.smart.in_progress"),
-                      delivered:      t("deal.transport.smart.completed_tr"),
-                      closed:         t("deal.transport.smart.completed_tr"),
-                      cancelled:      t("deal.transport.smart.cancelled"),
-                    };
-                    const statusText = statusMap[tr.status] ?? tr.status;
-                    const isActive = ["pending", "accepted", "manifest_ready", "in_transit"].includes(tr.status);
-                    return (
-                      <div className="space-y-2">
-                        <div className={`flex items-center gap-2 rounded-lg px-3 py-2.5 ${
-                          isActive ? "bg-green-50 border border-green-200" : "bg-muted/30 border border-border"
-                        }`}>
-                          <CheckCircle2 className={`h-4 w-4 shrink-0 ${isActive ? "text-green-600" : "text-muted-foreground"}`} />
-                          <span className={`text-sm font-semibold ${isActive ? "text-green-800" : "text-foreground"}`}>
-                            {statusText}
-                          </span>
-                        </div>
-                        {["pending"].includes(tr.status) && (
-                          <p className="text-xs text-muted-foreground leading-relaxed">
-                            {t("deal.transport.smart.requested_desc")}
-                          </p>
-                        )}
-                        {tr.manifest_ref && (
-                          <div className="flex items-center gap-2 rounded-md border border-primary/20 bg-primary/5 px-2.5 py-1.5">
-                            <FileTextIcon className="h-3 w-3 text-primary shrink-0" />
-                            <span className="text-[10px] font-mono text-primary font-bold flex-1" dir="ltr">{tr.manifest_ref}</span>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  }
-
-                  /* Opted out */
-                  if (trDecision === "not_required") {
-                    return (
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        {t("deal.transport.smart.not_required")}
-                      </p>
-                    );
-                  }
-
-                  /* No decision yet: show prompt */
-                  return (
-                    <div className="space-y-3">
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        {t("deal.transport.smart.desc")}
-                      </p>
-                      {smartTrError && (
-                        <div className="flex items-start gap-2 rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">
-                          <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                          <span>{smartTrError}</span>
-                        </div>
-                      )}
-                      <Button
-                        className="w-full h-11 text-sm font-bold"
-                        onClick={handleSmartTransportRequest}
-                        disabled={smartTrLoading}
-                      >
-                        {smartTrLoading
-                          ? <Loader2 className="me-2 h-4 w-4 animate-spin" />
-                          : <Truck className="me-2 h-4 w-4 shrink-0" />}
-                        {t("deal.transport.smart.arrange_btn")}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        className="w-full h-9 text-sm text-muted-foreground"
-                        onClick={handleSkipTransport}
-                        disabled={smartTrLoading}
-                      >
-                        {t("deal.transport.smart.skip_btn")}
-                      </Button>
-                    </div>
-                  );
-                })()}
+                {deal.status !== "active" && SmartTransportBody({
+                  tr: mwanHeaderData?.transport ?? null,
+                  trDecision: mwanHeaderData?.transport_decision ?? null,
+                  smartTrLoading,
+                  smartTrError,
+                  skipConfirmOpen,
+                  setSkipConfirmOpen,
+                  onArrange: handleSmartTransportRequest,
+                  onSkipConfirm: handleSkipTransport,
+                  t,
+                })}
               </div>
             </div>
           )}

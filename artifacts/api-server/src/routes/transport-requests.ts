@@ -88,6 +88,15 @@ router.post(
       return;
     }
 
+    // Block if the deal party already decided transport is not required
+    if (deal.transport_decision === "not_required") {
+      res.status(409).json({
+        error: "Conflict",
+        message: "Transport has already been marked as not required for this deal",
+      });
+      return;
+    }
+
     // Check if a transport request already exists for this deal
     const [existing] = await db
       .select({ id: transportRequestsTable.id })
