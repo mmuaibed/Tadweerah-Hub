@@ -45,7 +45,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
   DialogContent,
@@ -112,6 +111,48 @@ function DetailRow({
       <div className="flex flex-col gap-0.5">
         <span className="text-xs font-medium text-muted-foreground">{label}</span>
         <span className="text-sm font-semibold text-foreground">{value}</span>
+      </div>
+    </div>
+  );
+}
+
+/** Compact detail row for the middle column */
+function CompactRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return (
+    <div className="flex items-center gap-2.5 px-3 py-2">
+      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-muted text-muted-foreground">
+        {icon}
+      </span>
+      <div className="min-w-0 flex-1">
+        <span className="block text-[10px] text-muted-foreground truncate">{label}</span>
+        <span className="block text-xs font-semibold text-foreground truncate">{value}</span>
+      </div>
+    </div>
+  );
+}
+
+/** Hero price display for the middle stats column */
+function OfferPriceHero({ wasteListingId, t }: { wasteListingId: string; t: (k: string) => string }) {
+  const { data: summary } = useGetOffersSummary(wasteListingId);
+  if (!summary) return null;
+  return (
+    <div className="space-y-2">
+      {summary.count > 0 && summary.highest_price != null ? (
+        <div>
+          <p className="text-[10px] text-muted-foreground mb-0.5">{t("offer.summary.highest")}</p>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-3xl font-extrabold text-foreground tracking-tight">
+              {summary.highest_price.toLocaleString()}
+            </span>
+            <span className="text-xs text-muted-foreground">{t("listing.sar")} / {t("offer.summary.perUnit").split("/")[1]}</span>
+          </div>
+        </div>
+      ) : null}
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <TrendingUp className="h-3.5 w-3.5" />
+        {summary.count > 0
+          ? `${summary.count} ${t("offer.summary.count")}`
+          : t("offer.summary.noOffers")}
       </div>
     </div>
   );
@@ -1279,9 +1320,13 @@ export function ListingDetailPage() {
       ? `${t("listing.close.confirm.noPending")} ${t("listing.close.confirm.desc")}`
       : t("listing.close.confirm.desc");
 
+  const imageUrl = (listing as typeof listing & { image_url?: string }).image_url;
+  const targeting = (listing as typeof listing & { targeting_type?: string }).targeting_type;
+  const saleType = (listing as typeof listing & { sale_type?: string }).sale_type ?? "auction";
+
   return (
-    <AppLayout showSignOut title={materialLabel} subtitle={ref} actions={backButton}>
-      {/* F1: Close listing confirm */}
+    <AppLayout showSignOut title={materialLabel} subtitle={ref} actions={backButton} width="wide">
+      {/* Dialogs */}
       <ConfirmDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
@@ -1292,8 +1337,6 @@ export function ListingDetailPage() {
         isPending={isClosing}
         destructive
       />
-
-      {/* Pending-offers 2-button dialog */}
       <AlertDialog
         open={pendingOffersDialogOpen}
         onOpenChange={(open) => { if (!open && !isForceClosing) setPendingOffersDialogOpen(false); }}
@@ -1306,20 +1349,10 @@ export function ListingDetailPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col sm:flex-row gap-2">
-            <Button
-              variant="outline"
-              disabled={isForceClosing}
-              onClick={() => setPendingOffersDialogOpen(false)}
-              className="w-full sm:w-auto"
-            >
+            <Button variant="outline" disabled={isForceClosing} onClick={() => setPendingOffersDialogOpen(false)} className="w-full sm:w-auto">
               {t("listing.close.pendingOffers.review")}
             </Button>
-            <Button
-              variant="destructive"
-              disabled={isForceClosing}
-              onClick={() => void handleForceClose()}
-              className="w-full sm:w-auto"
-            >
+            <Button variant="destructive" disabled={isForceClosing} onClick={() => void handleForceClose()} className="w-full sm:w-auto">
               {isForceClosing && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
               {t("listing.close.pendingOffers.forceClose")}
             </Button>
@@ -1328,227 +1361,194 @@ export function ListingDetailPage() {
       </AlertDialog>
 
       {closeError && (
-        <div className="mb-4 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+        <div className="mb-3 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
           {closeError}
         </div>
       )}
 
-      <div className="mx-auto max-w-2xl space-y-6">
-        {/* Listing image */}
-        {(listing as typeof listing & { image_url?: string }).image_url && (
-          <div className="w-full overflow-hidden rounded-xl border border-border">
-            <img
-              src={(listing as typeof listing & { image_url?: string }).image_url}
-              alt={t(`material.${listing.material}`)}
-              className="h-56 w-full object-cover"
-            />
-          </div>
-        )}
+      {/* ── 3-column horizontal layout ── */}
+      <div className="grid grid-cols-[2fr_1.1fr_2fr] gap-4 h-[calc(100dvh-8rem)] min-h-0">
 
-        {/* Header card */}
-        <div className="flex items-center justify-between rounded-xl border border-border bg-card p-5">
-          <div className="flex items-center gap-3">
-            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-secondary/15 text-secondary">
-              <Recycle className="h-5 w-5" />
-            </span>
-            <div>
-              <h2 className="text-lg font-bold text-foreground">{materialLabel}</h2>
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs text-muted-foreground">{ref}</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    void navigator.clipboard.writeText(ref);
-                    setRefCopied(true);
-                    setTimeout(() => setRefCopied(false), 2000);
-                  }}
-                  className="text-muted-foreground/50 hover:text-muted-foreground transition-colors"
-                  title={t("action.copy")}
-                >
-                  {refCopied
-                    ? <Check className="h-3 w-3 text-green-500" />
-                    : <Copy className="h-3 w-3" />}
-                </button>
-              </div>
-            </div>
-          </div>
-          <Badge variant={isOpen ? "secondary" : "outline"} className="text-sm">
-            {t(`status.${listing.status}`)}
-          </Badge>
-        </div>
-
-        {/* Targeting context banner */}
-        {(() => {
-          const targeting = (listing as typeof listing & { targeting_type?: string }).targeting_type;
-          if (!targeting || targeting === "open") return null;
-          if (targeting === "specific_company") {
-            return isOwner ? (
-              <div className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-                <Lock className="h-4 w-4 shrink-0 mt-0.5 text-amber-500" />
-                <span>{t("listing.targeting.banner.seller")}</span>
-              </div>
-            ) : (
-              <div className="flex items-start gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                <Info className="h-4 w-4 shrink-0 mt-0.5 text-emerald-500" />
-                <span>{t("listing.targeting.banner.buyer.private")}</span>
-              </div>
-            );
-          }
-          // targeting === "category"
-          return isOwner ? (
-            <div className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-              <Lock className="h-4 w-4 shrink-0 mt-0.5 text-amber-500" />
-              <span>{t("listing.targeting.banner.seller.category")}</span>
+        {/* ── LEFT: image + title + description + what's next ── */}
+        <div className="flex flex-col gap-3 min-h-0 overflow-y-auto">
+          {/* Image */}
+          {imageUrl ? (
+            <div className="w-full overflow-hidden rounded-xl border border-border shrink-0">
+              <img src={imageUrl} alt={materialLabel} className="w-full object-cover" style={{ maxHeight: "38%" }} />
             </div>
           ) : (
-            <div className="flex items-start gap-2.5 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-primary">
-              <Info className="h-4 w-4 shrink-0 mt-0.5" />
-              <span>{t("listing.targeting.banner.buyer.category")}</span>
+            <div className="w-full rounded-xl border border-border bg-muted/30 flex items-center justify-center shrink-0" style={{ height: "38%" }}>
+              <Recycle className="h-12 w-12 text-muted-foreground/30" />
             </div>
-          );
-        })()}
+          )}
 
-        {/* Eligibility banner — LICENSED_ONLY */}
-        {eligibleCompanyType === "LICENSED_ONLY" && (
-          <div className="flex items-start gap-2.5 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
-            <Shield className="h-4 w-4 shrink-0 mt-0.5 text-blue-500" />
-            <span>{t("listing.eligible.badge")}</span>
+          {/* Title box */}
+          <div className="rounded-xl border border-border bg-card p-4 shrink-0">
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary/15 text-secondary shrink-0">
+                <Recycle className="h-4 w-4" />
+              </span>
+              <div className="min-w-0">
+                <h2 className="text-base font-bold text-foreground truncate">{materialLabel}</h2>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="text-xs text-muted-foreground">{ref}</span>
+                  <button
+                    type="button"
+                    onClick={() => { void navigator.clipboard.writeText(ref); setRefCopied(true); setTimeout(() => setRefCopied(false), 2000); }}
+                    className="text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+                    title={t("action.copy")}
+                  >
+                    {refCopied ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
-        )}
 
-        {/* Details */}
-        <div className="rounded-xl border border-border bg-card px-5 divide-y divide-border">
-          {categoryLabel && (
-            <DetailRow
-              icon={<Recycle className="h-4 w-4 text-secondary/70" />}
-              label={t("listing.category")}
-              value={categoryLabel}
-            />
+          {/* Description */}
+          {listing.description && (
+            <div className="rounded-xl border border-border bg-card p-4 shrink-0">
+              <p className="text-xs font-medium text-muted-foreground mb-1.5">{t("listing.detail.description")}</p>
+              <p className="text-sm text-foreground leading-relaxed line-clamp-4">{listing.description}</p>
+            </div>
           )}
-          <DetailRow
-            icon={<Package className="h-4 w-4" />}
-            label={t("listing.quantity")}
-            value={`${listing.quantity} ${listing.unit ? t(`unit.${listing.unit}`) : ""}`}
-          />
-          <DetailRow icon={<MapPin className="h-4 w-4" />} label={t("listing.city")} value={listing.city} />
-          {listing.price_hint != null && (
-            <DetailRow
-              icon={<Tag className="h-4 w-4" />}
-              label={t("listing.priceHint")}
-              value={`${listing.price_hint} ${t("listing.sar")}`}
-            />
+
+          {/* What's next — producer only, open listing, no deal */}
+          {role === "producer" && isOpen && !activeDeal && (
+            <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 shrink-0">
+              <div className="flex items-center gap-2 mb-2.5">
+                <span className="text-sm">🗺️</span>
+                <h3 className="text-xs font-semibold text-primary">{t("listing.what_next.title")}</h3>
+              </div>
+              <ol className="space-y-1.5 text-xs text-foreground/80 list-none">
+                {(["step1","step2","step3","step4"] as const).map((step, i) => (
+                  <li key={step} className="flex items-start gap-2">
+                    <span className="shrink-0 h-4 w-4 rounded-full bg-primary/15 text-primary text-[9px] font-bold flex items-center justify-center mt-px">{i + 1}</span>
+                    <span className="leading-snug">{t(`listing.what_next.${step}`)}</span>
+                  </li>
+                ))}
+              </ol>
+              <p className="text-[10px] text-muted-foreground flex items-center gap-1 pt-2 mt-2 border-t border-primary/20">
+                <span>⏱️</span>{t("listing.what_next.eta")}
+              </p>
+            </div>
           )}
-          {(() => {
-            const saleType = (listing as typeof listing & { sale_type?: string }).sale_type ?? "auction";
-            return (
-              <DetailRow
-                icon={saleType === "auction" ? <Gavel className="h-4 w-4" /> : <ShoppingBag className="h-4 w-4" />}
-                label={t("listing.form.saleType")}
-                value={t(`listing.sale_type.${saleType}`)}
-              />
-            );
-          })()}
-          {(() => {
-            const targeting = (listing as typeof listing & { targeting_type?: string }).targeting_type;
-            if (!targeting || targeting === "open") return null;
-            return (
-              <DetailRow
-                icon={<Lock className="h-4 w-4 text-amber-500" />}
-                label={t("listing.targeting.label")}
-                value={t(`listing.targeting.${targeting}`)}
-              />
-            );
-          })()}
-          {listing.pricing_model && listing.pricing_model !== "fixed" && (
-            <DetailRow
-              icon={<Scale className="h-4 w-4" />}
-              label={t("listing.form.pricingModel")}
-              value={t(`listing.pricing_model.${listing.pricing_model}`)}
-            />
-          )}
-          {listing.pricing_model === "revenue_share" && listing.revenue_share_pct != null && (
-            <DetailRow
-              icon={<Percent className="h-4 w-4" />}
-              label={t("listing.form.revenue_share_pct")}
-              value={`${listing.revenue_share_pct}%`}
-            />
-          )}
-          <DetailRow icon={<Building2 className="h-4 w-4" />} label={t("listing.detail.publishedBy")} value={listing.company_name} />
-          <DetailRow icon={<Calendar className="h-4 w-4" />} label={t("listing.publishedOn")} value={dateStr} />
         </div>
 
-        {/* Description */}
-        {listing.description && (
-          <div className="rounded-xl border border-border bg-card p-5 space-y-2">
-            <p className="text-xs font-medium text-muted-foreground">{t("listing.detail.description")}</p>
-            <p className="text-sm text-foreground leading-relaxed">{listing.description}</p>
+        {/* ── MIDDLE: quick stats + details ── */}
+        <div className="flex flex-col gap-3 min-h-0 overflow-y-auto">
+          {/* Status + price hero */}
+          <div className="rounded-xl border border-border bg-card p-4 space-y-3 shrink-0">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-muted-foreground">{t("listing.detail.status")}</span>
+              <Badge variant={isOpen ? "secondary" : "outline"} className="text-xs">
+                {t(`status.${listing.status}`)}
+              </Badge>
+            </div>
+            {/* Offer summary — hero price */}
+            <OfferPriceHero wasteListingId={wasteListingId} t={t} />
           </div>
-        )}
 
-        <Separator />
+          {/* Targeting & eligibility banners */}
+          {targeting && targeting !== "open" && (
+            <div className={`flex items-start gap-2 rounded-xl border px-3 py-2.5 text-xs shrink-0 ${
+              isOwner
+                ? "border-amber-200 bg-amber-50 text-amber-700"
+                : targeting === "specific_company"
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                  : "border-primary/20 bg-primary/5 text-primary"
+            }`}>
+              {isOwner ? <Lock className="h-3.5 w-3.5 shrink-0 mt-0.5 text-amber-500" /> : <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" />}
+              <span>
+                {isOwner
+                  ? targeting === "specific_company" ? t("listing.targeting.banner.seller") : t("listing.targeting.banner.seller.category")
+                  : targeting === "specific_company" ? t("listing.targeting.banner.buyer.private") : t("listing.targeting.banner.buyer.category")}
+              </span>
+            </div>
+          )}
+          {eligibleCompanyType === "LICENSED_ONLY" && (
+            <div className="flex items-start gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2.5 text-xs text-blue-700 shrink-0">
+              <Shield className="h-3.5 w-3.5 shrink-0 mt-0.5 text-blue-500" />
+              <span>{t("listing.eligible.badge")}</span>
+            </div>
+          )}
 
-        {/* Offers summary bar */}
-        {me?.company && <OfferSummaryBar wasteListingId={wasteListingId} />}
-
-        {/* M5-Pre: Deal panel — shown to producer (owner) and accepted buyer after acceptance */}
-        {activeDeal && (role === "producer" || role === "buyer") && (
-          <DealPanel
-            deal={activeDeal}
-            role={role as "producer" | "buyer"}
-            unit={listing?.unit ?? ""}
-            onUpdate={(updated) => setDealOverride(updated)}
-            pricingModel={(listing as typeof listing & { pricing_model?: string }).pricing_model}
-            revenueSharePct={(listing as typeof listing & { revenue_share_pct?: number | null }).revenue_share_pct}
-            listingRef={ref}
-            listingMaterial={materialLabel}
-            listingCategory={categoryLabel ?? undefined}
-            listingQuantity={quantity}
-            myCompanyName={me?.company?.name}
-            myPhone={(me as { company?: { contactPhone?: string } } | undefined)?.company?.contactPhone}
-            listingCity={(listing as typeof listing & { city?: string }).city}
-            counterpartyCity={activeDeal.counterparty?.city}
-            listingDescription={(listing as typeof listing & { description?: string }).description}
-            listingCategoryId={listing.material_category_id ?? undefined}
-            listingSubcategoryId={(listing as typeof listing & { material_subcategory_id?: string }).material_subcategory_id ?? undefined}
-          />
-        )}
-
-        {/* Producer: close button + incoming offers */}
-        {role === "producer" && isOwner && (
-          <div className="space-y-4 pb-4">
-            {isOpen && (
-              <Button
-                variant="outline"
-                className="w-full border-destructive/40 text-destructive hover:bg-destructive/10"
-                onClick={() => setConfirmOpen(true)}
-                disabled={isClosing}
-              >
-                {isClosing && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
-                {t("myListings.close")}
-              </Button>
+          {/* Detail rows — compact */}
+          <div className="rounded-xl border border-border bg-card divide-y divide-border shrink-0">
+            {categoryLabel && (
+              <CompactRow icon={<Recycle className="h-3.5 w-3.5 text-secondary/70" />} label={t("listing.category")} value={categoryLabel} />
             )}
-            {isOpen && !activeDeal && (
-              <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-base">🗺️</span>
-                  <h3 className="text-sm font-semibold text-primary">{t("listing.what_next.title")}</h3>
-                </div>
-                <ol className="space-y-2 text-xs text-foreground/80 list-none">
-                  {(["step1","step2","step3","step4"] as const).map((step, i) => (
-                    <li key={step} className="flex items-start gap-2.5">
-                      <span className="shrink-0 h-5 w-5 rounded-full bg-primary/15 text-primary text-[10px] font-bold flex items-center justify-center mt-px">
-                        {i + 1}
-                      </span>
-                      <span>{t(`listing.what_next.${step}`)}</span>
-                    </li>
-                  ))}
-                </ol>
-                <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 pt-1 border-t border-primary/20">
-                  <span>⏱️</span>
-                  {t("listing.what_next.eta")}
-                </p>
-              </div>
+            <CompactRow
+              icon={<Package className="h-3.5 w-3.5" />}
+              label={t("listing.quantity")}
+              value={`${listing.quantity} ${listing.unit ? t(`unit.${listing.unit}`) : ""}`}
+            />
+            <CompactRow icon={<MapPin className="h-3.5 w-3.5" />} label={t("listing.city")} value={listing.city} />
+            {listing.price_hint != null && (
+              <CompactRow icon={<Tag className="h-3.5 w-3.5" />} label={t("listing.priceHint")} value={`${listing.price_hint} ${t("listing.sar")}`} />
             )}
+            <CompactRow
+              icon={saleType === "auction" ? <Gavel className="h-3.5 w-3.5" /> : <ShoppingBag className="h-3.5 w-3.5" />}
+              label={t("listing.form.saleType")}
+              value={t(`listing.sale_type.${saleType}`)}
+            />
+            {targeting && targeting !== "open" && (
+              <CompactRow icon={<Lock className="h-3.5 w-3.5 text-amber-500" />} label={t("listing.targeting.label")} value={t(`listing.targeting.${targeting}`)} />
+            )}
+            {listing.pricing_model && listing.pricing_model !== "fixed" && (
+              <CompactRow icon={<Scale className="h-3.5 w-3.5" />} label={t("listing.form.pricingModel")} value={t(`listing.pricing_model.${listing.pricing_model}`)} />
+            )}
+            {listing.pricing_model === "revenue_share" && listing.revenue_share_pct != null && (
+              <CompactRow icon={<Percent className="h-3.5 w-3.5" />} label={t("listing.form.revenue_share_pct")} value={`${listing.revenue_share_pct}%`} />
+            )}
+            <CompactRow icon={<Building2 className="h-3.5 w-3.5" />} label={t("listing.detail.publishedBy")} value={listing.company_name} />
+            <CompactRow icon={<Calendar className="h-3.5 w-3.5" />} label={t("listing.publishedOn")} value={dateStr} />
+          </div>
+
+          {/* Producer: close button */}
+          {role === "producer" && isOwner && isOpen && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full border-destructive/40 text-destructive hover:bg-destructive/10 shrink-0"
+              onClick={() => setConfirmOpen(true)}
+              disabled={isClosing}
+            >
+              {isClosing && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
+              {t("myListings.close")}
+            </Button>
+          )}
+        </div>
+
+        {/* ── RIGHT: offers panel ── */}
+        <div className="min-h-0 overflow-y-auto">
+          {/* Deal panel */}
+          {activeDeal && (role === "producer" || role === "buyer") && (
+            <div className="mb-3">
+              <DealPanel
+                deal={activeDeal}
+                role={role as "producer" | "buyer"}
+                unit={listing?.unit ?? ""}
+                onUpdate={(updated) => setDealOverride(updated)}
+                pricingModel={(listing as typeof listing & { pricing_model?: string }).pricing_model}
+                revenueSharePct={(listing as typeof listing & { revenue_share_pct?: number | null }).revenue_share_pct}
+                listingRef={ref}
+                listingMaterial={materialLabel}
+                listingCategory={categoryLabel ?? undefined}
+                listingQuantity={quantity}
+                myCompanyName={me?.company?.name}
+                myPhone={(me as { company?: { contactPhone?: string } } | undefined)?.company?.contactPhone}
+                listingCity={(listing as typeof listing & { city?: string }).city}
+                counterpartyCity={activeDeal.counterparty?.city}
+                listingDescription={(listing as typeof listing & { description?: string }).description}
+                listingCategoryId={listing.material_category_id ?? undefined}
+                listingSubcategoryId={(listing as typeof listing & { material_subcategory_id?: string }).material_subcategory_id ?? undefined}
+              />
+            </div>
+          )}
+
+          {/* Producer incoming offers */}
+          {role === "producer" && isOwner && (
             <ProducerOffersPanel
               wasteListingId={wasteListingId}
               listingQuantity={quantity}
@@ -1556,27 +1556,27 @@ export function ListingDetailPage() {
               onAfterAction={invalidateListing}
               onPendingCountChange={setPendingOfferCount}
             />
-          </div>
-        )}
+          )}
 
-        {/* Buyer: submit / improve / status */}
-        {role === "buyer" && (
-          <div className="pb-4">
-            {!eligibilityDecision.allowed ? (
-              <EligibilityBlock decision={eligibilityDecision} />
-            ) : (
-              <BuyerOfferSection
-                wasteListingId={wasteListingId}
-                listingQuantity={quantity}
-                isOpen={!!isOpen}
-                onSuccess={() => {
-                  queryClient.invalidateQueries({ queryKey: getGetListingOffersQueryKey(wasteListingId) });
-                  queryClient.invalidateQueries({ queryKey: getGetOffersSummaryQueryKey(wasteListingId) });
-                }}
-              />
-            )}
-          </div>
-        )}
+          {/* Buyer: submit / improve / status */}
+          {role === "buyer" && (
+            <div>
+              {!eligibilityDecision.allowed ? (
+                <EligibilityBlock decision={eligibilityDecision} />
+              ) : (
+                <BuyerOfferSection
+                  wasteListingId={wasteListingId}
+                  listingQuantity={quantity}
+                  isOpen={!!isOpen}
+                  onSuccess={() => {
+                    queryClient.invalidateQueries({ queryKey: getGetListingOffersQueryKey(wasteListingId) });
+                    queryClient.invalidateQueries({ queryKey: getGetOffersSummaryQueryKey(wasteListingId) });
+                  }}
+                />
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </AppLayout>
   );
