@@ -1104,9 +1104,17 @@ function SmartTransportBody({
           </span>
         </div>
         {tr.status === "pending" && (
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            {t("deal.transport.smart.requested_desc")}
-          </p>
+          <>
+            <div className="flex items-center gap-1.5 rounded-md bg-blue-50 border border-blue-100 px-2.5 py-1.5">
+              <UserCog className="h-3.5 w-3.5 shrink-0 text-blue-600" />
+              <span className="text-[11px] font-semibold text-blue-700">
+                {t("deal.role.processing")}
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              {t("deal.transport.smart.requested_desc")}
+            </p>
+          </>
         )}
         {tr.manifest_ref && (
           <div className="flex items-center gap-2 rounded-md border border-primary/20 bg-primary/5 px-2.5 py-1.5">

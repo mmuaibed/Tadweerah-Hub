@@ -10,6 +10,7 @@ import {
   Loader2,
   CheckCircle2,
   ExternalLink,
+  AlertCircle,
 } from "lucide-react";
 import { AppLayout } from "@/components/app-layout";
 import { useT } from "@/i18n";
@@ -159,12 +160,20 @@ export function PendingActionsPage() {
                         </p>
                       </div>
                     </div>
-                    <span
-                      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold shrink-0 ${colors.badge}`}
-                    >
-                      <span className={`h-1.5 w-1.5 rounded-full ${colors.dot}`} />
-                      {t(actionKey)}
-                    </span>
+                    <div className="flex flex-col items-end gap-1.5 shrink-0">
+                      {/* Ownership label */}
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[9px] font-bold text-amber-700">
+                        <AlertCircle className="h-2.5 w-2.5 shrink-0" />
+                        {t("deal.role.your_turn")}
+                      </span>
+                      {/* Action badge */}
+                      <span
+                        className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${colors.badge}`}
+                      >
+                        <span className={`h-1.5 w-1.5 rounded-full ${colors.dot}`} />
+                        {t(actionKey)}
+                      </span>
+                    </div>
                   </div>
 
                   {/* Details row */}
