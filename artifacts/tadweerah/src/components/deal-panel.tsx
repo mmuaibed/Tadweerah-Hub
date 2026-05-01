@@ -2073,6 +2073,12 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
                   <span className="text-xs font-medium">{listingCity}</span>
                 </div>
               )}
+              {listingDescription && (
+                <div className="flex flex-col gap-1 pt-0.5">
+                  <span className="text-xs text-muted-foreground">{lang === "ar" ? "وصف المادة" : "Description"}</span>
+                  <span className="text-xs leading-relaxed text-foreground/80 bg-muted/30 rounded px-2 py-1.5">{listingDescription}</span>
+                </div>
+              )}
               {listingSaleType && (
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs text-muted-foreground">{lang === "ar" ? "نوع البيع" : "Sale Type"}</span>

@@ -871,6 +871,9 @@ router.get(
         final_amount: dealsTable.final_amount,
         price_per_unit: dealsTable.price_per_unit,
         created_at: dealsTable.created_at,
+        payment_confirmed_at: dealsTable.payment_confirmed_at,
+        dispatched_at: dealsTable.dispatched_at,
+        received_at: dealsTable.received_at,
       })
       .from(dealsTable)
       .where(eq(dealsTable.id, dealId))
@@ -897,6 +900,7 @@ router.get(
         name: companiesTable.name,
         city: companiesTable.city,
         commercialRegistration: companiesTable.commercialRegistration,
+        contactPhone: companiesTable.contactPhone,
       })
       .from(companiesTable)
       .where(inArray(companiesTable.id, companyIds));
@@ -908,7 +912,13 @@ router.get(
     // Fetch waste listing
     const [listing] = deal.listing_id
       ? await db
-          .select({ quantity: wasteListingsTable.quantity, unit: wasteListingsTable.unit, material_category_id: wasteListingsTable.material_category_id })
+          .select({
+            quantity: wasteListingsTable.quantity,
+            unit: wasteListingsTable.unit,
+            material: wasteListingsTable.material,
+            description: wasteListingsTable.description,
+            material_category_id: wasteListingsTable.material_category_id,
+          })
           .from(wasteListingsTable)
           .where(eq(wasteListingsTable.id, deal.listing_id))
           .limit(1)
@@ -926,92 +936,310 @@ router.get(
 
     // ── Build PDF ────────────────────────────────────────────────────────────
 
-    const doc = new PDFDocument({ size: "A4", margin: 48, info: { Title: `Tadweerah Movement Summary — ${tr.manifest_ref ?? dealId}` } });
+    const doc = new PDFDocument({
+      size: "A4",
+      margin: 0,
+      info: { Title: `Tadweerah Deal Report — ${tr.manifest_ref ?? dealId.slice(0, 8).toUpperCase()}` },
+    });
 
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename="tadweerah-${tr.manifest_ref ?? dealId}.pdf"`,
+      `attachment; filename="tadweerah-${tr.manifest_ref ?? dealId.slice(0, 8)}.pdf"`,
     );
     doc.pipe(res);
 
-    const primaryColor = "#1d4ed8";
-    const green        = "#166534";
-    const grey         = "#64748b";
-    const pageWidth    = doc.page.width - 96; // usable width
+    // ── Palette ─────────────────────────────────────────────────────────────
+    const blue       = "#1d4ed8";
+    const blueDark   = "#1e3a8a";
+    const blueLight  = "#dbeafe";
+    const ink        = "#1e293b";
+    const muted      = "#64748b";
+    const border     = "#e2e8f0";
+    const green      = "#15803d";
+    const greenBg    = "#f0fdf4";
+    const amber      = "#b45309";
+    const white      = "#ffffff";
 
-    // Header bar
-    doc.rect(48, 48, pageWidth, 44).fill(primaryColor);
-    doc.fillColor("#ffffff").fontSize(16).font("Helvetica-Bold")
-       .text("Tadweerah · تدويرة", 64, 62, { lineBreak: false });
-    doc.fontSize(10).font("Helvetica")
-       .text("Movement Summary / ملخص حركة النفايات", 0, 66, { align: "right", width: pageWidth + 48 });
+    const W   = doc.page.width;   // 595.28
+    const H   = doc.page.height;  // 841.89
+    const ML  = 48;               // left margin
+    const MR  = 48;               // right margin
+    const PW  = W - ML - MR;     // printable width = 499.28
+    let   Y   = 0;                // running y cursor
 
-    doc.moveDown(3.2);
+    // ─────────────────────────────────────────────────────────────────────────
+    // 1. HEADER BAR
+    // ─────────────────────────────────────────────────────────────────────────
+    const HEADER_H = 72;
+    doc.rect(0, Y, W, HEADER_H).fill(blue);
 
-    // Manifest ref + date
-    const manifestLine = tr.manifest_ref ? `Manifest Ref: ${tr.manifest_ref}` : `Deal ID: ${dealId}`;
-    doc.fillColor(primaryColor).fontSize(14).font("Helvetica-Bold").text(manifestLine, 48, doc.y);
-    doc.fillColor(grey).fontSize(9).font("Helvetica")
-       .text(`Date: ${new Date().toISOString().split("T")[0]}   Status: ${deal.status.toUpperCase()}`, { align: "left" });
+    // Brand name left
+    doc.fillColor(white).fontSize(20).font("Helvetica-Bold")
+       .text("Tadweerah", ML, 20, { lineBreak: false });
+    doc.fillColor("#93c5fd").fontSize(20).font("Helvetica")
+       .text("  ·  تدويرة", ML + 95, 20, { lineBreak: false });
 
-    doc.moveDown(0.8);
-    doc.moveTo(48, doc.y).lineTo(48 + pageWidth, doc.y).strokeColor("#e2e8f0").lineWidth(1).stroke();
-    doc.moveDown(0.8);
+    // Subtitle right
+    doc.fillColor("#bfdbfe").fontSize(9).font("Helvetica")
+       .text("سجل الصفقة التجارية  /  Deal Record", ML, 48, { width: PW, align: "right" });
 
-    // Section helper
-    function section(title: string, rows: [string, string | undefined | null][]): void {
-      doc.fillColor(green).fontSize(10).font("Helvetica-Bold").text(title.toUpperCase());
-      doc.moveDown(0.3);
-      for (const [label, value] of rows) {
-        if (!value) continue;
-        doc.fillColor(grey).fontSize(9).font("Helvetica")
-           .text(label + ":", { continued: true, width: 140 });
-        doc.fillColor("#1e293b").font("Helvetica-Bold")
-           .text(" " + value, { indent: 0 });
-      }
-      doc.moveDown(0.8);
+    Y = HEADER_H;
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 2. DEAL SUMMARY BAR
+    // ─────────────────────────────────────────────────────────────────────────
+    const SUMBAR_H = 48;
+    doc.rect(0, Y, W, SUMBAR_H).fill("#f8fafc");
+    doc.moveTo(0, Y).lineTo(W, Y).strokeColor(border).lineWidth(0.5).stroke();
+    doc.moveTo(0, Y + SUMBAR_H).lineTo(W, Y + SUMBAR_H).strokeColor(border).lineWidth(0.5).stroke();
+
+    // Ref
+    const refLabel = tr.manifest_ref ?? `#${dealId.slice(0, 8).toUpperCase()}`;
+    doc.fillColor(blue).fontSize(12).font("Helvetica-Bold")
+       .text(refLabel, ML, Y + 16, { lineBreak: false });
+
+    // Date
+    const todayStr = new Date().toISOString().split("T")[0]!;
+    doc.fillColor(muted).fontSize(8).font("Helvetica")
+       .text(`Generated: ${todayStr}`, ML + 140, Y + 20, { lineBreak: false });
+
+    // Status badge (right side)
+    const statusLabel = deal.status === "completed"   ? "مكتملة / Completed"
+                      : deal.status === "dispatched"  ? "في الطريق / Dispatched"
+                      : deal.status === "payment_confirmed" ? "مؤكدة / Confirmed"
+                      : deal.status === "active"      ? "نشطة / Active"
+                      : deal.status === "cancelled"   ? "ملغاة / Cancelled"
+                      : deal.status.toUpperCase();
+    const badgeColor = deal.status === "completed"  ? green
+                     : deal.status === "dispatched" ? blue
+                     : deal.status === "cancelled"  ? "#dc2626"
+                     : amber;
+    const badgeX = W - MR - 120;
+    doc.roundedRect(badgeX, Y + 12, 120, 22, 4).fill(badgeColor);
+    doc.fillColor(white).fontSize(8).font("Helvetica-Bold")
+       .text(statusLabel, badgeX, Y + 19, { width: 120, align: "center" });
+
+    Y += SUMBAR_H + 16;
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Helpers
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /** Section title with coloured left accent bar */
+    function sectionTitle(title: string): void {
+      doc.rect(ML, Y, 3, 14).fill(blue);
+      doc.fillColor(ink).fontSize(10).font("Helvetica-Bold")
+         .text(title, ML + 9, Y + 1);
+      Y += 20;
     }
 
-    // Generator (Producer)
-    section("Generator / المُولِّد", [
-      ["Company", producer?.name],
-      ["CR Number", producer?.commercialRegistration],
-      ["City", producer?.city],
-      ["Pickup Facility", tr.pickup_facility_name],
-    ]);
+    /** Horizontal rule */
+    function hr(gap = 12): void {
+      Y += gap / 2;
+      doc.moveTo(ML, Y).lineTo(ML + PW, Y).strokeColor(border).lineWidth(0.5).stroke();
+      Y += gap / 2;
+    }
 
-    // Receiver (Buyer)
-    section("Receiver / المُستقبِل", [
-      ["Company", buyer?.name],
-      ["CR Number", buyer?.commercialRegistration],
-      ["City", buyer?.city],
-      ["Delivery Facility", tr.delivery_facility_name],
-    ]);
+    /** Single row in a section: label ── value */
+    function row(label: string, value: string | null | undefined, opts?: { bold?: boolean }): void {
+      if (!value) return;
+      const COL = 160;
+      doc.fillColor(muted).fontSize(8.5).font("Helvetica")
+         .text(label, ML, Y, { width: COL, lineBreak: false });
+      doc.fillColor(ink).fontSize(8.5).font(opts?.bold ? "Helvetica-Bold" : "Helvetica")
+         .text(value, ML + COL, Y, { width: PW - COL });
+      Y += 15;
+    }
 
-    // Waste
+    /** Two-column party card */
+    function partyCard(
+      label: string,
+      name: string | undefined,
+      cr: string | undefined,
+      city: string | undefined,
+      phone: string | undefined,
+      facility: string | undefined,
+      x: number,
+      w: number,
+    ): void {
+      const cardH = 90;
+      doc.rect(x, Y, w, cardH).fill(blueLight);
+      doc.rect(x, Y, w, 18).fill(blue);
+      doc.fillColor(white).fontSize(7.5).font("Helvetica-Bold")
+         .text(label, x + 6, Y + 5, { width: w - 12 });
+      let cy = Y + 24;
+      const labelW = 70;
+      function cRow(l: string, v: string | undefined): void {
+        if (!v) return;
+        doc.fillColor(muted).fontSize(7.5).font("Helvetica").text(l, x + 6, cy, { width: labelW, lineBreak: false });
+        doc.fillColor(ink).fontSize(7.5).font("Helvetica-Bold").text(v, x + 6 + labelW, cy, { width: w - labelW - 12 });
+        cy += 13;
+      }
+      cRow("الاسم / Name:", name);
+      cRow("س.ت / CR:", cr);
+      cRow("المدينة / City:", city);
+      cRow("هاتف / Phone:", phone);
+      cRow("المنشأة / Facility:", facility);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 3. MATERIAL DETAILS
+    // ─────────────────────────────────────────────────────────────────────────
+    sectionTitle("تفاصيل المادة  /  Material Details");
+
     const qty = deal.actual_quantity ?? deal.estimated_amount;
-    section("Waste / النفايات", [
-      ["Category (AR)", cat?.name_ar],
-      ["Category (EN)", cat?.name_en],
-      ["Regulatory Code", cat?.regulatory_code],
-      ["Physical State", cat?.physical_state],
-      ["Quantity", qty ? `${Number(qty).toLocaleString()} ${listing?.unit ?? ""}`.trim() : undefined],
-    ]);
+    const qtyStr = qty ? `${Number(qty).toLocaleString()} ${listing?.unit ?? ""}`.trim() : undefined;
+    const valueStr = deal.final_amount
+      ? `${Number(deal.final_amount).toLocaleString()} ريال`
+      : deal.estimated_amount
+        ? `${Number(deal.estimated_amount).toLocaleString()} ريال (تقديري)`
+        : undefined;
 
-    // Transport
-    section("Transport / النقل", [
-      ["Transporter", tr.transporter_name],
-      ["Vehicle Plate", tr.vehicle_plate],
-      ["Pickup City", tr.pickup_city],
-      ["Delivery City", tr.delivery_city],
-    ]);
+    row("الفئة (AR) / Category (AR):", cat?.name_ar);
+    row("الفئة (EN) / Category (EN):", cat?.name_en);
+    if (cat?.regulatory_code) row("الكود التنظيمي / Reg. Code:", cat.regulatory_code);
+    if (cat?.physical_state)  row("الحالة المادية / Physical State:", cat.physical_state);
+    if (listing?.material)    row("نوع المادة / Material:", listing.material);
+    row("الكمية / Quantity:", qtyStr, { bold: true });
+    row("قيمة الصفقة / Deal Value:", valueStr, { bold: true });
 
-    // Footer
-    const footerY = doc.page.height - 56;
-    doc.moveTo(48, footerY - 8).lineTo(48 + pageWidth, footerY - 8).strokeColor("#e2e8f0").lineWidth(1).stroke();
-    doc.fillColor(grey).fontSize(8).font("Helvetica")
-       .text("Generated by Tadweerah Platform · منصة تدويرة للنفايات الصناعية", 48, footerY, { align: "center", width: pageWidth });
+    // Description block (full-width if present)
+    if (listing?.description) {
+      Y += 4;
+      doc.rect(ML, Y, PW, 8).fill("#f1f5f9");
+      doc.fillColor(muted).fontSize(7.5).font("Helvetica-Bold")
+         .text("وصف المادة  /  Material Description", ML + 4, Y + 1);
+      Y += 10;
+      const descH = Math.max(24, Math.ceil(listing.description.length / 80) * 12 + 8);
+      doc.rect(ML, Y, PW, descH).fill("#f8fafc");
+      doc.rect(ML, Y, 2, descH).fill(blue);
+      doc.fillColor(ink).fontSize(8.5).font("Helvetica")
+         .text(listing.description, ML + 8, Y + 5, { width: PW - 16 });
+      Y += descH + 8;
+    } else {
+      Y += 4;
+    }
+
+    hr();
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 4. PARTIES (two-column cards)
+    // ─────────────────────────────────────────────────────────────────────────
+    sectionTitle("أطراف الصفقة  /  Transaction Parties");
+
+    const CARD_GAP  = 12;
+    const CARD_W    = (PW - CARD_GAP) / 2;
+    partyCard(
+      "المُولِّد (البائع)  /  Generator (Seller)",
+      producer?.name,
+      producer?.commercialRegistration ?? undefined,
+      producer?.city ?? undefined,
+      producer?.contactPhone,
+      tr.pickup_facility_name ?? undefined,
+      ML, CARD_W,
+    );
+    partyCard(
+      "المُستقبِل (المشتري)  /  Receiver (Buyer)",
+      buyer?.name,
+      buyer?.commercialRegistration ?? undefined,
+      buyer?.city ?? undefined,
+      buyer?.contactPhone,
+      tr.delivery_facility_name ?? undefined,
+      ML + CARD_W + CARD_GAP, CARD_W,
+    );
+    Y += 94;
+
+    hr();
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 5. TRANSPORT DETAILS
+    // ─────────────────────────────────────────────────────────────────────────
+    const hasTransport = !!(tr.transporter_name || tr.vehicle_plate || tr.pickup_city || tr.delivery_city);
+    if (hasTransport) {
+      sectionTitle("تفاصيل النقل  /  Transport Details");
+      row("شركة النقل / Transporter:", tr.transporter_name);
+      row("لوحة المركبة / Vehicle Plate:", tr.vehicle_plate);
+      row("مدينة الاستلام / Pickup City:", tr.pickup_city);
+      row("مدينة التسليم / Delivery City:", tr.delivery_city);
+      if (tr.waste_description) row("وصف النفايات / Waste Description:", tr.waste_description);
+      Y += 4;
+      hr();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 6. TIMELINE
+    // ─────────────────────────────────────────────────────────────────────────
+    sectionTitle("الجدول الزمني  /  Transaction Timeline");
+
+    type TimelineStep = { label: string; date: Date | null | undefined; done: boolean };
+    const fmt = (d: Date | null | undefined): string =>
+      d ? new Date(d).toLocaleDateString("en-SA", { year: "numeric", month: "short", day: "numeric" }) : "—";
+
+    const steps: TimelineStep[] = [
+      { label: "إنشاء الصفقة\nDeal Created",         date: deal.created_at,           done: true },
+      { label: "تأكيد الدفع\nPayment Confirmed",      date: deal.payment_confirmed_at,  done: !!deal.payment_confirmed_at },
+      { label: "تم الشحن\nDispatched",                date: deal.dispatched_at,         done: !!deal.dispatched_at },
+      { label: "استلام البضاعة\nGoods Received",      date: deal.received_at,           done: !!deal.received_at },
+    ];
+
+    const STEP_W = PW / steps.length;
+    const DOT_R  = 6;
+    const LINE_Y = Y + 18;
+
+    // Connecting line
+    doc.moveTo(ML + DOT_R, LINE_Y).lineTo(ML + PW - DOT_R, LINE_Y)
+       .strokeColor(border).lineWidth(1.5).stroke();
+
+    steps.forEach((step, i) => {
+      const cx = ML + STEP_W * i + STEP_W / 2;
+      const color = step.done ? green : "#cbd5e1";
+      doc.circle(cx, LINE_Y, DOT_R).fill(color);
+      if (step.done) {
+        // Checkmark
+        doc.moveTo(cx - 3, LINE_Y).lineTo(cx - 1, LINE_Y + 2.5).lineTo(cx + 3.5, LINE_Y - 3)
+           .strokeColor(white).lineWidth(1.5).stroke();
+      }
+      doc.fillColor(step.done ? ink : "#94a3b8").fontSize(7).font("Helvetica-Bold")
+         .text(step.label.split("\n")[0]!, cx - STEP_W / 2 + 4, LINE_Y + 11, { width: STEP_W - 8, align: "center" });
+      doc.fillColor(muted).fontSize(6.5).font("Helvetica")
+         .text(step.label.split("\n")[1]!, cx - STEP_W / 2 + 4, LINE_Y + 20, { width: STEP_W - 8, align: "center" });
+      doc.fillColor(step.done ? green : "#94a3b8").fontSize(7).font("Helvetica")
+         .text(fmt(step.date), cx - STEP_W / 2 + 4, LINE_Y + 30, { width: STEP_W - 8, align: "center" });
+    });
+
+    Y = LINE_Y + 50;
+    hr();
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 7. ATTESTATION BLOCK
+    // ─────────────────────────────────────────────────────────────────────────
+    const attestH = 56;
+    doc.rect(ML, Y, PW, attestH).fill(greenBg);
+    doc.rect(ML, Y, PW, attestH).strokeColor(green).lineWidth(0.5).stroke();
+    doc.fillColor(green).fontSize(9).font("Helvetica-Bold")
+       .text("إقرار توثيق الصفقة  /  Transaction Attestation", ML + 8, Y + 8, { width: PW - 16 });
+    doc.fillColor(ink).fontSize(7.5).font("Helvetica")
+       .text(
+         "تم تنفيذ هذه الصفقة التجارية وتوثيقها إلكترونياً عبر منصة تدويرة للنفايات الصناعية. " +
+         "يُعدّ هذا المستند سجلاً رسمياً لحركة المواد ويتوافق مع متطلبات نظام إدارة النفايات الصناعية في المملكة العربية السعودية.\n" +
+         "This transaction was executed and digitally recorded on the Tadweerah industrial waste platform, " +
+         "in alignment with Saudi Arabia's industrial waste management regulatory requirements.",
+         ML + 8, Y + 22, { width: PW - 16 },
+       );
+    Y += attestH + 4;
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 8. FOOTER
+    // ─────────────────────────────────────────────────────────────────────────
+    const FOOTER_H = 28;
+    const footerY = H - FOOTER_H;
+    doc.rect(0, footerY, W, FOOTER_H).fill(blueDark);
+    doc.fillColor("#93c5fd").fontSize(7.5).font("Helvetica")
+       .text(
+         `منصة تدويرة للنفايات الصناعية  ·  www.tadweerah.com  ·  Generated ${todayStr}`,
+         ML, footerY + 10, { width: PW, align: "center" },
+       );
 
     doc.end();
   },
