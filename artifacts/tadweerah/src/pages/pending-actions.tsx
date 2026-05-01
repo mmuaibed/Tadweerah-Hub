@@ -94,7 +94,7 @@ export function PendingActionsPage() {
           </p>
         </div>
         {deals.length > 0 && (
-          <span className="ms-auto inline-flex h-6 items-center justify-center rounded-full bg-destructive px-2 text-xs font-bold text-white">
+          <span className="ms-auto inline-flex h-6 items-center justify-center rounded-full bg-amber-500 px-2 text-xs font-bold text-white">
             {deals.length}
           </span>
         )}

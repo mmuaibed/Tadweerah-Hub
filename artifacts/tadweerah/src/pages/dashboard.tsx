@@ -96,18 +96,18 @@ function PendingActionsSection({
   return (
     <div className="mb-4">
       <Link to="/pending-actions">
-        <div className="group flex cursor-pointer items-center gap-3 rounded-xl border-2 border-destructive/30 bg-destructive/5 px-4 py-3.5 transition-all hover:border-destructive/50 hover:bg-destructive/10">
-          <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-destructive/15 text-destructive">
+        <div className="group flex cursor-pointer items-center gap-3 rounded-xl border-2 border-amber-400/40 bg-amber-50/70 px-4 py-3.5 transition-all hover:border-amber-400/60 hover:bg-amber-50">
+          <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
             <Clock className="h-5 w-5" />
-            <span className="absolute -top-1 -end-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-white">
+            <span className="absolute -top-1 -end-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[9px] font-bold text-white">
               {count}
             </span>
           </span>
           <div className="flex-1 min-w-0">
-            <p className="text-[10px] font-medium text-destructive/70">{t("dashboard.pending.title")}</p>
+            <p className="text-[10px] font-medium text-amber-600/80">{t("dashboard.pending.title")}</p>
             <p className="text-sm font-bold text-foreground leading-snug">{summaryText}</p>
           </div>
-          <Arrow className="h-4 w-4 shrink-0 text-destructive opacity-60 transition-opacity group-hover:opacity-100" />
+          <Arrow className="h-4 w-4 shrink-0 text-amber-500 opacity-60 transition-opacity group-hover:opacity-100" />
         </div>
       </Link>
     </div>
