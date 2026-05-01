@@ -39,8 +39,15 @@ export const companiesTable = pgTable("companies", {
     { onDelete: "set null" },
   ),
 
-  /** Regulatory license number (e.g. MOMRA, NCBE). */
+  /** Regulatory license number (e.g. MOMRA, NCBE). Primary / first license. */
   license_number: text("license_number"),
+
+  /**
+   * JSON array of all submitted licenses.
+   * Each entry: { number, issuer, expiryDate?, activityKeys }
+   * The first entry mirrors license_number for backward compatibility.
+   */
+  licenses_json: text("licenses_json"),
 
   /** URL to uploaded license document image / PDF. */
   license_document_url: text("license_document_url"),

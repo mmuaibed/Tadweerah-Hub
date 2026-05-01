@@ -51,10 +51,28 @@ router.post("/companies", requireAuth, async (req, res) => {
     return;
   }
 
+  // Support both legacy single license_number and new licenses[] array
+  interface LicenseEntry { number: string; issuer?: string; expiryDate?: string; activityKeys?: string[] }
+  const licensesRaw: LicenseEntry[] = Array.isArray(req.body?.licenses)
+    ? (req.body.licenses as unknown[])
+        .filter((l): l is Record<string, unknown> => typeof l === "object" && l !== null)
+        .map((l) => ({
+          number: String(l.number ?? "").trim(),
+          issuer: typeof l.issuer === "string" ? l.issuer.trim() : undefined,
+          expiryDate: typeof l.expiryDate === "string" ? l.expiryDate.trim() || undefined : undefined,
+          activityKeys: Array.isArray(l.activityKeys) ? (l.activityKeys as unknown[]).filter((v): v is string => typeof v === "string") : [],
+        }))
+        .filter((l) => l.number.length > 0)
+    : [];
+
   const licenseNumber =
-    typeof req.body?.license_number === "string" && req.body.license_number.trim()
-      ? req.body.license_number.trim()
-      : null;
+    licensesRaw.length > 0
+      ? licensesRaw[0].number
+      : (typeof req.body?.license_number === "string" && req.body.license_number.trim()
+          ? req.body.license_number.trim()
+          : null);
+
+  const licensesJson = licensesRaw.length > 0 ? JSON.stringify(licensesRaw) : null;
 
   const companyCategoryId =
     typeof req.body?.company_category_id === "string" && req.body.company_category_id.trim()
@@ -105,6 +123,7 @@ router.post("/companies", requireAuth, async (req, res) => {
       contactPhone: phoneRaw,
       commercialRegistration,
       license_number: licenseNumber,
+      licenses_json: licensesJson,
       company_category_id: companyCategoryId,
       license_status: licenseNumber ? "pending" : null,
       accepted_terms_at: acceptedTerms ? new Date() : null,

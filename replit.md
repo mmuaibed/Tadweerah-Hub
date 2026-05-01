@@ -2,6 +2,23 @@
 
 Tadweerah (تدويرة) is a Saudi B2B MVP platform designed to connect waste producers, recycling buyers, and licensed transporters. Its core purpose is to streamline the recycling process by providing a centralized marketplace for waste listings, offers, and deal management within the Saudi Arabian market. Key capabilities include user authentication, company onboarding (with MWAN-aligned multi-role classification), waste listing management, a buyer marketplace, an offer/bidding system, deal lifecycle management, and transport request orchestration aligned with MWAN eManifest requirements.
 
+## Latest Changes — License Multi-Support + Sign-in Improvements
+
+**Status:** Active development.
+
+**What changed in this session:**
+- `lib/db/src/schema/companies.ts`: Added `licenses_json text` column (stores JSON array of license objects)
+- `artifacts/api-server/src/routes/companies.ts`: Accepts `licenses[]` array in POST body; first license number → `license_number`, all → `licenses_json`
+- `artifacts/tadweerah/src/pages/onboarding.tsx`: Full rewrite — multi-license card UI (single/multiple toggle), MWAN-aligned activities, roles, license activity linking, cleaner step indicator
+- `artifacts/tadweerah/src/pages/sign-in.tsx`: Added "نسيت كلمة المرور؟" flow (Clerk v6 `resetPasswordEmailCode.sendCode/verifyCode/submitPassword`)
+- `artifacts/tadweerah/src/i18n/index.tsx`: Added keys for license (issuer, expiry, multi-hint), forgot-password flow, `onboarding.form.basic_info_title`
+- DB migrated: `pnpm --filter @workspace/db run push` applied
+
+**License object structure (stored in `licenses_json`):**
+```json
+[{ "number": "MWAN-12345", "issuer": "mwan", "expiryDate": "2026-01-01", "activityKeys": ["transport"] }]
+```
+
 ## Stable Baseline — MWAN-Aligned MVP (commit b6c562b)
 
 **Status:** Verified stable. No new features should be added until the next scenario is defined.
