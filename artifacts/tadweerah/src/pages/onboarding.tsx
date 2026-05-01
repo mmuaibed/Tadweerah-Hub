@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { AppLayout } from "@/components/app-layout";
 import { useT } from "@/i18n";
 
@@ -107,6 +108,7 @@ export function OnboardingPage() {
 
   /* ── Terms ── */
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
   /* ── Account (signed-out) ── */
   const [email, setEmail] = useState("");
@@ -775,12 +777,13 @@ export function OnboardingPage() {
                   />
                   <span className="text-sm text-foreground leading-relaxed">
                     {t("onboarding.terms.label")}{" "}
-                    <a href="/terms" target="_blank" rel="noopener noreferrer"
+                    <button
+                      type="button"
                       className="text-primary underline underline-offset-2 hover:text-primary/80"
-                      onClick={e => e.stopPropagation()}
+                      onClick={e => { e.stopPropagation(); setShowTermsModal(true); }}
                     >
                       {t("onboarding.terms.link")}
-                    </a>
+                    </button>
                   </span>
                 </label>
               </div>
@@ -818,6 +821,39 @@ export function OnboardingPage() {
             </Button>
           </div>
         </form>
+
+        {/* ─── Terms Modal ─────────────────────────────────── */}
+        <Dialog open={showTermsModal} onOpenChange={setShowTermsModal}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{t("terms.title")}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 text-sm text-foreground">
+              {([1, 2, 3, 4, 5] as const).map(n => (
+                <section key={n} className="space-y-1">
+                  <h3 className="font-semibold text-foreground">{t(`terms.section${n}.title` as any)}</h3>
+                  <p className="text-muted-foreground leading-relaxed">{t(`terms.section${n}.body` as any)}</p>
+                </section>
+              ))}
+              <div className="border-t border-border pt-3 space-y-0.5">
+                <p className="text-xs text-muted-foreground">{t("terms.lastUpdated")}</p>
+                <p className="text-xs">
+                  <a href="mailto:info@tadweerah.com" className="text-primary hover:underline">
+                    {t("terms.support")}
+                  </a>
+                </p>
+              </div>
+            </div>
+            <div className="mt-2 flex justify-end">
+              <DialogClose asChild>
+                <Button type="button">
+                  {lang === "ar" ? "فهمت، أغلق" : "Got it, close"}
+                </Button>
+              </DialogClose>
+            </div>
+          </DialogContent>
+        </Dialog>
+
       </AppLayout>
     );
   }
