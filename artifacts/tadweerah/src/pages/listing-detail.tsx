@@ -1324,8 +1324,22 @@ export function ListingDetailPage() {
   const targeting = (listing as typeof listing & { targeting_type?: string }).targeting_type;
   const saleType = (listing as typeof listing & { sale_type?: string }).sale_type ?? "auction";
 
+  const subtitleNode = (
+    <span className="inline-flex items-center gap-1.5 mt-0.5">
+      <span className="text-sm text-muted-foreground">{ref}</span>
+      <button
+        type="button"
+        onClick={() => { void navigator.clipboard.writeText(ref); setRefCopied(true); setTimeout(() => setRefCopied(false), 2000); }}
+        className="text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+        title={t("action.copy")}
+      >
+        {refCopied ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
+      </button>
+    </span>
+  );
+
   return (
-    <AppLayout showSignOut title={materialLabel} subtitle={ref} actions={backButton} width="wide">
+    <AppLayout showSignOut title={materialLabel} subtitle={subtitleNode} actions={backButton} width="wide">
       {/* Dialogs */}
       <ConfirmDialog
         open={confirmOpen}
@@ -1381,29 +1395,6 @@ export function ListingDetailPage() {
               <Recycle className="h-12 w-12 text-muted-foreground/30" />
             </div>
           )}
-
-          {/* Title box */}
-          <div className="rounded-xl border border-border bg-card p-4 shrink-0">
-            <div className="flex items-center gap-2.5">
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary/15 text-secondary shrink-0">
-                <Recycle className="h-4 w-4" />
-              </span>
-              <div className="min-w-0">
-                <h2 className="text-base font-bold text-foreground truncate">{materialLabel}</h2>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="text-xs text-muted-foreground">{ref}</span>
-                  <button
-                    type="button"
-                    onClick={() => { void navigator.clipboard.writeText(ref); setRefCopied(true); setTimeout(() => setRefCopied(false), 2000); }}
-                    className="text-muted-foreground/50 hover:text-muted-foreground transition-colors"
-                    title={t("action.copy")}
-                  >
-                    {refCopied ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
 
           {/* Description */}
           {listing.description && (

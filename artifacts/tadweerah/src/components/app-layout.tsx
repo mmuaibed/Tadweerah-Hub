@@ -5,7 +5,7 @@ interface AppLayoutProps {
   children: ReactNode;
   showSignOut?: boolean;
   title?: string;
-  subtitle?: string;
+  subtitle?: ReactNode;
   actions?: ReactNode;
   width?: "narrow" | "wide";
 }
