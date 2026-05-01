@@ -131,8 +131,79 @@ function CompactRow({ icon, label, value }: { icon: React.ReactNode; label: stri
   );
 }
 
+/**
+ * Shared price display: adapts label and layout based on pricing model.
+ * - "fixed" → shows offer total (price_per_unit × quantity) only, no per-unit label.
+ * - other   → shows price_per_unit / unit label + estimated total below.
+ */
+function PriceDisplay({
+  pricePerUnit,
+  quantity,
+  unit,
+  pricingModel,
+  size = "md",
+  t,
+}: {
+  pricePerUnit: number;
+  quantity: number;
+  unit?: string;
+  pricingModel?: string | null;
+  size?: "sm" | "md" | "lg";
+  t: (k: string) => string;
+}) {
+  const isTotal = pricingModel === "fixed";
+  const unitLabel = unit ? t(`unit.${unit}`) : "";
+  const totalValue = pricePerUnit * quantity;
+  const valueClass =
+    size === "lg" ? "text-3xl font-extrabold tracking-tight text-foreground"
+    : size === "md" ? "text-xl font-bold text-foreground"
+    : "text-base font-bold text-foreground";
+
+  if (isTotal) {
+    return (
+      <div>
+        <p className="text-[10px] text-muted-foreground mb-0.5">{t("offer.price.offerTotal")}</p>
+        <div className="flex items-baseline gap-1">
+          <span className={valueClass}>{totalValue.toLocaleString()}</span>
+          <span className="text-xs text-muted-foreground">{t("listing.sar")}</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="flex items-baseline gap-1">
+        <span className={valueClass}>{pricePerUnit.toLocaleString()}</span>
+        <span className="text-xs text-muted-foreground">
+          {t("listing.sar")}{unitLabel ? ` / ${unitLabel}` : ` / ${t("offer.price.perUnit").split("/")[1]?.trim()}`}
+        </span>
+      </div>
+      {quantity > 0 && (
+        <p className="text-xs text-muted-foreground mt-0.5">
+          {t("offer.mine.total")}:{" "}
+          <span className="font-semibold text-foreground">{totalValue.toLocaleString()} {t("listing.sar")}</span>
+          {" "}<span className="text-muted-foreground/60">{t("offer.quantityDisclaimer")}</span>
+        </p>
+      )}
+    </div>
+  );
+}
+
 /** Hero price display for the middle stats column */
-function OfferPriceHero({ wasteListingId, t }: { wasteListingId: string; t: (k: string) => string }) {
+function OfferPriceHero({
+  wasteListingId,
+  listingQuantity,
+  unit,
+  pricingModel,
+  t,
+}: {
+  wasteListingId: string;
+  listingQuantity: number;
+  unit?: string;
+  pricingModel?: string | null;
+  t: (k: string) => string;
+}) {
   const { data: summary } = useGetOffersSummary(wasteListingId);
   if (!summary) return null;
   return (
@@ -140,12 +211,14 @@ function OfferPriceHero({ wasteListingId, t }: { wasteListingId: string; t: (k: 
       {summary.count > 0 && summary.highest_price != null ? (
         <div>
           <p className="text-[10px] text-muted-foreground mb-0.5">{t("offer.summary.highest")}</p>
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-3xl font-extrabold text-foreground tracking-tight">
-              {summary.highest_price.toLocaleString()}
-            </span>
-            <span className="text-xs text-muted-foreground">{t("listing.sar")} / {t("offer.summary.perUnit").split("/")[1]}</span>
-          </div>
+          <PriceDisplay
+            pricePerUnit={summary.highest_price}
+            quantity={listingQuantity}
+            unit={unit}
+            pricingModel={pricingModel}
+            size="lg"
+            t={t}
+          />
         </div>
       ) : null}
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -354,6 +427,9 @@ function AcceptOfferDialog({
   open,
   offer,
   isLowerThanHighest,
+  listingQuantity,
+  pricingModel,
+  unit,
   onOpenChange,
   onConfirm,
   isPending,
@@ -361,6 +437,9 @@ function AcceptOfferDialog({
   open: boolean;
   offer: ListingOffer | null;
   isLowerThanHighest: boolean;
+  listingQuantity?: number;
+  pricingModel?: string | null;
+  unit?: string;
   onOpenChange: (open: boolean) => void;
   onConfirm: (acceptanceReason?: string) => void;
   isPending: boolean;
@@ -391,12 +470,19 @@ function AcceptOfferDialog({
         <DialogHeader>
           <DialogTitle>{t("offer.accept.confirm.title")}</DialogTitle>
           {offer && (
-            <DialogDescription className="space-y-1">
-              <span className="block">
-                {offer.buyer_company_name} —{" "}
-                {offer.price_per_unit.toLocaleString()} {t("listing.sar")}
-              </span>
-              <span className="block text-xs">{t("offer.accept.confirm.desc")}</span>
+            <DialogDescription asChild>
+              <div className="space-y-2 pt-1">
+                <p className="text-sm font-semibold text-foreground">{offer.buyer_company_name}</p>
+                <PriceDisplay
+                  pricePerUnit={offer.price_per_unit}
+                  quantity={listingQuantity ?? 0}
+                  unit={unit}
+                  pricingModel={pricingModel}
+                  size="sm"
+                  t={t}
+                />
+                <p className="text-xs text-muted-foreground">{t("offer.accept.confirm.desc")}</p>
+              </div>
             </DialogDescription>
           )}
         </DialogHeader>
@@ -450,11 +536,15 @@ function BuyerOfferSection({
   wasteListingId,
   listingQuantity,
   isOpen,
+  pricingModel,
+  unit,
   onSuccess,
 }: {
   wasteListingId: string;
   listingQuantity: number;
   isOpen: boolean;
+  pricingModel?: string | null;
+  unit?: string;
   onSuccess: () => void;
 }) {
   const { t } = useT();
@@ -588,18 +678,14 @@ function BuyerOfferSection({
           <CheckCircle2 className="h-5 w-5" />
           <span className="font-semibold">{t("offer.mine.accepted")}</span>
         </div>
-        <div className="text-sm text-muted-foreground">
-          {myOffer.price_per_unit.toLocaleString()} {t("listing.sar")} /{" "}
-          {t("offer.summary.perUnit").split("/")[1]}
-        </div>
-        <div className="text-xs text-muted-foreground">
-          {t("offer.mine.total")}:{" "}
-          <span className="font-medium text-foreground">
-            {(myOffer.price_per_unit * listingQuantity).toLocaleString()} {t("listing.sar")}
-          </span>
-          {" "}
-          <span className="text-muted-foreground/60">{t("offer.quantityDisclaimer")}</span>
-        </div>
+        <PriceDisplay
+          pricePerUnit={myOffer.price_per_unit}
+          quantity={listingQuantity}
+          unit={unit}
+          pricingModel={pricingModel}
+          size="md"
+          t={t}
+        />
       </div>
     );
   }
@@ -607,28 +693,21 @@ function BuyerOfferSection({
   // Rejected offer — F2: show rejection reason + consistent price display
   if (myOffer?.status === "rejected") {
     const reasonText = translateRejectionReason(myOffer.rejection_reason, t);
-    const rejectedTotal = myOffer.price_per_unit * listingQuantity;
     return (
       <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-5 space-y-2">
         <div className="flex items-center gap-2 text-destructive">
           <XCircle className="h-5 w-5" />
           <span className="font-semibold">{t("offer.mine.rejected")}</span>
         </div>
-        <div className="flex items-baseline gap-1">
-          <span className="text-lg font-bold text-foreground/70">
-            {myOffer.price_per_unit.toLocaleString()}
-          </span>
-          <span className="text-xs text-muted-foreground">
-            {t("listing.sar")} / {t("offer.summary.perUnit").split("/")[1]}
-          </span>
-        </div>
-        <div className="text-xs text-muted-foreground">
-          {t("offer.mine.total")}:{" "}
-          <span className="font-medium text-foreground/70">
-            {rejectedTotal.toLocaleString()} {t("listing.sar")}
-          </span>
-          {" "}
-          <span className="text-muted-foreground/60">{t("offer.quantityDisclaimer")}</span>
+        <div className="opacity-70">
+          <PriceDisplay
+            pricePerUnit={myOffer.price_per_unit}
+            quantity={listingQuantity}
+            unit={unit}
+            pricingModel={pricingModel}
+            size="md"
+            t={t}
+          />
         </div>
         {reasonText && (
           <div className="text-xs text-muted-foreground border-t border-destructive/20 pt-2 mt-1">
@@ -642,7 +721,6 @@ function BuyerOfferSection({
 
   // Existing pending offer
   if (myOffer?.status === "pending") {
-    const estimatedTotal = myOffer.price_per_unit * listingQuantity;
     const rank = (myOffer as unknown as { rank?: number }).rank;
     const totalOffers = (myOffer as unknown as { total_offers?: number }).total_offers;
 
@@ -670,22 +748,14 @@ function BuyerOfferSection({
               <Badge variant="secondary">{t("offer.status.pending")}</Badge>
             </div>
           </div>
-          <div className="flex items-end gap-1">
-            <span className="text-2xl font-bold text-foreground">
-              {myOffer.price_per_unit.toLocaleString()}
-            </span>
-            <span className="text-sm text-muted-foreground pb-0.5">
-              {t("listing.sar")} / {t("offer.summary.perUnit").split("/")[1]}
-            </span>
-          </div>
-          <div className="text-xs text-muted-foreground">
-            {t("offer.mine.total")}:{" "}
-            <span className="font-semibold text-foreground">
-              {estimatedTotal.toLocaleString()} {t("listing.sar")}
-            </span>
-            {" "}
-            <span className="text-muted-foreground/60">{t("offer.quantityDisclaimer")}</span>
-          </div>
+          <PriceDisplay
+            pricePerUnit={myOffer.price_per_unit}
+            quantity={listingQuantity}
+            unit={unit}
+            pricingModel={pricingModel}
+            size="md"
+            t={t}
+          />
           <p className="text-xs text-muted-foreground">{t("offer.mine.pending")}</p>
           {myOffer.message && (
             <p className="text-sm text-foreground italic">{myOffer.message}</p>
@@ -913,6 +983,8 @@ function ProducerOfferRow({
   listingQuantity,
   listingIsOpen,
   highestPendingPrice,
+  pricingModel,
+  unit,
   onAccept,
   onReject,
   isAccepting,
@@ -922,13 +994,14 @@ function ProducerOfferRow({
   listingQuantity: number;
   listingIsOpen: boolean;
   highestPendingPrice: number;
+  pricingModel?: string | null;
+  unit?: string;
   onAccept: (offer: ListingOffer) => void;
   onReject: (offer: ListingOffer) => void;
   isAccepting: boolean;
   isRejecting: boolean;
 }) {
   const { t } = useT();
-  const estimatedTotal = offer.price_per_unit * listingQuantity;
 
   return (
     <div className="py-4 space-y-3">
@@ -949,22 +1022,14 @@ function ProducerOfferRow({
         </Badge>
       </div>
 
-      <div className="flex items-baseline gap-1">
-        <span className="text-xl font-bold text-foreground">
-          {offer.price_per_unit.toLocaleString()}
-        </span>
-        <span className="text-xs text-muted-foreground">
-          {t("listing.sar")} / {t("offer.producer.pricePerUnit").split("/")[1].trim()}
-        </span>
-      </div>
-      <div className="text-xs text-muted-foreground">
-        {t("offer.producer.total")}:{" "}
-        <span className="font-semibold text-foreground">
-          {estimatedTotal.toLocaleString()} {t("listing.sar")}
-        </span>
-        {" "}
-        <span className="text-muted-foreground/60">{t("offer.quantityDisclaimer")}</span>
-      </div>
+      <PriceDisplay
+        pricePerUnit={offer.price_per_unit}
+        quantity={listingQuantity}
+        unit={unit}
+        pricingModel={pricingModel}
+        size="md"
+        t={t}
+      />
 
       {offer.message && (
         <p className="text-sm text-muted-foreground italic">{offer.message}</p>
@@ -1002,12 +1067,16 @@ function ProducerOffersPanel({
   wasteListingId,
   listingQuantity,
   listingIsOpen,
+  pricingModel,
+  unit,
   onAfterAction,
   onPendingCountChange,
 }: {
   wasteListingId: string;
   listingQuantity: number;
   listingIsOpen: boolean;
+  pricingModel?: string | null;
+  unit?: string;
   onAfterAction: () => void;
   onPendingCountChange: (count: number) => void;
 }) {
@@ -1085,6 +1154,9 @@ function ProducerOffersPanel({
         open={!!acceptTarget}
         offer={acceptTarget}
         isLowerThanHighest={acceptIsLower}
+        listingQuantity={listingQuantity}
+        pricingModel={pricingModel}
+        unit={unit}
         onOpenChange={(open) => { if (!open) setAcceptTarget(null); }}
         onConfirm={handleAcceptConfirm}
         isPending={isAccepting}
@@ -1118,6 +1190,8 @@ function ProducerOffersPanel({
                 listingQuantity={listingQuantity}
                 listingIsOpen={listingIsOpen}
                 highestPendingPrice={highestPendingPrice}
+                pricingModel={pricingModel}
+                unit={unit}
                 onAccept={(o) => setAcceptTarget(o)}
                 onReject={(o) => setRejectTarget(o)}
                 isAccepting={isAccepting && acceptTarget?.id === offer.id}
@@ -1437,7 +1511,13 @@ export function ListingDetailPage() {
               </Badge>
             </div>
             {/* Offer summary — hero price */}
-            <OfferPriceHero wasteListingId={wasteListingId} t={t} />
+            <OfferPriceHero
+              wasteListingId={wasteListingId}
+              listingQuantity={quantity}
+              unit={listing.unit ?? undefined}
+              pricingModel={listing.pricing_model}
+              t={t}
+            />
           </div>
 
           {/* Targeting & eligibility banners */}
@@ -1544,6 +1624,8 @@ export function ListingDetailPage() {
               wasteListingId={wasteListingId}
               listingQuantity={quantity}
               listingIsOpen={!!isOpen}
+              pricingModel={listing.pricing_model}
+              unit={listing.unit ?? undefined}
               onAfterAction={invalidateListing}
               onPendingCountChange={setPendingOfferCount}
             />
@@ -1559,6 +1641,8 @@ export function ListingDetailPage() {
                   wasteListingId={wasteListingId}
                   listingQuantity={quantity}
                   isOpen={!!isOpen}
+                  pricingModel={listing.pricing_model}
+                  unit={listing.unit ?? undefined}
                   onSuccess={() => {
                     queryClient.invalidateQueries({ queryKey: getGetListingOffersQueryKey(wasteListingId) });
                     queryClient.invalidateQueries({ queryKey: getGetOffersSummaryQueryKey(wasteListingId) });

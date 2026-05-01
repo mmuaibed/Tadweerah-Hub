@@ -474,6 +474,8 @@ const translations: Record<string, Record<Language, string>> = {
 
   // M4.5 — F14: quantity disclaimer
   "offer.quantityDisclaimer": { ar: "* الكمية تقديرية", en: "* Quantity is approximate" },
+  "offer.price.offerTotal": { ar: "إجمالي العرض", en: "Offer Total" },
+  "offer.price.perUnit": { ar: "ر.س / وحدة", en: "SAR / unit" },
 
   // M4.5 — M2: My Participations
   "participations.title": { ar: "مشاركاتي", en: "My Participations" },
