@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Switch, Route, Redirect, useLocation, Router as WouterRouter } from "wouter";
-import { ClerkProvider, Show, SignUp, useClerk, useAuth } from "@clerk/react";
+import { ClerkProvider, Show, useClerk, useAuth } from "@clerk/react";
 import { shadcn } from "@clerk/themes";
 import { setAuthTokenGetter } from "@workspace/api-client-react";
 import {
@@ -65,25 +65,9 @@ function HomeRedirect() {
 }
 
 function OnboardingRoute() {
-  return (
-    <>
-      <Show when="signed-in">
-        <RouteGuard requireCompany={false}>
-          <OnboardingPage />
-        </RouteGuard>
-      </Show>
-      <Show when="signed-out">
-        {/* Embedded sign-up: user stays on /onboarding/company and sees company form after */}
-        <div className="flex min-h-[calc(100dvh-4rem)] items-center justify-center bg-background px-4 py-8">
-          <SignUp
-            routing="hash"
-            signInUrl={`${basePath}/sign-in`}
-            forceRedirectUrl={`${basePath}/onboarding/company`}
-          />
-        </div>
-      </Show>
-    </>
-  );
+  // OnboardingPage handles both signed-in and signed-out states internally,
+  // including the redirect-to-dashboard logic for users who already have a company.
+  return <OnboardingPage />;
 }
 
 function CompanyRoute({ children }: { children: React.ReactNode }) {
