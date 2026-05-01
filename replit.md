@@ -2,7 +2,26 @@
 
 Tadweerah (تدويرة) is a Saudi B2B MVP platform designed to connect waste producers, recycling buyers, and licensed transporters. Its core purpose is to streamline the recycling process by providing a centralized marketplace for waste listings, offers, and deal management within the Saudi Arabian market. Key capabilities include user authentication, company onboarding (with MWAN-aligned multi-role classification), waste listing management, a buyer marketplace, an offer/bidding system, deal lifecycle management, and transport request orchestration aligned with MWAN eManifest requirements.
 
-## Latest Changes — Centralised Eligibility Rules Engine
+## Latest Changes — Step-by-Step Onboarding Flow
+
+**Status:** Active development.
+
+**What changed in this session:**
+- `artifacts/tadweerah/src/pages/onboarding.tsx` — Complete rewrite from a single long scrolling page to a 4-step internal flow.
+  - Step 1: Basic Info (name, city, phone, CR, category)
+  - Step 2: Activity & Roles (MWAN actions + generator/receiver/transporter)
+  - Step 3: Licenses (single/multi, number, issuer, expiry, linked activities)
+  - Step 4: Summary + Terms acceptance + Submit
+- `CompanyStepIndicator` component reflects the active company sub-step (1–4)
+- `OuterStepIndicator` used for the signed-out account/verify phases
+- Per-step validators: `validateStep1()` (name, city, phone), `validateStep2()` (activities required)
+- "Back to step 4" button on the account creation screen for easy correction
+- `artifacts/tadweerah/src/i18n/index.tsx` — Added `onboarding.step.basic_info`, `.activity`, `.licenses_step`, `.confirm`, `onboarding.nav.next/back/next_account`
+- TypeScript: clean on both API server and frontend
+
+---
+
+## Previous Changes — Centralised Eligibility Rules Engine
 
 **Status:** Active development.
 
