@@ -918,21 +918,43 @@ router.get(
             material: wasteListingsTable.material,
             description: wasteListingsTable.description,
             material_category_id: wasteListingsTable.material_category_id,
+            material_subcategory_id: wasteListingsTable.material_subcategory_id,
           })
           .from(wasteListingsTable)
           .where(eq(wasteListingsTable.id, deal.listing_id))
           .limit(1)
       : [null];
 
-    // Fetch category (TR category override or listing category)
-    const catId = tr.waste_category_id ?? listing?.material_category_id;
-    const [cat] = catId
+    // Collect all category IDs to fetch in one query
+    const catIdsToFetch = [
+      listing?.material_category_id,
+      listing?.material_subcategory_id,
+      tr.waste_category_id,
+    ].filter((id): id is string => !!id);
+
+    const catRows = catIdsToFetch.length
       ? await db
-          .select({ name_ar: materialCategoriesTable.name_ar, name_en: materialCategoriesTable.name_en, regulatory_code: materialCategoriesTable.regulatory_code, physical_state: materialCategoriesTable.physical_state })
+          .select({
+            id: materialCategoriesTable.id,
+            name_ar: materialCategoriesTable.name_ar,
+            name_en: materialCategoriesTable.name_en,
+            regulatory_code: materialCategoriesTable.regulatory_code,
+            physical_state: materialCategoriesTable.physical_state,
+            parent_id: materialCategoriesTable.parent_id,
+          })
           .from(materialCategoriesTable)
-          .where(eq(materialCategoriesTable.id, catId))
-          .limit(1)
-      : [null];
+          .where(inArray(materialCategoriesTable.id, catIdsToFetch))
+      : [];
+
+    const catMap = Object.fromEntries(catRows.map((r) => [r.id, r]));
+
+    // Resolve category (parent = null) and subcategory (has parent)
+    const cat    = listing?.material_category_id    ? catMap[listing.material_category_id]    ?? null : null;
+    const subCat = listing?.material_subcategory_id ? catMap[listing.material_subcategory_id] ?? null : null;
+    // TR waste_category_id override — could be either level; use for regulatory fields if no listing cat
+    const trCat  = tr.waste_category_id             ? catMap[tr.waste_category_id]             ?? null : null;
+    // Determine which record carries regulatory metadata (prefer subcategory → category → TR)
+    const regCat = subCat ?? cat ?? trCat;
 
     // ── Build PDF ────────────────────────────────────────────────────────────
 
@@ -1096,11 +1118,20 @@ router.get(
         ? `${Number(deal.estimated_amount).toLocaleString()} ريال (تقديري)`
         : undefined;
 
-    row("الفئة (AR) / Category (AR):", cat?.name_ar);
-    row("الفئة (EN) / Category (EN):", cat?.name_en);
-    if (cat?.regulatory_code) row("الكود التنظيمي / Reg. Code:", cat.regulatory_code);
-    if (cat?.physical_state)  row("الحالة المادية / Physical State:", cat.physical_state);
-    if (listing?.material)    row("نوع المادة / Material:", listing.material);
+    // Category row (top-level parent, e.g., "معادن / Metals")
+    if (cat) {
+      row("الفئة / Category:", `${cat.name_ar}${cat.name_en ? "  /  " + cat.name_en : ""}`);
+    }
+    // Subcategory = specific material name (e.g., "حديد صافي / Clean Iron")
+    if (subCat) {
+      row("الفئة الفرعية / Subcategory:", `${subCat.name_ar}${subCat.name_en ? "  /  " + subCat.name_en : ""}`, { bold: true });
+    } else if (!cat && trCat) {
+      // Fallback: TR override only, no listing category
+      row("الفئة / Category:", `${trCat.name_ar}${trCat.name_en ? "  /  " + trCat.name_en : ""}`);
+    }
+    // Regulatory fields from the most specific record
+    if (regCat?.regulatory_code) row("الكود التنظيمي / Reg. Code:", regCat.regulatory_code);
+    if (regCat?.physical_state)  row("الحالة المادية / Physical State:", regCat.physical_state);
     row("الكمية / Quantity:", qtyStr, { bold: true });
     row("قيمة الصفقة / Deal Value:", valueStr, { bold: true });
 
