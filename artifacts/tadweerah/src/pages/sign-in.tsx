@@ -124,18 +124,23 @@ export function SignInPage() {
 
   return (
     <AppLayout width="narrow">
-      <div className="flex min-h-[65vh] items-center justify-center">
-        <div className="w-full max-w-sm space-y-6">
+      <div className="flex min-h-[70vh] items-center justify-center px-4">
+        <div className="w-full max-w-[440px]">
+          <div className="rounded-2xl border border-border/60 bg-card shadow-md shadow-black/5 px-8 py-10 space-y-8">
 
           {/* ── Normal sign-in ── */}
           {step === "credentials" && (
             <>
-              <div className="space-y-1 text-center">
-                <h1 className="text-2xl font-bold text-foreground">{t("action.signin")}</h1>
-                <p className="text-sm text-muted-foreground">{t("signin.subtitle")}</p>
+              <div className="space-y-2 text-center">
+                <h1 className="text-2xl font-bold text-foreground tracking-tight">
+                  {t("signin.welcome")}
+                </h1>
+                <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+                  {t("signin.subtitle")}
+                </p>
               </div>
 
-              <form onSubmit={handleSignIn} className="space-y-4">
+              <form onSubmit={handleSignIn} className="space-y-5">
                 <div className="space-y-2">
                   <Label htmlFor="si-email">{t("signin.email")}</Label>
                   <Input
@@ -151,16 +156,7 @@ export function SignInPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="si-password">{t("signin.password")}</Label>
-                    <button
-                      type="button"
-                      className="text-xs text-primary underline underline-offset-2 hover:text-primary/80"
-                      onClick={() => { setResetEmail(email); setError(null); setStep("forgot-email"); }}
-                    >
-                      {t("signin.forgot_password")}
-                    </button>
-                  </div>
+                  <Label htmlFor="si-password">{t("signin.password")}</Label>
                   <Input
                     id="si-password"
                     type="password"
@@ -170,6 +166,15 @@ export function SignInPage() {
                     value={password}
                     onChange={(e) => { setPassword(e.target.value); setError(null); }}
                   />
+                  <div className="flex justify-start">
+                    <button
+                      type="button"
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                      onClick={() => { setResetEmail(email); setError(null); setStep("forgot-email"); }}
+                    >
+                      {t("signin.forgot_password")}
+                    </button>
+                  </div>
                 </div>
 
                 {error && (
@@ -178,7 +183,7 @@ export function SignInPage() {
                   </div>
                 )}
 
-                <Button type="submit" size="lg" className="w-full" disabled={isPending}>
+                <Button type="submit" size="lg" className="w-full h-12 text-base font-semibold" disabled={isPending}>
                   {isPending && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
                   {t("action.signin")}
                 </Button>
@@ -300,6 +305,7 @@ export function SignInPage() {
             </>
           )}
 
+          </div>
         </div>
       </div>
     </AppLayout>

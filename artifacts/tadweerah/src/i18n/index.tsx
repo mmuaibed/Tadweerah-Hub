@@ -97,7 +97,8 @@ const translations: Record<string, Record<Language, string>> = {
   "action.signin": { ar: "تسجيل الدخول", en: "Sign In" },
   "action.signup": { ar: "إنشاء حساب", en: "Sign Up" },
 
-  "signin.subtitle": { ar: "أدخل بيانات حسابك للدخول إلى المنصة", en: "Enter your credentials to access the platform" },
+  "signin.welcome": { ar: "مرحباً بعودتك 👋", en: "Welcome back 👋" },
+  "signin.subtitle": { ar: "حياك الله من جديد في منصة تدويرة\nأدخل بياناتك للمتابعة", en: "Welcome back to Tadweerah\nEnter your details to continue" },
   "signin.email": { ar: "البريد الإلكتروني", en: "Email address" },
   "signin.password": { ar: "كلمة المرور", en: "Password" },
   "signin.error.generic": { ar: "حدث خطأ، يرجى المحاولة مجدداً", en: "Something went wrong. Please try again." },
