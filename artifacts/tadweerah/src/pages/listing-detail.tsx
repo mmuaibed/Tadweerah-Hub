@@ -434,11 +434,17 @@ function BuyerOfferSection({
 
   function mapOfferError(err: unknown): string {
     const code = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "";
+    if (code === "CompanyIncomplete")    return t("offer.error.CompanyIncomplete");
+    if (code === "CompanyPending")       return t("offer.error.CompanyPending");
+    if (code === "CompanyExpired")       return t("offer.error.CompanyExpired");
+    if (code === "CompanyRejected")      return t("offer.error.CompanyRejected");
     if (code === "PriceTooLow" || code.includes("higher")) return t("offer.error.tooLow");
-    if (code === "MissingCapability") return t("offer.error.MissingCapability");
-    if (code === "LicenseRequired") return t("offer.error.LicenseRequired");
-    if (code === "TargetingRestricted") return t("offer.error.TargetingRestricted");
-    if (code === "AlreadyTopBidder") return t("offer.error.AlreadyTopBidder");
+    if (code === "MissingCapability")    return t("offer.error.MissingCapability");
+    if (code === "LicenseRequired")      return t("offer.error.LicenseRequired");
+    if (code === "TargetingRestricted")  return t("offer.error.TargetingRestricted");
+    if (code === "AlreadyTopBidder")     return t("offer.error.AlreadyTopBidder");
+    if (code === "OfferSubmissionBlocked") return t("offer.error.OfferSubmissionBlocked");
+    if (code === "CommercialRegistrationRequired") return t("offer.error.CommercialRegistrationRequired");
     return t("offer.error.generic");
   }
 

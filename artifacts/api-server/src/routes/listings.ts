@@ -483,6 +483,32 @@ router.post(
     const { company } = req as AuthedCompanyRequest;
     const data = parsed.data;
 
+    // ── Company approval gate ─────────────────────────────────────────────────
+    // Only approved companies may publish listings.
+    if (!company.license_status) {
+      throw new HttpError(
+        403,
+        "CompanyIncomplete",
+        "Your company profile is incomplete. Complete your company data and submit it for review before publishing listings.",
+      );
+    }
+    if (company.license_status === "pending") {
+      throw new HttpError(
+        403,
+        "CompanyPending",
+        "Your company is currently under review. You will be able to publish listings once approved.",
+      );
+    }
+    if (company.license_status === "expired") {
+      throw new HttpError(
+        403,
+        "CompanyExpired",
+        "Your company license has expired. Please renew your license before publishing listings.",
+      );
+    }
+    // (rejected is already blocked globally by requireCompany middleware)
+    // ── End approval gate ─────────────────────────────────────────────────────
+
     // CR gate: Commercial Registration is required to create listings
     if (!company.commercialRegistration) {
       throw new HttpError(

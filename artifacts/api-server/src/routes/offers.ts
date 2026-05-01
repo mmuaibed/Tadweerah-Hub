@@ -473,6 +473,31 @@ router.post(
     }
     // ── End offer submission block gate ───────────────────────────────────────
 
+    // ── Company approval gate ─────────────────────────────────────────────────
+    // Only approved companies may submit offers.
+    if (!company.license_status) {
+      throw new HttpError(
+        403,
+        "CompanyIncomplete",
+        "Your company profile is incomplete. Complete your company data and submit it for review before submitting offers.",
+      );
+    }
+    if (company.license_status === "pending") {
+      throw new HttpError(
+        403,
+        "CompanyPending",
+        "Your company is currently under review. You will be able to submit offers once your company is approved.",
+      );
+    }
+    if (company.license_status === "expired") {
+      throw new HttpError(
+        403,
+        "CompanyExpired",
+        "Your company license has expired. Please renew your license before submitting offers.",
+      );
+    }
+    // ── End approval gate ─────────────────────────────────────────────────────
+
     // ── Targeting gate ────────────────────────────────────────────────────────
     // Enforce that this company is allowed to bid on the listing.
     if (listing.targeting_type === "specific_company") {

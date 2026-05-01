@@ -1264,6 +1264,63 @@ const translations: Record<string, Record<Language, string>> = {
   "admin.error.generic": { ar: "حدث خطأ أثناء التحميل", en: "An error occurred while loading" },
   "admin.logout": { ar: "تسجيل الخروج", en: "Logout" },
 
+  /* ── Admin: Companies tab ── */
+  "admin.tab.companies": { ar: "الشركات", en: "Companies" },
+  "admin.tab.deals":     { ar: "الصفقات", en: "Deals" },
+  "admin.company.fetch":         { ar: "تحميل الشركات", en: "Load Companies" },
+  "admin.company.count":         { ar: "{n} شركة", en: "{n} companies" },
+  "admin.company.empty":         { ar: "لا توجد شركات تطابق الفلتر", en: "No companies match the filter" },
+  "admin.company.name":          { ar: "الاسم", en: "Name" },
+  "admin.company.type":          { ar: "الدور", en: "Role" },
+  "admin.company.cr":            { ar: "السجل التجاري", en: "CR" },
+  "admin.company.city":          { ar: "المدينة", en: "City" },
+  "admin.company.status":        { ar: "حالة الترخيص", en: "License Status" },
+  "admin.company.change_status": { ar: "تغيير الحالة", en: "Change Status" },
+  "admin.company.status_filter": { ar: "فلتر الحالة", en: "Status Filter" },
+
+  /* ── Company types ── */
+  "company.type.producer":    { ar: "منتج نفايات", en: "Waste Producer" },
+  "company.type.buyer":       { ar: "مُعيد تدوير", en: "Recycler / Buyer" },
+  "company.type.transporter": { ar: "ناقل", en: "Transporter" },
+
+  /* ── Offer/listing error codes for company status ── */
+  "offer.error.CompanyIncomplete": {
+    ar: "ملف شركتك غير مكتمل. أكمل البيانات المطلوبة وانتظر مراجعة الفريق لتتمكن من تقديم عروض.",
+    en: "Your company profile is incomplete. Complete your company data and wait for review before submitting offers.",
+  },
+  "offer.error.CompanyPending": {
+    ar: "شركتك قيد المراجعة حالياً. ستتمكن من تقديم عروض بمجرد الاعتماد.",
+    en: "Your company is currently under review. You will be able to submit offers once approved.",
+  },
+  "offer.error.CompanyExpired": {
+    ar: "انتهت صلاحية ترخيص شركتك. يرجى تجديد الترخيص قبل تقديم العروض.",
+    en: "Your company license has expired. Please renew your license before submitting offers.",
+  },
+  "listing.error.CompanyIncomplete": {
+    ar: "ملف شركتك غير مكتمل. أكمل البيانات المطلوبة وانتظر مراجعة الفريق لتتمكن من نشر إعلانات.",
+    en: "Your company profile is incomplete. Complete your company data and wait for review before publishing listings.",
+  },
+  "listing.error.CompanyPending": {
+    ar: "شركتك قيد المراجعة حالياً. ستتمكن من نشر إعلانات بمجرد الاعتماد.",
+    en: "Your company is currently under review. You will be able to publish listings once approved.",
+  },
+  "listing.error.CompanyExpired": {
+    ar: "انتهت صلاحية ترخيص شركتك. يرجى تجديد الترخيص قبل نشر إعلانات.",
+    en: "Your company license has expired. Please renew your license before publishing listings.",
+  },
+  "offer.error.CompanyRejected": {
+    ar: "طلب تسجيل شركتك مرفوض. تواصل مع الدعم للمزيد من التفاصيل.",
+    en: "Your company registration has been rejected. Please contact support for details.",
+  },
+  "offer.error.OfferSubmissionBlocked": {
+    ar: "شركتك محظورة مؤقتاً من تقديم العروض بسبب مخالفات سابقة. تواصل مع الدعم.",
+    en: "Your company is currently blocked from submitting offers due to repeated failures. Please contact support.",
+  },
+  "offer.error.CommercialRegistrationRequired": {
+    ar: "السجل التجاري مطلوب لتقديم العروض. أضفه في ملف شركتك أولاً.",
+    en: "Commercial Registration is required before submitting offers. Add it in your company profile.",
+  },
+
   /* ── UX Polish: Receipt Confirmation Dialog ── */
   "deal.receipt_dialog.producer": { ar: "المنتج (الشركة)", en: "Producer (Company)" },
   "deal.receipt_dialog.quantity": { ar: "الكمية المتوقعة", en: "Expected Quantity" },
