@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, eq, inArray, or } from "drizzle-orm";
+import { and, eq, inArray, isNull, notInArray, or } from "drizzle-orm";
 import { clerkClient } from "@clerk/express";
 import {
   db,
@@ -113,6 +113,7 @@ router.get(
   async (req, res) => {
     const { company } = req as AuthedCompanyRequest;
 
+    // ── 1. Producer deal-flow actions: active → confirm_payment, payment_confirmed → confirm_dispatch
     const producerDeals = await db
       .select({
         id: dealsTable.id,
@@ -132,6 +133,7 @@ router.get(
       )
       .orderBy(dealsTable.updated_at);
 
+    // ── 2. Buyer deal-flow action: dispatched → confirm_receipt
     const buyerDeals = await db
       .select({
         id: dealsTable.id,
@@ -151,15 +153,108 @@ router.get(
       )
       .orderBy(dealsTable.updated_at);
 
+    // ── 3. Buyer transport decision: payment_confirmed + no transport_decision + no existing TR
+    const buyerChooseTransport = await db
+      .select({
+        id: dealsTable.id,
+        listing_id: dealsTable.listing_id,
+        status: dealsTable.status,
+        material: wasteListingsTable.material,
+        city: wasteListingsTable.city,
+        updated_at: dealsTable.updated_at,
+      })
+      .from(dealsTable)
+      .leftJoin(wasteListingsTable, eq(dealsTable.listing_id, wasteListingsTable.id))
+      .where(
+        and(
+          eq(dealsTable.buyer_company_id, company.id),
+          eq(dealsTable.status, "payment_confirmed"),
+          isNull(dealsTable.transport_decision),
+        ),
+      )
+      .orderBy(dealsTable.updated_at);
+
+    // ── 4. Pending transport requests (both roles) on non-terminal deals
+    const pendingTRs = await db
+      .select({
+        tr_id: transportRequestsTable.id,
+        id: dealsTable.id,
+        listing_id: dealsTable.listing_id,
+        status: dealsTable.status,
+        material: wasteListingsTable.material,
+        city: wasteListingsTable.city,
+        updated_at: transportRequestsTable.updated_at,
+        producer_company_id: dealsTable.producer_company_id,
+        buyer_company_id: dealsTable.buyer_company_id,
+      })
+      .from(transportRequestsTable)
+      .innerJoin(dealsTable, eq(dealsTable.id, transportRequestsTable.deal_id))
+      .leftJoin(wasteListingsTable, eq(wasteListingsTable.id, dealsTable.listing_id))
+      .where(
+        and(
+          eq(transportRequestsTable.status, "pending"),
+          notInArray(dealsTable.status, ["completed", "cancelled"]),
+          or(
+            eq(dealsTable.producer_company_id, company.id),
+            eq(dealsTable.buyer_company_id, company.id),
+          ),
+        ),
+      );
+
+    // ── Build response ────────────────────────────────────────────────────────
+
     const actionMap: Record<string, string> = {
       active: "confirm_payment",
       payment_confirmed: "confirm_dispatch",
       dispatched: "confirm_receipt",
     };
 
+    // IDs already shown from producer/buyer deal flow — avoid duplicating them in transport lists
+    const dealFlowIds = new Set([
+      ...producerDeals.map((d) => d.id),
+      ...buyerDeals.map((d) => d.id),
+    ]);
+
     const deals = [
-      ...producerDeals.map((d) => ({ ...d, role: "producer" as const, action_needed: actionMap[d.status] ?? d.status, updated_at: d.updated_at.toISOString() })),
-      ...buyerDeals.map((d) => ({ ...d, role: "buyer" as const, action_needed: actionMap[d.status] ?? d.status, updated_at: d.updated_at.toISOString() })),
+      // Deal-flow actions
+      ...producerDeals.map((d) => ({
+        ...d,
+        role: "producer" as const,
+        action_needed: actionMap[d.status] ?? d.status,
+        updated_at: d.updated_at.toISOString(),
+      })),
+      ...buyerDeals.map((d) => ({
+        ...d,
+        role: "buyer" as const,
+        action_needed: actionMap[d.status] ?? d.status,
+        updated_at: d.updated_at.toISOString(),
+      })),
+
+      // Buyer: choose transport (only if not already in deal flow)
+      ...buyerChooseTransport
+        .filter((d) => !dealFlowIds.has(d.id))
+        .map((d) => ({
+          ...d,
+          role: "buyer" as const,
+          action_needed: "choose_transport",
+          updated_at: d.updated_at.toISOString(),
+        })),
+
+      // Pending transport requests (both roles)
+      ...pendingTRs.map((tr) => {
+        const role: "producer" | "buyer" =
+          tr.producer_company_id === company.id ? "producer" : "buyer";
+        return {
+          id: tr.id,          // use deal id for linking
+          listing_id: tr.listing_id,
+          status: tr.status,
+          material: tr.material,
+          city: tr.city,
+          role,
+          action_needed: `transport_pending_${role}` as const,
+          updated_at: tr.updated_at.toISOString(),
+        };
+      }),
     ].sort((a, b) => a.updated_at.localeCompare(b.updated_at));
 
     res.json({ deals });
