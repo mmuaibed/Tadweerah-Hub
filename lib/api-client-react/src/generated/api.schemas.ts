@@ -36,6 +36,24 @@ export const LicenseStatus = {
   expired: "expired",
 } as const;
 
+/**
+ * Auto-computed from the first license's expiryDate in licenses_json.
+Active = more than 30 days until expiry (or no expiry date set).
+ExpiringSoon = within 30 days of expiry.
+Expired = past expiry date.
+None = no license submitted or no expiry date provided.
+
+ */
+export type LicenseValidity =
+  (typeof LicenseValidity)[keyof typeof LicenseValidity];
+
+export const LicenseValidity = {
+  Active: "Active",
+  ExpiringSoon: "ExpiringSoon",
+  Expired: "Expired",
+  None: "None",
+} as const;
+
 export type CompanyMemberRole =
   (typeof CompanyMemberRole)[keyof typeof CompanyMemberRole];
 
@@ -65,6 +83,8 @@ export interface Company {
   /** Regulatory license number (e.g. MOMRA, NCBE). Optional. */
   license_number?: string;
   license_status?: LicenseStatus;
+  /** Auto-computed validity based on the first license expiry date in licenses_json. */
+  license_validity?: LicenseValidity;
   /** FK to company_categories.id. Descriptive business category. */
   company_category_id?: string;
   createdAt: string;
@@ -162,10 +182,11 @@ export const ListingVisibility = {
  * Controls which companies may submit offers on this listing.
 ALL          — any registered company (default; maximises liquidity).
 LICENSED_ONLY — only companies with an approved MWAN license
-                (license_number non-null AND license_status = approved).
+                (license_number non-null AND license_status = approved
+                 AND license_validity is Active or ExpiringSoon).
 Visibility is separate from eligibility: LICENSED_ONLY listings are visible
 to all buyers in the marketplace but show a badge and block offer submission
-for unlicensed companies. Immutable once published.
+for unlicensed or expired-license companies. Immutable once published.
 
  */
 export type EligibleCompanyType =

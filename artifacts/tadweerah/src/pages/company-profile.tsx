@@ -21,7 +21,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AppLayout } from "@/components/app-layout";
+import { MwanLicenseBadge } from "@/components/mwan-license-badge";
 import { useT } from "@/i18n";
+import type { LicenseValidity } from "@/lib/license-validity";
 
 interface CompanyCategoryOption {
   id: string;
@@ -40,6 +42,7 @@ interface CompanyProfile {
   commercialRegistration?: string;
   license_number?: string;
   license_status?: "pending" | "approved" | "rejected" | "expired";
+  license_validity?: LicenseValidity;
   company_category_id?: string;
   category_name_ar?: string;
   category_name_en?: string;
@@ -48,12 +51,28 @@ interface CompanyProfile {
   roles?: MwanRole[];
 }
 
-function LicenseStatusBadge({ status }: { status?: string }) {
+function LicenseStatusBadge({
+  status,
+  validity,
+}: {
+  status?: string;
+  validity?: LicenseValidity;
+}) {
   const { t } = useT();
   if (!status) return null;
 
+  // For approved licenses, delegate to MwanLicenseBadge which handles validity
+  if (status === "approved") {
+    return (
+      <MwanLicenseBadge
+        licenseStatus="approved"
+        licenseValidity={validity ?? "None"}
+        size="md"
+      />
+    );
+  }
+
   const configs: Record<string, { icon: typeof ShieldCheck; cls: string; key: string }> = {
-    approved:  { icon: ShieldCheck, cls: "text-emerald-700 bg-emerald-50 border-emerald-200", key: "profile.license.approved" },
     pending:   { icon: Clock,       cls: "text-amber-700 bg-amber-50 border-amber-200",     key: "profile.license.pending"  },
     rejected:  { icon: ShieldX,     cls: "text-red-700 bg-red-50 border-red-200",           key: "profile.license.rejected" },
     expired:   { icon: ShieldAlert, cls: "text-orange-700 bg-orange-50 border-orange-200",  key: "profile.license.expired"  },
@@ -257,7 +276,7 @@ export function CompanyProfilePage() {
         {profile?.license_status && (
           <div className="flex items-center gap-3">
             <span className="text-sm text-muted-foreground">{t("profile.license.status")}:</span>
-            <LicenseStatusBadge status={profile.license_status} />
+            <LicenseStatusBadge status={profile.license_status} validity={profile.license_validity} />
           </div>
         )}
 

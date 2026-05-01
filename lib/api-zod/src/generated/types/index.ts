@@ -32,6 +32,7 @@ export * from "./getNotificationsParams";
 export * from "./healthStatus";
 export * from "./inviteCompanyMemberBody";
 export * from "./licenseStatus";
+export * from "./licenseValidity";
 export * from "./listingOffer";
 export * from "./listingRequiredService";
 export * from "./listingVisibility";

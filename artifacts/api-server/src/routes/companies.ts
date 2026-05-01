@@ -15,6 +15,7 @@ import { CreateCompanyBody } from "@workspace/api-zod";
 import { requireAuth, type AuthedRequest } from "../middlewares/requireAuth";
 import { requireCompany, type AuthedCompanyRequest } from "../middlewares/requireCompany";
 import { logAudit } from "../lib/audit";
+import { computeCompanyLicenseValidity } from "../lib/license-validity";
 
 const router: IRouter = Router();
 
@@ -305,6 +306,7 @@ router.get(
         commercialRegistration: companiesTable.commercialRegistration,
         license_number: companiesTable.license_number,
         license_status: companiesTable.license_status,
+        licenses_json: companiesTable.licenses_json,
         company_category_id: companiesTable.company_category_id,
         accepted_terms_at: companiesTable.accepted_terms_at,
         createdAt: companiesTable.createdAt,
@@ -351,6 +353,7 @@ router.get(
       commercialRegistration: r.commercialRegistration ?? undefined,
       license_number: r.license_number ?? undefined,
       license_status: r.license_status ?? undefined,
+      license_validity: computeCompanyLicenseValidity(r.licenses_json),
       company_category_id: r.company_category_id ?? undefined,
       category_name_ar: r.category_name_ar ?? undefined,
       category_name_en: r.category_name_en ?? undefined,

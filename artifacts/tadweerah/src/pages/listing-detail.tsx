@@ -1131,12 +1131,16 @@ export function ListingDetailPage() {
   const activeDeal: DealInfo | null = dealOverride ?? rawDeal;
   const isOpen = listing?.status === "open";
 
-  // Bidding eligibility — LICENSED_ONLY listings require an approved MWAN license
+  // Bidding eligibility — LICENSED_ONLY listings require an approved, non-expired MWAN license
   const eligibleCompanyType = (listing as unknown as { eligible_company_type?: string })?.eligible_company_type ?? "ALL";
   const viewerLicenseStatus = (me?.company as unknown as { license_status?: string } | undefined)?.license_status;
   const viewerLicenseNumber = (me?.company as unknown as { license_number?: string | null } | undefined)?.license_number;
-  const isViewerLicensed = !!viewerLicenseNumber && viewerLicenseStatus === "approved";
+  const viewerLicenseValidity = (me?.company as unknown as { license_validity?: string } | undefined)?.license_validity ?? "None";
+  const hasApprovedLicense = !!viewerLicenseNumber && viewerLicenseStatus === "approved";
+  // Expired licenses are treated the same as unlicensed for LICENSED_ONLY listings
+  const isViewerLicensed = hasApprovedLicense && viewerLicenseValidity !== "Expired";
   const isEligibilityBlocked = !isOwner && eligibleCompanyType === "LICENSED_ONLY" && !isViewerLicensed;
+  const isBlockedDueToExpiry = !isOwner && eligibleCompanyType === "LICENSED_ONLY" && hasApprovedLicense && viewerLicenseValidity === "Expired";
 
   const fromParam = new URLSearchParams(search).get("from");
   const backPath =
@@ -1545,13 +1549,25 @@ export function ListingDetailPage() {
         {role === "buyer" && (
           <div className="pb-4">
             {isEligibilityBlocked ? (
-              <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 space-y-1.5">
-                <div className="flex items-center gap-2 text-blue-700 font-semibold text-sm">
+              <div className={`rounded-lg border p-4 space-y-1.5 ${
+                isBlockedDueToExpiry
+                  ? "border-red-200 bg-red-50"
+                  : "border-blue-200 bg-blue-50"
+              }`}>
+                <div className={`flex items-center gap-2 font-semibold text-sm ${
+                  isBlockedDueToExpiry ? "text-red-700" : "text-blue-700"
+                }`}>
                   <Shield className="h-4 w-4 shrink-0" />
-                  {t("listing.eligible.blocked.title")}
+                  {isBlockedDueToExpiry
+                    ? t("listing.eligible.blocked.expired.title")
+                    : t("listing.eligible.blocked.title")}
                 </div>
-                <p className="text-xs text-blue-700/80 leading-relaxed">
-                  {t("listing.eligible.blocked.desc")}
+                <p className={`text-xs leading-relaxed ${
+                  isBlockedDueToExpiry ? "text-red-700/80" : "text-blue-700/80"
+                }`}>
+                  {isBlockedDueToExpiry
+                    ? t("listing.eligible.blocked.expired.desc")
+                    : t("listing.eligible.blocked.desc")}
                 </p>
               </div>
             ) : (

@@ -684,6 +684,8 @@ const translations: Record<string, Record<Language, string>> = {
   "listing.eligible.badge": { ar: "الشركات المرخصة من موان فقط", en: "MWAN-licensed companies only" },
   "listing.eligible.blocked.title": { ar: "هذا الإعلان للشركات المرخصة فقط", en: "This listing is for licensed companies only" },
   "listing.eligible.blocked.desc": { ar: "هذا الإعلان متاح فقط للشركات التي لديها ترخيص معتمد من موان. لتقديم عرض، يجب أن تمتلك رقم ترخيص معتمد من مَوَن.", en: "This listing is available only to companies with an approved MWAN license. To submit an offer, your company must have an approved MWAN license number." },
+  "listing.eligible.blocked.expired.title": { ar: "انتهت صلاحية ترخيصك", en: "Your license has expired" },
+  "listing.eligible.blocked.expired.desc": { ar: "ترخيص موان الخاص بشركتك منتهي الصلاحية. يرجى تجديد الترخيص لتتمكن من تقديم عروض على هذا النوع من الإعلانات.", en: "Your company's MWAN license has expired. Please renew your license to be able to submit offers on this type of listing." },
   "listing.form.saleType": { ar: "نوع البيع", en: "Sale Type" },
   "listing.form.saleType.auction.hint": {
     ar: "يتنافس المشترون بأسعار متزايدة — المنتج يختار أفضل عرض.",
@@ -723,6 +725,10 @@ const translations: Record<string, Record<Language, string>> = {
   "license.status.approved": { ar: "معتمد", en: "Approved" },
   "license.status.rejected": { ar: "مرفوض", en: "Rejected" },
   "license.status.expired": { ar: "منتهي الصلاحية", en: "Expired" },
+  "license.mwan.badge": { ar: "مرخص من موان", en: "MWAN Licensed" },
+  "license.validity.expired.badge": { ar: "ترخيص منتهي", en: "License Expired" },
+  "license.validity.expired.title": { ar: "انتهت صلاحية ترخيص موان", en: "MWAN license has expired" },
+  "license.validity.expiring_soon.tooltip": { ar: "ينتهي قريباً", en: "Expiring soon" },
   "license.blocked.title": { ar: "حسابك قيد المراجعة", en: "Account Under Review" },
   "license.blocked.desc": {
     ar: "يتطلب هذا الإجراء موافقة الترخيص. سيتواصل معك الفريق قريباً.",

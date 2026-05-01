@@ -25,6 +25,7 @@ import {
 import { HttpError, assertUuid } from "../middlewares/errorHandler";
 import { listingRef } from "../lib/listing-ref";
 import { logAudit } from "../lib/audit";
+import { computeCompanyLicenseValidity } from "../lib/license-validity";
 import {
   notifyOfferReceived,
   notifyOutbid,
@@ -534,20 +535,21 @@ router.post(
     // targeting_type = 'open' → all companies may bid
     // ── End targeting gate ────────────────────────────────────────────────────
 
-    // ── Eligibility gate (MWAN license) ──────────────────────────────────────
-    // LICENSED_ONLY listings require an approved MWAN license.
-    // A company is considered licensed when:
-    //   license_number is set AND license_status = 'approved'
+    // ── Eligibility gate (MWAN license + expiry) ─────────────────────────────
+    // LICENSED_ONLY listings require:
+    //   1. license_number is set AND license_status = 'approved'
+    //   2. license_validity is Active or ExpiringSoon (not Expired)
     if (listing.eligible_company_type === "LICENSED_ONLY") {
-      const isLicensed =
+      const hasApprovedLicense =
         Boolean(company.license_number) &&
         company.license_status === "approved";
-      if (!isLicensed) {
-        throw new HttpError(
-          403,
-          "EligibilityRequired",
-          "This listing is available only to companies with an approved MWAN license. Update your company profile to include a valid license number.",
-        );
+      const validity = computeCompanyLicenseValidity(company.licenses_json);
+      const isEligible = hasApprovedLicense && validity !== "Expired";
+      if (!isEligible) {
+        const reason = !hasApprovedLicense
+          ? "This listing is available only to companies with an approved MWAN license."
+          : "Your MWAN license has expired. Please renew it to submit offers on this listing.";
+        throw new HttpError(403, "EligibilityRequired", reason);
       }
     }
     // ── End eligibility gate ──────────────────────────────────────────────────

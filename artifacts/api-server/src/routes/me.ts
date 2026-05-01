@@ -8,6 +8,7 @@ import {
   companyRolesTable,
 } from "@workspace/db";
 import { requireAuth, type AuthedRequest } from "../middlewares/requireAuth";
+import { computeCompanyLicenseValidity } from "../lib/license-validity";
 
 const router: IRouter = Router();
 
@@ -36,6 +37,7 @@ router.get("/me", requireAuth, async (req, res) => {
       contactPhone: companiesTable.contactPhone,
       license_number: companiesTable.license_number,
       license_status: companiesTable.license_status,
+      licenses_json: companiesTable.licenses_json,
       company_category_id: companiesTable.company_category_id,
       accepted_terms_at: companiesTable.accepted_terms_at,
       createdAt: companiesTable.createdAt,
@@ -76,6 +78,7 @@ router.get("/me", requireAuth, async (req, res) => {
       contactPhone: membership.contactPhone,
       license_number: membership.license_number ?? undefined,
       license_status: membership.license_status ?? undefined,
+      license_validity: computeCompanyLicenseValidity(membership.licenses_json),
       company_category_id: membership.company_category_id ?? undefined,
       accepted_terms_at: membership.accepted_terms_at?.toISOString() ?? undefined,
       role: membership.role,

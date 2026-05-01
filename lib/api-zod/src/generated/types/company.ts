@@ -7,6 +7,7 @@
  */
 import type { CompanyType } from "./companyType";
 import type { LicenseStatus } from "./licenseStatus";
+import type { LicenseValidity } from "./licenseValidity";
 
 export interface Company {
   id: string;
@@ -18,6 +19,8 @@ export interface Company {
   /** Regulatory license number (e.g. MOMRA, NCBE). Optional. */
   license_number?: string;
   license_status?: LicenseStatus;
+  /** Auto-computed validity based on the first license expiry date in licenses_json. */
+  license_validity?: LicenseValidity;
   /** FK to company_categories.id. Descriptive business category. */
   company_category_id?: string;
   createdAt: Date;

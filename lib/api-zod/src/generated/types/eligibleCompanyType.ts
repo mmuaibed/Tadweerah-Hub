@@ -10,10 +10,11 @@
  * Controls which companies may submit offers on this listing.
 ALL          — any registered company (default; maximises liquidity).
 LICENSED_ONLY — only companies with an approved MWAN license
-                (license_number non-null AND license_status = approved).
+                (license_number non-null AND license_status = approved
+                 AND license_validity is Active or ExpiringSoon).
 Visibility is separate from eligibility: LICENSED_ONLY listings are visible
 to all buyers in the marketplace but show a badge and block offer submission
-for unlicensed companies. Immutable once published.
+for unlicensed or expired-license companies. Immutable once published.
 
  */
 export type EligibleCompanyType =
