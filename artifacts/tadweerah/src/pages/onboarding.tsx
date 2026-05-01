@@ -495,10 +495,10 @@ export function OnboardingPage() {
 
           {/* ─── Sub-step 2: Activities + Roles ────────────────── */}
           {companySubStep === 2 && (
-            <div className="space-y-6">
+            <div className="space-y-3">
               {/* Activities */}
               <div>
-                <div className="mb-3">
+                <div className="mb-2">
                   <h3 className="text-sm font-semibold text-foreground">{t("onboarding.form.actions")} *</h3>
                   <p className="mt-0.5 text-xs text-muted-foreground">{t("onboarding.form.actions.hint")}</p>
                 </div>
@@ -512,7 +512,7 @@ export function OnboardingPage() {
                     <button type="button" className="text-xs underline" onClick={() => window.location.reload()}>{t("common.retry")}</button>
                   </div>
                 ) : (
-                  <div className="grid gap-2 sm:grid-cols-3">
+                  <div className="grid gap-1.5 sm:grid-cols-3">
                     {actions.map(action => {
                       const selected = selectedActionIds.has(action.id);
                       const label = lang === "ar" ? action.name_ar : action.name_en;
@@ -523,15 +523,12 @@ export function OnboardingPage() {
                           <button
                             type="button"
                             onClick={() => toggleAction(action.id, action.key)}
-                            className="flex w-full items-start gap-3 p-3 text-start"
+                            className="flex w-full items-center gap-2 px-3 py-2 text-start"
                           >
-                            <span className={`mt-0.5 shrink-0 ${selected ? "text-primary" : "text-muted-foreground"}`}>
+                            <span className={`shrink-0 ${selected ? "text-primary" : "text-muted-foreground"}`}>
                               {selected ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
                             </span>
-                            <div>
-                              <div className={`text-sm font-medium ${selected ? "text-primary" : "text-foreground"}`}>{label}</div>
-                              {desc && <div className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{desc}</div>}
-                            </div>
+                            <span className={`text-sm font-medium leading-tight ${selected ? "text-primary" : "text-foreground"}`}>{label}</span>
                           </button>
                           {isOther && selected && (
                             <div className="border-t border-border px-3 pb-3 pt-2">
@@ -555,8 +552,8 @@ export function OnboardingPage() {
               {/* Roles */}
               <fieldset>
                 <legend className="mb-1 block text-sm font-semibold text-foreground">{t("onboarding.form.roles")} *</legend>
-                <p className="mb-3 text-xs text-muted-foreground">{t("onboarding.form.roles.hint")}</p>
-                <div className="grid gap-2 sm:grid-cols-3">
+                <p className="mb-2 text-xs text-muted-foreground">{t("onboarding.form.roles.hint")}</p>
+                <div className="grid gap-1.5 sm:grid-cols-3">
                   {(["generator", "receiver", "transporter"] as const).map(role => {
                     const selected = selectedRoles.has(role);
                     return (
@@ -564,15 +561,12 @@ export function OnboardingPage() {
                         key={role}
                         type="button"
                         onClick={() => toggleRole(role)}
-                        className={`flex items-start gap-3 rounded-lg border p-3 text-start transition-colors ${selected ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "border-border bg-card hover:border-primary/40"}`}
+                        className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-start transition-colors ${selected ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "border-border bg-card hover:border-primary/40"}`}
                       >
-                        <span className={`mt-0.5 shrink-0 ${selected ? "text-primary" : "text-muted-foreground"}`}>
+                        <span className={`shrink-0 ${selected ? "text-primary" : "text-muted-foreground"}`}>
                           {selected ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
                         </span>
-                        <div>
-                          <div className={`text-sm font-medium ${selected ? "text-primary" : "text-foreground"}`}>{t(`role.${role}`)}</div>
-                          <div className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{t(`onboarding.form.roles.${role}.desc`)}</div>
-                        </div>
+                        <span className={`text-sm font-medium leading-tight ${selected ? "text-primary" : "text-foreground"}`}>{t(`role.${role}`)}</span>
                       </button>
                     );
                   })}
