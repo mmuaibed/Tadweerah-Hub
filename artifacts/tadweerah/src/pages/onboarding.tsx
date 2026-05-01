@@ -214,6 +214,19 @@ export function OnboardingPage() {
     return null;
   };
 
+  const validateStep3 = (): string | null => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    for (const lic of licenses) {
+      if (!lic.expiryDate.trim()) continue;
+      const expiry = new Date(lic.expiryDate);
+      if (isNaN(expiry.getTime())) continue;
+      expiry.setHours(0, 0, 0, 0);
+      if (expiry < today) return t("license.expiry.expired");
+    }
+    return null;
+  };
+
   /* ── Payload builder ── */
   const buildLicensesPayload = () => {
     const filled = licenses.filter(l => l.number.trim());
@@ -281,6 +294,8 @@ export function OnboardingPage() {
       if (err) { setError(err); return; }
       setCompanySubStep(3);
     } else if (companySubStep === 3) {
+      const err = validateStep3();
+      if (err) { setError(err); return; }
       setCompanySubStep(4);
     }
     window.scrollTo({ top: 0, behavior: "smooth" });

@@ -120,6 +120,7 @@ const translations: Record<string, Record<Language, string>> = {
   "license.number": { ar: "رقم الرخصة / الترخيص", en: "License Number" },
   "license.issuer": { ar: "الجهة المصدرة", en: "Issuing Authority" },
   "license.expiry": { ar: "تاريخ الانتهاء (اختياري)", en: "Expiry Date (optional)" },
+  "license.expiry.expired": { ar: "تاريخ انتهاء الترخيص منتهٍ — يرجى إدخال تاريخ صالح أو تركه فارغاً للمراجعة", en: "License expiry date has passed — enter a valid future date or leave blank for review" },
   "license.linked_activities": { ar: "الأنشطة المرتبطة بهذه الرخصة", en: "Activities covered by this license" },
   "license.add": { ar: "إضافة رخصة أخرى", en: "Add Another License" },
   "license.remove": { ar: "حذف", en: "Remove" },
