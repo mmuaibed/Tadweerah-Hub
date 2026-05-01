@@ -55,8 +55,8 @@ export function HomePage() {
 
   return (
     <AppLayout>
-      {/* ── Hero: badge → logo → headline → CTAs ── */}
-      <section className="flex flex-col items-center pt-1 pb-2 text-center">
+      {/* ── Hero: badge → logo → headline → CTAs (compact) ── */}
+      <section className="flex flex-col items-center pt-1 pb-3 text-center">
 
         {/* Saudi green badge */}
         <span className="mb-2 inline-flex items-center rounded-full border-2 border-green-300 bg-green-100 px-5 py-1.5 text-xs font-bold text-green-900 tracking-wide">
@@ -108,24 +108,24 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* ── 2-column: Why + For ── */}
-      <section className="mt-1 grid gap-3 pb-2 lg:grid-cols-2">
+      {/* ── 2-column: Why + For — fills remaining space ── */}
+      <section className="flex-1 grid gap-4 lg:grid-cols-2">
 
         {/* Column 1 → visual RIGHT in Arabic RTL — "Why Tadweerah?" */}
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-2">
           <h2 className="text-base font-bold text-foreground sm:text-lg">
             {t("home.why.title")}
           </h2>
 
-          <div className="rounded-xl border border-border bg-card p-3 lg:flex-1">
-            <ul className="flex flex-col gap-2 lg:h-full lg:justify-between lg:gap-0">
+          <div className="rounded-xl border border-border bg-card p-4 flex-1">
+            <ul className="h-full flex flex-col justify-between">
               {WHY_POINTS.map(({ key, icon: Icon, bold }) => (
-                <li key={key} className="flex items-center gap-2.5">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-                    <Icon className="h-3 w-3" />
+                <li key={key} className="flex items-center gap-3 py-1">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                    <Icon className="h-3.5 w-3.5" />
                   </span>
                   <span
-                    className={`text-xs leading-snug ${
+                    className={`text-sm leading-snug ${
                       bold
                         ? "font-semibold text-foreground"
                         : "font-medium text-foreground/85"
@@ -140,33 +140,35 @@ export function HomePage() {
         </div>
 
         {/* Column 2 → visual LEFT in Arabic RTL — "Who is this for?" */}
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-2">
           <h2 className="text-base font-bold text-foreground sm:text-lg">
             {t("home.for.title")}
           </h2>
 
-          {USER_GROUPS.map(({ icon: Icon, titleKey, valueKey }) => (
-            <div
-              key={titleKey}
-              className="flex items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5 transition-shadow hover:shadow-sm"
-            >
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <Icon className="h-4 w-4" />
-              </span>
-              <div className="min-w-0">
-                <p className="text-sm font-bold text-foreground">{t(titleKey)}</p>
-                <p className="mt-0.5 text-xs text-muted-foreground leading-snug">
-                  {t(valueKey)}
-                </p>
+          <div className="flex flex-col gap-3 flex-1 justify-between">
+            {USER_GROUPS.map(({ icon: Icon, titleKey, valueKey }) => (
+              <div
+                key={titleKey}
+                className="flex items-center gap-3.5 rounded-xl border border-border bg-card px-4 py-4 flex-1 transition-shadow hover:shadow-sm"
+              >
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <Icon className="h-5 w-5" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-foreground">{t(titleKey)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground leading-snug">
+                    {t(valueKey)}
+                  </p>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
 
       </section>
 
       {/* B2B description footer */}
-      <p className="mt-1 pb-2 text-center text-sm text-muted-foreground/90">
+      <p className="mt-3 pb-2 text-center text-xs text-muted-foreground/80">
         {t("home.description")}
       </p>
     </AppLayout>
