@@ -205,19 +205,11 @@
         <mxCell id="d2_a8" value="Manual Admin&#xa;Action" style="edgeStyle=orthogonalEdgeStyle;dashed=1;" edge="1" source="d2_ls_approved" target="d2_ls_expired" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
 
         <!-- ANNOTATIONS: item 5 — Onboarding notes -->
-        <mxCell id="d2_ann_sla" value="Approval SLA: within 1 business day during pilot." style="text;html=1;fontSize=10;fontStyle=2;align=left;fillColor=#fffde7;strokeColor=#d6b656;" vertex="1" parent="1">
-          <mxGeometry x="730" y="740" width="310" height="28" as="geometry"/>
+        <mxCell id="d2_ann_sla" value="Approval SLA: within 1 business day during pilot (ops commitment, not enforced by system)." style="text;html=1;fontSize=10;fontStyle=2;align=left;fillColor=#fffde7;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="560" y="740" width="420" height="28" as="geometry"/>
         </mxCell>
         <mxCell id="d2_ann_pending" value="While pending: user can view their profile but cannot create listings&#xa;or submit offers. Dashboard shows pending status with support contact." style="text;html=1;fontSize=10;align=left;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
           <mxGeometry x="50" y="740" width="340" height="40" as="geometry"/>
-        </mxCell>
-
-        <!-- ANNOTATIONS: item 2 — Notification notes -->
-        <mxCell id="d2_notif_approved" value="📧 Company notified: access granted" style="text;html=1;fontSize=10;align=left;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
-          <mxGeometry x="390" y="737" width="160" height="28" as="geometry"/>
-        </mxCell>
-        <mxCell id="d2_notif_rejected" value="📧 Company notified: reason + next steps" style="text;html=1;fontSize=10;align=left;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
-          <mxGeometry x="560" y="737" width="160" height="28" as="geometry"/>
         </mxCell>
       </root>
     </mxGraphModel>
@@ -258,8 +250,8 @@
           <mxGeometry x="440" y="200" width="210" height="55" as="geometry"/>
         </mxCell>
 
-        <!-- Fields — CHANGE 6: revenue_share removed from pricing_model -->
-        <mxCell id="d3_fields" value="Listing Fields&#xa;─────────────────────────────&#xa;material_category_id (hierarchy)&#xa;quantity + unit_option_id&#xa;pricing_model: fixed | by_weight&#xa;sale_type: auction | direct&#xa;visibility: public | private&#xa;targeting_type: open | category | specific_company&#xa;eligible_company_type: ALL | LICENSED_ONLY&#xa;listing_required_services (capability list)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=10;align=left;" vertex="1" parent="1">
+        <!-- Fields -->
+        <mxCell id="d3_fields" value="Listing Fields&#xa;─────────────────────────────&#xa;material_category_id (hierarchy)&#xa;quantity + unit_option_id&#xa;pricing_model: fixed | by_weight | revenue_share&#xa;sale_type: auction | direct&#xa;visibility: public | private&#xa;targeting_type: open | category | specific_company&#xa;eligible_company_type: ALL | LICENSED_ONLY&#xa;listing_required_services (capability list)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=10;align=left;" vertex="1" parent="1">
           <mxGeometry x="700" y="188" width="290" height="145" as="geometry"/>
         </mxCell>
 
@@ -405,8 +397,8 @@
         </mxCell>
 
         <!-- ANNOTATION: item 2 — Notification note after offer accepted / deal created -->
-        <mxCell id="d4_notif_deal" value="📧 Accepted buyer notified | 📧 All rejected buyers notified | 📧 Producer receives deal summary" style="text;html=1;fontSize=10;align=left;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
-          <mxGeometry x="500" y="758" width="500" height="28" as="geometry"/>
+        <mxCell id="d4_notif_deal" value="📧 Accepted buyer notified | 📧 All rejected buyers notified" style="text;html=1;fontSize=10;align=left;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="500" y="758" width="380" height="28" as="geometry"/>
         </mxCell>
 
         <!-- Arrows -->
@@ -536,13 +528,13 @@
 
         <!-- ANNOTATIONS: item 3 — 4 policy note boxes -->
         <!-- Note 1: Extension rule -->
-        <mxCell id="d5_note_ext" value="Extension Rule:&#xa;Producer may extend once (+7 calendar days). Triggered by notification sent 3 days before expiry.&#xa;No second extension permitted. After extension expires → deal auto-expires." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;align=left;" vertex="1" parent="1">
+        <mxCell id="d5_note_ext" value="Extension Rule:&#xa;Producer initiates extension manually (once, +7 days). A 3-day warning notification is sent to producer before expiry as a reminder. No second extension permitted." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;align=left;" vertex="1" parent="1">
           <mxGeometry x="80" y="700" width="430" height="58" as="geometry"/>
         </mxCell>
 
         <!-- Note 2: Cancellation rules -->
-        <mxCell id="d5_note_cancel" value="Cancellation:&#xa;• Producer: can cancel before dispatch (active or payment_confirmed)&#xa;• Buyer: cannot cancel — issue report only&#xa;• Admin: can cancel at any state&#xa;• After dispatch: no cancellation permitted" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;align=left;" vertex="1" parent="1">
-          <mxGeometry x="530" y="700" width="370" height="72" as="geometry"/>
+        <mxCell id="d5_note_cancel" value="Cancellation rules:&#xa;• Producer: can cancel from active or payment_confirmed only&#xa;• Buyer: cannot cancel — issue report only&#xa;• Admin: can cancel from active or payment_confirmed only&#xa;• After dispatch: no cancellation permitted — use admin force-complete instead" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;align=left;" vertex="1" parent="1">
+          <mxGeometry x="530" y="700" width="400" height="80" as="geometry"/>
         </mxCell>
 
         <!-- Note 3: Admin force-complete -->
