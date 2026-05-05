@@ -40,7 +40,9 @@ const queryClient = new QueryClient();
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const clerkProxyUrl =
   import.meta.env.VITE_CLERK_PROXY_URL ||
-  `${window.location.origin}/api/__clerk`;
+  (clerkPubKey?.startsWith("pk_live_")
+    ? `${window.location.origin}/api/__clerk`
+    : undefined);
 
 if (!clerkPubKey) {
   throw new Error("Missing VITE_CLERK_PUBLISHABLE_KEY");
