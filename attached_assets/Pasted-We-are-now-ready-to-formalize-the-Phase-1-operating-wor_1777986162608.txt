@@ -1,0 +1,142 @@
+We are now ready to formalize the Phase 1 operating workflows of Tadweerah.
+
+Objective:
+Create a clear, accurate, and business-readable representation of how the platform ACTUALLY works today (based on the current implementation only).
+
+Scope: Phase 1 (current MVP)
+
+---
+
+Deliverables required:
+
+1. Executive Overview (ONE diagram)
+   A clean, high-level end-to-end flow showing the full user journey:
+
+* User onboarding (signup + company creation)
+* Company approval gate
+* Listing creation
+* Offer submission
+* Offer acceptance (deal creation)
+* Payment confirmation (if applicable)
+* Dispatch / transport decision
+* Deal completion
+
+This should be simple and readable for non-technical stakeholders.
+
+---
+
+2. Detailed Operational Workflows (multiple diagrams)
+
+Separate diagrams for each core flow:
+
+A. Onboarding & Company Approval
+
+* signup
+* company creation
+* approval status (pending / approved / rejected)
+* access restrictions
+
+B. Listings Flow
+
+* create listing
+* edit / cancel
+* eligibility checks
+
+C. Offers & Auction Flow
+
+* submit offer
+* multiple bidders
+* accept offer
+* auto-reject others
+
+D. Deal Lifecycle
+
+* deal creation (atomic)
+* payment_confirmed
+* dispatched
+* completed
+* cancellation rules
+
+E. Transport / Shipment (ONLY what is implemented)
+
+* transport decision
+* request creation (if exists)
+* status tracking (if exists)
+
+---
+
+3. For EACH workflow, include:
+
+* States (clearly labeled)
+* Transitions between states
+* Trigger (API or user action)
+* Validation rules (e.g. company approval, eligibility)
+* Blocking conditions (403, restrictions)
+
+---
+
+4. Clarity requirements:
+
+* Mark clearly:
+  ✅ Implemented
+  ❌ Not implemented (do not assume or invent flows)
+
+* Do NOT include:
+
+  * future features
+  * ideas
+  * optimizations
+  * UI design
+
+---
+
+5. Format:
+
+* Prefer draw.io (diagrams.net)
+* or any structured format that can be easily imported into draw.io
+
+---
+
+6. Explanation:
+
+For each workflow:
+
+* add a short explanation (3–5 lines max)
+* business-readable, not technical jargon
+
+---
+
+7. Output naming:
+
+* Tadweerah_Phase1_Operating_Model.drawio
+* Tadweerah_Phase1_Flows.pdf (optional export)
+
+---
+
+Important:
+
+This is NOT a redesign task.
+This is an extraction of the REAL system behavior from code.
+
+Keep it lightweight and cost-efficient:
+
+* no heavy simulations
+* no unnecessary iterations
+
+---
+
+Goal:
+
+Produce a clean "Phase 1 Operating Model" that:
+
+* we can review internally
+* align with partners/regulators
+* use in investor discussions
+
+---
+
+Return:
+
+* diagrams
+* short explanations
+* summary of key observations (optional)

@@ -36,3 +36,9 @@ id = "cQLZ-IZ8Hby17nVZud19P"
 uri = "file://docs/tadweerah-system-map.zip"
 type = "unspecified"
 title = "Tadweerah — As-Is System Map (draw.io)"
+
+[[outputs]]
+id = "xc2kxrZn1R0GhrUMVL-NA"
+uri = "file://Tadweerah_Phase1_Operating_Model.zip"
+type = "unspecified"
+title = "Tadweerah_Phase1_Operating_Model.drawio (ZIP)"

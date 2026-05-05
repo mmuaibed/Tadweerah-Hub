@@ -1,0 +1,631 @@
+<mxfile host="Tadweerah" modified="2026-05-05" agent="Tadweerah Phase 1 Operating Model" version="24.7.6">
+  <!-- ═══════════════════════════════════════════════════════════════
+       PAGE 1 — EXECUTIVE OVERVIEW
+       ═══════════════════════════════════════════════════════════════ -->
+  <diagram name="1. Executive Overview" id="d1">
+    <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <!-- Title -->
+        <mxCell id="d1_title" value="Tadweerah — Phase 1 Executive Overview" style="text;html=1;fontSize=22;fontStyle=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="200" y="20" width="1100" height="40" as="geometry"/>
+        </mxCell>
+        <!-- Legend Box -->
+        <mxCell id="d1_legbox" value="" style="rounded=1;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="20" y="70" width="170" height="230" as="geometry"/>
+        </mxCell>
+        <mxCell id="d1_legtitle" value="Legend" style="text;html=1;fontSize=13;fontStyle=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="20" y="75" width="170" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="d1_l1" value="Generator (Producer)" style="rounded=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="30" y="100" width="150" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="d1_l2" value="Receiver (Buyer)" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="30" y="132" width="150" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="d1_l3" value="Platform (Tadweerah)" style="rounded=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="30" y="164" width="150" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="d1_l4" value="Decision Gate" style="rhombus;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="50" y="196" width="110" height="44" as="geometry"/>
+        </mxCell>
+        <mxCell id="d1_l5" value="Blocking / Error" style="rounded=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="30" y="246" width="150" height="26" as="geometry"/>
+        </mxCell>
+
+        <!-- ── COLUMN 1 (x=220) — Steps 1-6 ── -->
+        <mxCell id="d1_col1_head" value="Steps 1–6: Onboarding → Listing → Offer" style="text;html=1;fontSize=12;fontStyle=1;align=center;fillColor=#f0f0f0;strokeColor=#999;" vertex="1" parent="1">
+          <mxGeometry x="210" y="68" width="270" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="d1_s1" value="① User Signs Up&#xa;(Clerk Auth — Email / Social)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="220" y="105" width="250" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="d1_s2" value="② Create Company Profile&#xa;POST /companies&#xa;(name, type, city, CR, phone)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="220" y="215" width="250" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="d1_s3" value="③ Platform Manually Reviews&#xa;License &amp; Documents" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="220" y="335" width="250" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="d1_s4" value="Approved?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="255" y="445" width="180" height="65" as="geometry"/>
+        </mxCell>
+        <mxCell id="d1_s4no" value="Rejected / Pending / Expired&#xa;→ Listing + Offer BLOCKED (403)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="500" y="453" width="220" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="d1_s5" value="⑤ Producer Creates Waste Listing&#xa;POST /listings&#xa;(material, qty, price, targeting)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="220" y="570" width="250" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="d1_s6" value="⑥ Buyer Submits Offer&#xa;POST /listings/:id/offers&#xa;(price_per_unit + eligibility check)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="220" y="690" width="250" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- Arrows col 1 -->
+        <mxCell id="d1_a12" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d1_s1" target="d1_s2" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d1_a23" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d1_s2" target="d1_s3" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d1_a34" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d1_s3" target="d1_s4" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d1_a4no" value="No" style="edgeStyle=orthogonalEdgeStyle;fontStyle=1;fillColor=#f8cecc;" edge="1" source="d1_s4" target="d1_s4no" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d1_a4yes" value="Yes" style="edgeStyle=orthogonalEdgeStyle;fontStyle=1;" edge="1" source="d1_s4" target="d1_s5" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d1_a56" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d1_s5" target="d1_s6" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <!-- ── COLUMN 2 (x=760) — Steps 7-12 ── -->
+        <mxCell id="d1_col2_head" value="Steps 7–12: Deal → Payment → Dispatch → Complete" style="text;html=1;fontSize=12;fontStyle=1;align=center;fillColor=#f0f0f0;strokeColor=#999;" vertex="1" parent="1">
+          <mxGeometry x="750" y="68" width="330" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="d1_s7" value="⑦ Producer Accepts Best Offer&#xa;PUT /offers/:id/accept&#xa;→ Deal Created (status=active)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="760" y="105" width="270" height="65" as="geometry"/>
+        </mxCell>
+        <mxCell id="d1_s7b" value="Other Offers Auto-Rejected&#xa;(status=rejected)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1060" y="115" width="200" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="d1_s8" value="⑧ Buyer Pays Outside Platform&#xa;→ Producer Confirms Payment&#xa;PUT /deals/:id/confirm-payment&#xa;(payment_reference required)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="760" y="235" width="270" height="75" as="geometry"/>
+        </mxCell>
+        <mxCell id="d1_s9" value="⑨ Transport Decision (Optional)&#xa;PUT /deals/:id/transport-decision&#xa;platform | self_managed" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="760" y="375" width="270" height="65" as="geometry"/>
+        </mxCell>
+        <mxCell id="d1_s10" value="⑩ Producer Confirms Dispatch&#xa;PUT /deals/:id/confirm-dispatch&#xa;(actual_qty required if by_weight)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="760" y="505" width="270" height="65" as="geometry"/>
+        </mxCell>
+        <mxCell id="d1_s11" value="⑪ Buyer Confirms Receipt&#xa;PUT /deals/:id/confirm-receipt&#xa;→ Deal COMPLETED ✅" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="760" y="635" width="270" height="65" as="geometry"/>
+        </mxCell>
+        <mxCell id="d1_s12" value="SLA Expiry (Auto-Job)&#xa;active→expired (31d)&#xa;payment_confirmed→expired (8d)&#xa;dispatched→expired (72h)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1060" y="505" width="200" height="65" as="geometry"/>
+        </mxCell>
+
+        <!-- Arrows col 2 -->
+        <mxCell id="d1_a67" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d1_s6" target="d1_s7" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d1_a7b" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d1_s7" target="d1_s7b" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d1_a78" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d1_s7" target="d1_s8" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d1_a89" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d1_s8" target="d1_s9" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d1_a910" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d1_s9" target="d1_s10" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d1_a1011" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d1_s10" target="d1_s11" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d1_asla" value="SLA breach" style="edgeStyle=orthogonalEdgeStyle;dashed=1;strokeColor=#d79b00;" edge="1" source="d1_s10" target="d1_s12" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <!-- Note -->
+        <mxCell id="d1_note" value="Note: Payment is off-platform (bank transfer or cheque). The platform records the confirmation only." style="text;html=1;fontSize=10;fontStyle=2;align=left;" vertex="1" parent="1">
+          <mxGeometry x="220" y="800" width="600" height="20" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       PAGE 2 — ONBOARDING & COMPANY APPROVAL
+       ═══════════════════════════════════════════════════════════════ -->
+  <diagram name="2. Onboarding &amp; Approval" id="d2">
+    <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="d2_title" value="A. Onboarding &amp; Company Approval" style="text;html=1;fontSize=18;fontStyle=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="150" y="20" width="800" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="d2_desc" value="User registers via Clerk, creates a company profile, and waits for manual platform approval. Access to all operational features is gated on license_status = approved." style="text;html=1;fontSize=11;align=center;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="100" y="52" width="950" height="20" as="geometry"/>
+        </mxCell>
+
+        <!-- START -->
+        <mxCell id="d2_start" value="START&#xa;New User" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="480" y="90" width="120" height="50" as="geometry"/>
+        </mxCell>
+
+        <!-- Signup -->
+        <mxCell id="d2_signup" value="User Signs Up&#xa;(Clerk Auth)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="460" y="190" width="160" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="d2_signup_note" value="✅ Trigger: Clerk webhook creates user session&#xa;No backend user table — user_id from Clerk JWT" style="text;html=1;fontSize=10;align=left;fillColor=#f5f5f5;strokeColor=#999;" vertex="1" parent="1">
+          <mxGeometry x="650" y="197" width="320" height="36" as="geometry"/>
+        </mxCell>
+
+        <!-- Has Company? -->
+        <mxCell id="d2_hasco" value="Company exists&#xa;for this user?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="455" y="290" width="170" height="65" as="geometry"/>
+        </mxCell>
+
+        <!-- Create Company -->
+        <mxCell id="d2_create" value="POST /companies&#xa;Create Company Profile&#xa;─────────────────&#xa;name (2–120 chars)&#xa;type: producer|buyer|carrier&#xa;city (2–80 chars)&#xa;commercialRegistration (CR)&#xa;contactPhone (6–20 chars)&#xa;→ company_members (owner)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="240" y="405" width="230" height="170" as="geometry"/>
+        </mxCell>
+        <mxCell id="d2_onecoNote" value="⚠ One company per user enforced (409 if duplicate)" style="text;html=1;fontSize=10;align=left;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="240" y="580" width="230" height="28" as="geometry"/>
+        </mxCell>
+
+        <!-- Already has company -->
+        <mxCell id="d2_existing" value="Load Existing Company&#xa;GET /me → company_members" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="620" y="415" width="200" height="50" as="geometry"/>
+        </mxCell>
+
+        <!-- License Status States -->
+        <mxCell id="d2_ls_title" value="license_status (Enum)" style="text;html=1;fontSize=13;fontStyle=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="200" y="640" width="700" height="25" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="d2_ls_null" value="null&#xa;(No License Filed)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="50" y="675" width="140" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="d2_ls_pending" value="pending&#xa;(Awaiting Review)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="220" y="675" width="140" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="d2_ls_approved" value="approved ✅&#xa;(Full Access)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="390" y="675" width="140" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="d2_ls_rejected" value="rejected ❌&#xa;(Blocked)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="560" y="675" width="140" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="d2_ls_expired" value="expired ⚠&#xa;(Renewal Required)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="730" y="675" width="140" height="55" as="geometry"/>
+        </mxCell>
+
+        <!-- Access blocks -->
+        <mxCell id="d2_block_title" value="Access Restrictions (403 Forbidden)" style="text;html=1;fontSize=12;fontStyle=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="200" y="750" width="700" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="d2_block1" value="Create Listing → requires approved" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="200" y="778" width="220" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="d2_block2" value="Submit Offer → requires approved + CR" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="440" y="778" width="220" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="d2_block3" value="Company capabilities → PUT /companies/mine/capabilities" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="680" y="778" width="230" height="35" as="geometry"/>
+        </mxCell>
+
+        <!-- Arrows -->
+        <mxCell id="d2_a1" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d2_start" target="d2_signup" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d2_a2" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d2_signup" target="d2_hasco" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d2_a3" value="No" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d2_hasco" target="d2_create" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d2_a4" value="Yes" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d2_hasco" target="d2_existing" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d2_a5" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d2_create" target="d2_ls_pending" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points"><mxPoint x="355" y="620"/><mxPoint x="290" y="620"/></Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="d2_a6" style="edgeStyle=orthogonalEdgeStyle;dashed=1;" edge="1" source="d2_ls_pending" target="d2_ls_approved" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d2_a7" style="edgeStyle=orthogonalEdgeStyle;dashed=1;" edge="1" source="d2_ls_pending" target="d2_ls_rejected" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d2_a8" value="Manual Admin&#xa;Action" style="edgeStyle=orthogonalEdgeStyle;dashed=1;" edge="1" source="d2_ls_approved" target="d2_ls_expired" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       PAGE 3 — LISTINGS FLOW
+       ═══════════════════════════════════════════════════════════════ -->
+  <diagram name="3. Listings Flow" id="d3">
+    <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="d3_title" value="B. Listings Flow" style="text;html=1;fontSize=18;fontStyle=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="150" y="20" width="800" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="d3_desc" value="Approved producers create waste listings. Listings have targeting, pricing model, and eligibility rules that control who may submit an offer." style="text;html=1;fontSize=11;align=center;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="100" y="52" width="950" height="20" as="geometry"/>
+        </mxCell>
+
+        <!-- Guards -->
+        <mxCell id="d3_guards" value="Pre-Conditions (Guards) — checked on POST /listings" style="text;html=1;fontSize=13;fontStyle=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="150" y="90" width="750" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="d3_g1" value="✅ company.license_status = approved" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="150" y="118" width="250" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="d3_g2" value="✅ commercialRegistration (CR) not null" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="420" y="118" width="250" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="d3_g3" value="❌ Otherwise → 403 CompanyIncomplete / 422 CRRequired" style="rounded=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="690" y="118" width="280" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- Create Listing -->
+        <mxCell id="d3_create" value="POST /listings&#xa;Create Waste Listing" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="440" y="200" width="210" height="55" as="geometry"/>
+        </mxCell>
+
+        <!-- Fields -->
+        <mxCell id="d3_fields" value="Listing Fields&#xa;─────────────────────────────&#xa;material_category_id (hierarchy)&#xa;quantity + unit_option_id&#xa;pricing_model: fixed | by_weight | revenue_share&#xa;sale_type: auction | direct&#xa;visibility: public | private&#xa;targeting_type: open | category | specific_company&#xa;eligible_company_type: ALL | LICENSED_ONLY&#xa;listing_required_services (capability list)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=10;align=left;" vertex="1" parent="1">
+          <mxGeometry x="700" y="188" width="290" height="145" as="geometry"/>
+        </mxCell>
+
+        <!-- Status: OPEN -->
+        <mxCell id="d3_open" value="status = open ✅" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="455" y="310" width="180" height="50" as="geometry"/>
+        </mxCell>
+
+        <!-- Targeting decision -->
+        <mxCell id="d3_tgt" value="targeting_type?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="455" y="415" width="180" height="65" as="geometry"/>
+        </mxCell>
+        <mxCell id="d3_tgt_open" value="open&#xa;→ All approved companies" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="150" y="425" width="170" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="d3_tgt_cat" value="category&#xa;→ Matching company_category_id" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="455" y="540" width="180" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="d3_tgt_specific" value="specific_company&#xa;→ Only target_company_id" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="760" y="425" width="180" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="d3_lic_only" value="eligible_company_type = LICENSED_ONLY&#xa;→ Buyer must have approved license + matching capability" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="350" y="640" width="380" height="40" as="geometry"/>
+        </mxCell>
+
+        <!-- Close paths -->
+        <mxCell id="d3_close_title" value="How a listing gets CLOSED" style="text;html=1;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="100" y="720" width="250" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="d3_closed" value="status = closed" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="455" y="730" width="180" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="d3_close1" value="① Producer manually&#xa;DELETE /listings/:id&#xa;(soft close, data preserved)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="150" y="750" width="190" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="d3_close2" value="② Offer Accepted&#xa;→ listing auto-closed&#xa;atomically with deal creation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="700" y="750" width="190" height="55" as="geometry"/>
+        </mxCell>
+
+        <!-- Arrows -->
+        <mxCell id="d3_ag1" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d3_g1" target="d3_create" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d3_a1" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d3_create" target="d3_open" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d3_a2" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d3_open" target="d3_tgt" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d3_a3" value="open" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d3_tgt" target="d3_tgt_open" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d3_a4" value="category" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d3_tgt" target="d3_tgt_cat" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d3_a5" value="specific" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d3_tgt" target="d3_tgt_specific" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d3_a6" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d3_tgt_cat" target="d3_lic_only" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d3_a7" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d3_close1" target="d3_closed" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d3_a8" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d3_close2" target="d3_closed" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       PAGE 4 — OFFERS & BIDDING
+       ═══════════════════════════════════════════════════════════════ -->
+  <diagram name="4. Offers &amp; Bidding" id="d4">
+    <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="d4_title" value="C. Offers &amp; Bidding Flow" style="text;html=1;fontSize=18;fontStyle=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="150" y="20" width="800" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="d4_desc" value="Buyers submit price offers on open listings. A rules engine checks eligibility. The producer selects one offer; the rest are auto-rejected and a deal is created atomically." style="text;html=1;fontSize=11;align=center;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="80" y="52" width="1000" height="20" as="geometry"/>
+        </mxCell>
+
+        <!-- Rules Engine box -->
+        <mxCell id="d4_rules" value="Rules Engine — checkPureEligibility (POST /listings/:id/offers)" style="text;html=1;fontSize=13;fontStyle=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="100" y="85" width="950" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="d4_r1" value="✅ listing.status = open" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="60" y="113" width="200" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="d4_r2" value="✅ buyer ≠ producer (own listing)" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="275" y="113" width="200" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="d4_r3" value="✅ buyer.license_status = approved" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="490" y="113" width="200" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="d4_r4" value="✅ buyer has CR number" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="705" y="113" width="200" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="d4_r5" value="✅ No existing offer from buyer on same listing (unique constraint)" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="60" y="150" width="320" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="d4_r6" value="✅ Targeting match: open | category | specific_company" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="395" y="150" width="290" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="d4_r7" value="✅ If LICENSED_ONLY: buyer capability + license match" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="700" y="150" width="270" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="d4_rfail" value="Fail → 403 OwnListing | CompanyIncomplete | LicenseRequired | TargetingRestricted&#xa;409 OfferExists    422 CommercialRegistrationRequired" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="100" y="187" width="860" height="36" as="geometry"/>
+        </mxCell>
+
+        <!-- Submit offer -->
+        <mxCell id="d4_submit" value="POST /listings/:id/offers&#xa;{ price_per_unit }" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="430" y="270" width="230" height="55" as="geometry"/>
+        </mxCell>
+
+        <!-- Offer status: pending -->
+        <mxCell id="d4_pending" value="offer.status = pending" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="440" y="375" width="210" height="50" as="geometry"/>
+        </mxCell>
+
+        <!-- Buyer actions -->
+        <mxCell id="d4_buyer_act" value="Buyer Actions (PUT /offers/mine)" style="text;html=1;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="100" y="440" width="260" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="d4_improve" value="Improve Offer&#xa;(increase price_per_unit)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="100" y="466" width="170" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="d4_withdraw" value="offer.status = withdrawn&#xa;(terminal)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="100" y="540" width="170" height="45" as="geometry"/>
+        </mxCell>
+
+        <!-- Producer accepts -->
+        <mxCell id="d4_prod_act" value="Producer Action" style="text;html=1;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="620" y="440" width="200" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="d4_accept_btn" value="PUT /offers/:id/accept" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="620" y="466" width="200" height="45" as="geometry"/>
+        </mxCell>
+
+        <!-- Outcomes -->
+        <mxCell id="d4_accepted" value="offer.status = accepted ✅" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="500" y="570" width="220" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="d4_others_rejected" value="All other offers on same listing&#xa;→ status = rejected (atomic)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="750" y="570" width="210" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="d4_listing_closed" value="listing.status = closed (atomic)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="500" y="635" width="220" height="38" as="geometry"/>
+        </mxCell>
+        <mxCell id="d4_deal_created" value="Deal Created&#xa;deal.status = active 🎯" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="500" y="695" width="220" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="d4_rejected" value="offer.status = rejected&#xa;(terminal)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="800" y="635" width="160" height="45" as="geometry"/>
+        </mxCell>
+
+        <!-- Arrows -->
+        <mxCell id="d4_a1" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d4_submit" target="d4_pending" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d4_a2" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d4_pending" target="d4_improve" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d4_a3" value="Withdraw" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d4_improve" target="d4_withdraw" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d4_a4" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d4_pending" target="d4_accept_btn" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d4_a5" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d4_accept_btn" target="d4_accepted" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d4_a6" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d4_accept_btn" target="d4_others_rejected" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d4_a7" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d4_accepted" target="d4_listing_closed" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d4_a8" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d4_listing_closed" target="d4_deal_created" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d4_a9" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d4_others_rejected" target="d4_rejected" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       PAGE 5 — DEAL LIFECYCLE
+       ═══════════════════════════════════════════════════════════════ -->
+  <diagram name="5. Deal Lifecycle" id="d5">
+    <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="d5_title" value="D. Deal Lifecycle State Machine" style="text;html=1;fontSize=18;fontStyle=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="150" y="20" width="800" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="d5_desc" value="A deal is created atomically when an offer is accepted. It progresses through payment, dispatch, and receipt. Automated SLA expiry jobs monitor each stage." style="text;html=1;fontSize=11;align=center;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="80" y="52" width="1000" height="20" as="geometry"/>
+        </mxCell>
+
+        <!-- States as boxes, flowing left-to-right -->
+        <!-- START -->
+        <mxCell id="d5_start" value="Deal Created&#xa;(Offer Accepted)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="50" y="200" width="130" height="55" as="geometry"/>
+        </mxCell>
+
+        <!-- ACTIVE -->
+        <mxCell id="d5_active" value="active" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=15;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="230" y="195" width="150" height="65" as="geometry"/>
+        </mxCell>
+        <mxCell id="d5_active_note" value="SLA: 31 days&#xa;Buyer must pay" style="text;html=1;fontSize=10;align=center;fillColor=#fffde7;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="230" y="265" width="150" height="36" as="geometry"/>
+        </mxCell>
+        <mxCell id="d5_active_action" value="PUT /deals/:id/confirm-payment&#xa;Actor: Producer&#xa;Requires: payment_reference" style="text;html=1;fontSize=10;align=left;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="230" y="310" width="220" height="42" as="geometry"/>
+        </mxCell>
+
+        <!-- PAYMENT_CONFIRMED -->
+        <mxCell id="d5_payment" value="payment_confirmed" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="470" y="195" width="185" height="65" as="geometry"/>
+        </mxCell>
+        <mxCell id="d5_payment_note" value="SLA: 8 days&#xa;Transport decision here" style="text;html=1;fontSize=10;align=center;fillColor=#fffde7;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="470" y="265" width="185" height="36" as="geometry"/>
+        </mxCell>
+        <mxCell id="d5_payment_action" value="PUT /deals/:id/confirm-dispatch&#xa;Actor: Producer&#xa;Requires: actual_quantity (if by_weight)" style="text;html=1;fontSize=10;align=left;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="470" y="310" width="230" height="42" as="geometry"/>
+        </mxCell>
+
+        <!-- DISPATCHED -->
+        <mxCell id="d5_dispatched" value="dispatched" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=15;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="730" y="195" width="150" height="65" as="geometry"/>
+        </mxCell>
+        <mxCell id="d5_dispatched_note" value="SLA: 72 hours&#xa;Goods in transit" style="text;html=1;fontSize=10;align=center;fillColor=#fffde7;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="730" y="265" width="150" height="36" as="geometry"/>
+        </mxCell>
+        <mxCell id="d5_dispatched_action" value="PUT /deals/:id/confirm-receipt&#xa;Actor: Buyer" style="text;html=1;fontSize=10;align=left;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="730" y="310" width="200" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- COMPLETED -->
+        <mxCell id="d5_completed" value="completed ✅" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=15;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="960" y="195" width="160" height="65" as="geometry"/>
+        </mxCell>
+        <mxCell id="d5_completed_note" value="Terminal — success&#xa;No further transitions" style="text;html=1;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="960" y="265" width="160" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- EXPIRED -->
+        <mxCell id="d5_expired" value="expired ⏱" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="450" y="440" width="185" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="d5_expired_note" value="Terminal — SLA breach&#xa;Triggered by: expire-deals.ts (auto-job)" style="text;html=1;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="400" y="507" width="280" height="28" as="geometry"/>
+        </mxCell>
+
+        <!-- CANCELLED -->
+        <mxCell id="d5_cancelled" value="cancelled" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="730" y="440" width="150" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="d5_cancelled_note" value="Terminal — manual cancellation&#xa;(admin or platform action)" style="text;html=1;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="700" y="507" width="210" height="28" as="geometry"/>
+        </mxCell>
+
+        <!-- SLA Table -->
+        <mxCell id="d5_sla_title" value="SLA Expiry Rules (expire-deals.ts automated job)" style="text;html=1;fontSize=12;fontStyle=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="150" y="570" width="750" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="d5_sla1" value="active → expired (31 days from creation)" style="rounded=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="150" y="598" width="270" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="d5_sla2" value="payment_confirmed → expired (8 days)" style="rounded=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="435" y="598" width="240" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="d5_sla3" value="dispatched → expired (72 hours)" style="rounded=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="690" y="598" width="210" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- by_weight note -->
+        <mxCell id="d5_byw" value="⚠ by_weight pricing: actual_quantity (weighbridge) is required at confirm-dispatch&#xa;    Final price = actual_quantity × price_per_unit (instead of estimated qty)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;align=left;" vertex="1" parent="1">
+          <mxGeometry x="150" y="645" width="750" height="40" as="geometry"/>
+        </mxCell>
+
+        <!-- extension note -->
+        <mxCell id="d5_ext" value="✅ Deal Extension: extension_count tracked. extended_until overrides default SLA." style="text;html=1;fontSize=10;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="150" y="695" width="750" height="20" as="geometry"/>
+        </mxCell>
+
+        <!-- Arrows -->
+        <mxCell id="d5_a1" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d5_start" target="d5_active" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d5_a2" value="confirm-payment" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d5_active" target="d5_payment" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d5_a3" value="confirm-dispatch" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d5_payment" target="d5_dispatched" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d5_a4" value="confirm-receipt" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d5_dispatched" target="d5_completed" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d5_asla1" value="SLA breach" style="edgeStyle=orthogonalEdgeStyle;dashed=1;strokeColor=#d79b00;" edge="1" source="d5_active" target="d5_expired" parent="1">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="305" y="470"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="d5_asla2" value="SLA breach" style="edgeStyle=orthogonalEdgeStyle;dashed=1;strokeColor=#d79b00;" edge="1" source="d5_payment" target="d5_expired" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d5_asla3" value="SLA breach" style="edgeStyle=orthogonalEdgeStyle;dashed=1;strokeColor=#d79b00;" edge="1" source="d5_dispatched" target="d5_expired" parent="1">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="805" y="470"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="d5_acanc" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#b85450;" edge="1" source="d5_payment" target="d5_cancelled" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       PAGE 6 — TRANSPORT / SHIPMENT
+       ═══════════════════════════════════════════════════════════════ -->
+  <diagram name="6. Transport Request" id="d6">
+    <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="d6_title" value="E. Transport Request Flow" style="text;html=1;fontSize=18;fontStyle=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="150" y="20" width="800" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="d6_desc" value="After payment confirmation, either party can open a transport request. Two modes: platform-managed (Tadweerah arranges transport) or self-managed (parties handle logistics directly)." style="text;html=1;fontSize=11;align=center;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="60" y="52" width="1050" height="20" as="geometry"/>
+        </mxCell>
+
+        <!-- Pre-condition -->
+        <mxCell id="d6_pre" value="Pre-condition: deal.status = payment_confirmed" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="380" y="85" width="340" height="40" as="geometry"/>
+        </mxCell>
+
+        <!-- Create transport request -->
+        <mxCell id="d6_create" value="POST /deals/:id/transport-request&#xa;Actor: Producer OR Buyer&#xa;{ transport_mode, waste_category_id, vehicle_plate? }" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="350" y="170" width="380" height="65" as="geometry"/>
+        </mxCell>
+
+        <!-- Mode decision -->
+        <mxCell id="d6_mode" value="transport_mode?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="415" y="285" width="250" height="70" as="geometry"/>
+        </mxCell>
+
+        <!-- Platform lane -->
+        <mxCell id="d6_plat_title" value="platform (Managed by Tadweerah)" style="text;html=1;fontSize=12;fontStyle=1;align=center;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="50" y="375" width="280" height="25" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="d6_p1" value="pending" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="410" width="120" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="d6_p2" value="accepted" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="490" width="120" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="d6_p3" value="manifest_ready" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="570" width="120" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="d6_p4" value="in_transit" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="650" width="120" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="d6_p5" value="delivered" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="730" width="120" height="45" as="geometry"/>
+        </mxCell>
+
+        <!-- Self-managed lane -->
+        <mxCell id="d6_self_title" value="self_managed (Parties arrange independently)" style="text;html=1;fontSize=12;fontStyle=1;align=center;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="740" y="375" width="320" height="25" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="d6_sm1" value="pending" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="820" y="410" width="130" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="d6_sm2" value="in_transit" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="820" y="490" width="130" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="d6_sm3" value="delivered" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="820" y="570" width="130" height="45" as="geometry"/>
+        </mxCell>
+
+        <!-- Shared terminal: closed -->
+        <mxCell id="d6_closed" value="closed ✅&#xa;(terminal)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="490" y="750" width="160" height="55" as="geometry"/>
+        </mxCell>
+
+        <!-- Shared terminal: cancelled -->
+        <mxCell id="d6_canc" value="cancelled&#xa;(terminal)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="350" y="500" width="130" height="50" as="geometry"/>
+        </mxCell>
+
+        <!-- MWAN note -->
+        <mxCell id="d6_mwan" value="✅ manifest_ref stored (MWAN eManifest alignment)&#xa;✅ waste_category_id, vehicle_plate, transporter_company_id captured&#xa;❌ Full MWAN API integration not yet implemented (Phase 2)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;align=left;" vertex="1" parent="1">
+          <mxGeometry x="300" y="620" width="450" height="55" as="geometry"/>
+        </mxCell>
+
+        <!-- Arrows -->
+        <mxCell id="d6_a1" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d6_pre" target="d6_create" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d6_a2" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d6_create" target="d6_mode" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d6_a3" value="platform" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d6_mode" target="d6_p1" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d6_a4" value="self_managed" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d6_mode" target="d6_sm1" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <!-- Platform chain -->
+        <mxCell id="d6_ap12" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d6_p1" target="d6_p2" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d6_ap23" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d6_p2" target="d6_p3" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d6_ap34" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d6_p3" target="d6_p4" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d6_ap45" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d6_p4" target="d6_p5" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d6_ap5c" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d6_p5" target="d6_closed" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <!-- Self-managed chain -->
+        <mxCell id="d6_as12" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d6_sm1" target="d6_sm2" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d6_as23" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d6_sm2" target="d6_sm3" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d6_as3c" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="d6_sm3" target="d6_closed" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <!-- Cancellation -->
+        <mxCell id="d6_acanc" value="cancel" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#b85450;dashed=1;" edge="1" source="d6_p1" target="d6_canc" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d6_acanc2" value="cancel" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#b85450;dashed=1;" edge="1" source="d6_sm1" target="d6_canc" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
