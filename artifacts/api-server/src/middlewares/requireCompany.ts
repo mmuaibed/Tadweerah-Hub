@@ -9,6 +9,17 @@ export interface AuthedCompanyRequest extends AuthedRequest {
   memberRole: "owner" | "member";
 }
 
+export interface RequireCompanyOptions {
+  /**
+   * When true, companies with license_status = null or "pending" are allowed
+   * to execute mutating requests. Use only for company profile / onboarding
+   * routes where an unapproved company must be able to update its own data.
+   *
+   * Rejected companies are ALWAYS blocked from mutations regardless of this flag.
+   */
+  allowUnapproved?: boolean;
+}
+
 /**
  * Loads the company the authenticated user belongs to.
  * Looks up via the `company_members` join table so that both owners
@@ -16,13 +27,16 @@ export interface AuthedCompanyRequest extends AuthedRequest {
  *
  * Must be used AFTER requireAuth.
  *
- * The optional `_allowedTypes` parameter is accepted for backward compatibility
- * but is no longer enforced — the platform uses capability/ownership checks
- * instead of company-type role gates.
+ * Approval gate (applied to all non-GET/HEAD requests):
+ *   - rejected  → always blocked (403 CompanyRejected)
+ *   - null      → blocked unless allowUnapproved=true (403 CompanyIncomplete)
+ *   - pending   → blocked unless allowUnapproved=true (403 CompanyPending)
+ *   - approved  → always allowed
+ *
+ * Pass { allowUnapproved: true } only for company profile update routes so
+ * unapproved companies can still submit / update their profile for review.
  */
-export function requireCompany(
-  _allowedTypes?: ReadonlyArray<string>,
-) {
+export function requireCompany(options: RequireCompanyOptions = {}) {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const { userId } = req as AuthedRequest;
 
@@ -42,19 +56,40 @@ export function requireCompany(
       return;
     }
 
-    // Block rejected companies from all mutating operations.
-    // GET/HEAD requests (dashboard, profile reads) are still allowed.
-    if (
-      found.company.license_status === "rejected" &&
-      req.method !== "GET" &&
-      req.method !== "HEAD"
-    ) {
-      res.status(403).json({
-        error: "CompanyRejected",
-        message:
-          "Your company registration has been rejected. Please contact support.",
-      });
-      return;
+    const isMutation = req.method !== "GET" && req.method !== "HEAD";
+
+    if (isMutation) {
+      const ls = found.company.license_status;
+
+      // Rejected — always blocked, even on profile routes.
+      if (ls === "rejected") {
+        res.status(403).json({
+          error: "CompanyRejected",
+          message:
+            "Your company registration has been rejected. Please contact support.",
+        });
+        return;
+      }
+
+      // Incomplete / pending — blocked unless the route opts in (e.g. profile update).
+      if (!options.allowUnapproved) {
+        if (!ls) {
+          res.status(403).json({
+            error: "CompanyIncomplete",
+            message:
+              "Your company profile is incomplete. Complete your company data and submit it for review before performing this action.",
+          });
+          return;
+        }
+        if (ls === "pending") {
+          res.status(403).json({
+            error: "CompanyPending",
+            message:
+              "Your company is currently under review. You will be able to perform this action once approved.",
+          });
+          return;
+        }
+      }
     }
 
     (req as AuthedCompanyRequest).company = found.company;

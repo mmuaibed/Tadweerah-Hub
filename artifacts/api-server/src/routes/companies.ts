@@ -221,7 +221,7 @@ router.get(
 router.put(
   "/companies/mine/capabilities",
   requireAuth,
-  requireCompany(),
+  requireCompany({ allowUnapproved: true }),
   async (req, res) => {
     const { company } = req as AuthedCompanyRequest;
     const ids: unknown = req.body?.capability_ids;
@@ -373,7 +373,7 @@ router.get(
 router.put(
   "/companies/mine/roles",
   requireAuth,
-  requireCompany(),
+  requireCompany({ allowUnapproved: true }),
   async (req, res) => {
     const { company } = req as AuthedCompanyRequest;
 
@@ -448,7 +448,7 @@ router.put(
 router.put(
   "/companies/mine",
   requireAuth,
-  requireCompany(),
+  requireCompany({ allowUnapproved: true }),
   async (req, res) => {
     const { company } = req as AuthedCompanyRequest;
 
