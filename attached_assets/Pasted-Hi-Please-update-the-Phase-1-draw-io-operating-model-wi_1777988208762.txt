@@ -1,0 +1,111 @@
+Hi,
+
+Please update the Phase 1 draw.io operating model with the changes below.
+
+━━━━━━━━━━━━━━━━━━━━━━━━
+🔒 STRICT SCOPE — READ FIRST
+━━━━━━━━━━━━━━━━━━━━━━━━
+
+This is an annotation task only.
+
+✅ You may: add notes, add labels, replace the Executive Overview page
+❌ You may NOT: change any flow logic, rename any state, touch any API, restructure any tab, add new flows, remove existing flows
+
+If anything below seems to require a logic change — it does not. Add it as a note/annotation only and flag it to me.
+
+━━━━━━━━━━━━━━━━━━━━━━━━
+📋 REQUIRED CHANGES (6 items)
+━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. EXECUTIVE OVERVIEW — replace this page only
+Rewrite in plain business language. No API calls, no status names, no technical terms. Target audience: investor or partner who has never seen the system. Use this exact text:
+
+"Tadweerah is Saudi Arabia's first digital waste marketplace.
+
+The problem: Waste generators and recyclers cannot find each other efficiently. Transactions happen over WhatsApp with no records and no compliance trail.
+
+The solution: A digital platform where generators post waste, qualified recyclers bid, the best offer wins, and every transaction is documented and auditable.
+
+Two tracks:
+• Marketplace — Open bidding. One-time deals.
+• Contracts — Known parties. Recurring shipments.
+
+The platform's role: Neutral infrastructure. Payment is direct between parties. Tadweerah records, documents, and ensures compliance readiness.
+
+How it works in 5 steps:
+1. Register & Verify — Company registers. Platform verifies license within 1 business day.
+2. Post or Browse — Generator posts waste listing. Qualified buyers browse and bid.
+3. Accept & Deal — Generator accepts best offer. Listing closes instantly. All other bids auto-rejected.
+4. Pay & Ship — Buyer pays generator directly. Generator confirms payment and ships.
+5. Complete & Document — Deal closed. Full audit trail stored. MWAN-ready summary available."
+
+─────────────────────────
+
+2. NOTIFICATION LAYER — add annotations inside existing flows (no logic changes)
+Add small note labels at these points:
+
+• Flow C (Offers): After offer.accepted → add note: "📧 Accepted buyer notified | 📧 All rejected buyers notified | 📧 Producer receives deal summary"
+• Flow D (Deal): After confirm-payment → add note: "📧 Buyer notified: payment confirmed, dispatch authorised"
+• Flow D (Deal): After confirm-dispatch → add note: "📧 Buyer notified: goods dispatched, 72h window starts"
+• Flow D (Deal): After confirm-receipt → add note: "📧 Both parties notified: deal completed"
+• Flow D (Deal): After SLA expiry → add note: "📧 Both parties notified: deal expired"
+• Flow A (Onboarding): After approval → add note: "📧 Company notified: access granted"
+• Flow A (Onboarding): After rejection → add note: "📧 Company notified: reason + next steps"
+
+─────────────────────────
+
+3. FLOW D (Deal Lifecycle) — add 4 note boxes, no structural changes
+
+Note 1 — Extension rule:
+"Extension: Producer may extend once (+7 calendar days). Triggered by notification sent 3 days before expiry. No second extension permitted. After extension expires → deal auto-expires."
+
+Note 2 — Cancellation rules:
+"Cancellation:
+• Producer: can cancel before dispatch (active or payment_confirmed)
+• Buyer: cannot cancel — issue report only
+• Admin: can cancel at any state
+• After dispatch: no cancellation permitted"
+
+Note 3 — Admin force-complete:
+"Admin force-complete available from: active, payment_confirmed, dispatched, expired → sets status = completed. Recorded in audit log with admin attribution."
+
+Note 4 — Issue reporting:
+"If a problem occurs after completion: either party submits POST /api/issue-reports. Admin reviews and resolves offline. No automated dispute resolution in Phase 1."
+
+─────────────────────────
+
+4. FLOW E (Transport Request) — add 1 note only
+
+Add this note box anywhere visible in the flow:
+"⚠ Phase 1 limitation: Transport Request does not auto-close when deal → completed. Ops team closes manually via admin dashboard. Auto-close is scheduled for Phase 2."
+
+─────────────────────────
+
+5. FLOW A (Onboarding) — add 2 notes only
+
+Note 1 — next to "Manual Admin Action":
+"Approval SLA: within 1 business day during pilot."
+
+Note 2 — next to the pending state:
+"While pending: user can view their profile but cannot create listings or submit offers. Dashboard shows pending status with support contact."
+
+─────────────────────────
+
+6. CLEAN-UP — diagrams only, no code changes
+Remove "revenue_share" from the pricing_model label in Flow B. Change it to read: "pricing_model: fixed | by_weight"
+
+No code change. Diagram text only.
+
+━━━━━━━━━━━━━━━━━━━━━━━━
+✅ EXPECTED OUTPUT
+━━━━━━━━━━━━━━━━━━━━━━━━
+
+• Same file, same 6 tabs, same structure
+• Executive Overview page replaced with business version
+• 6 annotation additions across flows A, C, D, E
+• revenue_share removed from Flow B label
+• No logic touched anywhere
+
+⏱ Please complete within 2 hours and share the updated file.
+
+Reference: the current PDF is attached.
