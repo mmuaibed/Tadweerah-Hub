@@ -1,160 +1,67 @@
-# Overview
+# Tadweerah
 
-## Latest Changes — 6 UX/Ops Improvements
+Tadweerah is a Saudi B2B MVP platform connecting waste producers, recycling buyers, and licensed transporters to streamline the recycling process within Saudi Arabia.
 
-**Status:** Active development.
+## Run & Operate
 
-**What changed in this session:**
-1. **i18n — Transport messaging**: Removed all "فريق تدويرة" references from `deal.transport.smart.*` keys. Now uses "تم تسجيل طلب النقل — سيتم التنسيق قريبًا" phrasing. Updated `skip_confirm_desc` to remove "Tadweerah team" references.
-2. **Confirm receipt button color**: Changed from red/destructive to **green** (`bg-green-600 hover:bg-green-700`). Also removed `destructive={true}` from the confirm dialog for receipt. File: `deal-panel.tsx`.
-3. **Action ownership labels**: Simplified i18n labels — `deal.role.your_turn` → "مطلوب منك", `deal.role.not_your_turn` → "بانتظار الطرف الآخر". Added new `deal.role.processing` → "قيد المعالجة". File: `i18n/index.tsx`.
-4. **DB schema**: Added `ops_assigned_to text` column to `transport_requests` table (`lib/db/src/schema/transport-requests.ts`). Migration applied via `drizzle-kit push`.
-5. **Auto-assignment**: When a transport request is created with `transport_mode = "platform"`, `ops_assigned_to` is automatically set to `"platform-ops"`. File: `api-server/routes/transport-requests.ts`.
-6. **Admin ops queue**: Added `GET /api/admin/transport-requests/pending` endpoint (protected by `X-Admin-Key`). Returns all platform-ops assigned pending TRs joined with company name. Added "طلبات النقل" tab to admin page UI with card-based list view. Files: `api-server/routes/admin.ts`, `pages/admin.tsx`.
+*   **Run Dev:** `pnpm dev` (starts frontend and backend)
+*   **Build:** `pnpm build`
+*   **Typecheck:** `pnpm typecheck`
+*   **Codegen:** `pnpm --filter @workspace/api-server run generate-api-client`
+*   **DB Push:** `pnpm --filter @workspace/db run push`
+*   **Required Env Vars:** `DATABASE_URL`, `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`, `X_ADMIN_KEY`
 
----
+## Stack
 
-# Overview (original)
+*   **Frontend:** React, Vite, wouter, shadcn/ui, Tailwind v4, TanStack Query
+*   **Backend:** Node.js v24, Express 5, Drizzle ORM (PostgreSQL), Zod
+*   **Auth:** Clerk
+*   **API Codegen:** Orval
+*   **Build Tool:** esbuild
 
-Tadweerah (تدويرة) is a Saudi B2B MVP platform designed to connect waste producers, recycling buyers, and licensed transporters. Its core purpose is to streamline the recycling process by providing a centralized marketplace for waste listings, offers, and deal management within the Saudi Arabian market. Key capabilities include user authentication, company onboarding (with MWAN-aligned multi-role classification), waste listing management, a buyer marketplace, an offer/bidding system, deal lifecycle management, and transport request orchestration aligned with MWAN eManifest requirements.
+## Where things live
 
-## Latest Changes — Step-by-Step Onboarding Flow
+*   `artifacts/tadweerah/` – Frontend application
+*   `artifacts/api-server/` – Backend API
+*   `lib/db/` – Database schema and migrations (source of truth: `lib/db/src/schema/`)
+*   `i18n/index.tsx` – Internationalization strings
+*   `artifacts/api-server/src/openapi.yaml` – OpenAPI Specification (API contracts)
+*   `artifacts/tadweerah/src/AppLayout.tsx` – Global authenticated UI layout
+*   `artifacts/tadweerah/tailwind.config.ts` – Tailwind CSS configuration and theme
 
-**Status:** Active development.
+## Architecture decisions
 
-**What changed in this session:**
-- `artifacts/tadweerah/src/pages/onboarding.tsx` — Complete rewrite from a single long scrolling page to a 4-step internal flow.
-  - Step 1: Basic Info (name, city, phone, CR, category)
-  - Step 2: Activity & Roles (MWAN actions + generator/receiver/transporter)
-  - Step 3: Licenses (single/multi, number, issuer, expiry, linked activities)
-  - Step 4: Summary + Terms acceptance + Submit
-- `CompanyStepIndicator` component reflects the active company sub-step (1–4)
-- `OuterStepIndicator` used for the signed-out account/verify phases
-- Per-step validators: `validateStep1()` (name, city, phone), `validateStep2()` (activities required)
-- "Back to step 4" button on the account creation screen for easy correction
-- `artifacts/tadweerah/src/i18n/index.tsx` — Added `onboarding.step.basic_info`, `.activity`, `.licenses_step`, `.confirm`, `onboarding.nav.next/back/next_account`
-- TypeScript: clean on both API server and frontend
+*   **Monorepo:** Uses pnpm workspaces for a unified development environment.
+*   **MWAN Alignment:** Core company roles and transport request statuses are directly mapped to MWAN eManifest classifications. Legacy roles are transparently mapped on read.
+*   **Centralized Eligibility:** A pure Rules Engine (`checkPureEligibility`) handles all eligibility checks for offers and listings, improving maintainability and consistency.
+*   **Bilingual First:** Arabic is the default language, with English support and RTL/LTR layout handled throughout. All user-facing strings are externalized.
+*   **No Direct DB Access:** Frontend interacts exclusively with the backend API; no direct database calls from the client.
 
----
+## Product
 
-## Previous Changes — Centralised Eligibility Rules Engine
+*   User authentication and company onboarding (MWAN-aligned multi-role classification).
+*   Waste listing creation and management.
+*   Buyer marketplace and offer/bidding system.
+*   Deal lifecycle management (payment, dispatch, receipt confirmation).
+*   Transport request orchestration aligned with MWAN eManifest requirements.
+*   Multi-user company support with owner/member roles.
+*   Admin dashboard for managing transport requests and lookup tables.
 
-**Status:** Active development.
-
-**What changed in this session:**
-- `artifacts/api-server/src/lib/eligibility.ts` — new pure **Rules Engine** (`checkPureEligibility`) covering all 13 `EligibilityReason` codes; replaces scattered gates in routes. DB-dependent checks (capability, sensitive material) remain in-route post-engine.
-- `artifacts/api-server/src/routes/offers.ts` — updated to call `checkPureEligibility()`, maps reason codes to HTTP errors.
-- `artifacts/tadweerah/src/lib/eligibility.ts` — frontend mirror of the engine; `checkEligibility()` runs on already-loaded data with no network calls.
-- `artifacts/tadweerah/src/hooks/use-eligibility.ts` — React hook wrapping the engine; returns `{ allowed, reason, title, message, severity }` using i18n.
-- `artifacts/tadweerah/src/components/eligibility-block.tsx` — shared UI banner component driven by the hook's `EligibilityDecision`.
-- `artifacts/tadweerah/src/pages/listing-detail.tsx` — replaced scattered `isEligibilityBlocked` / `isBlockedDueToExpiry` vars with `useEligibility()` hook + `<EligibilityBlock>`.
-- `artifacts/tadweerah/src/i18n/index.tsx` — added canonical `eligibility.<Reason>.title/.desc` keys for all 13 reasons (AR + EN).
-
-**EligibilityReason codes:** `OwnListing | ListingClosed | CompanyIncomplete | CompanyPending | CompanyRejected | CompanyExpired | OfferSubmissionBlocked | TermsNotAccepted | LicenseRequired | LicenseExpired | MissingCapability | SensitiveMaterial | TargetingRestricted`
-
----
-
-## Previous Changes — License Multi-Support + Sign-in Improvements
-
-**Status:** Active development.
-
-**What changed in this session:**
-- `lib/db/src/schema/companies.ts`: Added `licenses_json text` column (stores JSON array of license objects)
-- `artifacts/api-server/src/routes/companies.ts`: Accepts `licenses[]` array in POST body; first license number → `license_number`, all → `licenses_json`
-- `artifacts/tadweerah/src/pages/onboarding.tsx`: Full rewrite — multi-license card UI (single/multiple toggle), MWAN-aligned activities, roles, license activity linking, cleaner step indicator
-- `artifacts/tadweerah/src/pages/sign-in.tsx`: Added "نسيت كلمة المرور؟" flow (Clerk v6 `resetPasswordEmailCode.sendCode/verifyCode/submitPassword`)
-- `artifacts/tadweerah/src/i18n/index.tsx`: Added keys for license (issuer, expiry, multi-hint), forgot-password flow, `onboarding.form.basic_info_title`
-- DB migrated: `pnpm --filter @workspace/db run push` applied
-
-**License object structure (stored in `licenses_json`):**
-```json
-[{ "number": "MWAN-12345", "issuer": "mwan", "expiryDate": "2026-01-01", "activityKeys": ["transport"] }]
-```
-
-## Stable Baseline — MWAN-Aligned MVP (commit b6c562b)
-
-**Status:** Verified stable. No new features should be added until the next scenario is defined.
-
-**What is complete and verified:**
-- API typecheck: 0 errors
-- Frontend typecheck: 0 errors
-- DB schema: `mwan_role` enum `{generator, receiver, transporter}` live in PostgreSQL
-- Company roles junction (`company_roles`) stores MWAN values; legacy `companies.type` kept for backward compat with transparent read mapping
-- All 4 role scenarios verified at DB level: generator-only, receiver-only, transporter-only, all-three
-- Onboarding form sends and stores MWAN values; generator-only registration confirmed end-to-end (Clerk → API → DB → `/api/me` returns `["generator"]`)
-- Dashboard transporter section correctly shown/hidden based on `companyRoles.includes("transporter")`
-- Home page primary CTA: "سجّل شركتك مجاناً" / "Register Your Company — Free"
-- Transport requests API routes registered (`POST`, `GET /mine`, `GET /available`, `PATCH /:id/accept|pickup|deliver|close`)
-- MWAN summary route: `GET /api/deals/:id/mwan-summary`
-- Zero legacy role strings (`carrier`/`producer`/`buyer`) in frontend code or i18n
-
-**Do not add features until next scenario is defined.**
-
-# User Preferences
+## User preferences
 
 I prefer concise and clear communication. When implementing features, prioritize a modular approach. For any major architectural changes or significant feature additions, please ask for confirmation before proceeding. Ensure all user-facing strings are externalized for i18n.
 
-# System Architecture
+## Gotchas
 
-The project is built as a pnpm workspace monorepo using TypeScript (v5.9) and Node.js (v24).
+*   Always run `pnpm --filter @workspace/db run push` after changing the DB schema.
+*   Frontend eligibility checks mirror backend logic but operate on already-loaded data.
+*   "Revenue Share" pricing is only valid for "direct" sale types.
+*   Sensitive material listings require `license_status=approved` for buyers to make offers.
 
-**Technology Stack:**
-- **Backend:** Express 5, PostgreSQL with Drizzle ORM, Zod for validation.
-- **Frontend:** Vite, React, wouter, shadcn/ui, Tailwind v4, TanStack Query.
-- **Authentication:** Clerk.
-- **API Codegen:** Orval (from OpenAPI spec).
-- **Build Tool:** esbuild.
+## Pointers
 
-**Design Principles & UI/UX (LOCKED — applies to ALL pages):**
-- **Branding:** Primary blue (`hsl(223, 67%, 50%)`), secondary green (`hsl(125, 47%, 45%)`).
-- **Typography:** Tajawal font for both Arabic and English.
-- **Layout:** Consistent `<AppLayout>` for authenticated pages.
-- **Error Handling:** Bilingual, user-facing messages via `i18n/index.tsx`; raw API errors are never exposed.
-- **Bilingual Support:** Arabic default with English toggle, supporting RTL/LTR.
-
-**Global UI Theme (FINAL — LOCKED):**
-- **Visual Style:** Clean, minimal, no clutter. Generous whitespace. No heavy shadows or gradients. Cards with soft borders only (`border border-border`).
-- **Typography Hierarchy:** Page headline — bold, max 2 lines. Section titles — medium-bold (`font-semibold`). Body text — clean, readable. Supporting text — `text-muted-foreground`.
-- **Colors:** Primary blue for buttons (main actions only). Green (`text-secondary`) for identity/highlights. Text: dark gray (`text-foreground`). Secondary text: `text-muted-foreground`. Borders: `border-border` (light gray).
-- **Layout Rules:** Fit above the fold when possible. Avoid unnecessary scroll. Max 2 main columns per section. Clear section spacing.
-- **Cards:** `rounded-xl border border-border bg-card` everywhere. Consistent `p-4` or `px-4 py-3` padding. No shadows unless hover state (`hover:shadow-sm`). No variant card styles.
-- **Buttons:** Primary = filled blue, one per view. Secondary = outline (`variant="outline"`), never compete with primary. Add `border-gray-400 hover:border-primary/60 hover:bg-muted/50` to secondary buttons for contrast.
-- **Spacing:** Consistent vertical rhythm. Clear separation: header → content → actions. No crowded sections.
-- **UX Principle:** Every page answers "What can I do here?" and "What is the next action?" within 3 seconds. One clear primary action per page.
-
-**Technical Implementations & Features:**
-- **Naming Conventions:** `snake_case` for DB columns/JSON API keys; `camelCase`/`PascalCase` for TypeScript.
-- **API Endpoints:** Resource-oriented (companies, listings, offers, deals) with role-based access control.
-- **Access Control:** `requireAuth` and `requireCompany` middleware chains. Access decisions are based on ownership (`company_id` match) and capabilities, not deprecated company roles. Multi-user permissions (`owner`, `member`) are enforced via `memberRole`.
-- **Offer System:** Auto-rejection on listing closure, mandatory rejection reasons, conditional acceptance reasons, rank calculation, and `already_top` flag for buyers.
-- **Deal Lifecycle:** Supports `confirm-payment`, `confirm-dispatch`, `confirm-receipt` states. Deal panel includes payment reference and proof URL.
-- **Admin Functionality:** CRUD routes for lookup tables protected by `X-Admin-Key`.
-- **Capabilities Management:** Companies manage capabilities via API and frontend.
-- **Listing Form:** Dynamic material categories, subcategories, unit options, "Revenue Share" pricing model, and "Required Services" selection.
-- **Notifications:** Integrated system with unread count, read/unread status, and navigation to related listings.
-- **License Gates:** Listing creation is always permitted. Offer submission requires `license_status=approved` for sensitive materials or services requiring a license.
-- **Onboarding:** Capability-based company creation; no `type` field.
-- **Value Layer Enhancements:** Enhanced `DealPanel` with `DealValueSummary`, `GovernanceTimeline`, `printDealReport` (full HTML), contextual messages, and compliance badges. Dashboard and Reports page show live stats (`GET /dashboard/stats`).
-- **Listing Details:** Displays material category name from joined lookup tables.
-- **Deal Reference:** `TDW-{YEAR}-{XXXXXX}` format for deal IDs.
-- **"Other" Unit:** `waste_listings` includes `unit_notes` for custom unit descriptions.
-- **Multi-user Companies:** `company_members` table manages `owner` and `member` roles for companies. API endpoints for managing members.
-- **Targeting System:** Direct Sale listings can target `open`, `specific_company`, or `category`. Auction listings are always `open`.
-- **Sensitive Material Gate:** `is_sensitive=true` on material category requires `license_status=approved` for buyers to make an offer.
-- **Revenue-Share Validation:** "Revenue Share" pricing is only allowed for `direct` sale types.
-- **Contract Track (Backend P1–P3 complete):** Fully isolated from Marketplace. Schema: `contracts`, `contract_materials`, `contract_sequences`, `contract_shipments`. Contract lifecycle: `draft → pending_confirmation → active → completed | cancelled`. Shipment lifecycle: `planned → dispatched → received → closed | cancelled`. Weight policies: 5 deterministic enum values; `final_weight` computed at close. Immutable reference numbers: `TDW-CTR-YYYY-NNNN` (contracts) / `TDW-CTR-YYYY-NNNN-SMMM` (shipments). Material lines locked on contract activation. Passive revenue share storage only (seller_pct / buyer_pct). Admin routes: `GET /admin/contracts`, `POST /admin/contracts/:id/cancel`. All endpoints protected by `requireAuth + requireCompany`.
-- **MWAN-Ready Architecture:** Multi-role companies via `company_roles` junction table using a dedicated `mwan_role` Postgres enum with values `generator | receiver | transporter` (matches MWAN eManifest party classifications exactly). Legacy `companies.type` column (producer/buyer/carrier) is preserved for backward compat — all API responses and new rows use MWAN values; legacy rows are mapped on read. `transport_requests` table has full MWAN-aligned status machine: `pending → accepted → manifest_ready → in_transit → delivered → closed | cancelled`. `manifest_records` stub table added. Onboarding includes MWAN role checkbox group using new enum values. Dashboard shows transporter-specific transport section when `companyRoles.includes("transporter")`. New `/transport-requests` page with mine/available tabs and accept action. MWAN eManifest readiness panel (collapsible) in deal-panel for payment_confirmed+ deals — fetches from `GET /api/deals/:id/mwan-summary`. Home page primary CTA updated to "Register Your Company — Free" for clarity.
-- **Pilot-Critical Fixes (session 3):** `vehicle_plate` column added to `transport_requests` table (schema + API serialization). CR gate (422 `CommercialRegistrationRequired`) blocks `POST /listings` and `POST /listings/:id/offers` when `company.commercialRegistration` is null. `actual_quantity` moved from `confirm-payment` to `confirm-dispatch` for `by_weight` deals — API enforces and computes `final_amount` at dispatch. Frontend: `actualQty` field moved to dispatch form, `vehicle_plate` field added to `CreateTransportRequestForm`, `requestConfirmDispatch` validates before confirming.
-
-# External Dependencies
-
-- **PostgreSQL:** Main database.
-- **Clerk:** User authentication and management.
-- **Orval:** API client and validator generation.
-- **shadcn/ui:** UI component library.
-- **Tailwind CSS:** Styling framework.
-- **TanStack Query:** Data fetching and caching.
-- **Vite:** Frontend build tool.
-- **Express:** Backend web framework.
-- **Drizzle ORM:** TypeScript ORM for PostgreSQL.
-- **Zod:** Schema validation.
+*   **React Context:** _Populate as you build_
+*   **Drizzle ORM Docs:** [https://orm.drizzle.team/](https://orm.drizzle.team/)
+*   **Clerk Docs:** [https://clerk.com/docs](https://clerk.com/docs)
+*   **Tailwind CSS Docs:** [https://tailwindcss.com/docs](https://tailwindcss.com/docs)
+*   **TanStack Query Docs:** [https://tanstack.com/query/latest](https://tanstack.com/query/latest)
