@@ -135,6 +135,7 @@ router.patch("/admin/companies/:id/license", requireAdminKey, async (req, res) =
     action: "company.license_updated",
     entityType: "company",
     entityId: id,
+    actorRole: "admin",
     details: { license_status, reason: reason ?? null },
   });
 
@@ -199,6 +200,9 @@ router.patch("/admin/issue-reports/:id", requireAdminKey, async (req, res) => {
     action: "issue_report.status_updated",
     entityType: "issue_report",
     entityId: id,
+    actorRole: "admin",
+    statusBefore: req.body?.prev_status ?? null,
+    statusAfter: status,
     details: { status },
   });
 
@@ -236,6 +240,7 @@ router.patch("/admin/companies/:id/unblock-offers", requireAdminKey, async (req,
     action: "company.offer_submission_unblocked",
     entityType: "company",
     entityId: id,
+    actorRole: "admin",
     details: { unblocked_by: "admin" },
     severity: "warn",
   });
@@ -287,7 +292,10 @@ router.post("/admin/deals/:id/cancel", requireAdminKey, async (req, res) => {
     action: "deal.cancelled_by_admin",
     entityType: "deal",
     entityId: id,
-    details: { reason: reason ?? null, cancelled_from_status: deal.status },
+    actorRole: "admin",
+    statusBefore: deal.status,
+    statusAfter: "cancelled",
+    details: { reason: reason ?? null },
     severity: "warn",
   });
 
@@ -340,7 +348,10 @@ router.post("/admin/deals/:id/force-complete", requireAdminKey, async (req, res)
     action: "deal.force_completed_by_admin",
     entityType: "deal",
     entityId: id,
-    details: { reason: reason ?? null, forced_from_status: deal.status },
+    actorRole: "admin",
+    statusBefore: deal.status,
+    statusAfter: "completed",
+    details: { reason: reason ?? null },
     severity: "warn",
   });
 
@@ -427,7 +438,10 @@ router.post("/admin/contracts/:id/cancel", requireAdminKey, async (req, res) => 
     action: "contract.cancelled_by_admin",
     entityType: "contract",
     entityId: id,
-    details: { reason: reason ?? null, cancelled_from_status: contract.status },
+    actorRole: "admin",
+    statusBefore: contract.status,
+    statusAfter: "cancelled",
+    details: { reason: reason ?? null },
     severity: "warn",
   });
 
@@ -440,19 +454,45 @@ router.post("/admin/contracts/:id/cancel", requireAdminKey, async (req, res) => 
 
 /**
  * GET /admin/audit-log
- * Query params: entityType, entityId, action, limit (default 100, max 500), offset
+ * Query params:
+ *   entityType   — filter by entity_type
+ *   entityId     — filter by entity_id (exact UUID)
+ *   action       — partial match on action key
+ *   actorRole    — filter by actor_role (exact)
+ *   statusBefore — filter by status_before (exact)
+ *   statusAfter  — filter by status_after (exact)
+ *   dateFrom     — ISO timestamp lower bound (inclusive)
+ *   dateTo       — ISO timestamp upper bound (inclusive)
+ *   limit        — default 100, max 500
+ *   offset       — default 0
  */
 router.get("/admin/audit-log", requireAdminKey, async (req, res) => {
-  const entityType = typeof req.query.entityType === "string" ? req.query.entityType : null;
-  const entityId = typeof req.query.entityId === "string" ? req.query.entityId : null;
-  const action = typeof req.query.action === "string" ? req.query.action : null;
-  const limit = Math.min(Number(req.query.limit) || 100, 500);
+  const entityType   = typeof req.query.entityType   === "string" ? req.query.entityType   : null;
+  const entityId     = typeof req.query.entityId     === "string" ? req.query.entityId     : null;
+  const action       = typeof req.query.action       === "string" ? req.query.action       : null;
+  const actorRole    = typeof req.query.actorRole    === "string" ? req.query.actorRole    : null;
+  const statusBefore = typeof req.query.statusBefore === "string" ? req.query.statusBefore : null;
+  const statusAfter  = typeof req.query.statusAfter  === "string" ? req.query.statusAfter  : null;
+  const dateFrom     = typeof req.query.dateFrom     === "string" ? req.query.dateFrom     : null;
+  const dateTo       = typeof req.query.dateTo       === "string" ? req.query.dateTo       : null;
+  const limit  = Math.min(Number(req.query.limit) || 100, 500);
   const offset = Number(req.query.offset) || 0;
 
   const conditions = [];
-  if (entityType) conditions.push(eq(auditLogTable.entity_type, entityType));
-  if (entityId) conditions.push(eq(auditLogTable.entity_id, entityId));
-  if (action) conditions.push(ilike(auditLogTable.action, `%${action}%`));
+  if (entityType)   conditions.push(eq(auditLogTable.entity_type, entityType));
+  if (entityId)     conditions.push(eq(auditLogTable.entity_id, entityId));
+  if (action)       conditions.push(ilike(auditLogTable.action, `%${action}%`));
+  if (actorRole)    conditions.push(eq(auditLogTable.actor_role, actorRole));
+  if (statusBefore) conditions.push(eq(auditLogTable.status_before, statusBefore));
+  if (statusAfter)  conditions.push(eq(auditLogTable.status_after, statusAfter));
+  if (dateFrom) {
+    const from = new Date(dateFrom);
+    if (!isNaN(from.getTime())) conditions.push(sql`${auditLogTable.created_at} >= ${from.toISOString()}`);
+  }
+  if (dateTo) {
+    const to = new Date(dateTo);
+    if (!isNaN(to.getTime())) conditions.push(sql`${auditLogTable.created_at} <= ${to.toISOString()}`);
+  }
 
   const rows = await db
     .select()

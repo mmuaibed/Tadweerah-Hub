@@ -9,6 +9,15 @@
  *   "info"     — normal operations (default). Failure is silently swallowed.
  *   "warn"     — notable but non-critical failure. Logged to stderr, swallowed.
  *   "critical" — must succeed; failure is re-thrown to the caller.
+ *
+ * actor_role:
+ *   The business role of the actor in the context of this action.
+ *   Examples: "producer", "buyer", "seller", "transporter", "admin", "system".
+ *
+ * status_before / status_after:
+ *   Entity status before and after the action. Pass both for any action that
+ *   causes a state transition. Pass null for creations (no prior state) or
+ *   for actions that do not change entity status (e.g. extensions, updates).
  */
 import { db, auditLogTable } from "@workspace/db";
 import { logger } from "./logger";
@@ -19,6 +28,9 @@ export async function logAudit({
   action,
   entityType,
   entityId,
+  actorRole,
+  statusBefore,
+  statusAfter,
   details,
   severity = "info",
 }: {
@@ -27,6 +39,12 @@ export async function logAudit({
   action: string;
   entityType?: string;
   entityId?: string;
+  /** Business role of the actor: "producer" | "buyer" | "seller" | "transporter" | "admin" | "system" */
+  actorRole?: string | null;
+  /** Entity status before this action (null for creations or non-status actions) */
+  statusBefore?: string | null;
+  /** Entity status after this action (null for non-status actions) */
+  statusAfter?: string | null;
   details?: Record<string, unknown>;
   severity?: "info" | "warn" | "critical";
 }): Promise<void> {
@@ -37,6 +55,9 @@ export async function logAudit({
       action,
       entity_type: entityType ?? null,
       entity_id: entityId ?? null,
+      actor_role: actorRole ?? null,
+      status_before: statusBefore ?? null,
+      status_after: statusAfter ?? null,
       details: details ?? null,
     });
   } catch (err) {

@@ -242,6 +242,8 @@ router.post(
         action: "shipment.created",
         entityType: "contract_shipment",
         entityId: shipment.id,
+        actorRole: contract.seller_company_id === company.id ? "seller" : "buyer",
+        statusAfter: "planned",
         details: { contract_id: contract.id, reference: shipment.reference },
       });
 
@@ -340,6 +342,9 @@ router.post(
         action: "shipment.dispatched",
         entityType: "contract_shipment",
         entityId: shipment.id,
+        actorRole: contract.seller_company_id === company.id ? "seller" : "buyer",
+        statusBefore: "planned",
+        statusAfter: "dispatched",
         details: { source_weight: sourceWeightVal },
       });
 
@@ -417,6 +422,9 @@ router.post(
         action: "shipment.received",
         entityType: "contract_shipment",
         entityId: shipment.id,
+        actorRole: contract.buyer_company_id === company.id ? "buyer" : "seller",
+        statusBefore: "dispatched",
+        statusAfter: "received",
         details: { destination_weight: destWeightVal },
       });
 
@@ -496,6 +504,9 @@ router.post(
         action: "shipment.closed",
         entityType: "contract_shipment",
         entityId: shipment.id,
+        actorRole: contract.seller_company_id === company.id ? "seller" : "buyer",
+        statusBefore: "received",
+        statusAfter: "closed",
         details: {
           weight_policy: contract.weight_policy,
           final_weight: finalWeight,
@@ -524,7 +535,7 @@ router.post(
       const userId = (req as AuthedCompanyRequest).userId;
       const shipmentId = assertUuid(req.params.id, "id");
 
-      const { shipment } = await fetchShipmentForParty(shipmentId, company.id);
+      const { shipment, contract } = await fetchShipmentForParty(shipmentId, company.id);
 
       const cancellable = ["planned", "dispatched"];
       if (!cancellable.includes(shipment.status)) {
@@ -547,6 +558,9 @@ router.post(
         companyId: company.id,
         action: "shipment.cancelled",
         entityType: "contract_shipment",
+        actorRole: contract.seller_company_id === company.id ? "seller" : "buyer",
+        statusBefore: shipment.status,
+        statusAfter: "cancelled",
         entityId: shipment.id,
       });
 

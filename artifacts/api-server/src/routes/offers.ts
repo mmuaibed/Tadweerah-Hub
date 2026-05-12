@@ -665,6 +665,9 @@ router.post(
       action: "offer.submitted",
       entityType: "offer",
       entityId: offerResult.id,
+      actorRole: "buyer",
+      statusBefore: existing?.status === "withdrawn" ? "withdrawn" : null,
+      statusAfter: "pending",
       details: { listing_id: listingId, price_per_unit },
     });
     void notifyOfferReceived({
@@ -829,6 +832,7 @@ router.put(
       action: "offer.improved",
       entityType: "offer",
       entityId: myOffer.id,
+      actorRole: "buyer",
       details: { listing_id: listingId, old_price: Number(myOffer.price_per_unit), new_price: price_per_unit },
     });
     if (outbidBuyerId) {
@@ -907,6 +911,9 @@ router.delete(
       action: "offer.withdrawn",
       entityType: "offer",
       entityId: anyOffer.id,
+      actorRole: "buyer",
+      statusBefore: "pending",
+      statusAfter: "withdrawn",
       details: { listing_id: listingId },
     });
 
@@ -1091,6 +1098,9 @@ router.post(
       action: "offer.accepted",
       entityType: "offer",
       entityId: offerId,
+      actorRole: "producer",
+      statusBefore: "pending",
+      statusAfter: "accepted",
       details: { listing_id: offer.waste_listing_id, buyer_company_id: offer.buyer_company_id },
     });
     void notifyOfferAccepted({
@@ -1201,6 +1211,9 @@ router.post(
       action: "offer.rejected",
       entityType: "offer",
       entityId: offerId,
+      actorRole: "producer",
+      statusBefore: "pending",
+      statusAfter: "rejected",
       details: { listing_id: offer.waste_listing_id, reason: fullReason },
     });
     void notifyOfferRejected({

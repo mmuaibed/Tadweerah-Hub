@@ -353,6 +353,9 @@ router.post(
       action: "deal.payment_submitted",
       entityType: "deal",
       entityId: dealId,
+      actorRole: "buyer",
+      statusBefore: "active",
+      statusAfter: "payment_submitted",
     });
     void notifyDealStageChange({
       companyId: updated.producer_company_id,
@@ -435,6 +438,9 @@ router.post(
       action: "deal.payment_confirmed",
       entityType: "deal",
       entityId: dealId,
+      actorRole: "producer",
+      statusBefore: "payment_submitted",
+      statusAfter: "payment_confirmed",
       details: { settlement_type: deal.settlement_type },
     });
     void notifyDealStageChange({
@@ -540,6 +546,9 @@ router.post(
       action: "deal.dispatched",
       entityType: "deal",
       entityId: dealId,
+      actorRole: "producer",
+      statusBefore: "payment_confirmed",
+      statusAfter: "dispatched",
     });
     void notifyDealStageChange({
       companyId: updated.buyer_company_id,
@@ -615,6 +624,9 @@ router.post(
       action: "deal.receipt_confirmed",
       entityType: "deal",
       entityId: dealId,
+      actorRole: "buyer",
+      statusBefore: "dispatched",
+      statusAfter: "receipt_pending",
     });
     void notifyDealStageChange({
       companyId: updated.producer_company_id,
@@ -687,8 +699,10 @@ router.post(
       action: "deal.cancelled",
       entityType: "deal",
       entityId: dealId,
+      actorRole: "producer",
+      statusBefore: deal.status,
+      statusAfter: "cancelled",
       severity: "warn",
-      details: { cancelled_from_status: deal.status },
     });
     void notifyDealStageChange({
       companyId: updated.buyer_company_id,
@@ -770,7 +784,8 @@ router.post(
       action: "deal.extended",
       entityType: "deal",
       entityId: dealId,
-      details: { extended_until: extendedUntil.toISOString() },
+      actorRole: "producer",
+      details: { extended_until: extendedUntil.toISOString(), from_status: deal.status },
     });
     void notifyDealStageChange({
       companyId: updated.buyer_company_id,

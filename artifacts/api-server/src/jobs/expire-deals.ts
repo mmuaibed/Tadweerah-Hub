@@ -251,6 +251,7 @@ export async function expireStaleDeals(): Promise<void> {
             action: "company.offer_submission_blocked",
             entityType: "company",
             entityId: buyerCompanyId,
+            actorRole: "system",
             severity: "warn",
             details: { reason: "dispatched_expiry_threshold_reached", receipt_failures_count: newCount },
           });
@@ -269,6 +270,8 @@ export async function expireStaleDeals(): Promise<void> {
           action: "deal.expired",
           entityType: "deal",
           entityId: deal.id,
+          actorRole: "system",
+          statusAfter: "expired",
           severity: "warn",
         });
 
@@ -324,6 +327,9 @@ export async function expireStaleDeals(): Promise<void> {
           action: "deal.auto_completed",
           entityType: "deal",
           entityId: deal.id,
+          actorRole: "system",
+          statusBefore: "receipt_pending",
+          statusAfter: "completed",
           severity: "info",
           details: { reason: "receipt_pending_48h_elapsed" },
         });

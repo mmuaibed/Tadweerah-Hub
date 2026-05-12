@@ -297,6 +297,8 @@ router.post(
         action: "contract.created",
         entityType: "contract",
         entityId: contract.id,
+        actorRole: role,
+        statusAfter: "draft",
         details: { reference, my_role: role, seller_company_id: sellerCompanyId, buyer_company_id: buyerCompanyId },
       });
 
@@ -493,6 +495,9 @@ router.post(
         action: "contract.submitted",
         entityType: "contract",
         entityId: contract.id,
+        actorRole: contract.seller_company_id === company.id ? "seller" : "buyer",
+        statusBefore: "draft",
+        statusAfter: "pending_confirmation",
       });
 
       const { seller, buyer } = await fetchPartyNames(
@@ -545,6 +550,9 @@ router.post(
         action: "contract.confirmed",
         entityType: "contract",
         entityId: contract.id,
+        actorRole: isSeller ? "seller" : "buyer",
+        statusBefore: "pending_confirmation",
+        statusAfter: "active",
       });
 
       const { seller, buyer } = await fetchPartyNames(
@@ -612,6 +620,9 @@ router.post(
         action: "contract.completed",
         entityType: "contract",
         entityId: contract.id,
+        actorRole: contract.seller_company_id === company.id ? "seller" : "buyer",
+        statusBefore: "active",
+        statusAfter: "completed",
       });
 
       const { seller, buyer } = await fetchPartyNames(
@@ -681,6 +692,9 @@ router.post(
         action: "contract.cancelled",
         entityType: "contract",
         entityId: contract.id,
+        actorRole: contract.seller_company_id === company.id ? "seller" : "buyer",
+        statusBefore: contract.status,
+        statusAfter: "cancelled",
       });
 
       const { seller, buyer } = await fetchPartyNames(
