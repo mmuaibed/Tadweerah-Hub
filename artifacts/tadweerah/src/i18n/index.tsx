@@ -617,9 +617,12 @@ const translations: Record<string, Record<Language, string>> = {
   "participations.deal.completed": { ar: "مكتملة ✓", en: "Completed ✓" },
 
   // Waiting-for status — who acts next
-  "deal.waiting.active": { ar: "بانتظار المنتج لتأكيد الدفع", en: "Waiting for producer to confirm payment" },
+  "deal.waiting.active": { ar: "بانتظار المشتري لإرسال مرجع الدفع", en: "Waiting for buyer to submit payment reference" },
+  "deal.waiting.payment_submitted": { ar: "بانتظار المنتج لتأكيد استلام الدفع", en: "Waiting for producer to confirm payment receipt" },
   "deal.waiting.payment_confirmed": { ar: "بانتظار المنتج لتأكيد إرسال البضاعة", en: "Waiting for producer to confirm dispatch" },
   "deal.waiting.dispatched": { ar: "بانتظار المشتري لتأكيد استلام البضاعة", en: "Waiting for buyer to confirm receipt" },
+  "deal.waiting.receipt_pending.producer": { ar: "تم تأكيد الاستلام من المشتري — ستكتمل الصفقة تلقائياً خلال 48 ساعة. تواصل مع الدعم إذا كنت ترغب في الاعتراض", en: "Buyer confirmed receipt — deal auto-completes in 48 hours. Contact support to dispute." },
+  "deal.waiting.receipt_pending.buyer": { ar: "شكراً! تم تأكيد الاستلام وستكتمل الصفقة تلقائياً خلال 48 ساعة", en: "Thank you! Receipt confirmed — deal auto-completes within 48 hours." },
 
   // Confirmation dialogs
   "deal.confirm.payment.title": { ar: "تأكيد الدفع", en: "Confirm Payment" },
@@ -664,7 +667,8 @@ const translations: Record<string, Record<Language, string>> = {
   "deal.transport.smart.skip_confirm_desc": { ar: "هل أنت متأكد أن هذه الصفقة لا تحتاج إلى خدمة نقل؟ يمكنك التواصل معنا لاحقاً إذا احتجت مساعدة.", en: "Are you sure this deal doesn't require transport? You can contact us later if you need assistance." },
   "deal.transport.smart.skip_confirm_ok": { ar: "نعم، لا أحتاج نقل", en: "Yes, No Transport Needed" },
   "deal.transport.smart.dispatched_no_tr": { ar: "لم يتم ترتيب نقل لهذه الصفقة. البضاعة في طريقها إليك.", en: "No transport was arranged for this deal. Goods are on their way to you." },
-  "deal.step_current.active.producer": { ar: "الخطوة الحالية: تأكيد الدفع", en: "Current step: Confirm Payment" },
+  "deal.step_current.active.buyer": { ar: "الخطوة الحالية: إرسال مرجع الدفع", en: "Current step: Submit Payment" },
+  "deal.step_current.payment_submitted.producer": { ar: "الخطوة الحالية: تأكيد استلام الدفع", en: "Current step: Confirm Payment Receipt" },
   "deal.step_current.payment_confirmed.producer": { ar: "الخطوة الحالية: إرسال البضاعة", en: "Current step: Dispatch Goods" },
   "deal.step_current.dispatched.buyer": { ar: "الخطوة الحالية: تأكيد الاستلام", en: "Current step: Confirm Receipt" },
   "deal.error.payment_reference_required": { ar: "رقم مرجع الدفع مطلوب", en: "Payment reference is required" },
@@ -938,14 +942,22 @@ const translations: Record<string, Record<Language, string>> = {
   "listing.card.offers_count": { ar: "عروض", en: "offers" },
   "listing.card.no_offers": { ar: "لا توجد عروض بعد", en: "No offers yet" },
 
-  // P4 — Deal stage descriptions (deal.status.active / dispatched already updated above)
-  "deal.stage.action.active.producer": {
-    ar: "أدخل رقم الحوالة وأكّد تأكيد الدفع",
-    en: "Enter the transfer reference and confirm payment",
-  },
+  // P4 — Deal stage descriptions
   "deal.stage.action.active.buyer": {
-    ar: "في انتظار المنتج لتأكيد الدفع",
-    en: "Waiting for the producer to confirm payment",
+    ar: "أرسل مرجع الدفع للمنتج لتأكيد انتقال الصفقة للمرحلة التالية",
+    en: "Submit your payment reference so the producer can confirm receipt",
+  },
+  "deal.stage.action.active.producer": {
+    ar: "في انتظار المشتري لإرسال مرجع الدفع",
+    en: "Waiting for the buyer to submit the payment reference",
+  },
+  "deal.stage.action.payment_submitted.producer": {
+    ar: "المشتري أرسل مرجع الدفع — تحقق منه وأكّد استلام الدفع",
+    en: "Buyer submitted the payment reference — verify and confirm receipt",
+  },
+  "deal.stage.action.payment_submitted.buyer": {
+    ar: "في انتظار المنتج لتأكيد استلام الدفع",
+    en: "Waiting for the producer to confirm payment receipt",
   },
   "deal.stage.action.payment_confirmed.producer": {
     ar: "أكّد شحن البضاعة وإرسالها للمشتري",
@@ -962,6 +974,14 @@ const translations: Record<string, Record<Language, string>> = {
   "deal.stage.action.dispatched.producer": {
     ar: "في انتظار المشتري لتأكيد استلام البضاعة",
     en: "Waiting for the buyer to confirm receipt of goods",
+  },
+  "deal.stage.action.receipt_pending.producer": {
+    ar: "مراجعة الاستلام — ستكتمل الصفقة تلقائياً خلال 48 ساعة",
+    en: "Receipt under review — deal auto-completes in 48 hours",
+  },
+  "deal.stage.action.receipt_pending.buyer": {
+    ar: "تم تأكيد الاستلام — الصفقة ستكتمل تلقائياً قريباً",
+    en: "Receipt confirmed — deal will auto-complete shortly",
   },
 
   // P5 — Company search for direct-sale targeting

@@ -21,8 +21,10 @@ export const dealSettlementTypeEnum = pgEnum("deal_settlement_type", [
 
 export const dealStatusEnum = pgEnum("deal_status", [
   "active",
+  "payment_submitted",
   "payment_confirmed",
   "dispatched",
+  "receipt_pending",
   "completed",
   "expired",
   "cancelled",
@@ -82,6 +84,15 @@ export const dealsTable = pgTable(
     /** URL to uploaded payment proof document / screenshot (optional). */
     payment_proof_url: text("payment_proof_url"),
 
+    /** When the buyer submitted the payment reference (active → payment_submitted). */
+    payment_submitted_at: timestamp("payment_submitted_at", { withTimezone: true }),
+
+    /** Buyer company that submitted the payment reference. */
+    payment_submitted_by: uuid("payment_submitted_by").references(
+      () => companiesTable.id,
+      { onDelete: "restrict" },
+    ),
+
     dispatched_at: timestamp("dispatched_at", { withTimezone: true }),
     dispatched_by: uuid("dispatched_by").references(() => companiesTable.id, {
       onDelete: "restrict",
@@ -91,6 +102,12 @@ export const dealsTable = pgTable(
     received_by: uuid("received_by").references(() => companiesTable.id, {
       onDelete: "restrict",
     }),
+
+    /**
+     * Timestamp when the buyer called confirm-receipt (dispatched → receipt_pending).
+     * Used by the hourly job to auto-complete the deal after 48 hours if no dispute is filed.
+     */
+    receipt_pending_since: timestamp("receipt_pending_since", { withTimezone: true }),
 
     /**
      * Set when producer or admin cancels the deal before dispatch.

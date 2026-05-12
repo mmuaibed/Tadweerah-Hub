@@ -50,7 +50,7 @@ import {
 } from "@workspace/api-client-react";
 import type { MaterialCategory } from "@workspace/api-client-react";
 
-export type DealStatus = "active" | "payment_confirmed" | "dispatched" | "completed";
+export type DealStatus = "active" | "payment_submitted" | "payment_confirmed" | "dispatched" | "receipt_pending" | "completed" | "expired" | "cancelled";
 export type SettlementType = "fixed" | "by_weight";
 
 export interface DealInfo {
@@ -70,10 +70,12 @@ export interface DealInfo {
     is_verified?: boolean;
   } | null;
   payment_confirmed_at: string | null;
+  payment_submitted_at: string | null;
   payment_reference: string | null;
   payment_proof_url: string | null;
   dispatched_at: string | null;
   received_at: string | null;
+  receipt_pending_since: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -115,14 +117,26 @@ interface DealPanelProps {
   listingInfoPanel?: ReactNode;
 }
 
-type PendingAction = "confirm-payment" | "confirm-dispatch" | "confirm-receipt" | null;
+type PendingAction = "submit-payment" | "confirm-payment" | "confirm-dispatch" | "confirm-receipt" | null;
 
-const STATUS_STEPS: DealStatus[] = [
+const STEPPER_DISPLAY_STEPS: Array<"active" | "payment_confirmed" | "dispatched" | "completed"> = [
   "active",
   "payment_confirmed",
   "dispatched",
   "completed",
 ];
+
+function getStepperIndex(status: DealStatus): number {
+  const map: Partial<Record<DealStatus, number>> = {
+    active: 0,
+    payment_submitted: 0,
+    payment_confirmed: 1,
+    dispatched: 2,
+    receipt_pending: 3,
+    completed: 3,
+  };
+  return map[status] ?? -1;
+}
 
 const TR_STEPS = [
   { key: "transport_request_created", ar: "إنشاء طلب نقل", en: "Create transport request" },
@@ -142,7 +156,7 @@ class DealApiError extends Error {
 
 async function callDealApi(
   dealId: string,
-  action: "confirm-payment" | "confirm-dispatch" | "confirm-receipt",
+  action: "submit-payment" | "confirm-payment" | "confirm-dispatch" | "confirm-receipt",
   body?: object,
   authToken?: string | null,
 ): Promise<DealInfo> {
@@ -894,10 +908,14 @@ function printDealReport(
     : (deal.counterparty?.contact_phone ?? "");
 
   const statusMap: Record<DealStatus, string> = {
-    active: lang === "ar" ? "انتظار تأكيد الدفع" : "Awaiting payment",
+    active: lang === "ar" ? "انتظار إرسال الدفع" : "Awaiting payment",
+    payment_submitted: lang === "ar" ? "بانتظار تأكيد الدفع" : "Payment under review",
     payment_confirmed: lang === "ar" ? "تم تأكيد الدفع" : "Payment confirmed",
     dispatched: lang === "ar" ? "البضاعة في الطريق" : "In transit",
+    receipt_pending: lang === "ar" ? "تم تأكيد الاستلام" : "Receipt confirmed",
     completed: lang === "ar" ? "مكتملة" : "Completed",
+    expired: lang === "ar" ? "منتهية" : "Expired",
+    cancelled: lang === "ar" ? "ملغاة" : "Cancelled",
   };
 
   const timelineRows = [
@@ -1361,10 +1379,10 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
     }
   }
 
-  const currentStepIndex = STATUS_STEPS.indexOf(deal.status);
+  const currentStepIndex = getStepperIndex(deal.status);
 
   async function executeAction(
-    action: "confirm-payment" | "confirm-dispatch" | "confirm-receipt",
+    action: "submit-payment" | "confirm-payment" | "confirm-dispatch" | "confirm-receipt",
     body?: object,
   ) {
     setLoading(true);
@@ -1374,7 +1392,7 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
       const authToken = await getToken();
       const updated = await callDealApi(deal.id, action, body, authToken);
       onUpdate(updated);
-      if (action === "confirm-payment") {
+      if (action === "submit-payment" || action === "confirm-payment") {
         setShowPaymentSuccess(true);
       }
     } catch (e) {
@@ -1395,11 +1413,16 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
     }
   }
 
-  function requestConfirmPayment() {
+  function requestSubmitPayment() {
     if (!paymentRef.trim()) {
       setError(t("deal.error.payment_reference_required"));
       return;
     }
+    setError(null);
+    setPendingAction("submit-payment");
+  }
+
+  function requestConfirmPaymentReceipt() {
     setError(null);
     setPendingAction("confirm-payment");
   }
@@ -1418,14 +1441,16 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
 
   function handleConfirmed() {
     if (!pendingAction) return;
-    if (pendingAction === "confirm-payment") {
+    if (pendingAction === "submit-payment") {
       const body: Record<string, unknown> = {
         payment_reference: paymentRef.trim(),
       };
       if (paymentProofDataUrl) {
         body.payment_proof_url = paymentProofDataUrl;
       }
-      executeAction("confirm-payment", body);
+      executeAction("submit-payment", body);
+    } else if (pendingAction === "confirm-payment") {
+      executeAction("confirm-payment");
     } else if (pendingAction === "confirm-dispatch" && deal.settlement_type === "by_weight") {
       executeAction("confirm-dispatch", { actual_quantity: parseFloat(actualQty) });
     } else {
@@ -1441,17 +1466,33 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
     return "outline";
   };
 
-  const waitingText =
-    deal.status !== "completed" ? t(`deal.waiting.${deal.status}`) : null;
+  const waitingText = (() => {
+    if (deal.status === "completed" || deal.status === "expired" || deal.status === "cancelled") return null;
+    if (deal.status === "receipt_pending") {
+      return role === "producer"
+        ? t("deal.waiting.receipt_pending.producer")
+        : t("deal.waiting.receipt_pending.buyer");
+    }
+    return t(`deal.waiting.${deal.status}` as Parameters<typeof t>[0]) ?? null;
+  })();
 
   const isMyTurn =
-    (role === "producer" && (deal.status === "active" || deal.status === "payment_confirmed")) ||
+    (role === "buyer" && deal.status === "active") ||
+    (role === "producer" && deal.status === "payment_submitted") ||
+    (role === "producer" && deal.status === "payment_confirmed") ||
     (role === "buyer" && deal.status === "dispatched");
 
   const confirmDialogProps: Record<
     Exclude<PendingAction, null>,
     { title: string; desc: string; label: string }
   > = {
+    "submit-payment": {
+      title: lang === "ar" ? "تأكيد إرسال مرجع الدفع" : "Confirm Payment Reference",
+      desc: lang === "ar"
+        ? "هل تأكدت من إرسال الدفع؟ سيتم إشعار المنتج للتحقق والتأكيد. لا يمكن التراجع عن هذه الخطوة."
+        : "Have you sent the payment? The producer will be notified to verify and confirm. This cannot be undone.",
+      label: lang === "ar" ? "نعم، أرسلت الدفع" : "Yes, I Sent Payment",
+    },
     "confirm-payment": {
       title: t("deal.confirm.payment.title"),
       desc: t("deal.confirm.payment.desc"),
@@ -1782,8 +1823,8 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
                 </div>
               )}
 
-              {/* Producer + active: payment form */}
-              {role === "producer" && deal.status === "active" && (
+              {/* Buyer + active: payment form */}
+              {role === "buyer" && deal.status === "active" && (
                 <div className="space-y-4">
                   {/* Payment reference */}
                   <div className="space-y-1">
@@ -1885,15 +1926,37 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
                     )}
                   </div>
 
-                  {/* Confirm button */}
+                  {/* Submit button */}
                   <Button
                     className="w-full h-11 text-base font-bold"
-                    onClick={requestConfirmPayment}
+                    onClick={requestSubmitPayment}
                     disabled={loading || !paymentRef.trim()}
                   >
                     {loading && pendingAction === null ? (
                       <Loader2 className="me-2 h-4 w-4 animate-spin" />
                     ) : null}
+                    {lang === "ar" ? "إرسال مرجع الدفع" : "Submit Payment Reference"}
+                  </Button>
+                </div>
+              )}
+
+              {/* Producer + payment_submitted: confirm payment receipt */}
+              {role === "producer" && deal.status === "payment_submitted" && (
+                <div className="space-y-3">
+                  {deal.payment_reference && (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 space-y-1">
+                      <p className="text-[11px] text-amber-700 font-medium">
+                        {lang === "ar" ? "مرجع الدفع المُرسَل من المشتري:" : "Payment reference submitted by buyer:"}
+                      </p>
+                      <p className="text-sm font-bold text-amber-900 font-mono" dir="ltr">{deal.payment_reference}</p>
+                    </div>
+                  )}
+                  <Button
+                    className="w-full h-11 text-base font-bold"
+                    onClick={requestConfirmPaymentReceipt}
+                    disabled={loading}
+                  >
+                    {loading && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
                     {t("deal.action.confirm_payment")}
                   </Button>
                 </div>
@@ -1958,8 +2021,23 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
                 </Button>
               )}
 
-              {/* Waiting state */}
-              {!isMyTurn && waitingText && (
+              {/* Receipt pending — both roles see a status banner */}
+              {deal.status === "receipt_pending" && (
+                <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
+                    <p className="text-sm font-bold text-green-900">
+                      {lang === "ar" ? "تم تأكيد الاستلام" : "Receipt Confirmed"}
+                    </p>
+                  </div>
+                  <p className="text-xs text-green-700 leading-relaxed">
+                    {waitingText}
+                  </p>
+                </div>
+              )}
+
+              {/* Waiting state (all non-receipt_pending non-turn states) */}
+              {!isMyTurn && waitingText && deal.status !== "receipt_pending" && (
                 <p className="text-sm text-muted-foreground text-center leading-relaxed py-1">{waitingText}</p>
               )}
 
@@ -1993,15 +2071,15 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
               </div>
 
               <div className="px-4 py-4 space-y-3">
-                {/* LOCKED state — before payment */}
-                {deal.status === "active" && (
+                {/* LOCKED state — before payment is confirmed */}
+                {(deal.status === "active" || deal.status === "payment_submitted") && (
                   <p className="text-xs text-muted-foreground leading-relaxed">
                     {t("deal.transport.smart.locked")}
                   </p>
                 )}
 
-                {/* ACTIVE states — after payment */}
-                {deal.status !== "active" && SmartTransportBody({
+                {/* ACTIVE states — after payment confirmed */}
+                {deal.status !== "active" && deal.status !== "payment_submitted" && SmartTransportBody({
                   tr: mwanHeaderData?.transport ?? null,
                   trDecision: mwanHeaderData?.transport_decision ?? null,
                   dealStatus: deal.status,
@@ -2113,10 +2191,10 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
         {/* 3. HORIZONTAL STEPPER */}
         <div className="px-4 py-3 bg-muted/30 border-t border-border">
           <div className="flex items-center gap-0">
-            {STATUS_STEPS.map((step, i) => {
+            {STEPPER_DISPLAY_STEPS.map((step, i) => {
               const done = i <= currentStepIndex;
-              const isCurrent = i === currentStepIndex && deal.status !== "completed";
-              const isLast = i === STATUS_STEPS.length - 1;
+              const isCurrent = i === currentStepIndex && deal.status !== "completed" && deal.status !== "receipt_pending";
+              const isLast = i === STEPPER_DISPLAY_STEPS.length - 1;
               return (
                 <div key={step} className="flex items-center flex-1">
                   <div className="flex flex-col items-center gap-0.5 flex-1">

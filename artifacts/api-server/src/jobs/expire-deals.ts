@@ -1,14 +1,14 @@
 /**
  * expire-deals job
  *
- * Runs hourly. Handles three responsibilities:
+ * Runs hourly. Handles four responsibilities:
  *
  * 1. PRE-EXPIRY NOTIFICATIONS
  *    Fires once per deal when ≤3 calendar days remain before the effective deadline.
  *    Effective deadline:
- *      - active:            extended_until ?? (created_at + 31d)
- *      - payment_confirmed: extended_until ?? (payment_confirmed_at + 8d)
- *      - dispatched:        dispatched_at + 72h   (extension not allowed post-dispatch)
+ *      - active/payment_submitted: extended_until ?? (created_at + 31d)
+ *      - payment_confirmed:        extended_until ?? (payment_confirmed_at + 8d)
+ *      - dispatched:               dispatched_at + 72h   (extension not allowed post-dispatch)
  *
  * 2. DEAL EXPIRY
  *    Marks deals as 'expired' when they stall past their effective deadline.
@@ -19,15 +19,19 @@
  *      - buyer.receipt_failures_count is incremented
  *      - if receipt_failures_count reaches 2, buyer.offer_submission_blocked is set true
  *
+ * 4. AUTO-COMPLETE RECEIPT-PENDING DEALS
+ *    Deals in 'receipt_pending' auto-complete 48 hours after receipt_pending_since
+ *    (buyer confirmed receipt, producer has 48h dispute window — then deal completes).
+ *
  * Expiry thresholds (base, before any extension):
- *   active            → 31 calendar days from created_at
- *   payment_confirmed → 8 calendar days from payment_confirmed_at
- *   dispatched        → 72 hours from dispatched_at
+ *   active/payment_submitted → 31 calendar days from created_at
+ *   payment_confirmed        → 8 calendar days from payment_confirmed_at
+ *   dispatched               → 72 hours from dispatched_at
  *
  * Extension rules:
  *   - Allowed once only, before dispatch
  *   - Duration: 7 calendar days from when extension was granted (stored as extended_until)
- *   - extended_until overrides the base threshold for active and payment_confirmed
+ *   - extended_until overrides the base threshold for active/payment_submitted and payment_confirmed
  */
 import { db, dealsTable, companiesTable } from "@workspace/db";
 import { and, eq, gt, gte, inArray, isNotNull, isNull, lt, ne, or, sql } from "drizzle-orm";
@@ -42,6 +46,8 @@ const MS = {
   pre_expiry_warn:    3 * 24 * 60 * 60 * 1000,
 } as const;
 
+const RECEIPT_PENDING_MS = 48 * 60 * 60 * 1000;
+
 /** Returns the effective expiry deadline for a deal row (null if not computable). */
 function effectiveDeadline(deal: {
   status: string;
@@ -52,6 +58,7 @@ function effectiveDeadline(deal: {
 }): Date | null {
   switch (deal.status) {
     case "active":
+    case "payment_submitted":
       return deal.extended_until
         ? deal.extended_until
         : new Date(deal.created_at.getTime() + MS.active);
@@ -69,7 +76,7 @@ function effectiveDeadline(deal: {
 }
 
 const TERMINAL = ["completed", "expired", "cancelled"] as const;
-const NON_TERMINAL_STATUSES = ["active", "payment_confirmed", "dispatched"] as const;
+const NON_TERMINAL_STATUSES = ["active", "payment_submitted", "payment_confirmed", "dispatched", "receipt_pending"] as const;
 
 export async function expireStaleDeals(): Promise<void> {
   const now = new Date();
@@ -140,21 +147,21 @@ export async function expireStaleDeals(): Promise<void> {
     const paymentThreshold  = new Date(now.getTime() - MS.payment_confirmed);
     const dispatchThreshold = new Date(now.getTime() - MS.dispatched);
 
-    // Expire active and payment_confirmed deals (respects extended_until)
+    // Expire active/payment_submitted and payment_confirmed deals (respects extended_until)
     const expiredNonDispatched = await db
       .update(dealsTable)
       .set({ status: "expired", updated_at: now })
       .where(
         or(
-          // Active — no extension, past 31d
+          // Active or payment_submitted — no extension, past 31d
           and(
-            eq(dealsTable.status, "active"),
+            inArray(dealsTable.status, ["active", "payment_submitted"]),
             isNull(dealsTable.extended_until),
             lt(dealsTable.created_at, activeThreshold),
           ),
-          // Active — extended, past extended_until
+          // Active or payment_submitted — extended, past extended_until
           and(
-            eq(dealsTable.status, "active"),
+            inArray(dealsTable.status, ["active", "payment_submitted"]),
             isNotNull(dealsTable.extended_until),
             sql`${dealsTable.extended_until} < ${now.toISOString()}`,
           ),
@@ -285,6 +292,62 @@ export async function expireStaleDeals(): Promise<void> {
           title_en: "Deal expired",
           body_ar: "انتهت المدة المحددة للصفقة دون اكتمالها. يرجى التواصل مع الطرف الآخر أو رفع تقرير",
           body_en: "The deal window passed without completion. Please contact the other party or file a report.",
+        });
+      }
+    }
+    /* ------------------------------------------------------------------ */
+    /* Step 5: Auto-complete receipt_pending deals after 48h              */
+    /* ------------------------------------------------------------------ */
+    const receiptPendingThreshold = new Date(now.getTime() - RECEIPT_PENDING_MS);
+
+    const autoCompleted = await db
+      .update(dealsTable)
+      .set({ status: "completed", updated_at: now })
+      .where(
+        and(
+          eq(dealsTable.status, "receipt_pending"),
+          sql`${dealsTable.receipt_pending_since} IS NOT NULL AND ${dealsTable.receipt_pending_since} < ${receiptPendingThreshold.toISOString()}`,
+        ),
+      )
+      .returning({
+        id: dealsTable.id,
+        listing_id: dealsTable.listing_id,
+        producer_company_id: dealsTable.producer_company_id,
+        buyer_company_id: dealsTable.buyer_company_id,
+      });
+
+    if (autoCompleted.length > 0) {
+      logger.info({ count: autoCompleted.length }, "[expire-deals] auto-completed receipt_pending deals");
+
+      for (const deal of autoCompleted) {
+        void logAudit({
+          action: "deal.auto_completed",
+          entityType: "deal",
+          entityId: deal.id,
+          severity: "info",
+          details: { reason: "receipt_pending_48h_elapsed" },
+        });
+
+        void notifyDealStageChange({
+          companyId: deal.producer_company_id,
+          dealId: deal.id,
+          listingId: deal.listing_id,
+          type: "deal_completed",
+          title_ar: "اكتملت الصفقة",
+          title_en: "Deal Completed",
+          body_ar: "انقضت مدة المراجعة ولم يُرفع أي اعتراض. تم إتمام الصفقة بنجاح",
+          body_en: "The review window passed with no dispute. The deal has been completed successfully.",
+        });
+
+        void notifyDealStageChange({
+          companyId: deal.buyer_company_id,
+          dealId: deal.id,
+          listingId: deal.listing_id,
+          type: "deal_completed",
+          title_ar: "اكتملت الصفقة",
+          title_en: "Deal Completed",
+          body_ar: "تم إتمام الصفقة بنجاح بعد تأكيد الاستلام",
+          body_en: "The deal has been completed successfully after receipt confirmation.",
         });
       }
     }

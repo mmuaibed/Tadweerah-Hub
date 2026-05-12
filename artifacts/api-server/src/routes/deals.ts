@@ -1,14 +1,11 @@
 import { Router, type IRouter } from "express";
 import { and, eq, inArray, isNull, notInArray, or } from "drizzle-orm";
-import { clerkClient } from "@clerk/express";
 import {
   db,
   companiesTable,
-  companyMembersTable,
   dealsTable,
   transportRequestsTable,
   wasteListingsTable,
-  materialCategoriesTable,
 } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import {
@@ -18,7 +15,6 @@ import {
 import { HttpError, assertUuid } from "../middlewares/errorHandler";
 import { logAudit } from "../lib/audit";
 import { notifyDealStageChange } from "../lib/notify";
-import { sendDealCompletionEmail } from "../lib/email";
 
 const router: IRouter = Router();
 
@@ -47,10 +43,12 @@ function serializeDeal(
       is_verified: isVerified,
     },
     payment_confirmed_at: deal.payment_confirmed_at?.toISOString() ?? null,
+    payment_submitted_at: deal.payment_submitted_at?.toISOString() ?? null,
     payment_reference: deal.payment_reference ?? null,
     payment_proof_url: deal.payment_proof_url ?? null,
     dispatched_at: deal.dispatched_at?.toISOString() ?? null,
     received_at: deal.received_at?.toISOString() ?? null,
+    receipt_pending_since: deal.receipt_pending_since?.toISOString() ?? null,
     cancelled_at: deal.cancelled_at?.toISOString() ?? null,
     extension_count: deal.extension_count,
     extended_until: deal.extended_until?.toISOString() ?? null,
@@ -103,8 +101,8 @@ async function fetchDealWithCounterparty(
  * Returns deals where the current user/company needs to take action.
  * MUST be registered before /deals/:deal_id so Express doesn't match
  * "pending" as a deal UUID and return a 400 bad request.
- * Producer: status = active (confirm payment) or payment_confirmed (confirm dispatch)
- * Buyer:    status = dispatched (confirm receipt)
+ * Producer: status = payment_submitted (confirm payment) or payment_confirmed (confirm dispatch)
+ * Buyer:    status = active (submit payment) or dispatched (confirm receipt)
  */
 router.get(
   "/deals/pending",
@@ -113,7 +111,7 @@ router.get(
   async (req, res) => {
     const { company } = req as AuthedCompanyRequest;
 
-    // ── 1. Producer deal-flow actions: active → confirm_payment, payment_confirmed → confirm_dispatch
+    // ── 1. Producer deal-flow actions: payment_submitted → confirm_payment, payment_confirmed → confirm_dispatch
     const producerDeals = await db
       .select({
         id: dealsTable.id,
@@ -128,12 +126,12 @@ router.get(
       .where(
         and(
           eq(dealsTable.producer_company_id, company.id),
-          inArray(dealsTable.status, ["active", "payment_confirmed"]),
+          inArray(dealsTable.status, ["payment_submitted", "payment_confirmed"]),
         ),
       )
       .orderBy(dealsTable.updated_at);
 
-    // ── 2. Buyer deal-flow action: dispatched → confirm_receipt
+    // ── 2. Buyer deal-flow actions: active → submit_payment, dispatched → confirm_receipt
     const buyerDeals = await db
       .select({
         id: dealsTable.id,
@@ -148,7 +146,7 @@ router.get(
       .where(
         and(
           eq(dealsTable.buyer_company_id, company.id),
-          inArray(dealsTable.status, ["dispatched"]),
+          inArray(dealsTable.status, ["active", "dispatched"]),
         ),
       )
       .orderBy(dealsTable.updated_at);
@@ -204,9 +202,10 @@ router.get(
     // ── Build response ────────────────────────────────────────────────────────
 
     const actionMap: Record<string, string> = {
-      active: "confirm_payment",
-      payment_confirmed: "confirm_dispatch",
-      dispatched: "confirm_receipt",
+      payment_submitted: "confirm_payment",   // producer
+      payment_confirmed: "confirm_dispatch",  // producer
+      active:            "submit_payment",    // buyer
+      dispatched:        "confirm_receipt",   // buyer
     };
 
     // IDs already shown from producer/buyer deal flow — avoid duplicating them in transport lists
@@ -284,22 +283,19 @@ router.get(
 );
 
 /**
- * POST /deals/:deal_id/confirm-payment
- * Producer confirms payment received.
- * Requires `payment_reference` (bank transfer ID / transaction number) in body.
- * Optional: `payment_proof_url` (URL of uploaded document).
- * NOTE: actual_quantity is no longer collected here — it is entered at dispatch
- *       (when the weighbridge reading is available) for by_weight deals.
+ * POST /deals/:deal_id/submit-payment
+ * Buyer submits the payment reference to notify the producer payment was sent.
+ * Transitions: active → payment_submitted.
+ * The producer will then confirm receipt via confirm-payment.
  */
 router.post(
-  "/deals/:deal_id/confirm-payment",
+  "/deals/:deal_id/submit-payment",
   requireAuth,
   requireCompany(),
   async (req, res) => {
     const dealId = assertUuid(req.params.deal_id, "deal_id");
     const { company } = req as AuthedCompanyRequest;
 
-    // Validate required payment_reference
     const payment_reference = req.body?.payment_reference;
     if (!payment_reference || typeof payment_reference !== "string" || !payment_reference.trim()) {
       throw new HttpError(
@@ -319,22 +315,93 @@ router.post(
       .limit(1);
 
     if (!deal) throw new HttpError(404, "NotFound", "Deal not found");
-    if (deal.producer_company_id !== company.id) {
-      throw new HttpError(403, "Forbidden", "Not the producer of this deal");
+    if (deal.buyer_company_id !== company.id) {
+      throw new HttpError(403, "Forbidden", "Only the buyer can submit payment for this deal");
     }
     if (deal.status !== "active") {
       throw new HttpError(
         409,
         "InvalidState",
-        "Deal is not in 'active' state. Current state: " + deal.status,
+        "Deal must be in 'active' state. Current state: " + deal.status,
       );
     }
 
     const now = new Date();
 
-    // Both fixed and by_weight: record payment reference now.
-    // For by_weight, actual_quantity and final_amount are set at confirm-dispatch
-    // (weighbridge happens at pickup, not before payment).
+    const [updated] = await db
+      .update(dealsTable)
+      .set({
+        status: "payment_submitted",
+        payment_reference: payment_reference.trim(),
+        payment_proof_url,
+        payment_submitted_at: now,
+        payment_submitted_by: company.id,
+        updated_at: now,
+      })
+      .where(eq(dealsTable.id, dealId))
+      .returning();
+
+    const [counterparty] = await db
+      .select({ name: companiesTable.name, contactPhone: companiesTable.contactPhone, city: companiesTable.city, commercialRegistration: companiesTable.commercialRegistration, license_status: companiesTable.license_status })
+      .from(companiesTable)
+      .where(eq(companiesTable.id, updated.producer_company_id))
+      .limit(1);
+
+    void logAudit({
+      userId: (req as AuthedCompanyRequest).userId,
+      companyId: company.id,
+      action: "deal.payment_submitted",
+      entityType: "deal",
+      entityId: dealId,
+    });
+    void notifyDealStageChange({
+      companyId: updated.producer_company_id,
+      dealId,
+      listingId: updated.listing_id,
+      type: "deal_payment_submitted",
+      title_ar: "المشتري أرسل مرجع الدفع",
+      title_en: "Buyer Submitted Payment Reference",
+      body_ar: "أرسل المشتري مرجع الحوالة البنكية. يرجى التحقق منه وتأكيد استلام الدفع",
+      body_en: "The buyer submitted a bank transfer reference. Please verify and confirm payment receipt.",
+    });
+
+    return res.json(serializeDeal(updated, counterparty!));
+  },
+);
+
+/**
+ * POST /deals/:deal_id/confirm-payment
+ * Producer confirms they received payment from the buyer.
+ * Requires status = 'payment_submitted' (buyer must call submit-payment first).
+ * No payment_reference in body — already stored by the buyer at submit-payment.
+ * NOTE: actual_quantity is entered at dispatch for by_weight deals.
+ */
+router.post(
+  "/deals/:deal_id/confirm-payment",
+  requireAuth,
+  requireCompany(),
+  async (req, res) => {
+    const dealId = assertUuid(req.params.deal_id, "deal_id");
+    const { company } = req as AuthedCompanyRequest;
+
+    const [deal] = await db
+      .select()
+      .from(dealsTable)
+      .where(eq(dealsTable.id, dealId))
+      .limit(1);
+
+    if (!deal) throw new HttpError(404, "NotFound", "Deal not found");
+    if (deal.producer_company_id !== company.id) {
+      throw new HttpError(403, "Forbidden", "Not the producer of this deal");
+    }
+    if (deal.status !== "payment_submitted") {
+      throw new HttpError(
+        409,
+        "InvalidState",
+        "Deal must be in 'payment_submitted' state. Current state: " + deal.status,
+      );
+    }
+
     if (req.body?.actual_quantity !== undefined) {
       throw new HttpError(
         400,
@@ -343,14 +410,14 @@ router.post(
       );
     }
 
+    const now = new Date();
+
     const [updated] = await db
       .update(dealsTable)
       .set({
         status: "payment_confirmed",
         payment_confirmed_at: now,
         payment_confirmed_by: company.id,
-        payment_reference: payment_reference.trim(),
-        payment_proof_url,
         updated_at: now,
       })
       .where(eq(dealsTable.id, dealId))
@@ -377,7 +444,7 @@ router.post(
       type: "deal_payment_confirmed",
       title_ar: "تم تأكيد الدفع",
       title_en: "Payment Confirmed",
-      body_ar: "قام المنتج بتأكيد استلام الدفع، يرجى انتظار شحن البضاعة",
+      body_ar: "أكّد المنتج استلام الدفع، يرجى انتظار شحن البضاعة",
       body_en: "The producer confirmed payment receipt. Awaiting dispatch.",
     });
 
@@ -491,8 +558,10 @@ router.post(
 
 /**
  * POST /deals/:deal_id/confirm-receipt
- * Buyer confirms goods have been received. Completes the deal.
- * Requires status = 'dispatched'.
+ * Buyer confirms goods have been received.
+ * Transitions: dispatched → receipt_pending.
+ * The deal will auto-complete 48 hours after receipt_pending_since
+ * unless a dispute is filed via the support system.
  */
 router.post(
   "/deals/:deal_id/confirm-receipt",
@@ -525,9 +594,10 @@ router.post(
     const [updated] = await db
       .update(dealsTable)
       .set({
-        status: "completed",
+        status: "receipt_pending",
         received_at: now,
         received_by: company.id,
+        receipt_pending_since: now,
         updated_at: now,
       })
       .where(eq(dealsTable.id, dealId))
@@ -550,82 +620,12 @@ router.post(
       companyId: updated.producer_company_id,
       dealId,
       listingId: updated.listing_id,
-      type: "deal_completed",
-      title_ar: "اكتملت الصفقة",
-      title_en: "Deal Completed",
-      body_ar: "أكّد المشتري استلام البضاعة. تم إتمام الصفقة بنجاح",
-      body_en: "The buyer confirmed receipt. The deal is now complete.",
+      type: "deal_receipt_pending",
+      title_ar: "المشتري أكّد استلام البضاعة",
+      title_en: "Buyer Confirmed Receipt",
+      body_ar: "أكّد المشتري استلام البضاعة. ستكتمل الصفقة تلقائياً خلال 48 ساعة ما لم يُرفع تقرير خلاف",
+      body_en: "The buyer confirmed receipt. The deal will auto-complete in 48 hours unless a dispute is filed.",
     });
-
-    // Fire-and-forget completion emails to both parties
-    void (async () => {
-      try {
-        // Fetch listing + category for email content
-        const [listing] = updated.listing_id
-          ? await db.select({ quantity: wasteListingsTable.quantity, unit: wasteListingsTable.unit, material_category_id: wasteListingsTable.material_category_id })
-              .from(wasteListingsTable).where(eq(wasteListingsTable.id, updated.listing_id)).limit(1)
-          : [null];
-        const [cat] = listing?.material_category_id
-          ? await db.select({ name_en: materialCategoriesTable.name_en })
-              .from(materialCategoriesTable).where(eq(materialCategoriesTable.id, listing.material_category_id)).limit(1)
-          : [null];
-        const [tr] = await db.select({ manifest_ref: transportRequestsTable.manifest_ref })
-          .from(transportRequestsTable).where(eq(transportRequestsTable.deal_id, dealId)).limit(1);
-
-        // Get deal ref label
-        const idx  = updated.id.replace(/-/g, "").slice(0, 6).toUpperCase();
-        const ref  = `DL-${String(idx).slice(0, 6)}`;
-        const completionDate = now.toISOString().split("T")[0]!;
-        const qty  = listing ? `${Number(updated.actual_quantity ?? listing.quantity).toLocaleString()} ${listing.unit ?? ""}`.trim() : undefined;
-        const finalAmt = updated.final_amount ? Number(updated.final_amount).toLocaleString() : undefined;
-
-        // Get owner user IDs for both companies
-        const members = await db
-          .select({ company_id: companyMembersTable.company_id, user_id: companyMembersTable.user_id, role: companyMembersTable.role })
-          .from(companyMembersTable)
-          .where(or(
-            eq(companyMembersTable.company_id, updated.producer_company_id),
-            eq(companyMembersTable.company_id, updated.buyer_company_id),
-          ));
-
-        // One email per company (prefer owner)
-        const byCompany = new Map<string, string>();
-        for (const m of members) {
-          if (!byCompany.has(m.company_id) || m.role === "owner") {
-            byCompany.set(m.company_id, m.user_id);
-          }
-        }
-
-        const emailPromises: Promise<void>[] = [];
-        for (const [compId, userId] of byCompany.entries()) {
-          emailPromises.push((async () => {
-            try {
-              const user = await clerkClient.users.getUser(userId);
-              const email = user.emailAddresses[0]?.emailAddress;
-              if (!email) return;
-              const isProducer = compId === updated.producer_company_id;
-              const cpName = isProducer ? (company.name) : (counterparty?.name ?? "");
-              const cpCr   = isProducer ? company.commercialRegistration : counterparty?.commercialRegistration ?? undefined;
-              await sendDealCompletionEmail({
-                to: email,
-                dealRef: ref,
-                completionDate,
-                counterpartyName: cpName ?? "",
-                counterpartyCr: cpCr ?? undefined,
-                wasteCategory: cat?.name_en ?? undefined,
-                quantity: qty,
-                finalAmount: finalAmt,
-                manifestRef: tr?.manifest_ref ?? undefined,
-                dealId,
-              });
-            } catch { /* ignore per-user errors */ }
-          })());
-        }
-        await Promise.allSettled(emailPromises);
-      } catch (err) {
-        req.log.warn({ err }, "deal completion email failed");
-      }
-    })();
 
     return res.json(serializeDeal(updated, counterparty!));
   },
@@ -655,7 +655,7 @@ router.post(
     if (deal.producer_company_id !== company.id) {
       throw new HttpError(403, "Forbidden", "Only the producer can cancel this deal");
     }
-    if (!["active", "payment_confirmed"].includes(deal.status)) {
+    if (!["active", "payment_submitted", "payment_confirmed"].includes(deal.status)) {
       throw new HttpError(
         409,
         "InvalidState",
@@ -729,7 +729,7 @@ router.post(
     if (deal.producer_company_id !== company.id) {
       throw new HttpError(403, "Forbidden", "Only the producer can extend this deal");
     }
-    if (!["active", "payment_confirmed"].includes(deal.status)) {
+    if (!["active", "payment_submitted", "payment_confirmed"].includes(deal.status)) {
       throw new HttpError(
         409,
         "InvalidState",

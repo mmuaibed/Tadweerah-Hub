@@ -267,10 +267,10 @@ router.post("/admin/deals/:id/cancel", requireAdminKey, async (req, res) => {
     return;
   }
 
-  if (!["active", "payment_confirmed"].includes(deal.status)) {
+  if (!["active", "payment_submitted", "payment_confirmed"].includes(deal.status)) {
     res.status(409).json({
       error: "InvalidState",
-      message: `Deal cannot be cancelled from status '${deal.status}'. Only active or payment_confirmed deals can be admin-cancelled.`,
+      message: `Deal cannot be cancelled from status '${deal.status}'. Only active, payment_submitted, or payment_confirmed deals can be admin-cancelled.`,
     });
     return;
   }

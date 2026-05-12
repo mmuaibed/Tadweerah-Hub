@@ -45,6 +45,11 @@ function usePendingDeals() {
 }
 
 const ACTION_COLOR: Record<string, { badge: string; border: string; dot: string }> = {
+  submit_payment: {
+    badge: "bg-amber-100 text-amber-700 border-amber-200",
+    border: "border-s-amber-400",
+    dot: "bg-amber-400",
+  },
   confirm_payment: {
     badge: "bg-amber-100 text-amber-700 border-amber-200",
     border: "border-s-amber-400",
