@@ -430,6 +430,7 @@ router.patch(
         action: "contract.updated",
         entityType: "contract",
         entityId: contract.id,
+        actorRole: contract.seller_company_id === company.id ? "seller" : "buyer",
         details: { fields: Object.keys(updates) },
       });
 
@@ -784,6 +785,7 @@ router.post(
         action: "contract.material.added",
         entityType: "contract",
         entityId: contract.id,
+        actorRole: contract.seller_company_id === company.id ? "seller" : "buyer",
         details: { material_label, unit_label, price_per_unit: priceNum },
       });
 
@@ -834,6 +836,7 @@ router.delete(
         action: "contract.material.removed",
         entityType: "contract",
         entityId: contract.id,
+        actorRole: contract.seller_company_id === company.id ? "seller" : "buyer",
         details: { material_id: materialId },
       });
 

@@ -36,6 +36,7 @@ function requireAdminKey(req: Request, res: Response, next: NextFunction): void 
   if (req.headers["x-admin-key"] !== adminKey) {
     void logAudit({
       action: "admin.unauthorized_attempt",
+      actorRole: "admin",
       details: {
         path: req.path,
         ip: req.ip,
