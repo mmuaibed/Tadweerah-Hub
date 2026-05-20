@@ -133,6 +133,17 @@ function OfferCard({ offer }: { offer: MyOffer }) {
         {(offer as typeof offer & { listing_material_location_address?: string | null }).listing_material_location_address && (
           <span className="flex items-center gap-1 italic opacity-80">
             {(offer as typeof offer & { listing_material_location_address?: string | null }).listing_material_location_address}
+            {(offer as typeof offer & { listing_google_maps_url?: string | null }).listing_google_maps_url?.startsWith("https://") && (
+              <a
+                href={(offer as typeof offer & { listing_google_maps_url?: string | null }).listing_google_maps_url!}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="not-italic font-medium text-primary hover:underline ms-0.5"
+                onClick={(e) => e.stopPropagation()}
+              >
+                ↗ {t("listing.location.open_maps")}
+              </a>
+            )}
           </span>
         )}
         <span className="flex items-center gap-1">

@@ -2289,20 +2289,29 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
               )}
               {listingLocationAddress && (
                 <div className="flex flex-col gap-1 pt-0.5">
-                  <span className="text-xs text-muted-foreground">{lang === "ar" ? "موقع المواد" : "Material Location"}</span>
+                  <span className="text-xs text-muted-foreground">{t("listing.location.address")}</span>
                   <span className="text-xs leading-relaxed text-foreground/80 bg-muted/30 rounded px-2 py-1.5">{listingLocationAddress}</span>
+                  {listingMapsUrl && listingMapsUrl.startsWith("https://") && (
+                    <a
+                      href={listingMapsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-medium text-primary hover:underline self-start"
+                    >
+                      ↗ {t("listing.location.open_maps")}
+                    </a>
+                  )}
                 </div>
               )}
-              {listingMapsUrl && listingMapsUrl.startsWith("https://") && (
+              {!listingLocationAddress && listingMapsUrl && listingMapsUrl.startsWith("https://") && (
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs text-muted-foreground">{lang === "ar" ? "الموقع على الخريطة" : "Map Location"}</span>
                   <a
                     href={listingMapsUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-xs font-medium text-primary hover:underline"
                   >
-                    {lang === "ar" ? "فتح الخريطة ↗" : "Open Map ↗"}
+                    ↗ {t("listing.location.open_maps")}
                   </a>
                 </div>
               )}
