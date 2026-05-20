@@ -178,6 +178,11 @@ export function ListingCard({
                 />
               </p>
             )}
+            {(listing as WasteListing & { material_location_notes?: string | null }).material_location_notes && (
+              <p className="ps-6 text-xs text-muted-foreground/50 italic leading-tight">
+                {(listing as WasteListing & { material_location_notes?: string | null }).material_location_notes}
+              </p>
+            )}
           </div>
           {listing.created_at && (
             <div className="flex items-center gap-2">

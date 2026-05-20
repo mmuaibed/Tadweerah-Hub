@@ -1398,6 +1398,7 @@ export function ListingDetailPage() {
 
   const listingLocationAddress = (listing as typeof listing & { material_location_address?: string | null }).material_location_address ?? null;
   const listingMapsUrl = (listing as typeof listing & { google_maps_url?: string | null }).google_maps_url ?? null;
+  const listingLocationNotes = (listing as typeof listing & { material_location_notes?: string | null }).material_location_notes ?? null;
 
   // F1: Build close dialog description with pending count
   const closeDialogDesc = isOwner && pendingOfferCount > 0
@@ -1499,6 +1500,13 @@ export function ListingDetailPage() {
             }
           />
         )}
+        {listingLocationNotes && (
+          <CompactRow
+            icon={<MapPin className="h-3.5 w-3.5 text-muted-foreground/40" />}
+            label={t("listing.location.site_details")}
+            value={listingLocationNotes}
+          />
+        )}
         {!listingLocationAddress && listingMapsUrl && listingMapsUrl.startsWith("https://") && (
           <div className="flex items-center gap-2 px-3 py-2.5 text-xs">
             <MapPin className="h-3.5 w-3.5 text-primary/60 shrink-0" />
@@ -1582,6 +1590,7 @@ export function ListingDetailPage() {
             listingSubcategoryId={(listing as typeof listing & { material_subcategory_id?: string }).material_subcategory_id ?? undefined}
             listingLocationAddress={listingLocationAddress}
             listingMapsUrl={listingMapsUrl}
+            listingLocationNotes={listingLocationNotes}
             offersPanel={role === "producer" && isOwner ? (
               <ProducerOffersPanel
                 wasteListingId={wasteListingId}
@@ -1728,6 +1737,13 @@ export function ListingDetailPage() {
                     stopPropagation
                   />
                 }
+              />
+            )}
+            {listingLocationNotes && (
+              <CompactRow
+                icon={<MapPin className="h-3.5 w-3.5 text-muted-foreground/40" />}
+                label={t("listing.location.site_details")}
+                value={listingLocationNotes}
               />
             )}
             {!listingLocationAddress && listingMapsUrl && listingMapsUrl.startsWith("https://") && (

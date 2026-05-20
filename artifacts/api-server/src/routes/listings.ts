@@ -77,6 +77,7 @@ type Row = WasteListing & {
   deal_status?: string | null;
   material_location_address?: string | null;
   google_maps_url?: string | null;
+  material_location_notes?: string | null;
 };
 
 type RequiredServiceShape = {
@@ -135,6 +136,7 @@ function serialize(
     vat_applicable: row.vat_applicable ?? true,
     material_location_address: (row as Row).material_location_address ?? null,
     google_maps_url: (row as Row).google_maps_url ?? null,
+    material_location_notes: (row as Row).material_location_notes ?? null,
     created_at: row.created_at.toISOString(),
     closed_at: row.closed_at?.toISOString() ?? undefined,
     offer_count: row.offer_count ?? undefined,
@@ -239,6 +241,7 @@ const baseSelect = {
   vat_applicable: wasteListingsTable.vat_applicable,
   material_location_address: wasteListingsTable.material_location_address,
   google_maps_url: wasteListingsTable.google_maps_url,
+  material_location_notes: wasteListingsTable.material_location_notes,
   created_at: wasteListingsTable.created_at,
   closed_at: wasteListingsTable.closed_at,
   company_name: companiesTable.name,
@@ -649,6 +652,12 @@ router.post(
         ? rawMapsUrl.trim().slice(0, 500)
         : null;
 
+    // material_location_notes: operational site details — gate number, loading point, etc.
+    const materialLocationNotes: string | null =
+      typeof req.body.material_location_notes === "string" && req.body.material_location_notes.trim()
+        ? req.body.material_location_notes.trim().slice(0, 500)
+        : null;
+
     const [created] = await db
       .insert(wasteListingsTable)
       .values({
@@ -673,6 +682,7 @@ router.post(
         vat_applicable: vatApplicable,
         material_location_address: materialLocationAddress,
         google_maps_url: googleMapsUrl,
+        material_location_notes: materialLocationNotes,
       })
       .returning();
 

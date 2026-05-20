@@ -1,0 +1,107 @@
+We need to correct the material location input and Google Maps behavior.
+
+Current requirement:
+The location section should have three separate fields:
+
+1) National Address / Location Code
+Arabic label:
+"العنوان الوطني / كود الموقع"
+
+English label:
+"National Address / Location Code"
+
+Purpose:
+This field is used for Google Maps search fallback when no direct Google Maps URL is provided.
+
+2) Site Details / Additional Location Instructions
+Arabic label:
+"تفاصيل الموقع"
+
+English label:
+"Site Details"
+
+Purpose:
+Operational notes only, such as gate number, loading point, access instructions, contact person, warehouse name, etc.
+This field must NOT be used for Google Maps search.
+
+3) Google Maps URL
+Arabic label:
+"رابط Google Maps"
+
+English label:
+"Google Maps URL"
+
+Purpose:
+If provided, this is the primary link used to open the location.
+
+Required Google Maps opening logic:
+- If google_maps_url exists:
+  open google_maps_url
+- Else if material_location_address exists:
+  open Google Maps search using material_location_address only
+- Else if only city exists:
+  fallback to Google Maps search using city only
+- Never append city to material_location_address
+- Never append site details to the Google Maps query
+
+Example:
+material_location_address = "FMDD7920"
+city = "الدمام"
+site_details = "بوابة 3، المستودع الخلفي"
+
+Generated fallback query should be:
+https://www.google.com/maps/search/?api=1&query=FMDD7920
+
+Not:
+FMDD7920, الدمام
+Not:
+FMDD7920, الدمام، بوابة 3
+
+Display behavior:
+Wherever material location is displayed, show:
+- City
+- National Address / Location Code
+- Site Details, if available
+- clickable “Open in Google Maps” / “فتح الموقع على Google Maps”
+
+Clickable behavior:
+- Clicking the location/address or the maps link should open Google Maps using the logic above.
+- target="_blank"
+- rel="noopener noreferrer"
+
+Data model:
+- Keep existing material_location_address as the National Address / Location Code field.
+- If material_location_notes or site_details does not exist, add one nullable text field only.
+Suggested field:
+material_location_notes text nullable
+
+Important constraints:
+- Do not rename existing fields if already used.
+- Do not delete existing data.
+- Do not change VAT, offers, deals, transport workflow, admin auth, reports, or pricing.
+- Do not use Google Maps API.
+- Do not embed maps.
+- Do not calculate distance.
+- Keep this focused on listing location input/display only.
+
+Apply to:
+- listing creation form
+- listing detail page
+- deal page / deal info section
+- printed deal report if location appears there
+- marketplace/listing card if location appears there
+- pending actions if location appears there
+- participations page if location appears there
+
+After implementation, run:
+- pnpm --filter @workspace/db run push, only if schema changed
+- pnpm run typecheck
+- curl -s http://localhost:80/api/healthz
+
+Final report:
+1) changed files
+2) whether DB schema changed
+3) exact field used for Site Details
+4) confirmation Google Maps uses google_maps_url first
+5) confirmation fallback uses material_location_address only, without city or site details
+6) confirmation this did not touch VAT/offers/deals/transport/admin/reports

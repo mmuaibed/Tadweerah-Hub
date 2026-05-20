@@ -143,6 +143,7 @@ router.get(
         listing_city: wasteListingsTable.city,
         listing_material_location_address: wasteListingsTable.material_location_address,
         listing_google_maps_url: wasteListingsTable.google_maps_url,
+        listing_material_location_notes: wasteListingsTable.material_location_notes,
         listing_status: wasteListingsTable.status,
         listing_closed_at: wasteListingsTable.closed_at,
         listing_company_name: companiesTable.name,

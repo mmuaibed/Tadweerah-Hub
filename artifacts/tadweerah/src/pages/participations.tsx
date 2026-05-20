@@ -141,6 +141,11 @@ function OfferCard({ offer }: { offer: MyOffer }) {
             />
           </span>
         )}
+        {(offer as typeof offer & { listing_material_location_notes?: string | null }).listing_material_location_notes && (
+          <span className="flex items-center gap-1 italic opacity-60">
+            {(offer as typeof offer & { listing_material_location_notes?: string | null }).listing_material_location_notes}
+          </span>
+        )}
         <span className="flex items-center gap-1">
           <Building2 className="h-3 w-3" />
           {offer.listing_company_name}

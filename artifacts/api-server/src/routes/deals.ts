@@ -145,6 +145,7 @@ router.get(
       material_subcategory_id: wasteListingsTable.material_subcategory_id,
       material_location_address: wasteListingsTable.material_location_address,
       google_maps_url: wasteListingsTable.google_maps_url,
+      material_location_notes: wasteListingsTable.material_location_notes,
     };
 
     // ── 1. Producer deal-flow actions: payment_submitted → confirm_payment, payment_confirmed → confirm_dispatch

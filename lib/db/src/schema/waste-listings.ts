@@ -243,6 +243,13 @@ export const wasteListingsTable = pgTable("waste_listings", {
    * Nullable — no map link shown when absent.
    */
   google_maps_url: text("google_maps_url"),
+
+  /**
+   * Optional operational site details for the pickup location.
+   * Examples: gate number, warehouse name, loading point, access instructions.
+   * NOT used for Google Maps search queries — display only.
+   */
+  material_location_notes: text("material_location_notes"),
 });
 
 export type WasteListing = typeof wasteListingsTable.$inferSelect;

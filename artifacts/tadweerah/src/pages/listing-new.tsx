@@ -123,6 +123,7 @@ export function ListingNewPage() {
   const [targetCategoryIds, setTargetCategoryIds] = useState<Set<string>>(new Set());
   const [transportResponsibility, setTransportResponsibility] = useState<"seller" | "buyer">("buyer");
   const [materialLocationAddress, setMaterialLocationAddress] = useState("");
+  const [materialLocationNotes, setMaterialLocationNotes] = useState("");
   const [googleMapsUrl, setGoogleMapsUrl] = useState("");
   const [mapsUrlError, setMapsUrlError] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -268,6 +269,7 @@ export function ListingNewPage() {
             ? { target_category_ids: Array.from(targetCategoryIds) }
             : {}),
           ...(materialLocationAddress.trim() ? { material_location_address: materialLocationAddress.trim() } : {}),
+          ...(materialLocationNotes.trim() ? { material_location_notes: materialLocationNotes.trim() } : {}),
           ...(googleMapsUrl.trim() && googleMapsUrl.trim().startsWith("https://")
             ? { google_maps_url: googleMapsUrl.trim() }
             : {}),
@@ -431,6 +433,18 @@ export function ListingNewPage() {
                   placeholder={t("listing.form.material_location_address.placeholder")}
                   value={materialLocationAddress}
                   onChange={(e) => setMaterialLocationAddress(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="material_location_notes">{t("listing.form.material_location_notes")}</Label>
+                <textarea
+                  id="material_location_notes"
+                  className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
+                  maxLength={500}
+                  placeholder={t("listing.form.material_location_notes.placeholder")}
+                  value={materialLocationNotes}
+                  onChange={(e) => setMaterialLocationNotes(e.target.value)}
                 />
               </div>
 

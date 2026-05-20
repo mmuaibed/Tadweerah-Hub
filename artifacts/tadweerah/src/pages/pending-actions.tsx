@@ -31,6 +31,7 @@ interface PendingDeal {
   material_subcategory_id: string | null;
   material_location_address: string | null;
   google_maps_url: string | null;
+  material_location_notes: string | null;
   updated_at: string;
 }
 
@@ -243,6 +244,11 @@ export function PendingActionsPage() {
                           mapsUrl={deal.google_maps_url}
                           stopPropagation
                         />
+                      </span>
+                    )}
+                    {deal.material_location_notes && (
+                      <span className="flex items-center gap-1 italic opacity-60">
+                        {deal.material_location_notes}
                       </span>
                     )}
                     <span className="flex items-center gap-1">

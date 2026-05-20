@@ -130,6 +130,8 @@ interface DealPanelProps {
   listingLocationAddress?: string | null;
   /** Google Maps share URL for the pickup location */
   listingMapsUrl?: string | null;
+  /** Operational site details (gate, warehouse, access notes) — display only, not used for Maps search */
+  listingLocationNotes?: string | null;
 }
 
 type PendingAction = "submit-payment" | "confirm-payment" | "confirm-dispatch" | "confirm-receipt" | null;
@@ -1276,7 +1278,7 @@ function SmartTransportBody({
   );
 }
 
-export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSharePct, listingRef, listingMaterial, listingQuantity, myCompanyName, listingCategory, myPhone, listingCity, listingSaleType, counterpartyCity, listingDescription, listingCategoryId, listingSubcategoryId, offersPanel, listingInfoPanel, listingLocationAddress, listingMapsUrl }: DealPanelProps) {
+export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSharePct, listingRef, listingMaterial, listingQuantity, myCompanyName, listingCategory, myPhone, listingCity, listingSaleType, counterpartyCity, listingDescription, listingCategoryId, listingSubcategoryId, offersPanel, listingInfoPanel, listingLocationAddress, listingMapsUrl, listingLocationNotes }: DealPanelProps) {
   const { t, lang } = useT();
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
@@ -2314,6 +2316,12 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
                       ↗ {t("listing.location.open_maps")}
                     </a>
                   )}
+                </div>
+              )}
+              {listingLocationNotes && (
+                <div className="flex flex-col gap-1 pt-0.5">
+                  <span className="text-xs text-muted-foreground">{t("listing.location.site_details")}</span>
+                  <span className="text-xs leading-relaxed text-foreground/80 bg-muted/30 rounded px-2 py-1.5">{listingLocationNotes}</span>
                 </div>
               )}
               {!listingLocationAddress && resolvedListingMapsUrl && (
