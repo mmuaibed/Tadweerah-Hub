@@ -1,0 +1,455 @@
+We want to implement a focused MVP Transporter Portal + Transport Quotation Flow for Tadweerah.
+
+This feature is strategically important because Tadweerah should not only help users request transport, but also help Admin/Ops compare transporter quotes and gradually prepare transport request data for future MWAN/eManifest readiness.
+
+Please read this carefully before implementation.
+
+==================================================
+Business Goal
+==================================================
+
+When a buyer/seller chooses:
+"رتّبوا لي النقل عبر تدويرة"
+
+Tadweerah should create a transport request that can be:
+
+1) Seen by Tadweerah Admin/Ops
+2) Seen by qualified transporter companies
+3) Quoted by transporters
+4) Compared by Admin/Ops
+5) Used to enrich eManifest-ready transport data
+
+The goal is NOT to build a full transport marketplace now.
+
+The goal is to build a simple, safe, additive MVP flow:
+
+Transport Request → Transporter Quotes → Admin Comparison → Manual Admin Follow-up
+
+This should help Tadweerah move closer to a future model where most MWAN/eManifest data is already collected inside Tadweerah, reducing duplicate data entry later.
+
+==================================================
+Critical Constraints
+==================================================
+
+Do not change deal lifecycle.
+Do not change transport request state machine unless absolutely required and approved.
+Do not change VAT, offers, pricing, reports, company approval, or admin auth.
+Do not implement payment for transport.
+Do not implement auto-award.
+Do not implement transporter ratings.
+Do not implement notifications.
+Do not integrate with MWAN.
+Do not call MWAN APIs.
+Do not create official eManifest records.
+Do not build PDF or formal transport invoices.
+Do not expose deal financial values to transporters.
+Do not expose buyer/seller sensitive commercial data unless needed for transport pricing.
+
+This must be additive and isolated.
+
+==================================================
+Approved MVP Scope
+==================================================
+
+1) Transporter Portal / Page
+2) Transport Quote Submission
+3) Admin Quote Comparison
+4) eManifest Readiness data display/enrichment
+5) No automatic assignment or lifecycle automation
+
+==================================================
+1) Transporter Portal
+==================================================
+
+Add or extend a transporter-facing page.
+
+Arabic label:
+"طلبات النقل المتاحة"
+
+English label:
+"Available Transport Requests"
+
+Visibility:
+Only companies with transporter role/capability should access this page.
+
+Role source:
+Use the existing company_roles / transporter role model if available.
+A transporter-only company should access this page.
+A company with multiple roles including transporter should also access it.
+
+Transporter should see only active transport requests available for quotation.
+
+Display each request with logistics-relevant information only:
+
+- Transport request reference
+- Related deal reference if safe
+- Material category/subcategory
+- Waste/material description
+- Quantity/weight/unit
+- Pickup city
+- Pickup location address / National Address / Location Code
+- Pickup Google Maps link if available
+- Delivery city/location if available
+- Planned pickup date if available
+- Notes / site instructions
+- Any special handling requirements if available
+- Current request status
+
+Do NOT show:
+- Deal price
+- VAT
+- Total deal amount
+- Offer values
+- Buyer/seller financial information
+- Other transporters’ quotes
+
+==================================================
+2) Transport Quote Submission
+==================================================
+
+Transporter can submit a quote for a transport request.
+
+Create a new additive table if needed:
+
+transport_quotes
+
+Suggested fields:
+- id uuid primary key
+- transport_request_id uuid FK
+- transporter_company_id uuid FK
+- quote_amount numeric(12,2) not null
+- currency text default 'SAR'
+- estimated_pickup_date date nullable
+- estimated_delivery_date date nullable
+- truck_count integer nullable
+- truck_type text nullable
+- capacity_notes text nullable
+- vehicle_plate text nullable
+- driver_name text nullable
+- notes text nullable
+- validity_days integer nullable
+- status text default 'submitted'
+  allowed values:
+  - submitted
+  - under_review
+  - selected
+  - rejected
+- created_at
+- updated_at
+
+Important:
+- vehicle_plate and driver_name are optional for MVP.
+- Do not require all eManifest-related fields to submit a quote.
+- Minimum quote submission should require quote_amount only, plus optional supporting details.
+- If a partial unique index is hard with the current ORM, enforce duplicate prevention in application logic first.
+
+Duplicate rule:
+One active non-rejected quote per transporter per transport request.
+
+Transporter quote form fields:
+- Quote amount
+- Estimated pickup date
+- Estimated delivery date
+- Number of trucks
+- Truck type
+- Capacity notes
+- Vehicle plate, optional
+- Driver name, optional
+- Notes
+- Validity days
+
+==================================================
+3) Backend Routes
+==================================================
+
+Add routes safely and additively.
+
+Transporter routes:
+
+A) GET /api/transport-requests/available
+Already exists according to assessment.
+Extend it only if needed to include logistics-relevant fields.
+
+It should return:
+- request id/reference
+- material/subcategory
+- quantity/weight/unit
+- pickup/delivery city
+- pickup/delivery location details
+- planned pickup date
+- notes
+- whether current transporter has already submitted a quote
+
+Do not return deal financial values.
+
+B) POST /api/transport-requests/:id/quotes
+Guards:
+- requireAuth
+- requireCompany
+- require transporter role/capability
+
+Rules:
+- transport request must be pending / available for quoting
+- request should be platform/Tadweerah-assisted mode if such field exists
+- transporter can submit only one active quote per request
+- validate quote amount > 0
+- do not change transport_request status
+- do not assign transporter automatically
+
+C) GET /api/transport-requests/:id/quotes/mine
+Returns only the authenticated transporter company’s own quote(s) for that request.
+
+Admin routes:
+
+D) GET /api/admin/transport-requests/:id/quotes
+Guard:
+- requireAdminKey / X-Admin-Key
+
+Returns all quotes for the transport request.
+
+E) PATCH /api/admin/transport-quotes/:id/status
+Guard:
+- requireAdminKey / X-Admin-Key
+
+Admin can set quote status:
+- under_review
+- selected
+- rejected
+
+Important:
+Selecting a quote should only update the quote status.
+Do not automatically change transport_request status.
+Do not automatically assign transporter_company_id.
+If assignment is easy and already supported, report first before implementing.
+
+==================================================
+4) Admin Quote Comparison
+==================================================
+
+Inside Admin > Transport Requests, add a simple collapsible section:
+
+Arabic:
+"عروض الناقلين"
+
+English:
+"Transporter Quotes"
+
+For each transport request, Admin should see:
+
+- Transporter company name
+- Quote amount
+- Currency
+- Estimated pickup date
+- Estimated delivery date
+- Truck count
+- Truck type
+- Capacity notes
+- Vehicle plate if provided
+- Driver name if provided
+- Notes
+- Quote status
+- Created date
+
+Admin actions:
+- Mark as under review
+- Mark as selected
+- Mark as rejected
+
+Do not build advanced comparison charts.
+A simple table/list is enough.
+
+Admin should be able to compare quotes manually.
+
+==================================================
+5) eManifest Readiness Alignment
+==================================================
+
+This is very important.
+
+This feature should be designed so Tadweerah gradually collects data that can later help populate MWAN/eManifest fields.
+
+Do not integrate with MWAN now.
+Do not call MWAN APIs.
+Do not create official eManifest records.
+Do not build external submission.
+
+This is data-readiness only.
+
+The system should show an "eManifest Readiness" or "MWAN Readiness" section in Admin > Transport Requests, preferably near the quotes.
+
+Arabic:
+"جاهزية eManifest"
+
+English:
+"eManifest Readiness"
+
+The readiness section should indicate which fields are available and which are missing.
+
+Data that should already be derived from Tadweerah:
+- Waste generator / producer company
+- Receiving/buyer company
+- Material category
+- Material subcategory
+- Waste/material description
+- Quantity/weight/unit
+- Pickup city
+- Pickup location address
+- Pickup Google Maps link
+- Delivery city/location if available
+- Planned pickup date if available
+- Manifest reference if already available
+
+Data that transporter quote can enrich:
+- Transporter company
+- Truck count
+- Truck type
+- Vehicle plate, optional
+- Driver name, optional
+- Estimated pickup date
+- Estimated delivery date
+- Capacity notes
+- Transport notes
+- Special handling requirements if any
+
+Display readiness as:
+- Completed fields
+- Missing fields
+- Fields provided by selected/submitted quote
+- Fields still required before official MWAN/eManifest creation
+
+Important:
+- Do not block quote submission due to missing eManifest fields.
+- Driver and vehicle details are optional for MVP.
+- Admin can compare quotes and also see which quote provides more complete transport data.
+- Do not change the transport request state machine.
+
+==================================================
+6) Frontend Requirements
+==================================================
+
+Transporter UI:
+
+Use existing transport-requests page if suitable.
+
+For transporter companies, show:
+- Available Transport Requests tab/page
+- Request cards with logistics details
+- Quote submission form/drawer
+- Submitted quote status if a quote already exists
+
+Arabic wording:
+- "طلبات النقل المتاحة"
+- "تقديم عرض نقل"
+- "قيمة العرض"
+- "عدد الشاحنات"
+- "نوع الشاحنة"
+- "تاريخ الاستلام المتوقع"
+- "تاريخ التسليم المتوقع"
+- "ملاحظات الناقل"
+- "تم تقديم عرضك"
+
+Admin UI:
+
+Inside Admin > Transport Requests:
+- Show quotes under each request
+- Show quote status
+- Allow status updates
+- Show eManifest readiness summary
+
+==================================================
+7) Security and Privacy
+==================================================
+
+Transporter:
+- Can see only available transport requests intended for quotation.
+- Can submit quote only as their own company.
+- Can see only their own quote(s).
+- Cannot see other transporter quotes.
+- Cannot see deal financial values.
+- Cannot see buyer/seller commercial details unless absolutely necessary for transport pricing.
+
+Admin:
+- Can see all transport requests and all quotes.
+- Must use existing ADMIN_API_KEY protection.
+
+Buyer/Seller:
+- Existing flows must remain unchanged.
+- Buyer/seller should not see transporter quotes in this MVP unless explicitly already designed.
+- Do not expose quotes in reports now.
+
+Reports:
+- Existing reports should remain untouched.
+- Do not join transport_quotes into reports yet.
+
+==================================================
+8) What to Defer
+==================================================
+
+Defer:
+- Auto-assign transporter
+- Auto-changing transport request status when quote is selected
+- Payment for transport
+- Transporter rating
+- Quote revisions/versioning
+- Notifications
+- MWAN API integration
+- Official eManifest creation
+- PDF/export for transport quotes
+- Adding transport quote data to reports
+
+==================================================
+9) Implementation Safety
+==================================================
+
+If implementation can be limited to:
+- one new transport_quotes table
+- additive read-only/POST routes
+- transporter quote form
+- admin quote comparison section
+- simple eManifest readiness display
+
+then proceed.
+
+If any part requires:
+- changing deal lifecycle
+- changing transport request state machine
+- changing reports
+- changing VAT/offers/pricing
+- changing company approval/auth logic
+- major refactor
+
+stop and report before continuing.
+
+==================================================
+10) Validation Required
+==================================================
+
+Run:
+- pnpm --filter @workspace/db run push
+- pnpm --filter @workspace/api-server run typecheck
+- pnpm run typecheck
+- curl -s http://localhost:80/api/healthz
+
+Manual tests:
+1) Transporter company can see available transport requests.
+2) Non-transporter company cannot access transporter portal.
+3) Transporter can submit quote.
+4) Duplicate active quote from same transporter is blocked.
+5) Transporter can see own quote only.
+6) Transporter cannot see other transporters’ quotes.
+7) Admin can see all quotes per transport request.
+8) Admin can mark quote under_review / selected / rejected.
+9) Buyer/seller deal flow remains unchanged.
+10) Existing reports still load.
+11) eManifest readiness section displays completed/missing fields.
+12) No deal financial values are exposed to transporters.
+
+Final report should include:
+1) changed files
+2) DB migration summary
+3) new routes
+4) frontend surfaces updated
+5) security confirmation
+6) eManifest readiness behavior
+7) what was deferred
+8) typecheck and health check results

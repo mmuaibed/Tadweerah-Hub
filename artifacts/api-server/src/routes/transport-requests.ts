@@ -5,6 +5,8 @@ import {
   db,
   dealsTable,
   transportRequestsTable,
+  transportQuotesTable,
+  companyRolesTable,
   companiesTable,
   wasteListingsTable,
   materialCategoriesTable,
@@ -1316,6 +1318,227 @@ router.get(
        );
 
     doc.end();
+  },
+);
+
+// ── Transport Quotes ──────────────────────────────────────────────────────────
+
+/** Check that the authenticated company has the 'transporter' MWAN role. */
+async function requireTransporterRole(companyId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ company_id: companyRolesTable.company_id })
+    .from(companyRolesTable)
+    .where(
+      and(
+        eq(companyRolesTable.company_id, companyId),
+        eq(companyRolesTable.role, "transporter"),
+      ),
+    )
+    .limit(1);
+  return !!row;
+}
+
+function serializeQuote(
+  q: typeof transportQuotesTable.$inferSelect,
+  transporter_name?: string | null,
+) {
+  return {
+    id: q.id,
+    transport_request_id: q.transport_request_id,
+    transporter_company_id: q.transporter_company_id,
+    transporter_name: transporter_name ?? undefined,
+    price_total: q.price_total,
+    truck_count: q.truck_count,
+    truck_type: q.truck_type ?? undefined,
+    notes: q.notes ?? undefined,
+    status: q.status,
+    created_at: q.created_at.toISOString(),
+    updated_at: q.updated_at.toISOString(),
+  };
+}
+
+// ── POST /transport-requests/:id/quotes ───────────────────────────────────────
+// Transporter company submits a price quote for a pending transport request.
+
+router.post(
+  "/transport-requests/:id/quotes",
+  requireAuth,
+  requireCompany(),
+  async (req, res) => {
+    const { company } = req as AuthedCompanyRequest;
+    const trId = req.params.id as string;
+
+    // Must have transporter role
+    const isTransporter = await requireTransporterRole(company.id);
+    if (!isTransporter) {
+      res.status(403).json({ error: "Forbidden", message: "Company does not have the transporter role" });
+      return;
+    }
+
+    // TR must exist and be in pending status
+    const [tr] = await db
+      .select({ id: transportRequestsTable.id, status: transportRequestsTable.status })
+      .from(transportRequestsTable)
+      .where(eq(transportRequestsTable.id, trId))
+      .limit(1);
+
+    if (!tr) {
+      res.status(404).json({ error: "NotFound", message: "Transport request not found" });
+      return;
+    }
+
+    if (tr.status !== "pending") {
+      res.status(422).json({ error: "UnprocessableEntity", message: "Transport request is not open for quotes" });
+      return;
+    }
+
+    // Prevent duplicate quotes from the same company
+    const [existing] = await db
+      .select({ id: transportQuotesTable.id })
+      .from(transportQuotesTable)
+      .where(
+        and(
+          eq(transportQuotesTable.transport_request_id, trId),
+          eq(transportQuotesTable.transporter_company_id, company.id),
+        ),
+      )
+      .limit(1);
+
+    if (existing) {
+      res.status(409).json({ error: "Conflict", message: "You have already submitted a quote for this transport request" });
+      return;
+    }
+
+    // Validate body
+    const priceTotalRaw = req.body?.price_total;
+    const truckCountRaw = req.body?.truck_count;
+    const truckType = typeof req.body?.truck_type === "string" ? req.body.truck_type.trim() : null;
+    const notes = typeof req.body?.notes === "string" ? req.body.notes.trim() : null;
+
+    const priceTotal = Number(priceTotalRaw);
+    if (!priceTotalRaw || isNaN(priceTotal) || priceTotal <= 0) {
+      res.status(400).json({ error: "BadRequest", message: "price_total must be a positive number" });
+      return;
+    }
+
+    const truckCount = Number(truckCountRaw) || 1;
+    if (truckCount < 1 || !Number.isInteger(truckCount)) {
+      res.status(400).json({ error: "BadRequest", message: "truck_count must be a positive integer" });
+      return;
+    }
+
+    const [quote] = await db
+      .insert(transportQuotesTable)
+      .values({
+        transport_request_id: trId,
+        transporter_company_id: company.id,
+        price_total: String(priceTotal),
+        truck_count: truckCount,
+        truck_type: truckType || null,
+        notes: notes || null,
+        status: "submitted",
+      })
+      .returning();
+
+    res.status(201).json(serializeQuote(quote, company.name));
+  },
+);
+
+// ── GET /transport-requests/:id/quotes ────────────────────────────────────────
+// Returns quotes for a transport request.
+// - Deal party (TR creator): sees all quotes with company names.
+// - Transporter: sees only their own quote.
+
+router.get(
+  "/transport-requests/:id/quotes",
+  requireAuth,
+  requireCompany(),
+  async (req, res) => {
+    const { company } = req as AuthedCompanyRequest;
+    const trId = req.params.id as string;
+
+    const [tr] = await db
+      .select({
+        id: transportRequestsTable.id,
+        created_by_company_id: transportRequestsTable.created_by_company_id,
+        deal_id: transportRequestsTable.deal_id,
+        transporter_company_id: transportRequestsTable.transporter_company_id,
+      })
+      .from(transportRequestsTable)
+      .where(eq(transportRequestsTable.id, trId))
+      .limit(1);
+
+    if (!tr) {
+      res.status(404).json({ error: "NotFound", message: "Transport request not found" });
+      return;
+    }
+
+    // Check authorization: TR creator or deal party can see all quotes; transporter sees own only
+    const [deal] = await db
+      .select({ producer_company_id: dealsTable.producer_company_id, buyer_company_id: dealsTable.buyer_company_id })
+      .from(dealsTable)
+      .where(eq(dealsTable.id, tr.deal_id))
+      .limit(1);
+
+    const isDealParty = deal && (deal.producer_company_id === company.id || deal.buyer_company_id === company.id);
+    const isTRCreator = tr.created_by_company_id === company.id;
+    const canSeeAll = isDealParty || isTRCreator;
+
+    const rows = await db
+      .select({
+        quote: transportQuotesTable,
+        company_name: companiesTable.name,
+      })
+      .from(transportQuotesTable)
+      .leftJoin(companiesTable, eq(transportQuotesTable.transporter_company_id, companiesTable.id))
+      .where(
+        canSeeAll
+          ? eq(transportQuotesTable.transport_request_id, trId)
+          : and(
+              eq(transportQuotesTable.transport_request_id, trId),
+              eq(transportQuotesTable.transporter_company_id, company.id),
+            ),
+      )
+      .orderBy(transportQuotesTable.price_total);
+
+    res.json(rows.map(({ quote, company_name }) => serializeQuote(quote, company_name)));
+  },
+);
+
+// ── GET /transport-requests/my-quotes ─────────────────────────────────────────
+// Returns all quotes submitted by the authenticated transporter company.
+
+router.get(
+  "/transport-requests/my-quotes",
+  requireAuth,
+  requireCompany(),
+  async (req, res) => {
+    const { company } = req as AuthedCompanyRequest;
+
+    const rows = await db
+      .select({
+        quote: transportQuotesTable,
+        pickup_city: transportRequestsTable.pickup_city,
+        delivery_city: transportRequestsTable.delivery_city,
+        waste_description: transportRequestsTable.waste_description,
+        tr_status: transportRequestsTable.status,
+        planned_pickup_at: transportRequestsTable.planned_pickup_at,
+      })
+      .from(transportQuotesTable)
+      .innerJoin(transportRequestsTable, eq(transportQuotesTable.transport_request_id, transportRequestsTable.id))
+      .where(eq(transportQuotesTable.transporter_company_id, company.id))
+      .orderBy(desc(transportQuotesTable.created_at));
+
+    res.json(
+      rows.map(({ quote, pickup_city, delivery_city, waste_description, tr_status, planned_pickup_at }) => ({
+        ...serializeQuote(quote),
+        pickup_city: pickup_city ?? undefined,
+        delivery_city: delivery_city ?? undefined,
+        waste_description: waste_description ?? undefined,
+        tr_status,
+        planned_pickup_at: planned_pickup_at?.toISOString() ?? undefined,
+      })),
+    );
   },
 );
 

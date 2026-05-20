@@ -91,6 +91,24 @@ interface PendingTransportRequest {
   company_name: string | null;
 }
 
+interface AdminTransportQuote {
+  id: string;
+  transport_request_id: string;
+  transporter_company_id: string;
+  transporter_name: string | null;
+  price_total: string;
+  truck_count: number;
+  truck_type: string | null;
+  notes: string | null;
+  status: string;
+  created_at: string;
+  pickup_city: string | null;
+  delivery_city: string | null;
+  waste_description: string | null;
+  tr_status: string | null;
+  tr_manifest_ref: string | null;
+}
+
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 
 const DEAL_STATUS_VARIANTS: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
@@ -143,6 +161,12 @@ export function AdminPage() {
   const [transportReqs, setTransportReqs] = useState<PendingTransportRequest[] | null>(null);
   const [transportLoading, setTransportLoading] = useState(false);
   const [transportError, setTransportError] = useState<string | null>(null);
+
+  /* Transport quotes state */
+  const [quotesData, setQuotesData] = useState<AdminTransportQuote[] | null>(null);
+  const [quotesLoading, setQuotesLoading] = useState(false);
+  const [quotesError, setQuotesError] = useState<string | null>(null);
+  const [updatingQuoteId, setUpdatingQuoteId] = useState<string | null>(null);
 
   /* Reports state */
   const [reportRows, setReportRows] = useState<AdminReportRow[] | null>(null);
@@ -293,6 +317,60 @@ export function AdminPage() {
       setTransportError(e instanceof Error ? e.message : t("admin.error.generic"));
     } finally {
       setTransportLoading(false);
+    }
+  }
+
+  async function fetchTransportQuotes() {
+    setQuotesLoading(true);
+    setQuotesError(null);
+    try {
+      const res = await callAdmin("/transport-quotes");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json() as { data: AdminTransportQuote[] };
+      sessionStorage.setItem("tdw_admin_key", adminKey.trim());
+      setQuotesData(json.data);
+    } catch (e) {
+      setQuotesError(e instanceof Error ? e.message : t("admin.error.generic"));
+    } finally {
+      setQuotesLoading(false);
+    }
+  }
+
+  async function selectQuote(quoteId: string) {
+    setUpdatingQuoteId(quoteId);
+    try {
+      const res = await callAdmin(`/transport-quotes/${quoteId}/select`, { method: "PATCH" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setQuotesData((prev) =>
+        prev
+          ? prev.map((q) => {
+              if (q.id === quoteId) return { ...q, status: "selected" };
+              if (q.transport_request_id === prev.find((x) => x.id === quoteId)?.transport_request_id && q.status === "submitted") {
+                return { ...q, status: "rejected" };
+              }
+              return q;
+            })
+          : prev,
+      );
+    } catch {
+      /* silent — reload will show correct state */
+    } finally {
+      setUpdatingQuoteId(null);
+    }
+  }
+
+  async function rejectQuote(quoteId: string) {
+    setUpdatingQuoteId(quoteId);
+    try {
+      const res = await callAdmin(`/transport-quotes/${quoteId}/reject`, { method: "PATCH" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setQuotesData((prev) =>
+        prev ? prev.map((q) => (q.id === quoteId ? { ...q, status: "rejected" } : q)) : prev,
+      );
+    } catch {
+      /* silent */
+    } finally {
+      setUpdatingQuoteId(null);
     }
   }
 
@@ -722,6 +800,130 @@ export function AdminPage() {
                 )}
               </div>
             )}
+
+            {/* ── Quote Comparison Panel ───────────────────────────────────── */}
+            <div className="rounded-xl border border-border bg-white overflow-hidden">
+              <div className="px-4 py-3 border-b border-border flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-foreground">{t("admin.quotes.title")}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{t("admin.quotes.desc")}</p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => void fetchTransportQuotes()}
+                  disabled={quotesLoading}
+                >
+                  {quotesLoading
+                    ? <><Loader2 className="h-3.5 w-3.5 me-1.5 animate-spin" />{t("admin.loading")}</>
+                    : <><RefreshCw className="h-3.5 w-3.5 me-1.5" />{t("admin.quotes.load")}</>
+                  }
+                </Button>
+              </div>
+
+              {quotesError && (
+                <div className="px-4 py-3 flex items-center gap-2 text-sm text-destructive border-b border-destructive/20 bg-destructive/5">
+                  <AlertCircle className="h-4 w-4 shrink-0" />{quotesError}
+                </div>
+              )}
+
+              {quotesData !== null && (
+                quotesData.length === 0 ? (
+                  <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+                    {t("admin.quotes.empty")}
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-border bg-muted/30">
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{t("admin.quotes.tr_id")}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{t("admin.quotes.company")}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{t("admin.quotes.price")}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{t("admin.quotes.trucks")}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{t("admin.quotes.status")}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground"></th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {quotesData.map((q) => {
+                          const isUpdating = updatingQuoteId === q.id;
+                          const isSelected = q.status === "selected";
+                          const isRejected = q.status === "rejected";
+                          return (
+                            <tr key={q.id} className={`hover:bg-muted/20 transition-colors ${isSelected ? "bg-green-50/40" : isRejected ? "opacity-60" : ""}`}>
+                              <td className="px-4 py-2.5">
+                                <div className="space-y-0.5">
+                                  <span className="font-mono text-xs text-muted-foreground" dir="ltr">{q.transport_request_id.slice(0, 8)}…</span>
+                                  {(q.pickup_city || q.delivery_city) && (
+                                    <p className="text-[10px] text-muted-foreground/60">
+                                      {q.pickup_city ?? "—"} → {q.delivery_city ?? "—"}
+                                    </p>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="px-4 py-2.5">
+                                <span className="text-xs font-medium text-foreground">{q.transporter_name ?? "—"}</span>
+                              </td>
+                              <td className="px-4 py-2.5">
+                                <span className="text-xs font-semibold text-foreground">{fmtSAR(Number(q.price_total), lang)}</span>
+                              </td>
+                              <td className="px-4 py-2.5">
+                                <span className="text-xs text-muted-foreground">{q.truck_count}{q.truck_type ? ` × ${q.truck_type}` : ""}</span>
+                              </td>
+                              <td className="px-4 py-2.5">
+                                <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
+                                  isSelected  ? "bg-green-100 text-green-800 border-green-200" :
+                                  isRejected  ? "bg-red-100 text-red-700 border-red-200" :
+                                  q.status === "under_review" ? "bg-blue-100 text-blue-800 border-blue-200" :
+                                  "bg-yellow-100 text-yellow-800 border-yellow-200"
+                                }`}>
+                                  {t(`transport.quote.status.${q.status}`)}
+                                </span>
+                              </td>
+                              <td className="px-4 py-2.5">
+                                {!isSelected && !isRejected && (
+                                  <div className="flex items-center gap-1.5">
+                                    <Button
+                                      size="sm"
+                                      className="h-7 px-2.5 text-xs"
+                                      disabled={isUpdating}
+                                      onClick={() => void selectQuote(q.id)}
+                                    >
+                                      {isUpdating ? <Loader2 className="h-3 w-3 animate-spin" /> : t("admin.quotes.select")}
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-7 px-2.5 text-xs"
+                                      disabled={isUpdating}
+                                      onClick={() => void rejectQuote(q.id)}
+                                    >
+                                      {t("admin.quotes.reject")}
+                                    </Button>
+                                  </div>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                    <div className="px-4 py-2 border-t border-border bg-muted/10">
+                      <p className="text-[10px] text-muted-foreground">
+                        {t("admin.quotes.count").replace("{n}", String(quotesData.length))}
+                      </p>
+                    </div>
+                  </div>
+                )
+              )}
+
+              {quotesData === null && !quotesLoading && (
+                <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+                  {t("admin.quotes.load")} ↑
+                </div>
+              )}
+            </div>
           </div>
         )}
 

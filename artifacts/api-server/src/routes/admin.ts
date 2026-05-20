@@ -18,6 +18,7 @@ import {
   contractsTable,
   contractShipmentsTable,
   transportRequestsTable,
+  transportQuotesTable,
   wasteListingsTable,
   materialCategoriesTable,
 } from "@workspace/db";
@@ -834,6 +835,142 @@ router.get("/admin/reports/deals", requireAdminKey, async (req, res) => {
 
   /* ── JSON response ── */
   res.json({ summary, rows: serialized, count: serialized.length });
+});
+
+// ── Transport Quotes (Admin) ──────────────────────────────────────────────────
+
+// GET /admin/transport-quotes
+// Returns all submitted transport quotes with TR and company details.
+// Query params: status (filter by quote status), limit, offset
+
+router.get("/admin/transport-quotes", requireAdminKey, async (req, res) => {
+  const limit  = Math.min(Number(req.query.limit)  || 100, 500);
+  const offset = Number(req.query.offset) || 0;
+  const statusFilter = typeof req.query.status === "string" ? req.query.status : null;
+
+  const rows = await db
+    .select({
+      quote: transportQuotesTable,
+      transporter_name: companiesTable.name,
+      pickup_city:      transportRequestsTable.pickup_city,
+      delivery_city:    transportRequestsTable.delivery_city,
+      waste_description: transportRequestsTable.waste_description,
+      tr_status:        transportRequestsTable.status,
+      tr_manifest_ref:  transportRequestsTable.manifest_ref,
+    })
+    .from(transportQuotesTable)
+    .innerJoin(companiesTable, eq(transportQuotesTable.transporter_company_id, companiesTable.id))
+    .innerJoin(transportRequestsTable, eq(transportQuotesTable.transport_request_id, transportRequestsTable.id))
+    .where(statusFilter ? eq(transportQuotesTable.status, statusFilter as "submitted" | "under_review" | "selected" | "rejected") : undefined)
+    .orderBy(desc(transportQuotesTable.created_at))
+    .limit(limit)
+    .offset(offset);
+
+  res.json({
+    data: rows.map(({ quote, transporter_name, pickup_city, delivery_city, waste_description, tr_status, tr_manifest_ref }) => ({
+      id: quote.id,
+      transport_request_id: quote.transport_request_id,
+      transporter_company_id: quote.transporter_company_id,
+      transporter_name,
+      price_total: quote.price_total,
+      truck_count: quote.truck_count,
+      truck_type: quote.truck_type ?? null,
+      notes: quote.notes ?? null,
+      status: quote.status,
+      created_at: quote.created_at.toISOString(),
+      updated_at: quote.updated_at.toISOString(),
+      pickup_city: pickup_city ?? null,
+      delivery_city: delivery_city ?? null,
+      waste_description: waste_description ?? null,
+      tr_status,
+      tr_manifest_ref: tr_manifest_ref ?? null,
+    })),
+    limit,
+    offset,
+    count: rows.length,
+  });
+});
+
+// PATCH /admin/transport-quotes/:quoteId/select
+// Selects a quote: marks it as 'selected', rejects all others for the same TR,
+// and assigns the transporter to the transport request.
+
+router.patch("/admin/transport-quotes/:quoteId/select", requireAdminKey, async (req, res) => {
+  const quoteId = req.params.quoteId as string;
+
+  const [quote] = await db
+    .select()
+    .from(transportQuotesTable)
+    .where(eq(transportQuotesTable.id, quoteId))
+    .limit(1);
+
+  if (!quote) {
+    res.status(404).json({ error: "NotFound", message: "Quote not found" });
+    return;
+  }
+
+  if (quote.status === "selected") {
+    res.status(422).json({ error: "UnprocessableEntity", message: "Quote is already selected" });
+    return;
+  }
+
+  const now = new Date();
+
+  // Mark this quote as selected
+  await db
+    .update(transportQuotesTable)
+    .set({ status: "selected", updated_at: now })
+    .where(eq(transportQuotesTable.id, quoteId));
+
+  // Reject all other quotes for the same TR
+  await db
+    .update(transportQuotesTable)
+    .set({ status: "rejected", updated_at: now })
+    .where(
+      and(
+        eq(transportQuotesTable.transport_request_id, quote.transport_request_id),
+        eq(transportQuotesTable.status, "submitted"),
+      ),
+    );
+
+  // Assign the selected transporter to the transport request
+  const [updatedTR] = await db
+    .update(transportRequestsTable)
+    .set({
+      transporter_company_id: quote.transporter_company_id,
+      status: "accepted",
+      updated_at: now,
+    })
+    .where(eq(transportRequestsTable.id, quote.transport_request_id))
+    .returning({ id: transportRequestsTable.id, status: transportRequestsTable.status });
+
+  res.json({ quote_id: quoteId, tr_id: updatedTR?.id ?? null, tr_status: updatedTR?.status ?? null });
+});
+
+// PATCH /admin/transport-quotes/:quoteId/reject
+// Rejects a single quote without affecting others.
+
+router.patch("/admin/transport-quotes/:quoteId/reject", requireAdminKey, async (req, res) => {
+  const quoteId = req.params.quoteId as string;
+
+  const [quote] = await db
+    .select({ id: transportQuotesTable.id, status: transportQuotesTable.status })
+    .from(transportQuotesTable)
+    .where(eq(transportQuotesTable.id, quoteId))
+    .limit(1);
+
+  if (!quote) {
+    res.status(404).json({ error: "NotFound", message: "Quote not found" });
+    return;
+  }
+
+  const [updated] = await db
+    .update(transportQuotesTable)
+    .set({ status: "rejected", updated_at: new Date() })
+    .where(eq(transportQuotesTable.id, quoteId))
+    .returning({ id: transportQuotesTable.id, status: transportQuotesTable.status });
+
+  res.json(updated);
 });
 
 export default router;
