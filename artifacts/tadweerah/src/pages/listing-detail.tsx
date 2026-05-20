@@ -71,6 +71,7 @@ import { EligibilityBlock } from "@/components/eligibility-block";
 import { useEligibility } from "@/hooks/use-eligibility";
 import { useT } from "@/i18n";
 import { listingRef } from "@/lib/listing-ref";
+import { LocationLink } from "@/components/location-link";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -1489,20 +1490,12 @@ export function ListingDetailPage() {
             icon={<MapPin className="h-3.5 w-3.5 text-primary/60" />}
             label={t("listing.location.address")}
             value={
-              <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                <span>{listingLocationAddress}</span>
-                {listingMapsUrl && listingMapsUrl.startsWith("https://") && (
-                  <a
-                    href={listingMapsUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary font-medium hover:underline shrink-0"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    ↗ {t("listing.location.open_maps")}
-                  </a>
-                )}
-              </span>
+              <LocationLink
+                address={listingLocationAddress}
+                city={listing.city}
+                mapsUrl={listingMapsUrl}
+                stopPropagation
+              />
             }
           />
         )}
@@ -1727,20 +1720,26 @@ export function ListingDetailPage() {
               <CompactRow
                 icon={<MapPin className="h-3.5 w-3.5 text-primary/60" />}
                 label={t("listing.location.address")}
-                value={listingLocationAddress}
+                value={
+                  <LocationLink
+                    address={listingLocationAddress}
+                    city={listing.city}
+                    mapsUrl={listingMapsUrl}
+                    stopPropagation
+                  />
+                }
               />
             )}
-            {listingMapsUrl && listingMapsUrl.startsWith("https://") && (
+            {!listingLocationAddress && listingMapsUrl && listingMapsUrl.startsWith("https://") && (
               <div className="flex items-center gap-2 px-3 py-2.5 text-xs">
                 <MapPin className="h-3.5 w-3.5 text-primary/60 shrink-0" />
-                <span className="text-muted-foreground flex-1">{t("listing.location.open_maps")}</span>
                 <a
                   href={listingMapsUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="font-medium text-primary hover:underline"
                 >
-                  ↗
+                  ↗ {t("listing.location.open_maps")}
                 </a>
               </div>
             )}

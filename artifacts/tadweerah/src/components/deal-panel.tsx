@@ -45,6 +45,7 @@ import {
 } from "@/components/ui/dialog";
 import { useT } from "@/i18n";
 import { dealRef } from "@/lib/listing-ref";
+import { buildMapsUrl } from "@/lib/maps";
 import {
   useGetMaterialCategories,
 } from "@workspace/api-client-react";
@@ -1284,6 +1285,7 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
     ? (allCategories as MaterialCategory[]).find((c) => c.id === listingSubcategoryId)?.[lang === "ar" ? "name_ar" : "name_en"] ?? null
     : null;
   const displayMaterial = subcategoryLabel ?? listingMaterial;
+  const resolvedListingMapsUrl = buildMapsUrl(listingMapsUrl, listingLocationAddress, listingCity);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [actualQty, setActualQty] = useState("");
@@ -2290,10 +2292,21 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
               {listingLocationAddress && (
                 <div className="flex flex-col gap-1 pt-0.5">
                   <span className="text-xs text-muted-foreground">{t("listing.location.address")}</span>
-                  <span className="text-xs leading-relaxed text-foreground/80 bg-muted/30 rounded px-2 py-1.5">{listingLocationAddress}</span>
-                  {listingMapsUrl && listingMapsUrl.startsWith("https://") && (
+                  {resolvedListingMapsUrl ? (
                     <a
-                      href={listingMapsUrl}
+                      href={resolvedListingMapsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs leading-relaxed text-foreground/80 bg-muted/30 rounded px-2 py-1.5 hover:underline"
+                    >
+                      {listingLocationAddress}
+                    </a>
+                  ) : (
+                    <span className="text-xs leading-relaxed text-foreground/80 bg-muted/30 rounded px-2 py-1.5">{listingLocationAddress}</span>
+                  )}
+                  {resolvedListingMapsUrl && (
+                    <a
+                      href={resolvedListingMapsUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-xs font-medium text-primary hover:underline self-start"
@@ -2303,10 +2316,10 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
                   )}
                 </div>
               )}
-              {!listingLocationAddress && listingMapsUrl && listingMapsUrl.startsWith("https://") && (
+              {!listingLocationAddress && resolvedListingMapsUrl && (
                 <div className="flex items-center justify-between gap-2">
                   <a
-                    href={listingMapsUrl}
+                    href={resolvedListingMapsUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-xs font-medium text-primary hover:underline"

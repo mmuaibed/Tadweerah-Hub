@@ -15,6 +15,7 @@ import {
 import { AppLayout } from "@/components/app-layout";
 import { useT } from "@/i18n";
 import { dealRef } from "@/lib/listing-ref";
+import { LocationLink } from "@/components/location-link";
 import { useGetMaterialCategories } from "@workspace/api-client-react";
 
 interface PendingDeal {
@@ -236,18 +237,12 @@ export function PendingActionsPage() {
                     )}
                     {deal.material_location_address && (
                       <span className="flex items-center gap-1 italic opacity-80">
-                        {deal.material_location_address}
-                        {deal.google_maps_url && deal.google_maps_url.startsWith("https://") && (
-                          <a
-                            href={deal.google_maps_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="not-italic font-medium text-primary hover:underline ms-0.5"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            ↗ {t("listing.location.open_maps")}
-                          </a>
-                        )}
+                        <LocationLink
+                          address={deal.material_location_address}
+                          city={deal.city}
+                          mapsUrl={deal.google_maps_url}
+                          stopPropagation
+                        />
                       </span>
                     )}
                     <span className="flex items-center gap-1">

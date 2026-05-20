@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useT } from "@/i18n";
 import { listingRef } from "@/lib/listing-ref";
+import { LocationLink } from "@/components/location-link";
 import type { WasteListing } from "@workspace/api-client-react";
 
 interface ListingCardProps {
@@ -168,19 +169,13 @@ export function ListingCard({
               )}
             </div>
             {(listing as WasteListing & { material_location_address?: string | null }).material_location_address && (
-              <p className="ps-6 text-xs text-muted-foreground/70 leading-tight flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                <span>{(listing as WasteListing & { material_location_address?: string | null }).material_location_address}</span>
-                {(listing as WasteListing & { google_maps_url?: string | null }).google_maps_url?.startsWith("https://") && (
-                  <a
-                    href={(listing as WasteListing & { google_maps_url?: string | null }).google_maps_url!}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary hover:underline font-medium shrink-0"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    ↗ {t("listing.location.open_maps")}
-                  </a>
-                )}
+              <p className="ps-6 text-xs text-muted-foreground/70 leading-tight">
+                <LocationLink
+                  address={(listing as WasteListing & { material_location_address?: string | null }).material_location_address}
+                  city={listing.city}
+                  mapsUrl={(listing as WasteListing & { google_maps_url?: string | null }).google_maps_url}
+                  stopPropagation
+                />
               </p>
             )}
           </div>

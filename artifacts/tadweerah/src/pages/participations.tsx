@@ -25,6 +25,7 @@ import { AppLayout } from "@/components/app-layout";
 import { EmptyState } from "@/components/empty-state";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { useT } from "@/i18n";
+import { LocationLink } from "@/components/location-link";
 
 type Tab = "all" | "pending" | "accepted" | "rejected";
 const TABS: Tab[] = ["all", "pending", "accepted", "rejected"];
@@ -132,18 +133,12 @@ function OfferCard({ offer }: { offer: MyOffer }) {
         </span>
         {(offer as typeof offer & { listing_material_location_address?: string | null }).listing_material_location_address && (
           <span className="flex items-center gap-1 italic opacity-80">
-            {(offer as typeof offer & { listing_material_location_address?: string | null }).listing_material_location_address}
-            {(offer as typeof offer & { listing_google_maps_url?: string | null }).listing_google_maps_url?.startsWith("https://") && (
-              <a
-                href={(offer as typeof offer & { listing_google_maps_url?: string | null }).listing_google_maps_url!}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="not-italic font-medium text-primary hover:underline ms-0.5"
-                onClick={(e) => e.stopPropagation()}
-              >
-                ↗ {t("listing.location.open_maps")}
-              </a>
-            )}
+            <LocationLink
+              address={(offer as typeof offer & { listing_material_location_address?: string | null }).listing_material_location_address}
+              city={offer.listing_city}
+              mapsUrl={(offer as typeof offer & { listing_google_maps_url?: string | null }).listing_google_maps_url}
+              stopPropagation
+            />
           </span>
         )}
         <span className="flex items-center gap-1">
