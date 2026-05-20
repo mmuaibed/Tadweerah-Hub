@@ -70,7 +70,7 @@ channel = "stable-25_05"
 [userenv]
 
 [userenv.development]
-ADMIN_API_KEY = "tdw-admin-dev"
 
 [userenv.shared]
 TRANSPORT_REQUEST_EMAIL = "info@tadweerah.com"
+VITE_TADWEERAH_ADMIN_EMAILS = "mmuaibed@stc.com.sa"
