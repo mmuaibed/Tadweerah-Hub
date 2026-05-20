@@ -1209,7 +1209,7 @@ function SmartTransportBody({
   /* No decision yet: prompt */
   return (
     <>
-      {/* Confirmation dialog for skip — irreversible action needs explicit consent */}
+      {/* Confirmation dialog for self-arrange — irreversible action needs explicit consent */}
       <ConfirmDialog
         open={skipConfirmOpen}
         onOpenChange={setSkipConfirmOpen}
@@ -1220,52 +1220,48 @@ function SmartTransportBody({
         isPending={smartTrLoading}
       />
       <div className="space-y-3">
-        <p className="text-xs text-muted-foreground leading-relaxed">
-          {t("deal.transport.smart.desc")}
-        </p>
+        <div>
+          <p className="text-sm font-semibold text-foreground leading-snug">
+            {t("deal.transport.smart.prompt_title")}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+            {t("deal.transport.smart.prompt_helper")}
+          </p>
+        </div>
         {smartTrError && (
           <div className="flex items-start gap-2 rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">
             <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
             <span>{smartTrError}</span>
           </div>
         )}
-        {/* PRIMARY: request platform transport assistance */}
-        <Button
+        {/* Option 1 — Primary filled card: request Tadweerah transport */}
+        <button
           type="button"
-          className="w-full h-11 text-sm font-bold"
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); onArrange(); }}
           disabled={smartTrLoading}
+          className="w-full text-start rounded-xl border-2 border-primary bg-primary text-primary-foreground px-4 py-3.5 hover:bg-primary/90 transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
-          {smartTrLoading
-            ? <Loader2 className="me-2 h-4 w-4 animate-spin" />
-            : <Truck className="me-2 h-4 w-4 shrink-0" />}
-          {t("deal.transport.smart.arrange_btn")}
-        </Button>
-        {/* SECONDARY: responsible party will arrange independently — self-managed */}
-        <div className="border-t border-border/50 pt-2">
-          <p className="text-[11px] text-muted-foreground/70 text-center mb-2">{t("deal.transport.smart.self_managed_note")}</p>
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full h-9 text-xs text-muted-foreground"
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSkipConfirmOpen(true); }}
-            disabled={smartTrLoading}
-          >
-            {t("deal.transport.smart.self_managed_btn")}
-          </Button>
-        </div>
-        {/* TERTIARY: no transport needed at all */}
-        <div className="border-t border-border/50 pt-1">
-          <Button
-            type="button"
-            variant="ghost"
-            className="w-full h-8 text-[11px] text-muted-foreground/50 hover:text-muted-foreground"
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSkipConfirmOpen(true); }}
-            disabled={smartTrLoading}
-          >
-            {t("deal.transport.smart.skip_btn")}
-          </Button>
-        </div>
+          <div className="flex items-center gap-2 mb-0.5">
+            {smartTrLoading
+              ? <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+              : <Truck className="h-4 w-4 shrink-0" />}
+            <span className="text-sm font-bold">{t("deal.transport.smart.arrange_btn")}</span>
+          </div>
+          <p className="text-xs opacity-80 leading-relaxed ps-6">{t("deal.transport.smart.arrange_card_helper")}</p>
+        </button>
+        {/* Option 2 — Secondary outlined card: self-arrange */}
+        <button
+          type="button"
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSkipConfirmOpen(true); }}
+          disabled={smartTrLoading}
+          className="w-full text-start rounded-xl border-2 border-border bg-background px-4 py-3.5 hover:border-primary/40 hover:bg-muted/30 transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
+          <div className="flex items-center gap-2 mb-0.5">
+            <UserCog className="h-4 w-4 shrink-0 text-foreground" />
+            <span className="text-sm font-bold text-foreground">{t("deal.transport.smart.self_arrange_btn")}</span>
+          </div>
+          <p className="text-xs text-muted-foreground leading-relaxed ps-6">{t("deal.transport.smart.self_arrange_helper")}</p>
+        </button>
       </div>
     </>
   );
@@ -2154,7 +2150,9 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
                   <div className="mt-4 rounded-xl border border-border bg-muted/10 p-3 flex items-start gap-2.5">
                     <Truck className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0 mt-0.5" />
                     <p className="text-xs text-muted-foreground leading-relaxed">
-                      {t("deal.transport.not_your_responsibility")}
+                      {deal.transport_responsibility === "seller"
+                        ? t("deal.transport.not_responsible_seller")
+                        : t("deal.transport.not_responsible_buyer")}
                     </p>
                   </div>
                 );
