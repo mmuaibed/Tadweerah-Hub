@@ -20,7 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { useT } from "@/i18n";
-import { fmtSAR, fmtDate } from "@/lib/format";
+import { fmtSAR, fmtDate, fmtNumber } from "@/lib/format";
 
 /* ─── Types ──────────────────────────────────────────────────────────────── */
 
@@ -372,7 +372,7 @@ export function ReportsPage() {
                           </Td>
                           <Td>{counterparty ?? "—"}</Td>
                           <Td>{materialLabel}</Td>
-                          <Td mono>{row.quantity && row.unit ? `${row.quantity} ${row.unit}` : "—"}</Td>
+                          <Td mono>{row.quantity && row.unit ? `${fmtNumber(row.quantity)} ${row.unit}` : "—"}</Td>
                           <Td>{row.city ?? "—"}</Td>
                           <Td>
                             <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${statusStyle}`}>

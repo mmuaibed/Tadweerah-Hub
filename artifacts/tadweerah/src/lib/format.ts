@@ -30,9 +30,10 @@ export function fmtNumber(
 }
 
 /**
- * Format a SAR monetary value with 2 decimal places.
- * Respects lang for locale conventions (thousands separator) but
- * always uses Western/Latin digits.
+ * Format a SAR monetary value with up to 2 decimal places, plus currency suffix.
+ * Produces e.g. "10,000 ر.س" (Arabic) or "10,000 SAR" (English).
+ * Trailing zeros are omitted: 1500.00 → "1,500 ر.س", 1500.50 → "1,500.50 ر.س".
+ * Always uses Western/Latin digits.
  */
 export function fmtSAR(
   val: number | string | null | undefined,
@@ -40,10 +41,12 @@ export function fmtSAR(
 ): string {
   const n = typeof val === "string" ? parseFloat(val) : (val ?? NaN);
   if (!isFinite(n)) return "—";
-  return n.toLocaleString(resolveLocale(lang), {
-    minimumFractionDigits: 2,
+  const formatted = n.toLocaleString(resolveLocale(lang), {
+    minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   });
+  const symbol = lang === "ar" ? "ر.س" : "SAR";
+  return `${formatted} ${symbol}`;
 }
 
 /**
