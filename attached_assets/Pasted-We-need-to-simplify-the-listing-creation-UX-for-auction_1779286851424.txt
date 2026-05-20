@@ -1,0 +1,68 @@
+We need to simplify the listing creation UX for auction listings.
+
+Issue:
+The current “Required Services” section in listing-new.tsx shows many service checkboxes such as waste transport, waste collection, recycling categories, weighing equipment, etc. This is confusing for sellers creating a marketplace auction and does not add clear value at MVP stage.
+
+New product direction:
+For auction listings, replace/hide the detailed “Required Services” checklist with a simpler buyer eligibility / targeting section.
+
+Required MVP behavior:
+
+1) Remove or hide the current detailed Required Services checkbox grid from the auction listing creation flow.
+Do not delete backend/schema fields unless necessary.
+Do not remove existing data model.
+Do not break existing eligibility logic.
+
+2) Add a simpler section:
+“Buyer eligibility / listing visibility”
+
+Options:
+- open_to_all_qualified_companies
+- recycling_companies_only
+
+Arabic labels:
+- متاحة لجميع الشركات المؤهلة
+- مخصصة لشركات إعادة التدوير فقط
+
+English labels:
+- Open to all qualified companies
+- Recycling companies only
+
+3) If there is already an existing capability/required_services mechanism, map the simplified option safely:
+- open_to_all_qualified_companies → no special required services
+- recycling_companies_only → use the existing recycling-related capability if one already exists
+
+If there is no safe backend mapping for recycling_companies_only, stop and report before implementation.
+
+4) Do not add category-specific targeting yet unless it is already supported safely.
+Defer:
+- metal recyclers only
+- plastic recyclers only
+- paper recyclers only
+- e-waste recyclers only
+
+5) Keep this frontend/MVP-safe:
+- Do not change pricing_model.
+- Do not touch offer logic.
+- Do not touch VAT.
+- Do not touch deal creation.
+- Do not touch transport responsibility.
+- Do not touch admin.
+- Do not touch MWAN.
+- Do not implement multi-material listings.
+- Do not refactor unrelated files.
+
+6) If the old Required Services fields are still needed internally, keep them hidden or defaulted safely.
+Do not expose confusing checkboxes to normal sellers.
+
+Before implementation, confirm:
+A) Which field currently stores required services
+B) Whether recycling company eligibility already exists in the company/capability model
+C) Whether this can be done without DB migration
+D) Exact files to change
+E) How existing listings remain unaffected
+
+After implementation, run:
+- pnpm --filter @workspace/api-server run typecheck
+- pnpm run typecheck
+- curl -s http://localhost:80/api/healthz

@@ -16,7 +16,7 @@ import {
 } from "@workspace/api-client-react";
 import {
   Loader2, ImagePlus, X, Scale, Tag, Gavel, ShoppingBag, Percent,
-  Shield, Lock, Globe, Users, Check, ChevronRight, Truck,
+  Lock, Globe, Users, Check, ChevronRight, Truck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -113,6 +113,7 @@ export function ListingNewPage() {
   const [eligibleCompanyType, setEligibleCompanyType] = useState<"ALL" | "LICENSED_ONLY">("ALL");
   const [revenueSharePct, setRevenueSharePct] = useState("");
   const [requiredServiceIds, setRequiredServiceIds] = useState<Set<string>>(new Set());
+  const [buyerEligibility, setBuyerEligibility] = useState<"open_to_all" | "recycling_only">("open_to_all");
   const [targetingType, setTargetingType] = useState<TargetingType>("open");
   const [targetCompanyId, setTargetCompanyId] = useState("");
   const [companySearch, setCompanySearch] = useState("");
@@ -251,7 +252,9 @@ export function ListingNewPage() {
             ? { required_service_ids: Array.from(requiredServiceIds) }
             : {}),
           transport_responsibility: transportResponsibility,
-          eligible_company_type: eligibleCompanyType,
+          eligible_company_type: saleType === "auction"
+            ? (buyerEligibility === "recycling_only" ? "LICENSED_ONLY" : "ALL")
+            : eligibleCompanyType,
           ...(saleType === "direct" ? { targeting_type: targetingType } : {}),
           ...(saleType === "direct" && targetingType === "specific_company" && selectedCompany
             ? { target_company_id: selectedCompany.id }
@@ -674,81 +677,72 @@ export function ListingNewPage() {
                 </div>
               )}
 
-              {(allCapabilities as Capability[]).length > 0 && (
-                <div className="space-y-1.5">
-                  <Label>{t("listing.form.requiredServices")}</Label>
-                  <p className="text-xs text-muted-foreground">{t("listing.form.requiredServices.hint")}</p>
-                  <div className="grid gap-1.5 sm:grid-cols-2">
-                    {(allCapabilities as Capability[]).map((cap) => {
-                      const checked = requiredServiceIds.has(cap.id);
+              {/* ── Buyer Eligibility (auction) / Eligible Company Type (direct) ── */}
+              {saleType === "auction" ? (
+                <div className="space-y-1.5 pt-1">
+                  <Label>{t("listing.form.buyerEligibility")}</Label>
+                  <p className="text-xs text-muted-foreground">{t("listing.form.buyerEligibility.hint")}</p>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {(["open_to_all", "recycling_only"] as const).map((opt) => {
+                      const active = buyerEligibility === opt;
                       return (
-                        <label
-                          key={cap.id}
-                          className={`flex cursor-pointer items-start gap-2.5 rounded-lg border p-2.5 text-sm transition-colors ${
-                            checked ? "border-primary bg-primary/5 text-foreground" : "border-border bg-background text-muted-foreground hover:border-muted-foreground/40"
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() => setBuyerEligibility(opt)}
+                          className={`flex items-start gap-3 rounded-lg border p-3 text-start transition-colors ${
+                            active ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "border-border bg-card hover:border-primary/40"
                           }`}
                         >
-                          <input
-                            type="checkbox"
-                            className="mt-0.5 h-4 w-4 shrink-0 rounded accent-primary"
-                            checked={checked}
-                            onChange={() => {
-                              setRequiredServiceIds((prev) => {
-                                const next = new Set(prev);
-                                if (next.has(cap.id)) next.delete(cap.id); else next.add(cap.id);
-                                return next;
-                              });
-                            }}
-                          />
-                          <div className="flex flex-col gap-0.5">
-                            <span className="font-medium text-foreground text-xs">{cap.name_ar}</span>
-                            <span className="text-[10px] text-muted-foreground">{cap.name_en}</span>
-                            {cap.requires_license && (
-                              <span className="mt-0.5 inline-flex items-center gap-1 text-[10px] text-amber-600">
-                                <Shield className="h-2.5 w-2.5" />
-                                {t("capability.requires_license")}
-                              </span>
-                            )}
+                          <span className={`mt-0.5 h-4 w-4 shrink-0 rounded-full border-2 flex items-center justify-center ${active ? "border-primary" : "border-muted-foreground/40"}`}>
+                            {active && <span className="h-2 w-2 rounded-full bg-primary" />}
+                          </span>
+                          <div>
+                            <div className={`text-sm font-medium ${active ? "text-primary" : "text-foreground"}`}>
+                              {t(`listing.buyerEligibility.${opt}.label`)}
+                            </div>
+                            <div className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                              {t(`listing.buyerEligibility.${opt}.desc`)}
+                            </div>
                           </div>
-                        </label>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-1.5 pt-1">
+                  <Label>{t("listing.form.eligibleCompanyType")}</Label>
+                  <p className="text-xs text-muted-foreground">{t("listing.form.eligibleCompanyType.hint")}</p>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {(["ALL", "LICENSED_ONLY"] as const).map((opt) => {
+                      const active = eligibleCompanyType === opt;
+                      return (
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() => setEligibleCompanyType(opt)}
+                          className={`flex items-start gap-3 rounded-lg border p-3 text-start transition-colors ${
+                            active ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "border-border bg-card hover:border-primary/40"
+                          }`}
+                        >
+                          <span className={`mt-0.5 h-4 w-4 shrink-0 rounded-full border-2 flex items-center justify-center ${active ? "border-primary" : "border-muted-foreground/40"}`}>
+                            {active && <span className="h-2 w-2 rounded-full bg-primary" />}
+                          </span>
+                          <div>
+                            <div className={`text-sm font-medium ${active ? "text-primary" : "text-foreground"}`}>
+                              {t(`listing.eligible.${opt}.label`)}
+                            </div>
+                            <div className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                              {t(`listing.eligible.${opt}.desc`)}
+                            </div>
+                          </div>
+                        </button>
                       );
                     })}
                   </div>
                 </div>
               )}
-
-              {/* ── Eligible Company Type ── */}
-              <div className="space-y-1.5 pt-1">
-                <Label>{t("listing.form.eligibleCompanyType")}</Label>
-                <p className="text-xs text-muted-foreground">{t("listing.form.eligibleCompanyType.hint")}</p>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {(["ALL", "LICENSED_ONLY"] as const).map((opt) => {
-                    const active = eligibleCompanyType === opt;
-                    return (
-                      <button
-                        key={opt}
-                        type="button"
-                        onClick={() => setEligibleCompanyType(opt)}
-                        className={`flex items-start gap-3 rounded-lg border p-3 text-start transition-colors ${
-                          active ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "border-border bg-card hover:border-primary/40"
-                        }`}
-                      >
-                        <span className={`mt-0.5 h-4 w-4 shrink-0 rounded-full border-2 flex items-center justify-center ${active ? "border-primary" : "border-muted-foreground/40"}`}>
-                          {active && <span className="h-2 w-2 rounded-full bg-primary" />}
-                        </span>
-                        <div>
-                          <div className={`text-sm font-medium ${active ? "text-primary" : "text-foreground"}`}>
-                            {t(`listing.eligible.${opt}.label`)}
-                          </div>
-                          <div className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
-                            {t(`listing.eligible.${opt}.desc`)}
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
 
             </CardContent>
           </Card>

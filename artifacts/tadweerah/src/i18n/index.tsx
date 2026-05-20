@@ -581,6 +581,21 @@ const translations: Record<string, Record<Language, string>> = {
     ar: "حدد الخدمات أو الشهادات التي يجب أن يمتلكها المشتري للتقديم.",
     en: "Select services or certifications the buyer must hold to submit an offer.",
   },
+  "listing.form.buyerEligibility": { ar: "أهلية المشترين / ظهور الإعلان", en: "Buyer eligibility / listing visibility" },
+  "listing.form.buyerEligibility.hint": {
+    ar: "حدد من يمكنه رؤية هذا الإعلان والتقديم عليه.",
+    en: "Specify who can view and submit offers on this listing.",
+  },
+  "listing.buyerEligibility.open_to_all.label": { ar: "متاحة لجميع الشركات المؤهلة", en: "Open to all qualified companies" },
+  "listing.buyerEligibility.open_to_all.desc": {
+    ar: "أي شركة مسجلة ومؤهلة يمكنها التقديم — يزيد من المنافسة والسيولة.",
+    en: "Any registered and qualified company can submit an offer — maximises competition and liquidity.",
+  },
+  "listing.buyerEligibility.recycling_only.label": { ar: "مخصصة لشركات إعادة التدوير فقط", en: "Recycling companies only" },
+  "listing.buyerEligibility.recycling_only.desc": {
+    ar: "فقط الشركات الحاملة لترخيص إدارة النفايات المعتمد — يضمن الامتثال التنظيمي.",
+    en: "Only companies with an approved waste management licence — ensures regulatory compliance.",
+  },
   "listing.bid.top": { ar: "أنت أعلى عرض", en: "You're top bidder" },
   "listing.bid.not_top": { ar: "عرضك ليس الأعلى", en: "Not the top offer" },
   "listing.required_services.label": { ar: "خدمات مطلوبة", en: "Required services" },
