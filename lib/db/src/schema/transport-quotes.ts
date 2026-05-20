@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, integer, numeric, pgEnum, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, integer, numeric, pgEnum, timestamp, index } from "drizzle-orm/pg-core";
 import { companiesTable } from "./companies";
 import { transportRequestsTable } from "./transport-requests";
 
@@ -24,7 +24,15 @@ export const transportQuotesTable = pgTable("transport_quotes", {
   status: transportQuoteStatusEnum("status").notNull().default("submitted"),
   created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updated_at: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+},
+(table) => ({
+  idx_transport_quotes_tr_id: index("idx_transport_quotes_tr_id").on(
+    table.transport_request_id,
+  ),
+  idx_transport_quotes_company_id: index("idx_transport_quotes_company_id").on(
+    table.transporter_company_id,
+  ),
+}));
 
 export type TransportQuote = typeof transportQuotesTable.$inferSelect;
 export type NewTransportQuote = typeof transportQuotesTable.$inferInsert;

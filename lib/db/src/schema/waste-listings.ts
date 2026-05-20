@@ -6,6 +6,7 @@ import {
   pgEnum,
   numeric,
   boolean,
+  index,
 } from "drizzle-orm/pg-core";
 import { companiesTable } from "./companies";
 import { unitOptionsTable } from "./unit-options";
@@ -250,6 +251,12 @@ export const wasteListingsTable = pgTable("waste_listings", {
    * NOT used for Google Maps search queries — display only.
    */
   material_location_notes: text("material_location_notes"),
-});
+},
+(table) => ({
+  idx_listings_status_created: index("idx_listings_status_created_at").on(
+    table.status,
+    table.created_at,
+  ),
+}));
 
 export type WasteListing = typeof wasteListingsTable.$inferSelect;

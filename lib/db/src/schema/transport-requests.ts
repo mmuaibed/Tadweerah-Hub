@@ -5,6 +5,7 @@ import {
   uuid,
   pgEnum,
   boolean,
+  index,
 } from "drizzle-orm/pg-core";
 import { companiesTable } from "./companies";
 import { dealsTable } from "./deals";
@@ -142,6 +143,11 @@ export const transportRequestsTable = pgTable("transport_requests", {
   updated_at: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
-});
+},
+(table) => ({
+  idx_transport_requests_deal_id: index("idx_transport_requests_deal_id").on(
+    table.deal_id,
+  ),
+}));
 
 export type TransportRequest = typeof transportRequestsTable.$inferSelect;

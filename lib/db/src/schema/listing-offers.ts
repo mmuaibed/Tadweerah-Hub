@@ -6,6 +6,7 @@ import {
   pgEnum,
   numeric,
   unique,
+  index,
 } from "drizzle-orm/pg-core";
 import { companiesTable } from "./companies";
 import { wasteListingsTable } from "./waste-listings";
@@ -48,6 +49,9 @@ export const listingOffersTable = pgTable(
   (table) => ({
     /** One offer per buyer per listing — use PUT /offers/mine to improve */
     unique_buyer_listing: unique().on(table.waste_listing_id, table.buyer_company_id),
+    idx_listing_offers_listing_id: index("idx_listing_offers_listing_id").on(
+      table.waste_listing_id,
+    ),
   }),
 );
 
