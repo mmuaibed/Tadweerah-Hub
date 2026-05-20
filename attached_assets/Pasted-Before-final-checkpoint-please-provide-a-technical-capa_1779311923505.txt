@@ -1,0 +1,105 @@
+Before final checkpoint, please provide a technical capacity assessment for the current Tadweerah MVP.
+
+Do not implement new features.
+Do not refactor.
+Do not run expensive load tests.
+Do not change code unless you find a critical blocker.
+
+Goal:
+We want to understand the safe operating capacity of the current platform before pilot.
+
+Please assess the current architecture and estimate safe MVP/pilot capacity for:
+
+1) Number of companies
+2) Number of users
+3) Number of listings
+4) Number of offers
+5) Number of deals
+6) Number of transport requests
+7) Number of transporter quotes
+8) Number of reports/CSV exports
+9) Concurrent active users
+10) Main bottlenecks
+
+Please inspect:
+- database tables and indexes
+- pagination support
+- reports queries
+- admin queries
+- marketplace/listing queries
+- offers/deals queries
+- transport request queries
+- transporter quote queries
+- file/image storage assumptions
+- current Replit runtime limits if visible
+- API routes that may return too many rows
+- routes missing limit/offset
+- heavy joins or unindexed filters
+
+Please provide:
+
+A) Current architecture summary
+- frontend
+- backend
+- database
+- auth
+- file storage if any
+
+B) Safe pilot capacity estimate
+Please give conservative numbers:
+- companies
+- users
+- listings
+- offers
+- deals
+- transport requests
+- transporter quotes
+- concurrent users
+
+C) Main bottlenecks
+Examples:
+- database indexing
+- large reports
+- admin tables
+- unpaginated routes
+- local file storage
+- Replit runtime resources
+- CSV export size
+- image uploads
+- lack of background jobs
+
+D) Current risks before pilot
+Classify as:
+- must fix before pilot
+- monitor during pilot
+- defer until scale
+
+E) Low-cost improvements if needed
+Only recommend, do not implement yet:
+- indexes
+- pagination
+- query limits
+- object storage
+- rate limiting
+- logging/monitoring
+
+F) Recommended pilot limits
+Give practical recommended limits such as:
+- max invited companies
+- max users
+- max listings
+- max deals
+- max CSV export rows
+- max concurrent users
+- max image/file size if relevant
+
+G) Whether the current MVP is safe for:
+- internal demo
+- strategic partner demo
+- limited pilot
+- production launch
+
+Do not run broad load testing.
+If you can do a very small local query/performance check safely, report it, but do not consume unnecessary resources.
+
+Final response should be assessment only.
