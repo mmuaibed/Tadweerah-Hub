@@ -172,22 +172,22 @@ function NextActionBanner({ stats, t, Arrow }: NextBannerProps) {
 
   if (stats.offers_received_count > 0) {
     return (
-      <div className="mb-4 rounded-xl border border-secondary/25 bg-secondary/5 p-3.5">
-        <div className="flex items-center gap-2.5">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary/15 text-secondary">
-            <Bell className="h-3.5 w-3.5" />
-          </span>
-          <p className="flex-1 text-sm font-semibold text-foreground">
-            {t("dashboard.next.offers_received")}
-          </p>
-          <Link to="/listings/mine">
-            <button className="shrink-0 inline-flex items-center gap-1 rounded-lg border border-secondary/40 bg-card px-3 py-1.5 text-xs font-medium text-secondary hover:bg-secondary/10 transition-colors">
+      <Link to="/listings/mine" className="block mb-4">
+        <div className="rounded-xl border border-secondary/25 bg-secondary/5 p-3.5 cursor-pointer hover:bg-secondary/10 transition-colors">
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary/15 text-secondary">
+              <Bell className="h-3.5 w-3.5" />
+            </span>
+            <p className="flex-1 text-sm font-semibold text-foreground">
+              {t("dashboard.next.offers_received")}
+            </p>
+            <span className="shrink-0 inline-flex items-center gap-1 rounded-lg border border-secondary/40 bg-card px-3 py-1.5 text-xs font-medium text-secondary">
               {t("dashboard.next.offers_received.cta")}
               <Arrow className="h-3 w-3" />
-            </button>
-          </Link>
+            </span>
+          </div>
         </div>
-      </div>
+      </Link>
     );
   }
 
