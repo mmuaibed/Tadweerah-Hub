@@ -11,6 +11,11 @@ import {
   FileText,
   Truck,
   MapPin,
+  BarChart3,
+  Download,
+  Banknote,
+  TrendingUp,
+  Clock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +23,36 @@ import { Badge } from "@/components/ui/badge";
 import { useT } from "@/i18n";
 
 /* ─── Types ──────────────────────────────────────────────────────────────── */
+
+interface AdminReportSummary {
+  total: number;
+  completed: number;
+  active: number;
+  estimated_amount_sum: string;
+  vat_amount_sum: string;
+  total_amount_sum: string;
+}
+
+interface AdminReportRow {
+  deal_id: string;
+  created_at: string;
+  status: string;
+  estimated_amount: string;
+  vat_amount: string | null;
+  total_amount: string | null;
+  seller_name: string | null;
+  seller_city: string | null;
+  buyer_name: string | null;
+  buyer_city: string | null;
+  material: string | null;
+  subcategory_ar: string | null;
+  subcategory_en: string | null;
+  quantity: string | null;
+  unit: string | null;
+  city: string | null;
+  transport_decision: string | null;
+  tr_status: string | null;
+}
 
 interface AdminDeal {
   deal_id: string;
@@ -87,7 +122,7 @@ export function AdminPage() {
   const dir = lang === "ar" ? "rtl" : "ltr";
 
   const [adminKey, setAdminKey] = useState(() => sessionStorage.getItem("tdw_admin_key") ?? "");
-  const [tab, setTab] = useState<"deals" | "companies" | "transport">("companies");
+  const [tab, setTab] = useState<"deals" | "companies" | "transport" | "reports">("companies");
 
   /* Deals state */
   const [deals, setDeals] = useState<AdminDeal[] | null>(null);
@@ -107,6 +142,18 @@ export function AdminPage() {
   const [transportReqs, setTransportReqs] = useState<PendingTransportRequest[] | null>(null);
   const [transportLoading, setTransportLoading] = useState(false);
   const [transportError, setTransportError] = useState<string | null>(null);
+
+  /* Reports state */
+  const [reportRows, setReportRows] = useState<AdminReportRow[] | null>(null);
+  const [reportSummary, setReportSummary] = useState<AdminReportSummary | null>(null);
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reportError, setReportError] = useState<string | null>(null);
+  const [reportDateFrom, setReportDateFrom] = useState("");
+  const [reportDateTo, setReportDateTo] = useState("");
+  const [reportStatus, setReportStatus] = useState("");
+  const [reportCity, setReportCity] = useState("");
+  const [reportCompanyId, setReportCompanyId] = useState("");
+  const [reportExporting, setReportExporting] = useState(false);
 
   // Email allowlist guard — empty allowlist blocks everyone (no accidental open access)
   const allowlistRaw = (import.meta.env.VITE_TADWEERAH_ADMIN_EMAILS as string | undefined) ?? "";
@@ -190,6 +237,53 @@ export function AdminPage() {
       setCompaniesError(e instanceof Error ? e.message : t("admin.error.generic"));
     } finally {
       setCompaniesLoading(false);
+    }
+  }
+
+  function buildReportParams(format?: string): string {
+    const p = new URLSearchParams();
+    if (reportDateFrom) p.set("date_from", reportDateFrom);
+    if (reportDateTo) p.set("date_to", reportDateTo);
+    if (reportStatus) p.set("status", reportStatus);
+    if (reportCity) p.set("city", reportCity);
+    if (reportCompanyId.trim()) p.set("company_id", reportCompanyId.trim());
+    if (format) p.set("format", format);
+    return p.toString();
+  }
+
+  async function fetchReport() {
+    setReportLoading(true);
+    setReportError(null);
+    try {
+      const res = await callAdmin(`/reports/deals?${buildReportParams()}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json() as { summary: AdminReportSummary; rows: AdminReportRow[] };
+      sessionStorage.setItem("tdw_admin_key", adminKey.trim());
+      setReportSummary(data.summary);
+      setReportRows(data.rows);
+    } catch (e) {
+      setReportError(e instanceof Error ? e.message : t("admin.error.generic"));
+    } finally {
+      setReportLoading(false);
+    }
+  }
+
+  async function exportReportCsv() {
+    setReportExporting(true);
+    try {
+      const res = await callAdmin(`/reports/deals?${buildReportParams("csv")}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `admin-deals-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      /* silent */
+    } finally {
+      setReportExporting(false);
     }
   }
 
@@ -289,7 +383,7 @@ export function AdminPage() {
 
         {/* Tabs */}
         <div className="flex gap-1 border-b border-border">
-          {(["companies", "deals", "transport"] as const).map((t2) => (
+          {(["companies", "deals", "transport", "reports"] as const).map((t2) => (
             <button
               key={t2}
               onClick={() => setTab(t2)}
@@ -303,7 +397,9 @@ export function AdminPage() {
                 ? <><Building2 className="h-4 w-4" />{t("admin.tab.companies")}</>
                 : t2 === "deals"
                   ? <><FileText className="h-4 w-4" />{t("admin.tab.deals")}</>
-                  : <><Truck className="h-4 w-4" />{t("admin.tab.transport")}</>
+                  : t2 === "transport"
+                    ? <><Truck className="h-4 w-4" />{t("admin.tab.transport")}</>
+                    : <><BarChart3 className="h-4 w-4" />{t("admin.tab.reports")}</>
               }
             </button>
           ))}
@@ -636,7 +732,165 @@ export function AdminPage() {
           </div>
         )}
 
+        {/* ── Reports Tab ───────────────────────────────────────────────────── */}
+        {tab === "reports" && (
+          <div className="space-y-4">
+            {/* Filters */}
+            <div className="rounded-xl border border-border bg-white p-4 flex flex-wrap gap-3 items-end">
+              <div>
+                <label className="text-xs font-medium text-foreground mb-1 block">{t("reports.filter.date_from")}</label>
+                <Input type="date" value={reportDateFrom} onChange={(e) => setReportDateFrom(e.target.value)} className="h-9 w-36 text-sm" dir="ltr" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-foreground mb-1 block">{t("reports.filter.date_to")}</label>
+                <Input type="date" value={reportDateTo} onChange={(e) => setReportDateTo(e.target.value)} className="h-9 w-36 text-sm" dir="ltr" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-foreground mb-1 block">{t("reports.filter.status")}</label>
+                <select
+                  value={reportStatus}
+                  onChange={(e) => setReportStatus(e.target.value)}
+                  className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                >
+                  <option value="">{t("reports.filter.all_statuses")}</option>
+                  {["active","payment_submitted","payment_confirmed","dispatched","receipt_pending","completed","expired","cancelled"].map((s) => (
+                    <option key={s} value={s}>{t(`deal.status.${s}`)}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-foreground mb-1 block">{t("reports.filter.city")}</label>
+                <Input type="text" value={reportCity} onChange={(e) => setReportCity(e.target.value)} className="h-9 w-28 text-sm" placeholder="…" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-foreground mb-1 block">{t("admin.reports.filter.company_id")}</label>
+                <Input type="text" value={reportCompanyId} onChange={(e) => setReportCompanyId(e.target.value)} className="h-9 w-40 text-sm font-mono" placeholder="uuid…" dir="ltr" />
+              </div>
+              <div className="flex gap-2 items-end">
+                <Button onClick={() => void fetchReport()} disabled={reportLoading}>
+                  {reportLoading
+                    ? <><Loader2 className="h-4 w-4 me-2 animate-spin" />{t("admin.loading")}</>
+                    : <><RefreshCw className="h-4 w-4 me-2" />{t("admin.reports.fetch")}</>
+                  }
+                </Button>
+                {reportRows !== null && (
+                  <Button variant="outline" onClick={() => void exportReportCsv()} disabled={reportExporting}>
+                    {reportExporting
+                      ? <><Loader2 className="h-4 w-4 me-2 animate-spin" />{t("reports.action.exporting")}</>
+                      : <><Download className="h-4 w-4 me-2" />{t("admin.reports.export_csv")}</>
+                    }
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {reportError && (
+              <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                <AlertCircle className="h-4 w-4 shrink-0" />{reportError}
+              </div>
+            )}
+
+            {/* Summary cards */}
+            {reportSummary && (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+                {[
+                  { icon: FileText,    label: t("reports.summary.total"),              value: String(reportSummary.total),              color: "bg-blue-100 text-blue-700" },
+                  { icon: CheckCircle2,label: t("reports.summary.completed"),           value: String(reportSummary.completed),           color: "bg-green-100 text-green-700" },
+                  { icon: Clock,       label: t("reports.summary.active"),              value: String(reportSummary.active),              color: "bg-amber-100 text-amber-700" },
+                  { icon: TrendingUp,  label: t("reports.summary.amount_before_vat"),   value: fmtSAR(reportSummary.estimated_amount_sum, lang), color: "bg-primary/10 text-primary" },
+                  { icon: Banknote,    label: t("reports.summary.vat_amount"),          value: fmtSAR(reportSummary.vat_amount_sum, lang),  color: "bg-orange-100 text-orange-700" },
+                  { icon: BarChart3,   label: t("reports.summary.total_with_vat"),      value: fmtSAR(reportSummary.total_amount_sum, lang), color: "bg-purple-100 text-purple-700" },
+                ].map(({ icon: Icon, label, value, color }) => (
+                  <div key={label} className="rounded-xl border border-border bg-white p-3 flex items-center gap-2.5">
+                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${color}`}>
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-base font-bold text-foreground leading-none truncate">{value}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">{label}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Table */}
+            {reportRows !== null && (
+              <div className="rounded-xl border border-border bg-white overflow-hidden">
+                <div className="px-4 py-3 border-b border-border">
+                  <p className="text-sm font-semibold text-foreground">
+                    {reportRows.length} {lang === "ar" ? "صفقة" : "deals"}
+                  </p>
+                </div>
+                {reportRows.length === 0 ? (
+                  <div className="px-4 py-8 text-center text-sm text-muted-foreground">{t("admin.reports.empty")}</div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="border-b border-border bg-muted/30">
+                          {[
+                            t("reports.col.date"), t("reports.col.deal_id"),
+                            t("reports.col.seller"), t("reports.col.buyer"),
+                            t("reports.col.material"), t("reports.col.quantity"),
+                            t("reports.col.city"), t("reports.col.status"),
+                            t("reports.col.amount"), t("reports.col.vat"),
+                            t("reports.col.total"), t("reports.col.transport"),
+                          ].map((h) => (
+                            <th key={h} className="px-3 py-2.5 text-start font-semibold text-muted-foreground whitespace-nowrap">{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {reportRows.map((row) => {
+                          const statusStyle: Record<string,string> = {
+                            completed: "bg-green-100 text-green-800",
+                            dispatched: "bg-blue-100 text-blue-800",
+                            payment_confirmed: "bg-teal-100 text-teal-800",
+                            payment_submitted: "bg-sky-100 text-sky-800",
+                            active: "bg-amber-100 text-amber-800",
+                            expired: "bg-gray-100 text-gray-500",
+                            cancelled: "bg-red-100 text-red-700",
+                          };
+                          const matLabel = (lang === "ar" ? row.subcategory_ar : row.subcategory_en) ?? row.subcategory_ar ?? row.material ?? "—";
+                          const trLabel = row.tr_status ?? (row.transport_decision === "not_required" ? t("reports.transport.not_required") : "—");
+                          return (
+                            <tr key={row.deal_id} className="hover:bg-muted/20 transition-colors">
+                              <td className="px-3 py-2.5 whitespace-nowrap text-muted-foreground">{formatDate(row.created_at)}</td>
+                              <td className="px-3 py-2.5 whitespace-nowrap font-mono text-muted-foreground">{row.deal_id.slice(0,8)}…</td>
+                              <td className="px-3 py-2.5 whitespace-nowrap">{row.seller_name ?? "—"}<br/><span className="text-muted-foreground">{row.seller_city ?? ""}</span></td>
+                              <td className="px-3 py-2.5 whitespace-nowrap">{row.buyer_name ?? "—"}<br/><span className="text-muted-foreground">{row.buyer_city ?? ""}</span></td>
+                              <td className="px-3 py-2.5 whitespace-nowrap">{matLabel}</td>
+                              <td className="px-3 py-2.5 whitespace-nowrap font-mono">{row.quantity && row.unit ? `${row.quantity} ${row.unit}` : "—"}</td>
+                              <td className="px-3 py-2.5 whitespace-nowrap text-muted-foreground">{row.city ?? "—"}</td>
+                              <td className="px-3 py-2.5 whitespace-nowrap">
+                                <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${statusStyle[row.status] ?? "bg-gray-100 text-gray-600"}`}>
+                                  {t(`deal.status.${row.status}`) || row.status}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2.5 whitespace-nowrap font-mono">{fmtSAR(row.estimated_amount, lang)}</td>
+                              <td className="px-3 py-2.5 whitespace-nowrap font-mono text-muted-foreground">{fmtSAR(row.vat_amount, lang)}</td>
+                              <td className="px-3 py-2.5 whitespace-nowrap font-mono font-semibold">{fmtSAR(row.total_amount, lang)}</td>
+                              <td className="px-3 py-2.5 whitespace-nowrap text-muted-foreground">{trLabel}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
       </div>
     </div>
   );
+}
+
+function fmtSAR(val: string | null | undefined, lang: string): string {
+  const n = parseFloat(val ?? "0");
+  if (isNaN(n)) return "—";
+  return n.toLocaleString(lang === "ar" ? "ar-SA" : "en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }

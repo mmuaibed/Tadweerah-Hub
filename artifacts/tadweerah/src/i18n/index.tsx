@@ -1134,6 +1134,75 @@ const translations: Record<string, Record<Language, string>> = {
     en: "Figures recorded via Tadweerah platform",
   },
 
+  // ── My Reports page (company-facing operational deal report) ─────────────
+  "reports.deals.title":   { ar: "تقاريري", en: "My Reports" },
+  "reports.deals.subtitle": {
+    ar: "راجع صفقاتك وملخصك المالي التشغيلي",
+    en: "Review your deals and operational financial summary",
+  },
+
+  "reports.filter.date_from":  { ar: "من تاريخ",   en: "Date From" },
+  "reports.filter.date_to":    { ar: "إلى تاريخ",  en: "Date To" },
+  "reports.filter.status":     { ar: "الحالة",      en: "Status" },
+  "reports.filter.city":       { ar: "المدينة",     en: "City" },
+  "reports.filter.role":       { ar: "دوري",        en: "My Role" },
+  "reports.filter.role.all":   { ar: "الكل",        en: "All" },
+  "reports.filter.role.seller":{ ar: "مبيعاتي",    en: "My Sales" },
+  "reports.filter.role.buyer": { ar: "مشترياتي",   en: "My Purchases" },
+  "reports.filter.company":    { ar: "الشركة (ID)", en: "Company (ID)" },
+  "reports.filter.all_statuses": { ar: "جميع الحالات", en: "All Statuses" },
+
+  "reports.action.load":       { ar: "تحميل التقرير", en: "Load Report" },
+  "reports.action.export_csv": { ar: "تصدير CSV",     en: "Export CSV" },
+  "reports.action.open_deal":  { ar: "فتح",           en: "Open" },
+  "reports.action.exporting":  { ar: "جاري التصدير…", en: "Exporting…" },
+  "reports.loading":           { ar: "جاري تحميل التقرير…", en: "Loading report…" },
+  "reports.empty":             { ar: "لا توجد صفقات للفترة المحددة", en: "No deals found for the selected period" },
+
+  "reports.summary.total":           { ar: "إجمالي الصفقات",             en: "Total Deals" },
+  "reports.summary.completed":       { ar: "مكتملة",                    en: "Completed" },
+  "reports.summary.active":          { ar: "نشطة / قيد التنفيذ",        en: "Active / In Progress" },
+  "reports.summary.amount_before_vat":{ ar: "المبلغ قبل الضريبة (ريال)", en: "Amount Before VAT (SAR)" },
+  "reports.summary.vat_amount":      { ar: "ضريبة القيمة المضافة",       en: "VAT Amount" },
+  "reports.summary.total_with_vat":  { ar: "الإجمالي شامل الضريبة",      en: "Total incl. VAT" },
+
+  "reports.col.date":        { ar: "التاريخ",           en: "Date" },
+  "reports.col.deal_id":     { ar: "رقم الصفقة",        en: "Deal ID" },
+  "reports.col.seller":      { ar: "البائع / المنتج",   en: "Seller / Producer" },
+  "reports.col.buyer":       { ar: "المشتري",           en: "Buyer" },
+  "reports.col.role":        { ar: "دوري",              en: "My Role" },
+  "reports.col.counterparty":{ ar: "الطرف الآخر",       en: "Counterparty" },
+  "reports.col.material":    { ar: "المادة",             en: "Material" },
+  "reports.col.quantity":    { ar: "الكمية / الوحدة",   en: "Qty / Unit" },
+  "reports.col.city":        { ar: "المدينة",            en: "City" },
+  "reports.col.status":      { ar: "الحالة",             en: "Status" },
+  "reports.col.amount":      { ar: "المبلغ (قبل الضريبة)", en: "Amount (Before VAT)" },
+  "reports.col.vat":         { ar: "الضريبة",            en: "VAT" },
+  "reports.col.total":       { ar: "الإجمالي",           en: "Total" },
+  "reports.col.transport":   { ar: "النقل",              en: "Transport" },
+  "reports.col.action":      { ar: "الإجراء",            en: "Action" },
+
+  "reports.role.seller": { ar: "بائع", en: "Seller" },
+  "reports.role.buyer":  { ar: "مشترٍ", en: "Buyer" },
+
+  "reports.transport.not_required": { ar: "غير مطلوب", en: "Not Required" },
+  "reports.transport.pending":      { ar: "قيد الانتظار", en: "Pending" },
+  "reports.transport.in_transit":   { ar: "في الطريق",   en: "In Transit" },
+  "reports.transport.completed":    { ar: "مكتمل",       en: "Completed" },
+  "reports.transport.cancelled":    { ar: "ملغي",        en: "Cancelled" },
+
+  // Admin reports tab
+  "admin.tab.reports":           { ar: "التقارير",    en: "Reports" },
+  "admin.reports.filter.company_id": { ar: "معرّف الشركة (اختياري)", en: "Company ID (optional)" },
+  "admin.reports.fetch":         { ar: "تحميل التقرير", en: "Load Report" },
+  "admin.reports.export_csv":    { ar: "تصدير CSV",    en: "Export CSV" },
+  "admin.reports.empty":         { ar: "لا توجد صفقات بهذه المعايير", en: "No deals match these criteria" },
+
+  "deal.status.payment_submitted": { ar: "بانتظار تأكيد الدفع", en: "Payment Submitted" },
+  "deal.status.receipt_pending":   { ar: "بانتظار تأكيد الاستلام", en: "Awaiting Receipt Confirmation" },
+  "deal.status.expired":           { ar: "منتهية الصلاحية", en: "Expired" },
+  "deal.status.cancelled":         { ar: "ملغاة", en: "Cancelled" },
+
   // Dashboard: empty-state onboarding CTA
   "dashboard.primary.producer": { ar: "للمنتجين", en: "For producers" },
   "dashboard.primary.buyer":    { ar: "للمشترين", en: "For buyers" },

@@ -1,0 +1,142 @@
+Approved to implement the MVP reporting scope, but only the deal-centric reports.
+
+Do not implement contracts/shipments reports now.
+Do not implement standalone transport report now.
+Do not implement charts.
+Do not implement PDF.
+Do not implement advanced analytics.
+Do not change DB schema.
+Do not change VAT calculation.
+Do not change deal lifecycle.
+Do not change transport workflow.
+Do not change offer logic.
+Do not change admin auth.
+Reports must be read-only only.
+
+Approved scope:
+
+1) Admin Reports
+Add a new “Reports / التقارير” tab in the existing /admin dashboard.
+
+Backend:
+Create a dedicated read-only route:
+GET /api/admin/reports/deals
+
+This route must:
+- require the existing ADMIN_API_KEY / X-Admin-Key protection
+- return deal-centric report rows
+- support filters:
+  - date_from
+  - date_to
+  - status
+  - city
+  - company if safe
+- include financial fields:
+  - amount before VAT
+  - VAT amount
+  - total including VAT
+- include:
+  - deal/reference number
+  - date
+  - seller/producer company
+  - buyer company
+  - material/subcategory
+  - quantity/unit
+  - city
+  - status
+  - transport responsibility/status if available
+  - link or ID to open the deal
+
+Frontend:
+Admin Reports tab should show:
+- filter bar
+- summary cards:
+  - total deals count
+  - completed deals count
+  - pending/active deals count
+  - total amount before VAT
+  - total VAT
+  - total including VAT
+- report table
+- CSV export button
+
+2) Company Reports
+Add a company-facing reports page:
+Route: /reports
+Arabic label: “تقاريري”
+English label: “My Reports”
+
+Backend:
+Create a dedicated read-only route:
+GET /api/reports/deals
+
+This route must:
+- require authentication and company context using existing requireCompany()
+- only return deals where the authenticated company is producer/seller or buyer
+- support role filter:
+  - all
+  - seller
+  - buyer
+- support filters:
+  - date_from
+  - date_to
+  - status
+  - city
+- include the same financial fields:
+  - amount before VAT
+  - VAT amount
+  - total including VAT
+
+Frontend:
+Company Reports page should show:
+- role filter: الكل / مبيعاتي / مشترياتي
+- date/status/city filters
+- summary cards:
+  - sales total
+  - purchases total
+  - VAT total
+  - total including VAT
+  - completed operations count
+  - pending operations count
+- report table
+- CSV export button
+
+3) CSV export
+Add CSV export only if simple and safe:
+- use ?format=csv on the same report routes
+- add UTF-8 BOM for Arabic Excel compatibility if needed
+- protect CSV export with the same auth/admin guards
+- mitigate CSV injection by safely escaping cells
+
+4) Deferred items
+Explicitly defer:
+- contracts/shipments report
+- standalone transport report
+- advanced receivable/payable accounting
+- charts
+- PDF
+- dashboard analytics
+
+5) Safety and privacy requirements
+- Admin report must never be accessible without ADMIN_API_KEY.
+- Company report must never return other companies’ unrelated deals.
+- No cross-company data leakage.
+- No schema changes.
+- Read-only routes only.
+- If any part requires changing existing business logic, stop and report before implementing.
+
+After implementation, run:
+- pnpm --filter @workspace/api-server run typecheck
+- pnpm run typecheck
+- curl -s http://localhost:80/api/healthz
+
+Final report must include:
+1) changed files
+2) new routes
+3) frontend pages/tabs added
+4) filters implemented
+5) CSV behavior
+6) security confirmation
+7) typecheck result
+8) health check result
+9) deferred items
