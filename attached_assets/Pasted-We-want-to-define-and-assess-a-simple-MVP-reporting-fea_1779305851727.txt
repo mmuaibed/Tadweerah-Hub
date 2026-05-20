@@ -1,0 +1,174 @@
+We want to define and assess a simple MVP reporting feature before implementation.
+
+Do not implement yet. Assessment only.
+
+Business goal:
+Reports are a core value of Tadweerah. We need simple operational and financial reports for:
+1) Tadweerah Admin/Ops
+2) Each company as seller/buyer
+
+The reports should help users review completed operations, active operations, transport requests, contracts/shipments, and financial amounts owed/received.
+
+Do not build advanced analytics.
+Do not build charts.
+Do not build PDF.
+Do not change existing business logic.
+
+==================================================
+A) Admin Reports
+==================================================
+
+Admin should see platform-wide reports:
+
+1) All operations report
+2) Completed deals report
+3) Transport requests report
+4) Simple financial summary report
+
+Admin filters:
+- date from / date to
+- operation type:
+  - all
+  - deals
+  - transport requests
+  - contracts/shipments if safe
+- status
+- company
+- city
+- material/subcategory
+
+Admin summary:
+- total operations count
+- completed deals count
+- active / pending deals count
+- total amount before VAT
+- VAT amount
+- total including VAT
+- transport requests count
+- completed transport requests count if available
+
+Admin table columns:
+- date
+- reference number
+- operation type
+- seller/producer
+- buyer
+- material/subcategory
+- quantity/unit
+- city
+- status
+- amount before VAT
+- VAT amount
+- total including VAT
+- transport responsibility/status
+- link to open deal/contract/transport request
+
+==================================================
+B) Company Reports
+==================================================
+
+Each company should see only its own operations.
+
+Required company reports:
+
+1) My sales report
+For operations where the company is the seller/producer.
+
+2) My purchases report
+For operations where the company is the buyer.
+
+3) My completed operations report
+Completed sales and purchases for a selected period.
+
+4) My contracts/shipments report, if safe
+For contract-based shipments and recurring operations.
+
+5) Simple financial report
+Amounts receivable and payable.
+
+Company filters:
+- date from / date to
+- role:
+  - all
+  - seller
+  - buyer
+- operation type
+- status
+- material/subcategory
+- city
+- counterparty
+
+Company summary:
+- sold amount before VAT
+- purchased amount before VAT
+- VAT amount
+- total including VAT
+- receivable amount
+- payable amount
+- completed operations count
+- pending operations count
+- transport requests count if available
+
+Company table columns:
+- date
+- reference number
+- operation type
+- role: seller/buyer
+- counterparty
+- material/subcategory
+- quantity/unit
+- city
+- status
+- amount before VAT
+- VAT amount
+- total including VAT
+- transport responsibility/status
+- link to open deal/contract
+
+==================================================
+Export
+==================================================
+
+- CSV export only if easy and safe.
+- No PDF now.
+- No charts now.
+- No advanced analytics now.
+
+==================================================
+Constraints
+==================================================
+
+- Do not change DB schema unless absolutely necessary.
+- Prefer using existing deals, listings, offers, transport_requests, contracts, shipments data.
+- Do not change VAT calculation.
+- Do not change deal lifecycle.
+- Do not change transport workflow.
+- Do not change offer logic.
+- Do not change admin auth.
+- Reports must be read-only.
+- Admin reports must require existing ADMIN_API_KEY protection.
+- Company reports must only show data for the authenticated company.
+- No cross-company data leakage.
+- Do not implement until I approve the exact MVP scope.
+
+==================================================
+Assessment required
+==================================================
+
+Please assess and report:
+
+1) Which data already exists to build these reports?
+2) Which tables are needed?
+3) Which backend routes would be needed?
+4) Can Admin Reports be built with existing /api/admin data, or do we need a new route?
+5) Can Company Reports be built safely using current company context?
+6) Which frontend pages/tabs should be added?
+7) Is CSV export simple and safe?
+8) Risk level.
+9) Estimated implementation complexity.
+10) Recommended MVP scope now vs defer.
+11) Any privacy/security risks.
+12) Whether this can be built without DB schema changes.
+13) Whether contracts/shipments should be included now or deferred.
+
+Final response should be assessment only, with a recommended safe MVP implementation plan.
