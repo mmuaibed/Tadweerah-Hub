@@ -1,0 +1,144 @@
+We need a focused cleanup patch before continuing the current deal test.
+
+Do not implement new features.
+Do not touch VAT calculation.
+Do not touch offer submission, offer comparison, atomic accept, or deal lifecycle states.
+Do not touch admin, MWAN, multi-material, pricing_model, or offer_subtotal_amount logic.
+Keep this patch focused on display clarity and transport decision wording.
+
+Scope: Deal display + pending actions + transport decision cleanup.
+
+Issue 1 — Material subcategory display
+Current problem:
+The listing was created with:
+- main category: Metals / معادن
+- subcategory: Iron & Steel / حديد وصلب
+
+But deal/report views show:
+- category: معادن
+- material: معادن
+
+Required behavior:
+- Always display subcategory/material name when available.
+- Use main category only as fallback.
+- Do not duplicate main category as material.
+- Apply to:
+  1) deal panel material info
+  2) printed deal report
+  3) pending action cards if material name appears
+  4) listing/deal summary cards if reused safely
+
+Expected Arabic:
+- التصنيف: معادن
+- المادة: حديد وصلب
+
+Issue 2 — Pending actions card title
+Current problem:
+Pending action cards show only “معادن”, which is not enough to identify the deal.
+
+Required behavior:
+Use clearer deal identity:
+Main title:
+- subcategory/material + quantity + unit
+Example:
+“حديد وصلب — 100 طن”
+
+Secondary line:
+- main category + city + deal reference
+Example:
+“معادن • الجبيل • TDW-2026-7E9EA0”
+
+Rules:
+- If subcategory exists, use it.
+- If missing, fallback to main category.
+- Keep deal reference visible, but not as the main title.
+
+Issue 3 — Deal total display
+Current problem:
+Some compact deal info panels show “إجمالي الصفقة” as the pre-VAT amount, e.g. 10,000 SAR, while the real total including VAT is 11,500 SAR.
+
+Required behavior:
+- Any compact label called “إجمالي الصفقة” or “Deal Total” must show total including VAT.
+- If showing the pre-VAT amount, label it explicitly as:
+  “المبلغ قبل الضريبة”
+- In compact panels, prefer:
+  “إجمالي الصفقة شامل الضريبة: 11,500 ر.س”
+- Keep detailed financial breakdown unchanged:
+  subtotal before VAT / VAT 15% / total including VAT.
+
+Apply to:
+- deal info side panel
+- seller payment confirmation view
+- buyer payment waiting view if same component is used
+- printed report if compact total appears
+
+Issue 4 — Transport decision wording and buttons
+Current problem:
+The buyer sees a pending action for transport method, but the options are confusing. “No transport needed” is misleading because materials usually require transport. The correct meaning is “I do not need Tadweerah to arrange transport.”
+
+Required behavior:
+Use transport_responsibility to show a clear decision to the responsible party only.
+
+If transport_responsibility = buyer:
+Show to buyer:
+Title:
+“هل تريد أن تساعدك تدويرة في ترتيب نقل البضاعة؟”
+
+Two clear buttons/cards:
+1) “نعم، رتّبوا لي النقل عبر تدويرة”
+Helper:
+“سنستلم طلبك ونتواصل معك لترتيب النقل.”
+
+2) “لا، سأرتب النقل بنفسي”
+Helper:
+“سأقوم بتنسيق النقل مباشرة مع الطرف الآخر خارج المنصة.”
+
+If transport_responsibility = seller:
+Show the same decision to seller, not buyer.
+
+Non-responsible party should see information only:
+- If buyer responsible, seller sees:
+“النقل مسؤولية المشتري. بانتظار المشتري لترتيب النقل أو الحضور للاستلام.”
+- If seller responsible, buyer sees:
+“النقل مسؤولية البائع. بانتظار البائع لترتيب النقل وإرسال البضاعة.”
+
+Avoid the phrase:
+“لا أحتاج نقل”
+unless there is a true no-transport case.
+
+Issue 5 — Seller post-payment CTA wording
+Current problem:
+After payment is confirmed, seller may see “تأكيد إرسال البضاعة” directly even when transport responsibility is buyer.
+
+Required behavior:
+If transport_responsibility = seller:
+- CTA: “تأكيد إرسال البضاعة”
+- Helper: “رتّب النقل ثم أكد إرسال البضاعة.”
+
+If transport_responsibility = buyer:
+- Prefer CTA wording:
+“تأكيد تسليم البضاعة للمشتري / الناقل”
+- Helper:
+“النقل مسؤولية المشتري. لا تؤكد التسليم إلا بعد حضور المشتري أو الناقل لاستلام المواد.”
+
+Important:
+Prefer UI/wording changes only using existing transport_responsibility and transport_decision fields.
+Do not change deal lifecycle states unless absolutely required.
+Do not build transporter marketplace.
+Do not add Google Maps or national address in this patch.
+
+After implementation, run:
+- pnpm --filter @workspace/api-server run typecheck
+- pnpm run typecheck
+- curl -s http://localhost:80/api/healthz
+
+Then report:
+1) changed files
+2) whether any backend/schema changes were needed
+3) confirmation VAT calculation was not changed
+4) confirmation deal lifecycle was not changed
+5) screenshots or description of:
+   - pending actions card title
+   - deal info panel total
+   - buyer transport decision screen
+   - seller post-payment screen

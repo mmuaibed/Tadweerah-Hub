@@ -1275,6 +1275,11 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
   const { t, lang } = useT();
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
+  const { data: allCategories = [] } = useGetMaterialCategories();
+  const subcategoryLabel = listingSubcategoryId
+    ? (allCategories as MaterialCategory[]).find((c) => c.id === listingSubcategoryId)?.[lang === "ar" ? "name_ar" : "name_en"] ?? null
+    : null;
+  const displayMaterial = subcategoryLabel ?? listingMaterial;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [actualQty, setActualQty] = useState("");
@@ -1768,7 +1773,7 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
           <div className="flex items-center gap-2 text-xs text-primary/70 flex-wrap">
             {role === "producer" ? <UserCog className="h-3 w-3 shrink-0" /> : <UserCheck className="h-3 w-3 shrink-0" />}
             <span className="font-medium">{t(`deal.role.${role}`)}</span>
-            {listingMaterial && <><span className="opacity-40">·</span><span>{listingMaterial}</span></>}
+            {displayMaterial && <><span className="opacity-40">·</span><span>{displayMaterial}</span></>}
             {deal.counterparty?.name && <><span className="opacity-40">·</span><span>{deal.counterparty.name}</span></>}
             {deal.counterparty?.is_verified && (
               <span className="inline-flex items-center gap-0.5 rounded-full bg-green-100 text-green-800 text-[9px] font-bold px-1.5 py-0.5">
@@ -2082,9 +2087,16 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
                       <p className="text-xs text-muted-foreground">{t("deal.field.actual_quantity.dispatch_hint")}</p>
                     </div>
                   )}
+                  {deal.transport_responsibility === "buyer" && (
+                    <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 leading-relaxed">
+                      {t("deal.dispatch.buyer_transport_hint")}
+                    </p>
+                  )}
                   <Button className="w-full h-11 text-base font-bold" onClick={requestConfirmDispatch} disabled={loading}>
                     {loading && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
-                    {t("deal.action.confirm_dispatch")}
+                    {deal.transport_responsibility === "buyer"
+                      ? t("deal.action.confirm_handover")
+                      : t("deal.action.confirm_dispatch")}
                   </Button>
                 </div>
               )}
@@ -2131,8 +2143,25 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
             </div>
           )}
 
-          {/* ── SMART-ASSIST TRANSPORT STEP — buyer only ── */}
-          {role === "buyer" && deal.status !== "completed" && (
+          {/* ── SMART-ASSIST TRANSPORT STEP — shown to the responsible party ── */}
+          {deal.status !== "completed" && (() => {
+            const isTransportResponsible = deal.transport_responsibility === "seller"
+              ? role === "producer"
+              : role === "buyer";
+            if (!isTransportResponsible) {
+              if (deal.status !== "active" && deal.status !== "payment_submitted") {
+                return (
+                  <div className="mt-4 rounded-xl border border-border bg-muted/10 p-3 flex items-start gap-2.5">
+                    <Truck className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0 mt-0.5" />
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      {t("deal.transport.not_your_responsibility")}
+                    </p>
+                  </div>
+                );
+              }
+              return null;
+            }
+            return (
             <div className={`mt-4 rounded-xl border-2 overflow-hidden ${
               deal.status === "active"
                 ? "border-border bg-muted/10 opacity-60"
@@ -2174,7 +2203,8 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
                 })}
               </div>
             </div>
-          )}
+          );
+          })()}
         </div>
 
         {/* ── RIGHT: transport + deal info ── */}
@@ -2221,10 +2251,16 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
               {lang === "ar" ? "معلومات الصفقة" : "Deal Info"}
             </p>
             <div className="space-y-2">
-              {listingMaterial && (
+              {(listingCategory ?? listingMaterial) && (
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs text-muted-foreground">{lang === "ar" ? "الفئة" : "Category"}</span>
+                  <span className="text-xs font-medium">{listingCategory ?? listingMaterial}</span>
+                </div>
+              )}
+              {subcategoryLabel && (
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs text-muted-foreground">{lang === "ar" ? "نوع المادة" : "Material"}</span>
-                  <span className="text-xs font-medium">{listingMaterial}</span>
+                  <span className="text-xs font-medium">{subcategoryLabel}</span>
                 </div>
               )}
               {listingQuantity != null && (
@@ -2254,12 +2290,16 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
               <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-border">
                 <span className="text-xs text-muted-foreground">
                   {deal.settlement_type === "fixed"
-                    ? (lang === "ar" ? "إجمالي الصفقة" : "Deal Total")
+                    ? (lang === "ar" ? "الإجمالي شامل الضريبة" : "Total incl. VAT")
                     : (lang === "ar" ? "سعر الوحدة" : "Unit Price")}
                 </span>
                 <span className="text-sm font-bold text-primary">
                   {deal.settlement_type === "fixed"
-                    ? `${(deal.final_amount ?? deal.estimated_amount).toLocaleString()} ${lang === "ar" ? "ر.س" : "SAR"}`
+                    ? (() => {
+                        const sub = deal.final_amount ?? deal.estimated_amount;
+                        const total = deal.total_amount ?? Math.round((sub + (deal.vat_amount ?? Math.round(sub * 0.15 * 1000) / 1000)) * 1000) / 1000;
+                        return `${total.toLocaleString()} ${lang === "ar" ? "ر.س" : "SAR"}`;
+                      })()
                     : `${deal.price_per_unit.toLocaleString()} ${lang === "ar" ? "ر.س" : "SAR"}/${unit}`}
                 </span>
               </div>

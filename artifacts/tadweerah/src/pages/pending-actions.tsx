@@ -15,6 +15,7 @@ import {
 import { AppLayout } from "@/components/app-layout";
 import { useT } from "@/i18n";
 import { dealRef } from "@/lib/listing-ref";
+import { useGetMaterialCategories } from "@workspace/api-client-react";
 
 interface PendingDeal {
   id: string;
@@ -24,6 +25,9 @@ interface PendingDeal {
   action_needed: string;
   material: string | null;
   city: string | null;
+  quantity: string | number | null;
+  unit: string | null;
+  material_subcategory_id: string | null;
   updated_at: string;
 }
 
@@ -87,6 +91,8 @@ export function PendingActionsPage() {
   const Arrow = lang === "ar" ? ArrowLeft : ArrowRight;
   const { data, isLoading } = usePendingDeals();
   const deals = data?.deals ?? [];
+  const { data: allCategories = [] } = useGetMaterialCategories();
+  const nameKey = lang === "ar" ? "name_ar" : "name_en";
 
   return (
     <AppLayout>
@@ -153,9 +159,16 @@ export function PendingActionsPage() {
               border: "border-s-border",
               dot: "bg-muted-foreground",
             };
-            const materialLabel = deal.material
-              ? t(`material.${deal.material}`)
-              : "—";
+            const categoryLabel = deal.material ? t(`material.${deal.material}`) : "—";
+            const subcategoryLabel = deal.material_subcategory_id
+              ? ((allCategories as Array<{ id: string; name_ar: string; name_en: string }>).find(
+                  (c) => c.id === deal.material_subcategory_id,
+                )?.[nameKey] ?? null)
+              : null;
+            const primaryLabel = subcategoryLabel ?? categoryLabel;
+            const qtyDisplay = deal.quantity != null && deal.unit
+              ? ` — ${Number(deal.quantity).toLocaleString()} ${deal.unit}`
+              : "";
             const updatedDate = new Date(deal.updated_at).toLocaleDateString(
               lang === "ar" ? "ar-SA" : "en-US",
               { year: "numeric", month: "short", day: "numeric" },
@@ -174,9 +187,13 @@ export function PendingActionsPage() {
                         <Package className="h-4 w-4 text-muted-foreground" />
                       </span>
                       <div>
-                        <p className="text-sm font-bold text-foreground">{materialLabel}</p>
-                        <p className="text-[10px] font-mono text-muted-foreground" dir="ltr">
-                          {dealRef(deal.id)}
+                        <p className="text-sm font-bold text-foreground">{primaryLabel}{qtyDisplay}</p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {subcategoryLabel ? categoryLabel : null}
+                          {subcategoryLabel && deal.city ? " · " : null}
+                          {deal.city}
+                          {(subcategoryLabel || deal.city) ? " · " : null}
+                          <span dir="ltr">{dealRef(deal.id)}</span>
                         </p>
                       </div>
                     </div>

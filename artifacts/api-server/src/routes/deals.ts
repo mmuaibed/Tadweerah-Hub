@@ -137,14 +137,21 @@ router.get(
   async (req, res) => {
     const { company } = req as AuthedCompanyRequest;
 
+    const listingExtraFields = {
+      material: wasteListingsTable.material,
+      city: wasteListingsTable.city,
+      quantity: wasteListingsTable.quantity,
+      unit: wasteListingsTable.unit,
+      material_subcategory_id: wasteListingsTable.material_subcategory_id,
+    };
+
     // ── 1. Producer deal-flow actions: payment_submitted → confirm_payment, payment_confirmed → confirm_dispatch
     const producerDeals = await db
       .select({
         id: dealsTable.id,
         listing_id: dealsTable.listing_id,
         status: dealsTable.status,
-        material: wasteListingsTable.material,
-        city: wasteListingsTable.city,
+        ...listingExtraFields,
         updated_at: dealsTable.updated_at,
       })
       .from(dealsTable)
@@ -163,8 +170,7 @@ router.get(
         id: dealsTable.id,
         listing_id: dealsTable.listing_id,
         status: dealsTable.status,
-        material: wasteListingsTable.material,
-        city: wasteListingsTable.city,
+        ...listingExtraFields,
         updated_at: dealsTable.updated_at,
       })
       .from(dealsTable)
@@ -183,8 +189,7 @@ router.get(
         id: dealsTable.id,
         listing_id: dealsTable.listing_id,
         status: dealsTable.status,
-        material: wasteListingsTable.material,
-        city: wasteListingsTable.city,
+        ...listingExtraFields,
         updated_at: dealsTable.updated_at,
       })
       .from(dealsTable)
@@ -205,8 +210,7 @@ router.get(
         id: dealsTable.id,
         listing_id: dealsTable.listing_id,
         status: dealsTable.status,
-        material: wasteListingsTable.material,
-        city: wasteListingsTable.city,
+        ...listingExtraFields,
         updated_at: transportRequestsTable.updated_at,
         producer_company_id: dealsTable.producer_company_id,
         buyer_company_id: dealsTable.buyer_company_id,
@@ -275,6 +279,9 @@ router.get(
           status: tr.status,
           material: tr.material,
           city: tr.city,
+          quantity: tr.quantity,
+          unit: tr.unit,
+          material_subcategory_id: tr.material_subcategory_id,
           role,
           action_needed: `transport_pending_${role}` as const,
           updated_at: tr.updated_at.toISOString(),
