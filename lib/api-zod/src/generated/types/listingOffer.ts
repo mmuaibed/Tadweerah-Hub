@@ -29,4 +29,7 @@ export interface ListingOffer {
   already_top?: boolean;
   /** True when the buyer company has a commercial registration AND an approved license. */
   buyer_is_verified?: boolean;
+  /** Pre-VAT subtotal for this offer. Source of truth for financial calculations. For fixed listings: buyer-entered total amount. For by_weight listings: price_per_unit × listing quantity. Null for legacy offers (use price_per_unit × quantity as fallback).
+   */
+  offer_subtotal_amount?: number | null;
 }

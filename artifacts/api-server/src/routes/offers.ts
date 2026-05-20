@@ -43,6 +43,7 @@ type OfferRow = {
   buyer_commercial_registration?: string | null;
   buyer_license_status?: string | null;
   price_per_unit: string;
+  offer_subtotal_amount: string | null;
   message: string | null;
   status: "pending" | "accepted" | "rejected" | "withdrawn";
   rejection_reason: string | null;
@@ -65,6 +66,7 @@ function serializeOffer(row: OfferRow) {
     buyer_company_name: row.buyer_company_name,
     buyer_is_verified: buyerIsVerified,
     price_per_unit: Number(row.price_per_unit),
+    offer_subtotal_amount: row.offer_subtotal_amount != null ? Number(row.offer_subtotal_amount) : null,
     message: row.message ?? undefined,
     status: row.status,
     rejection_reason: row.rejection_reason ?? undefined,
@@ -86,6 +88,7 @@ const offerSelect = {
   buyer_commercial_registration: companiesTable.commercialRegistration,
   buyer_license_status: companiesTable.license_status,
   price_per_unit: listingOffersTable.price_per_unit,
+  offer_subtotal_amount: listingOffersTable.offer_subtotal_amount,
   message: listingOffersTable.message,
   status: listingOffersTable.status,
   rejection_reason: listingOffersTable.rejection_reason,
@@ -406,7 +409,7 @@ router.post(
         parsed.error.issues,
       );
     }
-    const { price_per_unit, message } = parsed.data;
+    const { price_per_unit, message, offer_subtotal_amount: bodySubtotal } = parsed.data;
 
     const [listing] = await db
       .select({
@@ -414,6 +417,7 @@ router.post(
         company_id: wasteListingsTable.company_id,
         status: wasteListingsTable.status,
         quantity: wasteListingsTable.quantity,
+        pricing_model: wasteListingsTable.pricing_model,
         targeting_type: wasteListingsTable.targeting_type,
         target_company_id: wasteListingsTable.target_company_id,
         material_category_id: wasteListingsTable.material_category_id,
@@ -629,6 +633,12 @@ router.post(
       }
     }
 
+    // Compute pre-VAT subtotal: use body value if provided, else derive from price_per_unit × qty.
+    const computedSubtotal =
+      bodySubtotal != null
+        ? bodySubtotal
+        : Math.round(price_per_unit * Number(listing.quantity) * 100) / 100;
+
     let offerResult;
     if (existing?.status === "withdrawn") {
       // Re-activate the withdrawn offer row
@@ -636,6 +646,7 @@ router.post(
         .update(listingOffersTable)
         .set({
           price_per_unit: String(price_per_unit),
+          offer_subtotal_amount: computedSubtotal.toFixed(2),
           message: message ?? null,
           status: "pending",
           resolved_at: null,
@@ -651,6 +662,7 @@ router.post(
           waste_listing_id: listingId,
           buyer_company_id: company.id,
           price_per_unit: String(price_per_unit),
+          offer_subtotal_amount: computedSubtotal.toFixed(2),
           message: message ?? null,
         })
         .returning();
@@ -717,10 +729,14 @@ router.put(
         parsed.error.issues,
       );
     }
-    const { price_per_unit, message } = parsed.data;
+    const { price_per_unit, message, offer_subtotal_amount: bodySubtotal } = parsed.data;
 
     const [listing] = await db
-      .select({ status: wasteListingsTable.status })
+      .select({
+        status: wasteListingsTable.status,
+        pricing_model: wasteListingsTable.pricing_model,
+        quantity: wasteListingsTable.quantity,
+      })
       .from(wasteListingsTable)
       .where(eq(wasteListingsTable.id, listingId))
       .limit(1);
@@ -786,6 +802,10 @@ router.put(
 
     // Detect whether the buyer was already the top bidder before this improvement
     const already_top = Number(myOffer.price_per_unit) >= currentMax;
+    const computedSubtotal =
+      bodySubtotal != null
+        ? bodySubtotal
+        : Math.round(price_per_unit * Number(listing.quantity) * 100) / 100;
 
     // P1 — AlreadyTopBidder gate: block silent self-improvement unless buyer
     // explicitly confirms they intend to raise their own top offer.
@@ -820,6 +840,7 @@ router.put(
       .update(listingOffersTable)
       .set({
         price_per_unit: String(price_per_unit),
+        offer_subtotal_amount: computedSubtotal.toFixed(2),
         message: message !== undefined ? (message ?? null) : myOffer.message,
         updated_at: new Date(),
       })
@@ -1051,15 +1072,19 @@ router.post(
 
       // 4. Auto-create deal record (M5-Pre)
       const settlementType = listing.pricing_model;
+      // Use offer_subtotal_amount as source of truth to avoid rounding drift
+      // (e.g. fixed listing: 10,000 / 36 × 36 = 10,000.008 without this fix)
       const estimatedAmount =
-        Number(offer.price_per_unit) * Number(listing.quantity);
+        offer.offer_subtotal_amount != null
+          ? Math.round(Number(offer.offer_subtotal_amount) * 100) / 100
+          : Math.round(Number(offer.price_per_unit) * Number(listing.quantity) * 100) / 100;
       const finalAmountAtCreation =
         settlementType === "fixed" ? String(estimatedAmount) : null;
 
       // VAT at standard Saudi rate of 15%
       const vatRate = 0.15;
-      const vatAmount = Math.round(estimatedAmount * vatRate * 1000) / 1000;
-      const totalAmountVal = Math.round((estimatedAmount + vatAmount) * 1000) / 1000;
+      const vatAmount = Math.round(estimatedAmount * vatRate * 100) / 100;
+      const totalAmountVal = Math.round((estimatedAmount + vatAmount) * 100) / 100;
 
       await tx.insert(dealsTable).values({
         offer_id: offerId,

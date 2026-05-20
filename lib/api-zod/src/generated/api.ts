@@ -827,6 +827,12 @@ export const GetListingOffersResponseItem = zod.object({
     .describe(
       "True when the buyer company has a commercial registration AND an approved license.",
     ),
+  offer_subtotal_amount: zod
+    .number()
+    .nullish()
+    .describe(
+      "Pre-VAT subtotal for this offer. Source of truth for financial calculations. For fixed listings: buyer-entered total amount. For by_weight listings: price_per_unit × listing quantity. Null for legacy offers (use price_per_unit × quantity as fallback).\n",
+    ),
 });
 export const GetListingOffersResponse = zod.array(GetListingOffersResponseItem);
 
@@ -839,10 +845,19 @@ export const SubmitOfferParams = zod.object({
 
 export const submitOfferBodyPricePerUnitExclusiveMin = 0;
 
+export const submitOfferBodyOfferSubtotalAmountExclusiveMin = 0;
+
 export const submitOfferBodyMessageMax = 500;
 
 export const SubmitOfferBody = zod.object({
   price_per_unit: zod.number().gt(submitOfferBodyPricePerUnitExclusiveMin),
+  offer_subtotal_amount: zod
+    .number()
+    .gt(submitOfferBodyOfferSubtotalAmountExclusiveMin)
+    .optional()
+    .describe(
+      "Pre-VAT subtotal. Required to avoid rounding loss on fixed listings. For fixed listings: the buyer-entered total amount. For by_weight listings: price_per_unit × listing quantity.\n",
+    ),
   message: zod.string().max(submitOfferBodyMessageMax).optional(),
 });
 
@@ -856,10 +871,19 @@ export const ImproveOfferParams = zod.object({
 
 export const improveOfferBodyPricePerUnitExclusiveMin = 0;
 
+export const improveOfferBodyOfferSubtotalAmountExclusiveMin = 0;
+
 export const improveOfferBodyMessageMax = 500;
 
 export const ImproveOfferBody = zod.object({
   price_per_unit: zod.number().gt(improveOfferBodyPricePerUnitExclusiveMin),
+  offer_subtotal_amount: zod
+    .number()
+    .gt(improveOfferBodyOfferSubtotalAmountExclusiveMin)
+    .optional()
+    .describe(
+      "Pre-VAT subtotal. Required to avoid rounding loss on fixed listings. For fixed listings: the buyer-entered total amount. For by_weight listings: price_per_unit × listing quantity.\n",
+    ),
   message: zod.string().max(improveOfferBodyMessageMax).optional(),
 });
 
@@ -903,6 +927,12 @@ export const ImproveOfferResponse = zod.object({
     .optional()
     .describe(
       "True when the buyer company has a commercial registration AND an approved license.",
+    ),
+  offer_subtotal_amount: zod
+    .number()
+    .nullish()
+    .describe(
+      "Pre-VAT subtotal for this offer. Source of truth for financial calculations. For fixed listings: buyer-entered total amount. For by_weight listings: price_per_unit × listing quantity. Null for legacy offers (use price_per_unit × quantity as fallback).\n",
     ),
 });
 
@@ -954,6 +984,12 @@ export const WithdrawOfferResponse = zod.object({
     .optional()
     .describe(
       "True when the buyer company has a commercial registration AND an approved license.",
+    ),
+  offer_subtotal_amount: zod
+    .number()
+    .nullish()
+    .describe(
+      "Pre-VAT subtotal for this offer. Source of truth for financial calculations. For fixed listings: buyer-entered total amount. For by_weight listings: price_per_unit × listing quantity. Null for legacy offers (use price_per_unit × quantity as fallback).\n",
     ),
 });
 
@@ -1091,6 +1127,12 @@ export const AcceptOfferResponse = zod.object({
     .describe(
       "True when the buyer company has a commercial registration AND an approved license.",
     ),
+  offer_subtotal_amount: zod
+    .number()
+    .nullish()
+    .describe(
+      "Pre-VAT subtotal for this offer. Source of truth for financial calculations. For fixed listings: buyer-entered total amount. For by_weight listings: price_per_unit × listing quantity. Null for legacy offers (use price_per_unit × quantity as fallback).\n",
+    ),
 });
 
 /**
@@ -1161,6 +1203,12 @@ export const RejectOfferResponse = zod.object({
     .optional()
     .describe(
       "True when the buyer company has a commercial registration AND an approved license.",
+    ),
+  offer_subtotal_amount: zod
+    .number()
+    .nullish()
+    .describe(
+      "Pre-VAT subtotal for this offer. Source of truth for financial calculations. For fixed listings: buyer-entered total amount. For by_weight listings: price_per_unit × listing quantity. Null for legacy offers (use price_per_unit × quantity as fallback).\n",
     ),
 });
 

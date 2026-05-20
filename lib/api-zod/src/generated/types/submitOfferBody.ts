@@ -9,6 +9,12 @@
 export interface SubmitOfferBody {
   /** @exclusiveMinimum 0 */
   price_per_unit: number;
+  /**
+   * Pre-VAT subtotal. Required to avoid rounding loss on fixed listings. For fixed listings: the buyer-entered total amount. For by_weight listings: price_per_unit × listing quantity.
+
+   * @exclusiveMinimum 0
+   */
+  offer_subtotal_amount?: number;
   /** @maxLength 500 */
   message?: string;
 }

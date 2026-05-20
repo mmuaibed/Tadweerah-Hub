@@ -1,0 +1,135 @@
+We decided to fix the bidding amount issue from the root, not only with frontend formatting.
+
+Problem:
+The current system stores price_per_unit as the main offer value even for fixed-price listings.
+For fixed listings, the buyer enters a total amount, then the frontend converts:
+total amount / quantity = price_per_unit
+Later, the seller view or deal logic recalculates:
+price_per_unit × quantity = subtotal
+This creates rounding artifacts such as:
+10,000 becoming 10,000.008.
+
+This is not acceptable for financial transactions.
+
+Required root fix:
+Introduce a clear pre-VAT offer subtotal as the financial source of truth.
+
+Business rules:
+
+1) Listing pricing model remains unchanged:
+- pricing_model = "fixed" means buyer submits total offer amount before VAT.
+- pricing_model = "by_weight" means buyer submits unit price before VAT.
+- pricing_model = "revenue_share" remains out of scope for auctions.
+
+2) Add a safe additive field to listing_offers if not already available:
+Recommended name:
+offer_subtotal_amount numeric nullable
+
+Meaning:
+The accepted/displayed financial value of the offer before VAT.
+
+For fixed listings:
+- offer_subtotal_amount = buyer-entered total amount.
+- price_per_unit may still be calculated as offer_subtotal_amount / quantity for backward compatibility only.
+- UI and VAT must use offer_subtotal_amount as source of truth.
+
+For by_weight listings:
+- price_per_unit = buyer-entered unit price.
+- offer_subtotal_amount = price_per_unit × listing quantity.
+- UI and VAT use offer_subtotal_amount.
+
+3) Buyer bidding UI:
+In listing-detail.tsx, the bidder must not choose between total and unit.
+The listing pricing_model determines the only input:
+- fixed: show only "Total offer amount before VAT"
+- by_weight: show only "Unit price before VAT"
+
+Show:
+- amount before VAT
+- VAT 15%
+- total including VAT
+
+4) Seller offer review:
+Use offer_subtotal_amount for subtotal display and VAT calculation.
+Do not recalculate fixed listing totals from rounded price_per_unit × quantity.
+For fixed listings, seller must see exactly the same subtotal/VAT/total the buyer saw before submitting.
+
+5) Deal creation:
+When accepting an offer:
+- deal estimated_amount / subtotal should be based on offer_subtotal_amount when available.
+- vat_amount = offer_subtotal_amount × 15%.
+- total_amount = offer_subtotal_amount + vat_amount.
+- Do not derive deal subtotal from rounded price_per_unit × quantity if offer_subtotal_amount exists.
+
+6) Existing offers / backward compatibility:
+For old offers where offer_subtotal_amount is null:
+- fallback to current calculation price_per_unit × quantity.
+- Do not break old data.
+- New offers must populate offer_subtotal_amount.
+
+7) Formatting:
+- Do not display floating precision artifacts such as 10,000.008.
+- Format SAR values with maximum 2 decimals.
+- For whole SAR values, no decimals is preferred.
+
+Strict constraints:
+- Do not implement multi-material listings.
+- Do not implement partial acceptance.
+- Do not change pricing_model values.
+- Do not change deal lifecycle states.
+- Do not change atomic accept behavior except using the correct subtotal source.
+- Do not change company eligibility or approval logic.
+- Do not touch admin, MWAN, transport responsibility, or Smart-Assist Transport.
+- Do not refactor unrelated files.
+
+Before implementation, inspect and confirm:
+1) Exact offer table/schema file name.
+2) Whether a similar subtotal/total field already exists.
+3) Exact DB migration required.
+4) Exact backend route files affected.
+5) Exact frontend files affected.
+6) How deal creation currently calculates estimated_amount.
+7) How old offers will safely fallback.
+
+If the plan is limited to:
+- one additive nullable offer field
+- offer creation serializer
+- offer review display
+- deal creation subtotal source
+- listing-detail bidding UI
+then proceed after confirming.
+
+After implementation, run:
+- pnpm --filter @workspace/db run push
+- pnpm --filter @workspace/api-server run typecheck
+- pnpm run typecheck
+- curl -s http://localhost:80/api/healthz
+
+Manual test required:
+1) fixed listing, quantity 36
+2) buyer enters total offer 10,000
+3) buyer sees:
+   subtotal 10,000
+   VAT 1,500
+   total 11,500
+4) seller sees exactly:
+   subtotal 10,000
+   VAT 1,500
+   total 11,500
+5) after acceptance, deal shows exactly the same values
+6) no 10,000.008 values appear anywhere
+
+Also test by_weight listing:
+1) quantity 36
+2) buyer enters unit price 100
+3) subtotal 3,600
+4) VAT 540
+5) total 4,140
+
+Final report should include:
+- changed files
+- migration summary
+- confirmation that old offers fallback safely
+- confirmation that offer comparison logic remains unchanged or explain if adjusted
+- confirmation that deal lifecycle remains unchanged
+- typecheck results

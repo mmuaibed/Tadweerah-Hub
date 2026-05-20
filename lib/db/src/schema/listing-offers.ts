@@ -28,6 +28,13 @@ export const listingOffersTable = pgTable(
       .notNull()
       .references(() => companiesTable.id, { onDelete: "cascade" }),
     price_per_unit: numeric("price_per_unit", { precision: 12, scale: 3 }).notNull(),
+    /**
+     * Pre-VAT subtotal — financial source of truth for this offer.
+     * fixed listings:    buyer-entered total amount (no rounding from division).
+     * by_weight listings: price_per_unit × listing quantity.
+     * Null for legacy offers; fallback: price_per_unit × quantity.
+     */
+    offer_subtotal_amount: numeric("offer_subtotal_amount", { precision: 14, scale: 2 }),
     message: text("message"),
     status: offerStatusEnum("status").notNull().default("pending"),
     /** Required when producer manually rejects an offer (F3). Visible to the affected buyer only. */

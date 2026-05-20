@@ -1404,6 +1404,14 @@ components:
         buyer_is_verified:
           type: boolean
           description: True when the buyer company has a commercial registration AND an approved license.
+        offer_subtotal_amount:
+          type: number
+          nullable: true
+          description: >
+            Pre-VAT subtotal for this offer. Source of truth for financial calculations.
+            For fixed listings: buyer-entered total amount.
+            For by_weight listings: price_per_unit × listing quantity.
+            Null for legacy offers (use price_per_unit × quantity as fallback).
       required: [id, waste_listing_id, buyer_company_id, buyer_company_name, price_per_unit, status, created_at, updated_at]
 
     SubmitOfferBody:
@@ -1412,6 +1420,13 @@ components:
         price_per_unit:
           type: number
           exclusiveMinimum: 0
+        offer_subtotal_amount:
+          type: number
+          exclusiveMinimum: 0
+          description: >
+            Pre-VAT subtotal. Required to avoid rounding loss on fixed listings.
+            For fixed listings: the buyer-entered total amount.
+            For by_weight listings: price_per_unit × listing quantity.
         message:
           type: string
           maxLength: 500

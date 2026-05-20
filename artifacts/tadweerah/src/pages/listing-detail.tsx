@@ -144,6 +144,7 @@ function PriceDisplay({
   pricingModel,
   size = "md",
   t,
+  subtotalOverride,
 }: {
   pricePerUnit: number;
   quantity: number;
@@ -151,10 +152,11 @@ function PriceDisplay({
   pricingModel?: string | null;
   size?: "sm" | "md" | "lg";
   t: (k: string) => string;
+  subtotalOverride?: number;
 }) {
   const isTotal = pricingModel === "fixed";
   const unitLabel = unit ? t(`unit.${unit}`) : "";
-  const totalValue = pricePerUnit * quantity;
+  const totalValue = subtotalOverride ?? pricePerUnit * quantity;
   const valueClass =
     size === "lg" ? "text-3xl font-extrabold tracking-tight text-foreground"
     : size === "md" ? "text-xl font-bold text-foreground"
@@ -555,11 +557,9 @@ function BuyerOfferSection({
   const { mutate: improveOffer, isPending: isImproving } = useImproveOffer();
 
   const [price, setPrice] = useState("");
-  const [priceMode, setPriceMode] = useState<"unit" | "total">("unit");
   const [message, setMessage] = useState("");
   const [showImproveForm, setShowImproveForm] = useState(false);
   const [newPrice, setNewPrice] = useState("");
-  const [newPriceMode, setNewPriceMode] = useState<"unit" | "total">("unit");
   const [newMessage, setNewMessage] = useState("");
   const [showSelfImprovePopup, setShowSelfImprovePopup] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -589,52 +589,43 @@ function BuyerOfferSection({
     return t("offer.error.generic");
   }
 
-  // P2 — helpers to convert between unit price and total price
-  function toUnitPrice(entered: number, mode: "unit" | "total"): number {
-    return mode === "unit" ? entered : listingQuantity > 0 ? entered / listingQuantity : entered;
-  }
-
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setFormError(null);
     const entered = parseFloat(price);
     if (!entered || entered <= 0) return;
-    const unitVal = toUnitPrice(entered, priceMode);
+    const isFixed = pricingModel === "fixed";
+    const price_per_unit = isFixed
+      ? (listingQuantity > 0 ? entered / listingQuantity : entered)
+      : entered;
+    const offer_subtotal_amount = isFixed
+      ? entered
+      : Math.round(entered * listingQuantity * 100) / 100;
 
     submitOffer(
-      { wasteListingId, data: { price_per_unit: unitVal, message: message.trim() || undefined } },
+      { wasteListingId, data: { price_per_unit, message: message.trim() || undefined, offer_subtotal_amount } },
       {
-        onSuccess: () => {
-          console.log("[tadweerah] offer submitted for listing:", wasteListingId);
-          setPrice(""); setMessage(""); onSuccess();
-        },
-        onError: (err: unknown) => {
-          console.warn("[tadweerah] offer submission failed:", err);
-          setFormError(mapOfferError(err));
-        },
+        onSuccess: () => { setPrice(""); setMessage(""); onSuccess(); },
+        onError: (err: unknown) => { setFormError(mapOfferError(err)); },
       },
     );
   }
 
   // P1 — holds the validated unit price pending self-improve confirmation
-  const [pendingImproveData, setPendingImproveData] = useState<{ price_per_unit: number; message?: string } | null>(null);
+  const [pendingImproveData, setPendingImproveData] = useState<{ price_per_unit: number; message?: string; offer_subtotal_amount?: number } | null>(null);
 
-  function submitImprove(data: { price_per_unit: number; message?: string; explicit_self_improve?: boolean }) {
+  function submitImprove(data: { price_per_unit: number; message?: string; offer_subtotal_amount?: number; explicit_self_improve?: boolean }) {
     improveOffer(
       { wasteListingId, data },
       {
         onSuccess: () => {
-          console.log("[tadweerah] offer improved for listing:", wasteListingId);
           setShowImproveForm(false);
           setNewPrice("");
           setNewMessage("");
           setPendingImproveData(null);
           onSuccess();
         },
-        onError: (err: unknown) => {
-          console.warn("[tadweerah] offer improve failed:", err);
-          setFormError(mapOfferError(err));
-        },
+        onError: (err: unknown) => { setFormError(mapOfferError(err)); },
       },
     );
   }
@@ -644,9 +635,15 @@ function BuyerOfferSection({
     setFormError(null);
     const entered = parseFloat(newPrice);
     if (!entered || entered <= 0) return;
-    const unitVal = toUnitPrice(entered, newPriceMode);
+    const isFixed = pricingModel === "fixed";
+    const unitVal = isFixed
+      ? (listingQuantity > 0 ? entered / listingQuantity : entered)
+      : entered;
+    const offer_subtotal_amount = isFixed
+      ? entered
+      : Math.round(entered * listingQuantity * 100) / 100;
     const myRank = (myOffer as unknown as { rank?: number })?.rank;
-    const payload = { price_per_unit: unitVal, message: newMessage.trim() || undefined };
+    const payload = { price_per_unit: unitVal, message: newMessage.trim() || undefined, offer_subtotal_amount };
     // P1 — if already top bidder, show confirmation popup instead of submitting
     if (myRank === 1) {
       setPendingImproveData(payload);
@@ -795,36 +792,9 @@ function BuyerOfferSection({
                   </span>
                 </p>
 
-                {/* P2: Price mode toggle — highlighted active option */}
-                <div className="flex gap-1 rounded-lg border border-border bg-muted/40 p-1 w-fit">
-                  {(["unit", "total"] as const).map((mode) => (
-                    <button
-                      key={mode}
-                      type="button"
-                      onClick={() => {
-                        const val = parseFloat(newPrice) || 0;
-                        if (mode !== newPriceMode && val > 0) {
-                          setNewPrice(mode === "total"
-                            ? (val * listingQuantity).toFixed(2)
-                            : listingQuantity > 0 ? (val / listingQuantity).toFixed(3) : newPrice
-                          );
-                        }
-                        setNewPriceMode(mode);
-                      }}
-                      className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-all ${
-                        newPriceMode === mode
-                          ? "bg-primary text-primary-foreground shadow-sm"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      {t(`offer.form.mode.${mode}`)}
-                    </button>
-                  ))}
-                </div>
-
                 <div className="space-y-1">
                   <label className="text-xs font-medium text-muted-foreground">
-                    {newPriceMode === "unit" ? t("offer.form.unitPriceLabel") : t("offer.form.totalPriceLabel")}
+                    {pricingModel === "fixed" ? t("offer.form.totalPriceLabel") : t("offer.form.unitPriceLabel")}
                   </label>
                   <input
                     type="number"
@@ -838,28 +808,24 @@ function BuyerOfferSection({
                   />
                   {newPrice && parseFloat(newPrice) > 0 && (() => {
                     const entered = parseFloat(newPrice);
-                    const subtotal = newPriceMode === "unit" ? entered * listingQuantity : entered;
-                    const unitComputed = newPriceMode === "total" ? (listingQuantity > 0 ? entered / listingQuantity : 0) : entered;
-                    const vatAmt = Math.round(subtotal * 0.15 * 1000) / 1000;
-                    const totalAmt = Math.round((subtotal + vatAmt) * 1000) / 1000;
+                    const isFixed = pricingModel === "fixed";
+                    const subtotal = isFixed ? entered : Math.round(entered * listingQuantity * 100) / 100;
+                    const vatAmt = Math.round(subtotal * 0.15 * 100) / 100;
+                    const totalAmt = Math.round((subtotal + vatAmt) * 100) / 100;
                     return (
                       <div className="space-y-1">
-                        {newPriceMode === "unit" ? (
+                        {!isFixed && (
                           <p className="text-xs text-muted-foreground">
-                            {t("offer.form.computedTotal")}: <span className="font-semibold">{subtotal.toLocaleString()} {t("listing.sar")}</span>
-                          </p>
-                        ) : (
-                          <p className="text-xs text-muted-foreground">
-                            {t("offer.form.computedUnit")}: <span className="font-semibold">{unitComputed > 0 ? unitComputed.toLocaleString(undefined, { maximumFractionDigits: 3 }) : "—"} {t("listing.sar")}</span>
+                            {t("offer.form.computedTotal")}: <span className="font-semibold">{subtotal.toLocaleString(undefined, { maximumFractionDigits: 2 })} {t("listing.sar")}</span>
                           </p>
                         )}
                         <div className="rounded-md bg-muted/40 border border-border/50 px-2.5 py-1.5 grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs">
                           <span className="text-muted-foreground">{t("deal.vat.subtotal")}</span>
-                          <span className="font-medium text-end">{subtotal.toLocaleString()} {t("listing.sar")}</span>
+                          <span className="font-medium text-end">{subtotal.toLocaleString(undefined, { maximumFractionDigits: 2 })} {t("listing.sar")}</span>
                           <span className="text-muted-foreground">{t("deal.vat.rate")}</span>
-                          <span className="font-medium text-end">{vatAmt.toLocaleString()} {t("listing.sar")}</span>
+                          <span className="font-medium text-end">{vatAmt.toLocaleString(undefined, { maximumFractionDigits: 2 })} {t("listing.sar")}</span>
                           <span className="font-semibold text-muted-foreground">{t("deal.vat.total")}</span>
-                          <span className="font-bold text-end">{totalAmt.toLocaleString()} {t("listing.sar")}</span>
+                          <span className="font-bold text-end">{totalAmt.toLocaleString(undefined, { maximumFractionDigits: 2 })} {t("listing.sar")}</span>
                         </div>
                       </div>
                     );
@@ -927,35 +893,9 @@ function BuyerOfferSection({
         </p>
       )}
       <form onSubmit={handleSubmit} className="space-y-3">
-        {/* P2: Price mode toggle — highlighted active option */}
-        <div className="flex gap-1 rounded-lg border border-border bg-muted/40 p-1 w-fit">
-          {(["unit", "total"] as const).map((mode) => (
-            <button
-              key={mode}
-              type="button"
-              onClick={() => {
-                const val = parseFloat(price) || 0;
-                if (mode !== priceMode && val > 0) {
-                  setPrice(mode === "total"
-                    ? (val * listingQuantity).toFixed(2)
-                    : listingQuantity > 0 ? (val / listingQuantity).toFixed(3) : price
-                  );
-                }
-                setPriceMode(mode);
-              }}
-              className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-all ${
-                priceMode === mode
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {t(`offer.form.mode.${mode}`)}
-            </button>
-          ))}
-        </div>
         <div className="space-y-1">
           <label className="text-xs font-medium text-muted-foreground">
-            {priceMode === "unit" ? t("offer.form.unitPriceLabel") : t("offer.form.totalPriceLabel")}
+            {pricingModel === "fixed" ? t("offer.form.totalPriceLabel") : t("offer.form.unitPriceLabel")}
           </label>
           <input
             type="number"
@@ -969,29 +909,25 @@ function BuyerOfferSection({
           />
           {price && parseFloat(price) > 0 && (() => {
             const entered = parseFloat(price);
-            const subtotal = priceMode === "unit" ? entered * listingQuantity : entered;
-            const unitComputed = priceMode === "total" ? (listingQuantity > 0 ? entered / listingQuantity : 0) : entered;
-            const vatAmt = Math.round(subtotal * 0.15 * 1000) / 1000;
-            const totalAmt = Math.round((subtotal + vatAmt) * 1000) / 1000;
+            const isFixed = pricingModel === "fixed";
+            const subtotal = isFixed ? entered : Math.round(entered * listingQuantity * 100) / 100;
+            const vatAmt = Math.round(subtotal * 0.15 * 100) / 100;
+            const totalAmt = Math.round((subtotal + vatAmt) * 100) / 100;
             return (
               <div className="space-y-1">
-                {priceMode === "unit" ? (
+                {!isFixed && (
                   <p className="text-xs text-muted-foreground">
-                    {t("offer.form.computedTotal")}: <span className="font-semibold">{subtotal.toLocaleString()} {t("listing.sar")}</span>{" "}
+                    {t("offer.form.computedTotal")}: <span className="font-semibold">{subtotal.toLocaleString(undefined, { maximumFractionDigits: 2 })} {t("listing.sar")}</span>{" "}
                     <span className="text-muted-foreground/60">{t("offer.quantityDisclaimer")}</span>
-                  </p>
-                ) : (
-                  <p className="text-xs text-muted-foreground">
-                    {t("offer.form.computedUnit")}: <span className="font-semibold">{unitComputed > 0 ? unitComputed.toLocaleString(undefined, { maximumFractionDigits: 3 }) : "—"} {t("listing.sar")}</span>
                   </p>
                 )}
                 <div className="rounded-md bg-muted/40 border border-border/50 px-2.5 py-1.5 grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs">
                   <span className="text-muted-foreground">{t("deal.vat.subtotal")}</span>
-                  <span className="font-medium text-end">{subtotal.toLocaleString()} {t("listing.sar")}</span>
+                  <span className="font-medium text-end">{subtotal.toLocaleString(undefined, { maximumFractionDigits: 2 })} {t("listing.sar")}</span>
                   <span className="text-muted-foreground">{t("deal.vat.rate")}</span>
-                  <span className="font-medium text-end">{vatAmt.toLocaleString()} {t("listing.sar")}</span>
+                  <span className="font-medium text-end">{vatAmt.toLocaleString(undefined, { maximumFractionDigits: 2 })} {t("listing.sar")}</span>
                   <span className="font-semibold text-muted-foreground">{t("deal.vat.total")}</span>
-                  <span className="font-bold text-end">{totalAmt.toLocaleString()} {t("listing.sar")}</span>
+                  <span className="font-bold text-end">{totalAmt.toLocaleString(undefined, { maximumFractionDigits: 2 })} {t("listing.sar")}</span>
                 </div>
               </div>
             );
@@ -1071,21 +1007,23 @@ function ProducerOfferRow({
         pricingModel={pricingModel}
         size="md"
         t={t}
+        subtotalOverride={offer.offer_subtotal_amount ?? undefined}
       />
 
-      {/* VAT breakdown — display only; comparison and ranking use pre-VAT price */}
+      {/* VAT breakdown — display only; comparison and ranking use pre-VAT price_per_unit */}
       {(() => {
-        const subtotal = offer.price_per_unit * listingQuantity;
-        const vatAmt = Math.round(subtotal * 0.15 * 1000) / 1000;
-        const totalAmt = Math.round((subtotal + vatAmt) * 1000) / 1000;
+        const raw = offer.offer_subtotal_amount ?? (offer.price_per_unit * listingQuantity);
+        const subtotal = Math.round(raw * 100) / 100;
+        const vatAmt = Math.round(subtotal * 0.15 * 100) / 100;
+        const totalAmt = Math.round((subtotal + vatAmt) * 100) / 100;
         return (
           <div className="rounded-md bg-muted/30 border border-border/40 px-2.5 py-1.5 grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs mt-1.5">
             <span className="text-muted-foreground">{t("deal.vat.subtotal")}</span>
-            <span className="font-medium text-end">{subtotal.toLocaleString()} {t("listing.sar")}</span>
+            <span className="font-medium text-end">{subtotal.toLocaleString(undefined, { maximumFractionDigits: 2 })} {t("listing.sar")}</span>
             <span className="text-muted-foreground">{t("deal.vat.rate")}</span>
-            <span className="font-medium text-end">{vatAmt.toLocaleString()} {t("listing.sar")}</span>
+            <span className="font-medium text-end">{vatAmt.toLocaleString(undefined, { maximumFractionDigits: 2 })} {t("listing.sar")}</span>
             <span className="font-semibold text-muted-foreground">{t("deal.vat.total")}</span>
-            <span className="font-bold text-end">{totalAmt.toLocaleString()} {t("listing.sar")}</span>
+            <span className="font-bold text-end">{totalAmt.toLocaleString(undefined, { maximumFractionDigits: 2 })} {t("listing.sar")}</span>
           </div>
         );
       })()}
