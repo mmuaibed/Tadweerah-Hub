@@ -1,0 +1,74 @@
+Good correction. Now please do a low-cost verification only. No new features.
+
+We do not currently have real transporter users, so verify the Transporter Quote flow using minimal test data and API/DB checks where possible.
+
+Do not do broad UI exploration.
+Do not take unnecessary screenshots.
+Do not refactor.
+Do not touch VAT, offers, deals, reports, admin auth, or deal/transport lifecycle.
+
+Required low-cost verification:
+
+1) Test data
+- Identify or create one clearly marked test transporter company.
+- Ensure it has transporter role.
+- Use an existing pending platform transport request, or create one clearly marked test request only if necessary.
+
+2) Quote creation
+Verify that a transporter quote can be created with:
+- quote amount
+- truck count
+- truck type
+- notes
+
+3) Duplicate prevention
+Verify the same transporter cannot submit more than one active non-rejected quote for the same transport request.
+
+4) Admin visibility
+Verify Admin can see the quote in Admin > Transport Requests / Quotes.
+
+5) Manual status changes
+Verify Admin can manually mark a quote as:
+- under_review
+- selected
+- rejected
+
+6) Critical scope confirmation
+Verify:
+- selecting a quote does NOT assign transporter_company_id to transport_requests
+- selecting a quote does NOT change transport_request status
+- selecting a quote does NOT auto-reject competing quotes
+- quote status changes are independent
+
+7) Privacy
+Verify:
+- transporter does not receive deal financial values
+- transporter does not see other transporters’ quotes
+- buyer/seller reports are not affected by transport quotes
+
+8) eManifest readiness
+Verify the admin transport/quotes view shows readiness/enrichment fields where available:
+- transporter company
+- truck count
+- truck type
+- vehicle plate if provided
+- driver name if provided
+- estimated dates if provided
+- missing fields if not provided
+
+Run:
+- pnpm --filter @workspace/api-server run typecheck
+- pnpm run typecheck
+- curl -s http://localhost:80/api/healthz
+
+Final report:
+A) test data used
+B) quote creation result
+C) duplicate prevention result
+D) admin visibility result
+E) quote status update results
+F) confirmation no auto-assignment
+G) confirmation no auto-rejection
+H) privacy confirmation
+I) typecheck/health result
+J) known limitation if real transporter UI login was not tested
