@@ -21,6 +21,7 @@ import {
   AlertDialogFooter,
 } from "@/components/ui/alert-dialog";
 import { useT } from "@/i18n";
+import { fmtNumber } from "@/lib/format";
 
 type TabFilter = "open" | "closed";
 type AugListing = WasteListing & { deal_status?: string };
@@ -317,7 +318,7 @@ export function MyListingsPage() {
                           <div className="flex items-center justify-between text-xs ps-5">
                             <span className="text-muted-foreground">{t("myListings.highestOffer.label")}:</span>
                             <span className="font-semibold text-foreground">
-                              {Number(highestPpu).toLocaleString()} {t("listing.sar")}
+                              {fmtNumber(highestPpu)} {t("listing.sar")}
                               {listing.unit ? ` / ${t(`unit.${listing.unit}`)}` : ""}
                             </span>
                           </div>
@@ -326,7 +327,7 @@ export function MyListingsPage() {
                           <div className="flex items-center justify-between text-xs ps-5">
                             <span className="text-muted-foreground">{t("myListings.highestOffer.total")}:</span>
                             <span className="font-semibold text-foreground">
-                              {(highestTotal ?? (Number(highestPpu) * qty)).toLocaleString()} {t("listing.sar")}
+                              {fmtNumber(highestTotal ?? (Number(highestPpu) * qty))} {t("listing.sar")}
                             </span>
                           </div>
                         )}

@@ -70,6 +70,7 @@ import { DealPanel, type DealInfo } from "@/components/deal-panel";
 import { EligibilityBlock } from "@/components/eligibility-block";
 import { useEligibility } from "@/hooks/use-eligibility";
 import { useT } from "@/i18n";
+import { fmtNumber } from "@/lib/format";
 import { listingRef } from "@/lib/listing-ref";
 import { LocationLink } from "@/components/location-link";
 
@@ -169,7 +170,7 @@ function PriceDisplay({
       <div>
         <p className="text-[10px] text-muted-foreground mb-0.5">{t("offer.price.offerTotal")}</p>
         <div className="flex items-baseline gap-1">
-          <span className={valueClass}>{totalValue.toLocaleString()}</span>
+          <span className={valueClass}>{fmtNumber(totalValue)}</span>
           <span className="text-xs text-muted-foreground">{t("listing.sar")}</span>
         </div>
       </div>
@@ -179,7 +180,7 @@ function PriceDisplay({
   return (
     <div>
       <div className="flex items-baseline gap-1">
-        <span className={valueClass}>{pricePerUnit.toLocaleString()}</span>
+        <span className={valueClass}>{fmtNumber(pricePerUnit)}</span>
         <span className="text-xs text-muted-foreground">
           {t("listing.sar")}{unitLabel ? ` / ${unitLabel}` : ` / ${t("offer.price.perUnit").split("/")[1]?.trim()}`}
         </span>
@@ -187,7 +188,7 @@ function PriceDisplay({
       {quantity > 0 && (
         <p className="text-xs text-muted-foreground mt-0.5">
           {t("offer.mine.total")}:{" "}
-          <span className="font-semibold text-foreground">{totalValue.toLocaleString()} {t("listing.sar")}</span>
+          <span className="font-semibold text-foreground">{fmtNumber(totalValue)} {t("listing.sar")}</span>
           {" "}<span className="text-muted-foreground/60">{t("offer.quantityDisclaimer")}</span>
         </p>
       )}
@@ -260,7 +261,7 @@ function OfferSummaryBar({ wasteListingId }: { wasteListingId: string }) {
         <span className="text-muted-foreground">
           {t("offer.summary.highest")}:{" "}
           <span className="font-bold text-foreground">
-            {summary.highest_price.toLocaleString()}
+            {fmtNumber(summary.highest_price)}
           </span>{" "}
           {t("offer.summary.perUnit")}
         </span>
@@ -353,7 +354,7 @@ function RejectOfferDialog({
           {offer && (
             <DialogDescription>
               {offer.buyer_company_name} —{" "}
-              {offer.price_per_unit.toLocaleString()} {t("listing.sar")}
+              {fmtNumber(offer.price_per_unit)} {t("listing.sar")}
             </DialogDescription>
           )}
         </DialogHeader>
@@ -790,7 +791,7 @@ function BuyerOfferSection({
                 <p className="text-xs text-muted-foreground">
                   {t("offer.form.mustExceed")}:{" "}
                   <span className="font-semibold">
-                    {highestPrice.toLocaleString()} {t("listing.sar")}
+                    {fmtNumber(highestPrice)} {t("listing.sar")}
                   </span>
                 </p>
 
@@ -806,7 +807,7 @@ function BuyerOfferSection({
                     value={newPrice}
                     onChange={(e) => setNewPrice(e.target.value)}
                     className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                    placeholder={`> ${highestPrice.toLocaleString()}`}
+                    placeholder={`> ${fmtNumber(highestPrice)}`}
                   />
                   {newPrice && parseFloat(newPrice) > 0 && (() => {
                     const entered = parseFloat(newPrice);
@@ -818,16 +819,16 @@ function BuyerOfferSection({
                       <div className="space-y-1">
                         {!isFixed && (
                           <p className="text-xs text-muted-foreground">
-                            {t("offer.form.computedTotal")}: <span className="font-semibold">{subtotal.toLocaleString(undefined, { maximumFractionDigits: 2 })} {t("listing.sar")}</span>
+                            {t("offer.form.computedTotal")}: <span className="font-semibold">{fmtNumber(subtotal, { maximumFractionDigits: 2 })} {t("listing.sar")}</span>
                           </p>
                         )}
                         <div className="rounded-md bg-muted/40 border border-border/50 px-2.5 py-1.5 grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs">
                           <span className="text-muted-foreground">{t("deal.vat.subtotal")}</span>
-                          <span className="font-medium text-end">{subtotal.toLocaleString(undefined, { maximumFractionDigits: 2 })} {t("listing.sar")}</span>
+                          <span className="font-medium text-end">{fmtNumber(subtotal, { maximumFractionDigits: 2 })} {t("listing.sar")}</span>
                           <span className="text-muted-foreground">{t("deal.vat.rate")}</span>
-                          <span className="font-medium text-end">{vatAmt.toLocaleString(undefined, { maximumFractionDigits: 2 })} {t("listing.sar")}</span>
+                          <span className="font-medium text-end">{fmtNumber(vatAmt, { maximumFractionDigits: 2 })} {t("listing.sar")}</span>
                           <span className="font-semibold text-muted-foreground">{t("deal.vat.total")}</span>
-                          <span className="font-bold text-end">{totalAmt.toLocaleString(undefined, { maximumFractionDigits: 2 })} {t("listing.sar")}</span>
+                          <span className="font-bold text-end">{fmtNumber(totalAmt, { maximumFractionDigits: 2 })} {t("listing.sar")}</span>
                         </div>
                       </div>
                     );
@@ -890,7 +891,7 @@ function BuyerOfferSection({
         <p className="text-xs text-muted-foreground">
           {t("offer.form.mustExceed")}:{" "}
           <span className="font-semibold">
-            {highestPrice.toLocaleString()} {t("listing.sar")}
+            {fmtNumber(highestPrice)} {t("listing.sar")}
           </span>
         </p>
       )}
@@ -907,7 +908,7 @@ function BuyerOfferSection({
             value={price}
             onChange={(e) => setPrice(e.target.value)}
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-            placeholder={highestPrice > 0 ? `> ${highestPrice.toLocaleString()}` : "0.000"}
+            placeholder={highestPrice > 0 ? `> ${fmtNumber(highestPrice)}` : "0.000"}
           />
           {price && parseFloat(price) > 0 && (() => {
             const entered = parseFloat(price);
@@ -919,17 +920,17 @@ function BuyerOfferSection({
               <div className="space-y-1">
                 {!isFixed && (
                   <p className="text-xs text-muted-foreground">
-                    {t("offer.form.computedTotal")}: <span className="font-semibold">{subtotal.toLocaleString(undefined, { maximumFractionDigits: 2 })} {t("listing.sar")}</span>{" "}
+                    {t("offer.form.computedTotal")}: <span className="font-semibold">{fmtNumber(subtotal, { maximumFractionDigits: 2 })} {t("listing.sar")}</span>{" "}
                     <span className="text-muted-foreground/60">{t("offer.quantityDisclaimer")}</span>
                   </p>
                 )}
                 <div className="rounded-md bg-muted/40 border border-border/50 px-2.5 py-1.5 grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs">
                   <span className="text-muted-foreground">{t("deal.vat.subtotal")}</span>
-                  <span className="font-medium text-end">{subtotal.toLocaleString(undefined, { maximumFractionDigits: 2 })} {t("listing.sar")}</span>
+                  <span className="font-medium text-end">{fmtNumber(subtotal, { maximumFractionDigits: 2 })} {t("listing.sar")}</span>
                   <span className="text-muted-foreground">{t("deal.vat.rate")}</span>
-                  <span className="font-medium text-end">{vatAmt.toLocaleString(undefined, { maximumFractionDigits: 2 })} {t("listing.sar")}</span>
+                  <span className="font-medium text-end">{fmtNumber(vatAmt, { maximumFractionDigits: 2 })} {t("listing.sar")}</span>
                   <span className="font-semibold text-muted-foreground">{t("deal.vat.total")}</span>
-                  <span className="font-bold text-end">{totalAmt.toLocaleString(undefined, { maximumFractionDigits: 2 })} {t("listing.sar")}</span>
+                  <span className="font-bold text-end">{fmtNumber(totalAmt, { maximumFractionDigits: 2 })} {t("listing.sar")}</span>
                 </div>
               </div>
             );
@@ -1021,11 +1022,11 @@ function ProducerOfferRow({
         return (
           <div className="rounded-md bg-muted/30 border border-border/40 px-2.5 py-1.5 grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs mt-1.5">
             <span className="text-muted-foreground">{t("deal.vat.subtotal")}</span>
-            <span className="font-medium text-end">{subtotal.toLocaleString(undefined, { maximumFractionDigits: 2 })} {t("listing.sar")}</span>
+            <span className="font-medium text-end">{fmtNumber(subtotal, { maximumFractionDigits: 2 })} {t("listing.sar")}</span>
             <span className="text-muted-foreground">{t("deal.vat.rate")}</span>
-            <span className="font-medium text-end">{vatAmt.toLocaleString(undefined, { maximumFractionDigits: 2 })} {t("listing.sar")}</span>
+            <span className="font-medium text-end">{fmtNumber(vatAmt, { maximumFractionDigits: 2 })} {t("listing.sar")}</span>
             <span className="font-semibold text-muted-foreground">{t("deal.vat.total")}</span>
-            <span className="font-bold text-end">{totalAmt.toLocaleString(undefined, { maximumFractionDigits: 2 })} {t("listing.sar")}</span>
+            <span className="font-bold text-end">{fmtNumber(totalAmt, { maximumFractionDigits: 2 })} {t("listing.sar")}</span>
           </div>
         );
       })()}
@@ -1280,7 +1281,7 @@ export function ListingDetailPage() {
 
   const dateStr = listing
     ? new Date(listing.created_at).toLocaleDateString(
-        lang === "ar" ? "ar-SA" : "en-US",
+        lang === "ar" ? "ar-SA-u-nu-latn" : "en-US",
         { year: "numeric", month: "long", day: "numeric" },
       )
     : "";
@@ -1394,7 +1395,7 @@ export function ListingDetailPage() {
     : null;
 
   const unitLabel = listing.unit ? t(`unit.${listing.unit}`) : "";
-  const displayTitle = `${subcategoryLabel ?? categoryLabel ?? materialLabel}${quantity > 0 ? ` — ${quantity.toLocaleString()} ${unitLabel}` : ""}`;
+  const displayTitle = `${subcategoryLabel ?? categoryLabel ?? materialLabel}${quantity > 0 ? ` — ${fmtNumber(quantity)} ${unitLabel}` : ""}`;
 
   const listingLocationAddress = (listing as typeof listing & { material_location_address?: string | null }).material_location_address ?? null;
   const listingMapsUrl = (listing as typeof listing & { google_maps_url?: string | null }).google_maps_url ?? null;

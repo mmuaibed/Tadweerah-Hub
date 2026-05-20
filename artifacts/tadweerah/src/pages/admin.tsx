@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useT } from "@/i18n";
+import { fmtSAR, fmtDate } from "@/lib/format";
 
 /* ─── Types ──────────────────────────────────────────────────────────────── */
 
@@ -177,14 +178,6 @@ export function AdminPage() {
     setDeals(null);
     setCompanies(null);
     void signOut({ redirectUrl: "/" });
-  }
-
-  function formatDate(iso: string) {
-    return new Date(iso).toLocaleDateString(lang === "ar" ? "ar-SA" : "en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
   }
 
   async function callAdmin(path: string, options?: RequestInit): Promise<Response> {
@@ -628,7 +621,7 @@ export function AdminPage() {
                                 : <span className="text-[11px] text-green-700 font-semibold">✓</span>
                               }
                             </td>
-                            <td className="px-4 py-2.5 text-xs text-muted-foreground">{formatDate(d.created_at)}</td>
+                            <td className="px-4 py-2.5 text-xs text-muted-foreground">{fmtDate(d.created_at, lang)}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -693,7 +686,7 @@ export function AdminPage() {
                               {t("admin.transport.status.pending")}
                             </span>
                           </div>
-                          <span className="text-xs text-muted-foreground shrink-0">{formatDate(tr.created_at)}</span>
+                          <span className="text-xs text-muted-foreground shrink-0">{fmtDate(tr.created_at, lang)}</span>
                         </div>
 
                         {tr.company_name && (
@@ -716,7 +709,7 @@ export function AdminPage() {
                         {tr.planned_pickup_at && (
                           <p className="text-xs text-muted-foreground">
                             {t("admin.transport.planned_pickup")}
-                            {formatDate(tr.planned_pickup_at)}
+                            {fmtDate(tr.planned_pickup_at, lang)}
                           </p>
                         )}
 
@@ -856,7 +849,7 @@ export function AdminPage() {
                           const trLabel = row.tr_status ?? (row.transport_decision === "not_required" ? t("reports.transport.not_required") : "—");
                           return (
                             <tr key={row.deal_id} className="hover:bg-muted/20 transition-colors">
-                              <td className="px-3 py-2.5 whitespace-nowrap text-muted-foreground">{formatDate(row.created_at)}</td>
+                              <td className="px-3 py-2.5 whitespace-nowrap text-muted-foreground">{fmtDate(row.created_at, lang)}</td>
                               <td className="px-3 py-2.5 whitespace-nowrap font-mono text-muted-foreground">{row.deal_id.slice(0,8)}…</td>
                               <td className="px-3 py-2.5 whitespace-nowrap">{row.seller_name ?? "—"}<br/><span className="text-muted-foreground">{row.seller_city ?? ""}</span></td>
                               <td className="px-3 py-2.5 whitespace-nowrap">{row.buyer_name ?? "—"}<br/><span className="text-muted-foreground">{row.buyer_city ?? ""}</span></td>
@@ -889,8 +882,3 @@ export function AdminPage() {
   );
 }
 
-function fmtSAR(val: string | null | undefined, lang: string): string {
-  const n = parseFloat(val ?? "0");
-  if (isNaN(n)) return "—";
-  return n.toLocaleString(lang === "ar" ? "ar-SA" : "en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}

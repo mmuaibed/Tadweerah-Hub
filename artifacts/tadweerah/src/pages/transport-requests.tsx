@@ -145,7 +145,7 @@ function TRCard({
   const { mutate: accept, isPending } = useAcceptTransportRequest();
   const Arrow = lang === "ar" ? ArrowLeft : ArrowRight;
   const dateOpts: Intl.DateTimeFormatOptions = { year: "numeric", month: "short", day: "numeric" };
-  const locale = lang === "ar" ? "ar-SA" : "en-US";
+  const locale = lang === "ar" ? "ar-SA-u-nu-latn" : "en-US";
 
   return (
     <Card className="border-border bg-card">

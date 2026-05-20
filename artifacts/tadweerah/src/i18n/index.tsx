@@ -1152,7 +1152,7 @@ const translations: Record<string, Record<Language, string>> = {
   "reports.filter.company":    { ar: "الشركة (ID)", en: "Company (ID)" },
   "reports.filter.all_statuses": { ar: "جميع الحالات", en: "All Statuses" },
 
-  "reports.action.load":       { ar: "تحميل التقرير", en: "Load Report" },
+  "reports.action.load":       { ar: "عرض التقرير", en: "View Report" },
   "reports.action.export_csv": { ar: "تصدير CSV",     en: "Export CSV" },
   "reports.action.open_deal":  { ar: "فتح",           en: "Open" },
   "reports.action.exporting":  { ar: "جاري التصدير…", en: "Exporting…" },
@@ -1194,7 +1194,7 @@ const translations: Record<string, Record<Language, string>> = {
   // Admin reports tab
   "admin.tab.reports":           { ar: "التقارير",    en: "Reports" },
   "admin.reports.filter.company_id": { ar: "معرّف الشركة (اختياري)", en: "Company ID (optional)" },
-  "admin.reports.fetch":         { ar: "تحميل التقرير", en: "Load Report" },
+  "admin.reports.fetch":         { ar: "عرض التقرير", en: "View Report" },
   "admin.reports.export_csv":    { ar: "تصدير CSV",    en: "Export CSV" },
   "admin.reports.empty":         { ar: "لا توجد صفقات بهذه المعايير", en: "No deals match these criteria" },
 

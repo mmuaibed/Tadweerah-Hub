@@ -25,6 +25,7 @@ import { AppLayout } from "@/components/app-layout";
 import { EmptyState } from "@/components/empty-state";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { useT } from "@/i18n";
+import { fmtNumber } from "@/lib/format";
 import { LocationLink } from "@/components/location-link";
 
 type Tab = "all" | "pending" | "accepted" | "rejected";
@@ -62,7 +63,7 @@ function OfferCard({ offer }: { offer: MyOffer }) {
 
   const closedDateStr = offer.listing_closed_at
     ? new Date(offer.listing_closed_at).toLocaleDateString(
-        lang === "ar" ? "ar-SA" : "en-US",
+        lang === "ar" ? "ar-SA-u-nu-latn" : "en-US",
         { year: "numeric", month: "short", day: "numeric" },
       )
     : null;
@@ -114,7 +115,7 @@ function OfferCard({ offer }: { offer: MyOffer }) {
       <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
         <span className="flex items-center gap-1">
           <Package className="h-3 w-3" />
-          {offer.listing_quantity.toLocaleString()} {t(`unit.${offer.listing_unit}`)}
+          {fmtNumber(offer.listing_quantity)} {t(`unit.${offer.listing_unit}`)}
         </span>
         <span className="flex items-center gap-1">
           <MapPin className="h-3 w-3" />
@@ -178,7 +179,7 @@ function OfferCard({ offer }: { offer: MyOffer }) {
       <div className="space-y-0.5">
         <div className="flex items-baseline gap-1">
           <span className="text-lg font-bold text-foreground">
-            {offer.price_per_unit.toLocaleString()}
+            {fmtNumber(offer.price_per_unit)}
           </span>
           <span className="text-xs text-muted-foreground">
             {t("listing.sar")} / {t("unit." + offer.listing_unit)}
@@ -187,7 +188,7 @@ function OfferCard({ offer }: { offer: MyOffer }) {
         <div className="text-xs text-muted-foreground">
           {t("offer.mine.total")}:{" "}
           <span className="font-semibold text-foreground">
-            {estimatedTotal.toLocaleString()} {t("listing.sar")}
+            {fmtNumber(estimatedTotal)} {t("listing.sar")}
           </span>
           {" "}
           <span className="text-muted-foreground/60">{t("offer.quantityDisclaimer")}</span>
@@ -222,7 +223,7 @@ function OfferCard({ offer }: { offer: MyOffer }) {
         <div className="rounded-lg bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground">
           {t("participations.listing.acceptedTotal")}:{" "}
           <span className="font-semibold text-foreground">
-            {offer.listing_accepted_total.toLocaleString()} {t("listing.sar")}
+            {fmtNumber(offer.listing_accepted_total)} {t("listing.sar")}
           </span>
         </div>
       )}

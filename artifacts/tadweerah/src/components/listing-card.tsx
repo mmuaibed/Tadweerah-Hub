@@ -22,6 +22,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useT } from "@/i18n";
+import { fmtNumber } from "@/lib/format";
 import { listingRef } from "@/lib/listing-ref";
 import { LocationLink } from "@/components/location-link";
 import type { WasteListing } from "@workspace/api-client-react";
@@ -66,9 +67,9 @@ export function ListingCard({
     if (pricePerUnit == null) return null;
     if (isFixed) {
       const tot = total ?? Number(pricePerUnit) * qty;
-      return `${tot.toLocaleString()} ${t("listing.sar")}`;
+      return `${fmtNumber(tot)} ${t("listing.sar")}`;
     }
-    return `${Number(pricePerUnit).toLocaleString()} ${t("listing.sar")}${unitLabel}`;
+    return `${fmtNumber(pricePerUnit)} ${t("listing.sar")}${unitLabel}`;
   }
 
   const inner = (
@@ -189,7 +190,7 @@ export function ListingCard({
               <Calendar className="h-4 w-4 shrink-0" />
               <span>
                 {new Date(listing.created_at).toLocaleDateString(
-                  lang === "ar" ? "ar-SA" : "en-US",
+                  lang === "ar" ? "ar-SA-u-nu-latn" : "en-US",
                   { year: "numeric", month: "short", day: "numeric" },
                 )}
               </span>
@@ -199,7 +200,7 @@ export function ListingCard({
             <div className="flex items-center gap-2">
               <Tag className="h-4 w-4 shrink-0" />
               <span>
-                {listing.price_hint.toLocaleString()} {t("listing.sar")}{listing.unit ? ` / ${t(`unit.${listing.unit}`)}` : ""}
+                {fmtNumber(listing.price_hint)} {t("listing.sar")}{listing.unit ? ` / ${t(`unit.${listing.unit}`)}` : ""}
               </span>
             </div>
           )}

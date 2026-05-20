@@ -102,7 +102,7 @@ function ContractCard({ contract, myCompanyId }: { contract: ContractSummary; my
   const summary = contract.shipment_summary;
 
   const dateStr = new Date(contract.start_date).toLocaleDateString(
-    lang === "ar" ? "ar-SA" : "en-US",
+    lang === "ar" ? "ar-SA-u-nu-latn" : "en-US",
     { year: "numeric", month: "short", day: "numeric" },
   );
 

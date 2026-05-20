@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { useT } from "@/i18n";
+import { fmtSAR, fmtDate } from "@/lib/format";
 
 /* ─── Types ──────────────────────────────────────────────────────────────── */
 
@@ -75,22 +76,6 @@ const ALL_STATUSES = [
   "cancelled",
 ] as const;
 
-function formatSAR(val: string | null | undefined, lang: string): string {
-  const n = parseFloat(val ?? "0");
-  if (isNaN(n)) return "—";
-  return n.toLocaleString(lang === "ar" ? "ar-SA" : "en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-}
-
-function formatDate(iso: string, lang: string): string {
-  return new Date(iso).toLocaleDateString(lang === "ar" ? "ar-SA" : "en-GB", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
 
 function transportLabel(row: DealReportRow, t: (k: string) => string): string {
   if (row.tr_status) return t(`reports.transport.${row.tr_status}`) ?? row.tr_status;
@@ -311,19 +296,19 @@ export function ReportsPage() {
             <SummaryCard
               icon={TrendingUp}
               label={t("reports.summary.amount_before_vat")}
-              value={formatSAR(summary.estimated_amount_sum, lang)}
+              value={fmtSAR(summary.estimated_amount_sum, lang)}
               colorClass="bg-primary/10 text-primary"
             />
             <SummaryCard
               icon={Banknote}
               label={t("reports.summary.vat_amount")}
-              value={formatSAR(summary.vat_amount_sum, lang)}
+              value={fmtSAR(summary.vat_amount_sum, lang)}
               colorClass="bg-orange-100 text-orange-700"
             />
             <SummaryCard
               icon={BarChart3}
               label={t("reports.summary.total_with_vat")}
-              value={formatSAR(summary.total_amount_sum, lang)}
+              value={fmtSAR(summary.total_amount_sum, lang)}
               colorClass="bg-purple-100 text-purple-700"
             />
           </div>
@@ -376,7 +361,7 @@ export function ReportsPage() {
                         : (row.material ?? "—");
                       return (
                         <tr key={row.deal_id} className="hover:bg-muted/20 transition-colors">
-                          <Td mono>{formatDate(row.created_at, lang)}</Td>
+                          <Td mono>{fmtDate(row.created_at, lang)}</Td>
                           <Td mono dim>{row.deal_id.slice(0, 8)}</Td>
                           <Td>
                             <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${
@@ -394,9 +379,9 @@ export function ReportsPage() {
                               {t(`deal.status.${row.status}`) || row.status}
                             </span>
                           </Td>
-                          <Td mono>{formatSAR(row.estimated_amount, lang)}</Td>
-                          <Td mono dim>{formatSAR(row.vat_amount, lang)}</Td>
-                          <Td mono bold>{formatSAR(row.total_amount, lang)}</Td>
+                          <Td mono>{fmtSAR(row.estimated_amount, lang)}</Td>
+                          <Td mono dim>{fmtSAR(row.vat_amount, lang)}</Td>
+                          <Td mono bold>{fmtSAR(row.total_amount, lang)}</Td>
                           <Td dim>{transportLabel(row, t)}</Td>
                           <Td>
                             <Link

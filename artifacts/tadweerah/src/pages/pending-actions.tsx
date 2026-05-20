@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { AppLayout } from "@/components/app-layout";
 import { useT } from "@/i18n";
+import { fmtNumber, fmtDate } from "@/lib/format";
 import { dealRef } from "@/lib/listing-ref";
 import { LocationLink } from "@/components/location-link";
 import { useGetMaterialCategories } from "@workspace/api-client-react";
@@ -171,12 +172,9 @@ export function PendingActionsPage() {
               : null;
             const primaryLabel = subcategoryLabel ?? categoryLabel;
             const qtyDisplay = deal.quantity != null && deal.unit
-              ? ` — ${Number(deal.quantity).toLocaleString()} ${deal.unit}`
+              ? ` — ${fmtNumber(deal.quantity)} ${deal.unit}`
               : "";
-            const updatedDate = new Date(deal.updated_at).toLocaleDateString(
-              lang === "ar" ? "ar-SA" : "en-US",
-              { year: "numeric", month: "short", day: "numeric" },
-            );
+            const updatedDate = fmtDate(deal.updated_at, lang);
 
             return (
               <div

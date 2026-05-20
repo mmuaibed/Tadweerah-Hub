@@ -25,6 +25,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { AppLayout } from "@/components/app-layout";
 import { useT } from "@/i18n";
+import { fmtNumber } from "@/lib/format";
 
 interface DashboardStats {
   listings_count: number;
@@ -297,10 +298,7 @@ export function DashboardPage() {
               label={t("dashboard.stats.total_value")}
               value={
                 stats.total_deal_value > 0
-                  ? stats.total_deal_value.toLocaleString(
-                      lang === "ar" ? "ar-SA" : "en-US",
-                      { maximumFractionDigits: 0 }
-                    )
+                  ? fmtNumber(stats.total_deal_value, { maximumFractionDigits: 0 })
                   : "—"
               }
               href="/reports"

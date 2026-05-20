@@ -30,6 +30,7 @@ import { Label } from "@/components/ui/label";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { AppLayout } from "@/components/app-layout";
 import { useT } from "@/i18n";
+import { fmtNumber } from "@/lib/format";
 import { useToast } from "@/hooks/use-toast";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -251,7 +252,7 @@ function ContractLifecyclePanel({
 
   function fmtDate(iso: string | null) {
     if (!iso) return "";
-    return new Date(iso).toLocaleDateString(ar ? "ar-SA" : "en-US", {
+    return new Date(iso).toLocaleDateString(ar ? "ar-SA-u-nu-latn" : "en-US", {
       year: "numeric", month: "short", day: "numeric",
     });
   }
@@ -640,7 +641,7 @@ function MaterialLinesSection({
                   <td className="px-4 py-3 font-medium text-foreground">{m.material_label}</td>
                   <td className="px-4 py-3 text-muted-foreground">{m.unit_label}</td>
                   <td className="px-4 py-3 text-end font-mono text-foreground">
-                    {Number(m.price_per_unit).toLocaleString()}
+                    {fmtNumber(m.price_per_unit)}
                   </td>
                   <td className="px-4 py-3 text-center text-muted-foreground">
                     {m.seller_pct != null ? `${Number(m.seller_pct)}%` : "—"}
@@ -721,7 +722,7 @@ function ShipmentMiniTimeline({
 
   function fmtShort(iso: string | null) {
     if (!iso) return null;
-    return new Date(iso).toLocaleDateString(ar ? "ar-SA" : "en-US", {
+    return new Date(iso).toLocaleDateString(ar ? "ar-SA-u-nu-latn" : "en-US", {
       month: "short", day: "numeric",
     });
   }
@@ -758,7 +759,7 @@ function ShipmentMiniTimeline({
       isCurrent: shipment.status === "planned",
       ts: shipment.dispatched_at,
       weightNote: shipment.source_weight != null
-        ? String(Number(shipment.source_weight).toLocaleString())
+        ? fmtNumber(shipment.source_weight)
         : null,
     },
     {
@@ -769,7 +770,7 @@ function ShipmentMiniTimeline({
       isCurrent: shipment.status === "dispatched",
       ts: shipment.received_at,
       weightNote: shipment.destination_weight != null
-        ? String(Number(shipment.destination_weight).toLocaleString())
+        ? fmtNumber(shipment.destination_weight)
         : null,
     },
   ];
@@ -922,23 +923,23 @@ function ShipmentRow({
         <div className="grid grid-cols-3 gap-x-3 text-xs">
           <div>
             <span className="text-muted-foreground block">{t("contract.shipments.source_weight")}</span>
-            <span className="font-medium">{shipment.source_weight != null ? Number(shipment.source_weight).toLocaleString() : "—"}</span>
+            <span className="font-medium">{shipment.source_weight != null ? fmtNumber(shipment.source_weight) : "—"}</span>
           </div>
           <div>
             <span className="text-muted-foreground block">{t("contract.shipments.dest_weight")}</span>
-            <span className="font-medium">{shipment.destination_weight != null ? Number(shipment.destination_weight).toLocaleString() : "—"}</span>
+            <span className="font-medium">{shipment.destination_weight != null ? fmtNumber(shipment.destination_weight) : "—"}</span>
           </div>
           <div>
             <span className="text-muted-foreground block">{t("contract.shipments.final_weight")}</span>
             <span className="font-semibold text-primary">
-              {shipment.final_weight != null ? Number(shipment.final_weight).toLocaleString() : "—"}
+              {shipment.final_weight != null ? fmtNumber(shipment.final_weight) : "—"}
             </span>
           </div>
         </div>
 
         {shipment.final_value != null && (
           <div className="text-xs font-semibold text-foreground">
-            {t("contract.shipments.final_value")}: {Number(shipment.final_value).toLocaleString()} {lang === "ar" ? "ريال" : "SAR"}
+            {t("contract.shipments.final_value")}: {fmtNumber(shipment.final_value)} {lang === "ar" ? "ريال" : "SAR"}
           </div>
         )}
 
@@ -1177,7 +1178,7 @@ export function ContractDetailPage() {
 
   const fmtDate = (iso: string | null) => {
     if (!iso) return "—";
-    return new Date(iso).toLocaleDateString(lang === "ar" ? "ar-SA" : "en-US", {
+    return new Date(iso).toLocaleDateString(lang === "ar" ? "ar-SA-u-nu-latn" : "en-US", {
       year: "numeric", month: "short", day: "numeric",
     });
   };
