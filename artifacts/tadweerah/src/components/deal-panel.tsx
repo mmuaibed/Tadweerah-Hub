@@ -951,10 +951,20 @@ function printDealReport(
 
   const dir = lang === "ar" ? "rtl" : "ltr";
   const marginStart = dir === "rtl" ? "margin-right" : "margin-left";
-  const totalValue = (deal.final_amount ?? deal.estimated_amount).toLocaleString();
+  const subtotalNum = deal.final_amount ?? deal.estimated_amount;
+  const totalValue = subtotalNum.toLocaleString();
+  const vatAmtNum = deal.vat_amount ?? Math.round(subtotalNum * 0.15 * 1000) / 1000;
+  const totalAmtNum = deal.total_amount ?? Math.round((subtotalNum + vatAmtNum) * 1000) / 1000;
+  const vatValue = vatAmtNum.toLocaleString();
+  const grandTotalValue = totalAmtNum.toLocaleString();
   const ref = dealRef(deal.id, deal.created_at);
   const isFixed = opts.pricingModel === "fixed";
   const sarLabel = lang === "ar" ? "ريال" : "SAR";
+  const transportResp = deal.transport_responsibility
+    ? (lang === "ar"
+        ? (deal.transport_responsibility === "seller" ? "المورّد (البائع)" : "المشتري")
+        : (deal.transport_responsibility === "seller" ? "Seller (Producer)" : "Buyer"))
+    : null;
 
   const html = `<!DOCTYPE html>
 <html dir="${dir}" lang="${lang}">
@@ -1020,7 +1030,11 @@ function printDealReport(
       <div class="total-label">${isFixed
         ? (lang === "ar" ? "إجمالي الصفقة" : "Total Deal Value")
         : (lang === "ar" ? "القيمة الإجمالية المقدّرة" : "Estimated Total Value")}</div>
-      <div class="total-value">${totalValue} ${sarLabel}</div>
+      <table style="margin:0;border:none;font-size:12px;width:auto">
+        <tr><td style="border:none;background:none;font-weight:400;color:#6b7280;padding:1px 8px 1px 0;width:auto">${lang === "ar" ? "المبلغ قبل الضريبة" : "Subtotal (before VAT)"}</td><td style="border:none;background:none;font-weight:600;padding:1px 0;direction:ltr">${totalValue} ${sarLabel}</td></tr>
+        <tr><td style="border:none;background:none;font-weight:400;color:#6b7280;padding:1px 8px 1px 0">${lang === "ar" ? "ضريبة القيمة المضافة (15%)" : "VAT (15%)"}</td><td style="border:none;background:none;font-weight:600;padding:1px 0;direction:ltr">${vatValue} ${sarLabel}</td></tr>
+        <tr><td style="border:none;background:none;font-weight:700;padding:1px 8px 1px 0">${lang === "ar" ? "الإجمالي شامل الضريبة" : "Total (incl. VAT)"}</td><td style="border:none;background:none;padding:1px 0"><div class="total-value" style="font-size:20px;margin:0">${grandTotalValue} ${sarLabel}</div></td></tr>
+      </table>
       ${!isFixed ? `<div class="total-sub">${deal.price_per_unit.toLocaleString()} ${sarLabel} / ${unit}</div>` : ""}
     </div>
     <div><span class="total-status">${statusMap[deal.status]}</span></div>
@@ -1057,8 +1071,11 @@ function printDealReport(
       ? `<tr><td>${lang === "ar" ? "إجمالي الصفقة" : "Total Deal Value"}</td><td style="font-weight:700;color:#1e40af">${totalValue} ${sarLabel}</td></tr>`
       : `<tr><td>${t("deal.print.price_per_unit")}</td><td>${deal.price_per_unit.toLocaleString()} ${sarLabel} / ${unit}</td></tr>
     <tr><td>${lang === "ar" ? "الإجمالي المقدَّر" : "Estimated Total"}</td><td style="font-weight:700;color:#1e40af">${totalValue} ${sarLabel}</td></tr>`}
+    <tr><td>${lang === "ar" ? "ضريبة القيمة المضافة (15%)" : "VAT (15%)"}</td><td>${vatValue} ${sarLabel}</td></tr>
+    <tr><td style="font-weight:700">${lang === "ar" ? "الإجمالي شامل الضريبة" : "Total (incl. VAT)"}</td><td style="font-weight:700;color:#16a34a;font-size:15px">${grandTotalValue} ${sarLabel}</td></tr>
     ${deal.actual_quantity != null ? `<tr><td>${lang === "ar" ? "الكمية الفعلية" : "Actual Quantity"}</td><td>${deal.actual_quantity.toLocaleString()} ${unit}</td></tr>` : ""}
     ${deal.final_amount != null ? `<tr><td>${lang === "ar" ? "الإجمالي النهائي" : "Final Amount"}</td><td style="font-weight:700;color:#16a34a">${deal.final_amount.toLocaleString()} ${sarLabel}</td></tr>` : ""}
+    ${transportResp ? `<tr><td>${lang === "ar" ? "مسؤولية النقل" : "Transport Responsibility"}</td><td>${transportResp}</td></tr>` : ""}
     ${deal.payment_reference ? `<tr><td>${lang === "ar" ? "رقم الدفعة" : "Payment Reference"}</td><td>${deal.payment_reference}</td></tr>` : ""}
   </table>
 
@@ -1781,14 +1798,21 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
                 <p className="text-xs text-green-700 mt-0.5">{t("deal.compliance.tagline")}</p>
                 {listingRef && <p className="text-[10px] text-green-600 font-mono mt-1">{listingRef}</p>}
               </div>
-              <div className="rounded-lg border border-green-200 bg-white px-4 py-2.5 flex items-center justify-between gap-2">
-                <span className="text-sm text-muted-foreground">
-                  {lang === "ar" ? "إجمالي الصفقة" : "Deal Total"}
-                </span>
-                <span className="text-lg font-bold text-foreground">
-                  {(deal.final_amount ?? deal.estimated_amount ?? 0).toLocaleString()} {lang === "ar" ? "ر.س" : "SAR"}
-                </span>
-              </div>
+              {(() => {
+                const subtotal = deal.final_amount ?? deal.estimated_amount ?? 0;
+                const vatAmt = deal.vat_amount ?? Math.round(subtotal * 0.15 * 1000) / 1000;
+                const totalAmt = deal.total_amount ?? Math.round((subtotal + vatAmt) * 1000) / 1000;
+                return (
+                  <div className="rounded-lg border border-green-200 bg-white px-3 py-2.5 grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
+                    <span className="text-muted-foreground">{t("deal.vat.subtotal")}</span>
+                    <span className="font-medium text-end">{subtotal.toLocaleString()} {lang === "ar" ? "ر.س" : "SAR"}</span>
+                    <span className="text-muted-foreground">{t("deal.vat.rate")}</span>
+                    <span className="font-medium text-end">{vatAmt.toLocaleString()} {lang === "ar" ? "ر.س" : "SAR"}</span>
+                    <span className="text-muted-foreground font-semibold">{t("deal.vat.total")}</span>
+                    <span className="text-lg font-bold text-foreground text-end">{totalAmt.toLocaleString()} {lang === "ar" ? "ر.س" : "SAR"}</span>
+                  </div>
+                );
+              })()}
               {deal.counterparty?.contact_phone && (
                 <a
                   href={`tel:${deal.counterparty.contact_phone}`}
@@ -1826,26 +1850,33 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
                 </span>
               </div>
 
-              {/* Price summary */}
-              <div className="rounded-lg bg-background border border-border px-4 py-3 flex items-center justify-between gap-2">
+              {/* Price summary with VAT breakdown */}
+              <div className="rounded-lg bg-background border border-border px-4 py-3">
                 {deal.settlement_type === "fixed" ? (
-                  <>
-                    <span className="text-sm text-muted-foreground">
-                      {lang === "ar" ? "إجمالي الصفقة" : "Deal Total"}
-                    </span>
-                    <span className="text-xl font-bold text-foreground">
-                      {(deal.final_amount ?? deal.estimated_amount ?? 0).toLocaleString()} <span className="text-sm font-medium text-muted-foreground">{lang === "ar" ? "ر.س" : "SAR"}</span>
-                    </span>
-                  </>
+                  (() => {
+                    const subtotal = deal.estimated_amount ?? 0;
+                    const vatAmt = deal.vat_amount ?? Math.round(subtotal * 0.15 * 1000) / 1000;
+                    const totalAmt = deal.total_amount ?? Math.round((subtotal + vatAmt) * 1000) / 1000;
+                    return (
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
+                        <span className="text-muted-foreground">{t("deal.vat.subtotal")}</span>
+                        <span className="font-medium text-end">{subtotal.toLocaleString()} <span className="text-xs text-muted-foreground">{lang === "ar" ? "ر.س" : "SAR"}</span></span>
+                        <span className="text-muted-foreground">{t("deal.vat.rate")}</span>
+                        <span className="font-medium text-end">{vatAmt.toLocaleString()} <span className="text-xs text-muted-foreground">{lang === "ar" ? "ر.س" : "SAR"}</span></span>
+                        <span className="text-muted-foreground font-semibold">{t("deal.vat.total")}</span>
+                        <span className="text-xl font-bold text-foreground text-end">{totalAmt.toLocaleString()} <span className="text-sm font-medium text-muted-foreground">{lang === "ar" ? "ر.س" : "SAR"}</span></span>
+                      </div>
+                    );
+                  })()
                 ) : (
-                  <>
+                  <div className="flex items-center justify-between gap-2">
                     <span className="text-sm text-muted-foreground">
                       {lang === "ar" ? "سعر الوحدة" : "Unit Price"}
                     </span>
                     <span className="text-xl font-bold text-foreground">
                       {deal.price_per_unit.toLocaleString()} <span className="text-sm font-medium text-muted-foreground">{lang === "ar" ? "ر.س" : "SAR"}/{unit}</span>
                     </span>
-                  </>
+                  </div>
                 )}
               </div>
 

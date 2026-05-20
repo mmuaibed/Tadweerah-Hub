@@ -1,0 +1,98 @@
+Good verification. Please proceed with a limited VAT completion patch only.
+
+Do not implement new features.
+Do not touch transport responsibility.
+Do not touch Smart-Assist Transport.
+Do not touch admin/ops logic.
+Do not touch MWAN/eManifest.
+Do not implement multi-material listings.
+Do not change offer comparison logic.
+Do not change atomic accept logic.
+Do not change deal lifecycle states.
+Do not refactor unrelated files.
+
+Scope: Complete VAT visibility only, using existing stored/calculated values.
+
+Current state:
+- VAT is stored on deals using:
+  - estimated_amount as pre-VAT subtotal
+  - vat_rate
+  - vat_amount
+  - total_amount
+- VAT currently appears only in Deal Panel financial summary.
+- We need the same three-number structure shown in the remaining existing financial screens.
+
+Required patch:
+
+1) Buyer offer submission screen — listing-detail.tsx
+When buyer enters price_per_unit / offer value, show:
+- offer amount before VAT
+- VAT 15%
+- total including VAT
+
+Use the current calculated offer subtotal:
+price_per_unit × quantity
+Do not change submitted offer value.
+Do not store VAT at offer stage unless already safe.
+This is display-only before deal creation.
+
+2) Seller offer review — listing-detail.tsx
+For each received offer, show:
+- offer amount before VAT
+- VAT 15%
+- total including VAT
+
+Do not change offer ranking or comparison.
+Continue comparing offers by pre-VAT amount.
+
+3) Payment confirmation section — deal-panel.tsx
+Where payment amount currently shows final_amount ?? estimated_amount, show:
+- amount before VAT
+- VAT 15%
+- total including VAT
+
+Use deal.total_amount where available.
+Fallback:
+- subtotal = final_amount ?? estimated_amount
+- VAT = subtotal × 0.15
+- total = subtotal + VAT
+
+Do not change payment workflow logic.
+
+4) printDealReport() — deal-panel.tsx
+Update the printed report to show:
+- amount before VAT
+- VAT 15%
+- total including VAT
+- transport responsibility as separate text if already available
+
+Do not redesign the report.
+
+5) Contracts — only if safe and existing value display exists
+In contract-new.tsx / ContractNewPage, if contract value totals are already displayed, add:
+- value before VAT
+- VAT 15%
+- total including VAT
+
+If contract values are only manually entered and no summary exists, do not build a new contract pricing module. Just report that contracts remain outside VAT display for now.
+
+Important VAT rules:
+- VAT rate = 15%.
+- VAT is a separate display line.
+- Base price remains before VAT.
+- Do not merge VAT into base price.
+- Do not create invoice module.
+- Do not build ZATCA integration.
+- Do not add new DB columns unless absolutely necessary. Prefer display-only patch using existing values.
+
+After the patch, run:
+- pnpm --filter @workspace/api-server run typecheck
+- pnpm run typecheck
+- curl -s http://localhost:80/api/healthz
+
+Then provide:
+1) changed files
+2) exact screens now showing VAT
+3) confirmation that offer comparison was not changed
+4) confirmation that deal lifecycle was not changed
+5) typecheck results

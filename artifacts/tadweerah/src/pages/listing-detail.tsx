@@ -836,14 +836,34 @@ function BuyerOfferSection({
                     className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                     placeholder={`> ${highestPrice.toLocaleString()}`}
                   />
-                  {newPrice && parseFloat(newPrice) > 0 && (
-                    <p className="text-xs text-muted-foreground">
-                      {newPriceMode === "unit"
-                        ? <>{t("offer.form.computedTotal")}: <span className="font-semibold">{(parseFloat(newPrice) * listingQuantity).toLocaleString()} {t("listing.sar")}</span></>
-                        : <>{t("offer.form.computedUnit")}: <span className="font-semibold">{listingQuantity > 0 ? (parseFloat(newPrice) / listingQuantity).toLocaleString(undefined, { maximumFractionDigits: 3 }) : "—"} {t("listing.sar")}</span></>
-                      }
-                    </p>
-                  )}
+                  {newPrice && parseFloat(newPrice) > 0 && (() => {
+                    const entered = parseFloat(newPrice);
+                    const subtotal = newPriceMode === "unit" ? entered * listingQuantity : entered;
+                    const unitComputed = newPriceMode === "total" ? (listingQuantity > 0 ? entered / listingQuantity : 0) : entered;
+                    const vatAmt = Math.round(subtotal * 0.15 * 1000) / 1000;
+                    const totalAmt = Math.round((subtotal + vatAmt) * 1000) / 1000;
+                    return (
+                      <div className="space-y-1">
+                        {newPriceMode === "unit" ? (
+                          <p className="text-xs text-muted-foreground">
+                            {t("offer.form.computedTotal")}: <span className="font-semibold">{subtotal.toLocaleString()} {t("listing.sar")}</span>
+                          </p>
+                        ) : (
+                          <p className="text-xs text-muted-foreground">
+                            {t("offer.form.computedUnit")}: <span className="font-semibold">{unitComputed > 0 ? unitComputed.toLocaleString(undefined, { maximumFractionDigits: 3 }) : "—"} {t("listing.sar")}</span>
+                          </p>
+                        )}
+                        <div className="rounded-md bg-muted/40 border border-border/50 px-2.5 py-1.5 grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs">
+                          <span className="text-muted-foreground">{t("deal.vat.subtotal")}</span>
+                          <span className="font-medium text-end">{subtotal.toLocaleString()} {t("listing.sar")}</span>
+                          <span className="text-muted-foreground">{t("deal.vat.rate")}</span>
+                          <span className="font-medium text-end">{vatAmt.toLocaleString()} {t("listing.sar")}</span>
+                          <span className="font-semibold text-muted-foreground">{t("deal.vat.total")}</span>
+                          <span className="font-bold text-end">{totalAmt.toLocaleString()} {t("listing.sar")}</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-medium text-muted-foreground">
@@ -947,14 +967,35 @@ function BuyerOfferSection({
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             placeholder={highestPrice > 0 ? `> ${highestPrice.toLocaleString()}` : "0.000"}
           />
-          {price && parseFloat(price) > 0 && (
-            <p className="text-xs text-muted-foreground">
-              {priceMode === "unit"
-                ? <>{t("offer.form.computedTotal")}: <span className="font-semibold">{(parseFloat(price) * listingQuantity).toLocaleString()} {t("listing.sar")}</span>{" "}<span className="text-muted-foreground/60">{t("offer.quantityDisclaimer")}</span></>
-                : <>{t("offer.form.computedUnit")}: <span className="font-semibold">{listingQuantity > 0 ? (parseFloat(price) / listingQuantity).toLocaleString(undefined, { maximumFractionDigits: 3 }) : "—"} {t("listing.sar")}</span></>
-              }
-            </p>
-          )}
+          {price && parseFloat(price) > 0 && (() => {
+            const entered = parseFloat(price);
+            const subtotal = priceMode === "unit" ? entered * listingQuantity : entered;
+            const unitComputed = priceMode === "total" ? (listingQuantity > 0 ? entered / listingQuantity : 0) : entered;
+            const vatAmt = Math.round(subtotal * 0.15 * 1000) / 1000;
+            const totalAmt = Math.round((subtotal + vatAmt) * 1000) / 1000;
+            return (
+              <div className="space-y-1">
+                {priceMode === "unit" ? (
+                  <p className="text-xs text-muted-foreground">
+                    {t("offer.form.computedTotal")}: <span className="font-semibold">{subtotal.toLocaleString()} {t("listing.sar")}</span>{" "}
+                    <span className="text-muted-foreground/60">{t("offer.quantityDisclaimer")}</span>
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    {t("offer.form.computedUnit")}: <span className="font-semibold">{unitComputed > 0 ? unitComputed.toLocaleString(undefined, { maximumFractionDigits: 3 }) : "—"} {t("listing.sar")}</span>
+                  </p>
+                )}
+                <div className="rounded-md bg-muted/40 border border-border/50 px-2.5 py-1.5 grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs">
+                  <span className="text-muted-foreground">{t("deal.vat.subtotal")}</span>
+                  <span className="font-medium text-end">{subtotal.toLocaleString()} {t("listing.sar")}</span>
+                  <span className="text-muted-foreground">{t("deal.vat.rate")}</span>
+                  <span className="font-medium text-end">{vatAmt.toLocaleString()} {t("listing.sar")}</span>
+                  <span className="font-semibold text-muted-foreground">{t("deal.vat.total")}</span>
+                  <span className="font-bold text-end">{totalAmt.toLocaleString()} {t("listing.sar")}</span>
+                </div>
+              </div>
+            );
+          })()}
         </div>
         <div className="space-y-1">
           <label className="text-xs font-medium text-muted-foreground">
@@ -1031,6 +1072,23 @@ function ProducerOfferRow({
         size="md"
         t={t}
       />
+
+      {/* VAT breakdown — display only; comparison and ranking use pre-VAT price */}
+      {(() => {
+        const subtotal = offer.price_per_unit * listingQuantity;
+        const vatAmt = Math.round(subtotal * 0.15 * 1000) / 1000;
+        const totalAmt = Math.round((subtotal + vatAmt) * 1000) / 1000;
+        return (
+          <div className="rounded-md bg-muted/30 border border-border/40 px-2.5 py-1.5 grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs mt-1.5">
+            <span className="text-muted-foreground">{t("deal.vat.subtotal")}</span>
+            <span className="font-medium text-end">{subtotal.toLocaleString()} {t("listing.sar")}</span>
+            <span className="text-muted-foreground">{t("deal.vat.rate")}</span>
+            <span className="font-medium text-end">{vatAmt.toLocaleString()} {t("listing.sar")}</span>
+            <span className="font-semibold text-muted-foreground">{t("deal.vat.total")}</span>
+            <span className="font-bold text-end">{totalAmt.toLocaleString()} {t("listing.sar")}</span>
+          </div>
+        );
+      })()}
 
       {offer.message && (
         <p className="text-sm text-muted-foreground italic">{offer.message}</p>
