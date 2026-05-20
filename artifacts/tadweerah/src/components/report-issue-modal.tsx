@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useAuth } from "@clerk/react";
 import { MessageSquareWarning } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -23,7 +24,9 @@ interface ReportIssueModalProps {
 export function ReportIssueModal({ open, onOpenChange }: ReportIssueModalProps) {
   const { getToken } = useAuth();
   const { t } = useT();
+  const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
+  const [phone, setPhone] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
 
   async function handleSubmit() {
@@ -38,7 +41,11 @@ export function ReportIssueModal({ open, onOpenChange }: ReportIssueModalProps) 
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         credentials: "include",
-        body: JSON.stringify({ message: message.trim() }),
+        body: JSON.stringify({
+          message: message.trim(),
+          subject: subject.trim() || undefined,
+          phone: phone.trim() || undefined,
+        }),
       });
       if (!res.ok) throw new Error("failed");
       setStatus("success");
@@ -49,7 +56,9 @@ export function ReportIssueModal({ open, onOpenChange }: ReportIssueModalProps) 
 
   function handleOpenChange(val: boolean) {
     if (!val) {
+      setSubject("");
       setMessage("");
+      setPhone("");
       setStatus("idle");
     }
     onOpenChange(val);
@@ -71,26 +80,57 @@ export function ReportIssueModal({ open, onOpenChange }: ReportIssueModalProps) 
             <p className="font-medium text-green-700">{t("report.modal.success")}</p>
           </div>
         ) : (
-          <>
-            <Textarea
-              rows={5}
-              placeholder={t("report.modal.placeholder")}
-              value={message}
-              onChange={(e) => {
-                setMessage(e.target.value);
-                if (status === "error") setStatus("idle");
-              }}
-              disabled={status === "sending"}
-              className="resize-none"
-              maxLength={2000}
-            />
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-medium text-foreground mb-1 block">
+                {t("report.modal.subject")}
+              </label>
+              <Input
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                placeholder={t("report.modal.subject_placeholder")}
+                disabled={status === "sending"}
+                maxLength={200}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-foreground mb-1 block">
+                {t("report.modal.message_label")} <span className="text-destructive">*</span>
+              </label>
+              <Textarea
+                rows={4}
+                placeholder={t("report.modal.placeholder")}
+                value={message}
+                onChange={(e) => {
+                  setMessage(e.target.value);
+                  if (status === "error") setStatus("idle");
+                }}
+                disabled={status === "sending"}
+                className="resize-none"
+                maxLength={2000}
+              />
+              {message.trim().length > 0 && message.trim().length < 5 && (
+                <p className="text-xs text-muted-foreground mt-1">{t("report.modal.min_length")}</p>
+              )}
+            </div>
+            <div>
+              <label className="text-xs font-medium text-foreground mb-1 block">
+                {t("report.modal.phone")}
+              </label>
+              <Input
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder={t("report.modal.phone_placeholder")}
+                disabled={status === "sending"}
+                type="tel"
+                dir="ltr"
+                maxLength={20}
+              />
+            </div>
             {status === "error" && (
               <p className="text-sm text-destructive">{t("report.modal.error")}</p>
             )}
-            {message.trim().length > 0 && message.trim().length < 5 && (
-              <p className="text-xs text-muted-foreground">{t("report.modal.min_length")}</p>
-            )}
-          </>
+          </div>
         )}
 
         <DialogFooter>

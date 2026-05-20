@@ -175,23 +175,28 @@ router.get("/admin/issue-reports", requireAdminKey, async (req, res) => {
 
 /**
  * PATCH /admin/issue-reports/:id
- * Body: { status: "open" | "resolved" }
+ * Body: { status: "open" | "in_review" | "closed" | "resolved", admin_note?: string }
  */
 router.patch("/admin/issue-reports/:id", requireAdminKey, async (req, res) => {
   const id = String(req.params["id"]);
-  const { status } = req.body ?? {};
+  const { status, admin_note } = req.body ?? {};
 
-  if (!status || !["open", "resolved"].includes(status)) {
+  const allowedStatuses = ["open", "in_review", "closed", "resolved"];
+  if (!status || !allowedStatuses.includes(status)) {
     res.status(400).json({
       error: "ValidationError",
-      message: "status must be 'open' or 'resolved'",
+      message: "status must be one of: open, in_review, closed, resolved",
     });
     return;
   }
 
+  const updates: Record<string, unknown> = { status };
+  if (typeof admin_note === "string") updates.admin_note = admin_note.trim() || null;
+  if (status === "closed") updates.closed_at = new Date();
+
   const [updated] = await db
     .update(issueReportsTable)
-    .set({ status })
+    .set(updates)
     .where(eq(issueReportsTable.id, id))
     .returning();
 
@@ -207,7 +212,7 @@ router.patch("/admin/issue-reports/:id", requireAdminKey, async (req, res) => {
     actorRole: "admin",
     statusBefore: req.body?.prev_status ?? null,
     statusAfter: status,
-    details: { status },
+    details: { status, admin_note: updates.admin_note ?? null },
   });
 
   res.json(updated);

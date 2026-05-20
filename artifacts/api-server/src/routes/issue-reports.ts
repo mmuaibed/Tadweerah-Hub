@@ -6,15 +6,16 @@ import {
   companyMembersTable,
 } from "@workspace/db";
 import { requireAuth, type AuthedRequest } from "../middlewares/requireAuth";
-import type { Request, Response } from "express";
 import { sendSupportNotification } from "../lib/email";
+import { clerkClient } from "@clerk/express";
+import type { Request, Response } from "express";
 
 const router: IRouter = Router();
 
 /**
  * POST /issue-reports
- * Auth required; company membership is resolved automatically (best-effort).
- * Body: { message: string }
+ * Auth required; company membership and user info are resolved automatically (best-effort).
+ * Body: { message: string, subject?: string, phone?: string }
  */
 router.post(
   "/issue-reports",
@@ -24,6 +25,10 @@ router.post(
 
     const message =
       typeof req.body?.message === "string" ? req.body.message.trim() : "";
+    const subject =
+      typeof req.body?.subject === "string" ? req.body.subject.trim() : null;
+    const phone =
+      typeof req.body?.phone === "string" ? req.body.phone.trim() || null : null;
 
     if (!message || message.length < 5) {
       res.status(400).json({
@@ -53,9 +58,29 @@ router.post(
       // proceed without company_id
     }
 
+    // Best-effort: resolve user display name and email from Clerk
+    let userName: string | null = null;
+    let userEmail: string | null = null;
+    try {
+      const clerkUser = await clerkClient.users.getUser(userId);
+      userName =
+        [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ").trim() || null;
+      userEmail = clerkUser.emailAddresses[0]?.emailAddress ?? null;
+    } catch {
+      // proceed without user details
+    }
+
     const [report] = await db
       .insert(issueReportsTable)
-      .values({ user_id: userId, company_id: companyId, message })
+      .values({
+        user_id: userId,
+        company_id: companyId,
+        message,
+        subject: subject || null,
+        phone,
+        user_name: userName,
+        user_email: userEmail,
+      })
       .returning({ id: issueReportsTable.id, status: issueReportsTable.status });
 
     // Fire-and-forget support notification email
@@ -64,6 +89,10 @@ router.post(
       userId,
       companyId,
       message,
+      subject: subject || null,
+      phone,
+      userName,
+      userEmail,
     });
 
     res.status(201).json({ id: report.id, status: report.status });

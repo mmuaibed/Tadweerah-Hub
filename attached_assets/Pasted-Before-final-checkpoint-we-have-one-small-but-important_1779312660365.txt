@@ -1,0 +1,141 @@
+Before final checkpoint, we have one small but important operational support requirement.
+
+Do not implement a full ticketing system.
+Do not add advanced workflows.
+Do not change VAT, deals, offers, transport lifecycle, reports, transporter quotes, pricing, or admin auth.
+
+Required scope:
+
+==================================================
+1) Admin logout fix
+==================================================
+
+Current issue:
+On /admin, the logout button is not visible / not working clearly.
+
+Required:
+- Ensure a clear “تسجيل الخروج / Logout” button is always visible on the Admin page.
+- It should use the existing Clerk signOut flow.
+- After logout, redirect to the public/home page or login page.
+- After logout, admin data must no longer remain visible.
+
+This is a must-fix.
+
+==================================================
+2) Customer Support / Issues tab in Admin
+==================================================
+
+Business goal:
+When a user sends a support message from the platform, Tadweerah Admin should receive and manage it inside the admin dashboard.
+
+Admin tab name:
+Arabic: "مشاكل العملاء"
+English: "Customer Issues"
+
+If an existing issue_reports / support / complaints table or route already exists, reuse it.
+Do not create a new duplicate system if an existing issue report model exists.
+
+Support message should capture:
+- message / issue description
+- user name, if available
+- user email, if available
+- user phone, if available
+- company name, if available
+- company id, if available
+- page/context if available
+- status:
+  - open
+  - in_review
+  - closed
+- created_at
+- closed_at, if closed
+- admin note, optional
+
+Frontend:
+- The existing “الدعم / Support” page or support button should submit the issue.
+- If the current support UI is only static, connect it to the backend.
+- Keep the form simple:
+  - subject, optional
+  - message, required
+  - phone, optional
+- If user/company data is available from session, attach it automatically.
+
+Admin UI:
+Inside /admin, add a tab:
+"مشاكل العملاء"
+
+The tab should show:
+- list of issues
+- status badge
+- user/company info
+- message
+- created date
+- action to mark as:
+  - in_review
+  - closed
+- optional admin note if easy
+
+Email notification:
+When a support issue is submitted, send an email notification to the admin/support email if email sending is already configured.
+
+Preferred recipient:
+- Use SUPPORT_NOTIFICATION_EMAIL if configured.
+- Otherwise use TRANSPORT_REQUEST_EMAIL if already configured and appropriate.
+- Otherwise use VITE_TADWEERAH_ADMIN_EMAILS only for display/client allowlist, not as backend secret, unless already safely available server-side.
+- If no backend email provider/API key is configured, do not fail the support submission.
+- Store the issue successfully and log/report that email notification is not configured.
+
+Email content:
+- subject: New Tadweerah Support Issue
+- include user name, email, phone, company, message, and created date.
+
+Important:
+- Support submission should never fail just because email sending fails.
+- Email failure should be logged but not block ticket creation.
+- Do not expose admin email or API keys to frontend.
+
+Backend:
+Create or reuse routes safely:
+- POST /api/support/issues
+  - authenticated if user is logged in
+  - allow graceful fallback if some user/company fields are missing
+- GET /api/admin/issues
+  - protected by ADMIN_API_KEY
+- PATCH /api/admin/issues/:id
+  - protected by ADMIN_API_KEY
+  - update status/admin note/closed_at
+
+If existing /api/admin/issue-reports already exists:
+- Prefer using it and adding UI only if backend already supports it.
+- Avoid duplicate tables.
+
+Security:
+- Admin issues list must require ADMIN_API_KEY.
+- Users should not see other users’ issues.
+- Do not expose support issues in company reports.
+- Do not expose support issues publicly.
+
+Validation:
+Run:
+- pnpm --filter @workspace/api-server run typecheck
+- pnpm run typecheck
+- curl -s http://localhost:80/api/healthz
+
+Manual checks:
+1) Admin logout button visible.
+2) Logout redirects and clears admin view.
+3) User can submit support issue.
+4) Issue appears in Admin > Customer Issues.
+5) Admin can mark issue closed.
+6) Email notification is sent if email config exists.
+7) If email config is missing, issue still saves and UI shows success.
+8) No impact on deals/reports/transport/quotes.
+
+Final report:
+1) changed files
+2) whether existing issue_reports model was reused or new table added
+3) routes added/used
+4) admin tab added
+5) email behavior and required env vars
+6) logout fix confirmation
+7) typecheck and health result

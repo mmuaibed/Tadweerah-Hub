@@ -617,7 +617,12 @@ const translations: Record<string, Record<Language, string>> = {
   "report.modal.sending": { ar: "جاري الإرسال...", en: "Sending..." },
   "report.modal.success": { ar: "شكراً! تم استلام بلاغك وسنتواصل معك قريباً.", en: "Thank you! Your report has been received." },
   "report.modal.error": { ar: "تعذّر الإرسال. حاول مرة أخرى.", en: "Could not send. Please try again." },
-  "report.modal.min_length": { ar: "يجب أن يكون الوصف 5 أحرف على الأقل", en: "Description must be at least 5 characters" },
+  "report.modal.min_length":         { ar: "يجب أن يكون الوصف 5 أحرف على الأقل", en: "Description must be at least 5 characters" },
+  "report.modal.message_label":      { ar: "الرسالة", en: "Message" },
+  "report.modal.subject":            { ar: "الموضوع (اختياري)", en: "Subject (optional)" },
+  "report.modal.subject_placeholder":{ ar: "موضوع المشكلة...", en: "Issue subject..." },
+  "report.modal.phone":              { ar: "رقم التواصل (اختياري)", en: "Contact number (optional)" },
+  "report.modal.phone_placeholder":  { ar: "05XXXXXXXX", en: "05XXXXXXXX" },
 
   "notification.title": { ar: "الإشعارات", en: "Notifications" },
   "notification.bell.label": { ar: "الإشعارات", en: "Notifications" },
@@ -1196,6 +1201,7 @@ const translations: Record<string, Record<Language, string>> = {
 
   // Admin reports tab
   "admin.tab.reports":           { ar: "التقارير",    en: "Reports" },
+  "admin.tab.issues":            { ar: "مشاكل العملاء", en: "Customer Issues" },
   "admin.reports.filter.company_id": { ar: "معرّف الشركة (اختياري)", en: "Company ID (optional)" },
   "admin.reports.fetch":         { ar: "عرض التقرير", en: "View Report" },
   "admin.reports.export_csv":    { ar: "تصدير CSV",    en: "Export CSV" },
@@ -1548,6 +1554,24 @@ const translations: Record<string, Record<Language, string>> = {
   "admin.tab.companies":  { ar: "الشركات",     en: "Companies" },
   "admin.tab.deals":      { ar: "الصفقات",     en: "Deals" },
   "admin.tab.transport":  { ar: "طلبات النقل", en: "Transport Requests" },
+
+  /* ── Admin: Issues tab ── */
+  "admin.issues.load":              { ar: "تحميل البلاغات", en: "Load Issues" },
+  "admin.issues.count":             { ar: "{n} بلاغ", en: "{n} issues" },
+  "admin.issues.empty":             { ar: "لا توجد بلاغات حالياً", en: "No issues yet" },
+  "admin.issues.mark_in_review":    { ar: "قيد المراجعة", en: "Mark In Review" },
+  "admin.issues.mark_closed":       { ar: "إغلاق", en: "Close" },
+  "admin.issues.filter.all":        { ar: "كل الحالات", en: "All statuses" },
+  "admin.issues.status.open":       { ar: "مفتوح", en: "Open" },
+  "admin.issues.status.in_review":  { ar: "قيد المراجعة", en: "In Review" },
+  "admin.issues.status.closed":     { ar: "مغلق", en: "Closed" },
+  "admin.issues.status.resolved":   { ar: "محلول", en: "Resolved" },
+  "admin.issues.col.date":          { ar: "التاريخ", en: "Date" },
+  "admin.issues.col.user":          { ar: "المستخدم", en: "User" },
+  "admin.issues.col.subject":       { ar: "الموضوع", en: "Subject" },
+  "admin.issues.col.message":       { ar: "الرسالة", en: "Message" },
+  "admin.issues.col.status":        { ar: "الحالة", en: "Status" },
+  "admin.issues.col.actions":       { ar: "الإجراء", en: "Actions" },
 
   /* ── Admin: Transport tab ── */
   "admin.transport.title":       { ar: "طلبات النقل المعلقة (platform-ops)", en: "Pending Platform Transport Requests" },

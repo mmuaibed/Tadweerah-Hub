@@ -16,6 +16,7 @@ import {
   Banknote,
   TrendingUp,
   Clock,
+  MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -110,6 +111,21 @@ interface AdminTransportQuote {
   tr_manifest_ref: string | null;
 }
 
+interface AdminIssue {
+  id: string;
+  user_id: string;
+  company_id: string | null;
+  subject: string | null;
+  message: string;
+  phone: string | null;
+  user_name: string | null;
+  user_email: string | null;
+  status: string;
+  admin_note: string | null;
+  closed_at: string | null;
+  created_at: string;
+}
+
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 
 const DEAL_STATUS_VARIANTS: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
@@ -142,7 +158,7 @@ export function AdminPage() {
   const dir = lang === "ar" ? "rtl" : "ltr";
 
   const [adminKey, setAdminKey] = useState(() => sessionStorage.getItem("tdw_admin_key") ?? "");
-  const [tab, setTab] = useState<"deals" | "companies" | "transport" | "reports">("companies");
+  const [tab, setTab] = useState<"deals" | "companies" | "transport" | "reports" | "issues">("companies");
 
   /* Deals state */
   const [deals, setDeals] = useState<AdminDeal[] | null>(null);
@@ -168,6 +184,13 @@ export function AdminPage() {
   const [quotesLoading, setQuotesLoading] = useState(false);
   const [quotesError, setQuotesError] = useState<string | null>(null);
   const [updatingQuoteId, setUpdatingQuoteId] = useState<string | null>(null);
+
+  /* Issues state */
+  const [issuesList, setIssuesList] = useState<AdminIssue[] | null>(null);
+  const [issuesLoading, setIssuesLoading] = useState(false);
+  const [issuesError, setIssuesError] = useState<string | null>(null);
+  const [updatingIssueId, setUpdatingIssueId] = useState<string | null>(null);
+  const [issueStatusFilter, setIssueStatusFilter] = useState("");
 
   /* Reports state */
   const [reportRows, setReportRows] = useState<AdminReportRow[] | null>(null);
@@ -368,6 +391,41 @@ export function AdminPage() {
     }
   }
 
+  async function fetchIssues() {
+    setIssuesLoading(true);
+    setIssuesError(null);
+    try {
+      const params = issueStatusFilter ? `?status=${encodeURIComponent(issueStatusFilter)}` : "";
+      const res = await callAdmin(`/issue-reports${params}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json() as AdminIssue[];
+      sessionStorage.setItem("tdw_admin_key", adminKey.trim());
+      setIssuesList(data);
+    } catch (e) {
+      setIssuesError(e instanceof Error ? e.message : t("admin.error.generic"));
+    } finally {
+      setIssuesLoading(false);
+    }
+  }
+
+  async function updateIssue(issueId: string, status: string) {
+    setUpdatingIssueId(issueId);
+    try {
+      const res = await callAdmin(`/issue-reports/${issueId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setIssuesList((prev) =>
+        prev ? prev.map((i) => (i.id === issueId ? { ...i, status } : i)) : prev,
+      );
+    } catch {
+      /* silent — reload will show correct state */
+    } finally {
+      setUpdatingIssueId(null);
+    }
+  }
+
   async function rejectQuote(quoteId: string) {
     setUpdatingQuoteId(quoteId);
     try {
@@ -434,11 +492,9 @@ export function AdminPage() {
               </div>
             </div>
           </div>
-          {adminKey && (
-            <Button variant="outline" size="sm" onClick={logout}>
-              <LogOut className="h-4 w-4 me-2" />{t("admin.logout")}
-            </Button>
-          )}
+          <Button variant="outline" size="sm" onClick={logout}>
+            <LogOut className="h-4 w-4 me-2" />{t("admin.logout")}
+          </Button>
         </div>
 
         {/* Admin Key */}
@@ -462,8 +518,8 @@ export function AdminPage() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 border-b border-border">
-          {(["companies", "deals", "transport", "reports"] as const).map((t2) => (
+        <div className="flex flex-wrap gap-1 border-b border-border">
+          {(["companies", "deals", "transport", "reports", "issues"] as const).map((t2) => (
             <button
               key={t2}
               onClick={() => setTab(t2)}
@@ -479,7 +535,9 @@ export function AdminPage() {
                   ? <><FileText className="h-4 w-4" />{t("admin.tab.deals")}</>
                   : t2 === "transport"
                     ? <><Truck className="h-4 w-4" />{t("admin.tab.transport")}</>
-                    : <><BarChart3 className="h-4 w-4" />{t("admin.tab.reports")}</>
+                    : t2 === "reports"
+                      ? <><BarChart3 className="h-4 w-4" />{t("admin.tab.reports")}</>
+                      : <><MessageSquare className="h-4 w-4" />{t("admin.tab.issues")}</>
               }
             </button>
           ))}
@@ -1106,6 +1164,148 @@ export function AdminPage() {
                     </table>
                   </div>
                 )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Issues Tab ─────────────────────────────────────────────────────── */}
+        {tab === "issues" && (
+          <div className="space-y-4">
+            {/* Toolbar */}
+            <div className="flex flex-wrap items-center gap-2">
+              <select
+                value={issueStatusFilter}
+                onChange={(e) => setIssueStatusFilter(e.target.value)}
+                className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+              >
+                <option value="">{t("admin.issues.filter.all")}</option>
+                <option value="open">{t("admin.issues.status.open")}</option>
+                <option value="in_review">{t("admin.issues.status.in_review")}</option>
+                <option value="closed">{t("admin.issues.status.closed")}</option>
+                <option value="resolved">{t("admin.issues.status.resolved")}</option>
+              </select>
+              <Button
+                size="sm"
+                onClick={() => void fetchIssues()}
+                disabled={issuesLoading || !adminKey}
+              >
+                {issuesLoading
+                  ? <Loader2 className="h-4 w-4 animate-spin me-1" />
+                  : <RefreshCw className="h-4 w-4 me-1" />}
+                {t("admin.issues.load")}
+              </Button>
+            </div>
+
+            {/* Error */}
+            {issuesError && (
+              <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+                <AlertCircle className="h-4 w-4 shrink-0" />{issuesError}
+              </div>
+            )}
+
+            {/* Table */}
+            {issuesList !== null && (
+              <div className="rounded-xl border border-border bg-white overflow-hidden">
+                <div className="px-4 py-3 border-b border-border">
+                  <p className="text-sm font-semibold text-foreground">
+                    {t("admin.issues.count").replace("{n}", String(issuesList.length))}
+                  </p>
+                </div>
+                {issuesList.length === 0 ? (
+                  <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+                    {t("admin.issues.empty")}
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-border bg-muted/30">
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{t("admin.issues.col.date")}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{t("admin.issues.col.user")}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{t("admin.issues.col.subject")}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{t("admin.issues.col.message")}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{t("admin.issues.col.status")}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{t("admin.issues.col.actions")}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {issuesList.map((issue) => {
+                          const isUpdating = updatingIssueId === issue.id;
+                          const isOpen = issue.status === "open";
+                          const isInReview = issue.status === "in_review";
+                          const isClosed = issue.status === "closed" || issue.status === "resolved";
+                          const statusStyle: Record<string, string> = {
+                            open: "bg-yellow-100 text-yellow-800 border-yellow-200",
+                            in_review: "bg-blue-100 text-blue-800 border-blue-200",
+                            closed: "bg-gray-100 text-gray-600 border-gray-200",
+                            resolved: "bg-green-100 text-green-800 border-green-200",
+                          };
+                          return (
+                            <tr key={issue.id} className={`hover:bg-muted/20 transition-colors ${isClosed ? "opacity-60" : ""}`}>
+                              <td className="px-4 py-2.5 whitespace-nowrap text-xs text-muted-foreground">
+                                {fmtDate(issue.created_at, lang)}
+                              </td>
+                              <td className="px-4 py-2.5">
+                                <p className="text-xs font-medium">{issue.user_name ?? "—"}</p>
+                                {issue.user_email && (
+                                  <p className="text-[10px] text-muted-foreground" dir="ltr">{issue.user_email}</p>
+                                )}
+                                {issue.phone && (
+                                  <p className="text-[10px] text-muted-foreground" dir="ltr">{issue.phone}</p>
+                                )}
+                              </td>
+                              <td className="px-4 py-2.5 max-w-[140px]">
+                                <p className="text-xs truncate text-foreground">{issue.subject ?? "—"}</p>
+                              </td>
+                              <td className="px-4 py-2.5 max-w-[240px]">
+                                <p className="text-xs text-muted-foreground line-clamp-3 whitespace-pre-wrap">{issue.message}</p>
+                              </td>
+                              <td className="px-4 py-2.5 whitespace-nowrap">
+                                <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${statusStyle[issue.status] ?? "bg-gray-100 text-gray-600 border-gray-200"}`}>
+                                  {t(`admin.issues.status.${issue.status}`) || issue.status}
+                                </span>
+                              </td>
+                              <td className="px-4 py-2.5">
+                                {!isClosed && (
+                                  <div className="flex flex-wrap items-center gap-1.5">
+                                    {isOpen && (
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="h-7 px-2 text-[11px]"
+                                        disabled={isUpdating}
+                                        onClick={() => void updateIssue(issue.id, "in_review")}
+                                      >
+                                        {isUpdating ? <Loader2 className="h-3 w-3 animate-spin" /> : t("admin.issues.mark_in_review")}
+                                      </Button>
+                                    )}
+                                    {(isOpen || isInReview) && (
+                                      <Button
+                                        size="sm"
+                                        className="h-7 px-2 text-[11px]"
+                                        disabled={isUpdating}
+                                        onClick={() => void updateIssue(issue.id, "closed")}
+                                      >
+                                        {isUpdating ? <Loader2 className="h-3 w-3 animate-spin" /> : t("admin.issues.mark_closed")}
+                                      </Button>
+                                    )}
+                                  </div>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {issuesList === null && !issuesLoading && (
+              <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+                {t("admin.issues.load")} ↑
               </div>
             )}
           </div>
