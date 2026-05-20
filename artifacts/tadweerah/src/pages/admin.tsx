@@ -85,11 +85,11 @@ export function AdminPage() {
   const { user, isLoaded: userLoaded } = useUser();
   const dir = lang === "ar" ? "rtl" : "ltr";
 
-  // Email allowlist guard — Option A per spec
+  // Email allowlist guard — empty allowlist blocks everyone (no accidental open access)
   const allowlistRaw = (import.meta.env.VITE_TADWEERAH_ADMIN_EMAILS as string | undefined) ?? "";
   const allowlist = allowlistRaw.split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
   const userEmail = user?.primaryEmailAddress?.emailAddress?.toLowerCase() ?? "";
-  const isEmailAllowed = !userLoaded || allowlist.length === 0 || allowlist.includes(userEmail);
+  const isEmailAllowed = !userLoaded || (allowlist.length > 0 && allowlist.includes(userEmail));
 
   if (userLoaded && !isEmailAllowed) {
     return (
@@ -248,7 +248,14 @@ export function AdminPage() {
             <ShieldCheck className="h-7 w-7 text-primary shrink-0" />
             <div>
               <h1 className="text-xl font-bold text-foreground">{t("admin.page.title")}</h1>
-              <p className="text-sm text-muted-foreground">{t("admin.page.subtitle")}</p>
+              <div className="flex items-center gap-2 mt-0.5">
+                <p className="text-sm text-muted-foreground">{t("admin.page.subtitle")}</p>
+                {userLoaded && userEmail && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                    {lang === "ar" ? "مدير تدويرة" : "Tadweerah Admin"} · {userEmail}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
           {adminKey && (

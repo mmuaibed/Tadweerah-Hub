@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Switch, Route, Redirect, useLocation, Router as WouterRouter } from "wouter";
-import { ClerkProvider, Show, useClerk, useAuth } from "@clerk/react";
+import { ClerkProvider, Show, useClerk, useAuth, useUser } from "@clerk/react";
 import { shadcn } from "@clerk/themes";
 import { setAuthTokenGetter } from "@workspace/api-client-react";
 import {
@@ -53,10 +53,16 @@ function stripBase(path: string): string {
 }
 
 function HomeRedirect() {
+  const { user, isLoaded } = useUser();
+  const adminAllowlist = ((import.meta.env.VITE_TADWEERAH_ADMIN_EMAILS as string | undefined) ?? "")
+    .split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
+  const userEmail = user?.primaryEmailAddress?.emailAddress?.toLowerCase() ?? "";
+  const isAdmin = isLoaded && adminAllowlist.length > 0 && adminAllowlist.includes(userEmail);
+
   return (
     <>
       <Show when="signed-in">
-        <Redirect to="/dashboard" />
+        <Redirect to={isAdmin ? "/admin" : "/dashboard"} />
       </Show>
       <Show when="signed-out">
         <HomePage />
