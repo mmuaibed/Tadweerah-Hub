@@ -1234,12 +1234,12 @@ function SmartTransportBody({
             <span>{smartTrError}</span>
           </div>
         )}
-        {/* Option 1 — Primary filled card: request Tadweerah transport */}
+        {/* Option 1 — Green card: request Tadweerah transport */}
         <button
           type="button"
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); onArrange(); }}
           disabled={smartTrLoading}
-          className="w-full text-start rounded-xl border-2 border-primary bg-primary text-primary-foreground px-4 py-3.5 hover:bg-primary/90 transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className="w-full text-start rounded-xl bg-green-600 text-white px-4 py-3.5 hover:bg-green-700 active:bg-green-800 transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-600"
         >
           <div className="flex items-center gap-2 mb-0.5">
             {smartTrLoading
@@ -1249,18 +1249,18 @@ function SmartTransportBody({
           </div>
           <p className="text-xs opacity-80 leading-relaxed ps-6">{t("deal.transport.smart.arrange_card_helper")}</p>
         </button>
-        {/* Option 2 — Secondary outlined card: self-arrange */}
+        {/* Option 2 — Blue card: self-arrange */}
         <button
           type="button"
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSkipConfirmOpen(true); }}
           disabled={smartTrLoading}
-          className="w-full text-start rounded-xl border-2 border-border bg-background px-4 py-3.5 hover:border-primary/40 hover:bg-muted/30 transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className="w-full text-start rounded-xl bg-blue-600 text-white px-4 py-3.5 hover:bg-blue-700 active:bg-blue-800 transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
         >
           <div className="flex items-center gap-2 mb-0.5">
-            <UserCog className="h-4 w-4 shrink-0 text-foreground" />
-            <span className="text-sm font-bold text-foreground">{t("deal.transport.smart.self_arrange_btn")}</span>
+            <UserCog className="h-4 w-4 shrink-0" />
+            <span className="text-sm font-bold">{t("deal.transport.smart.self_arrange_btn")}</span>
           </div>
-          <p className="text-xs text-muted-foreground leading-relaxed ps-6">{t("deal.transport.smart.self_arrange_helper")}</p>
+          <p className="text-xs opacity-80 leading-relaxed ps-6">{t("deal.transport.smart.self_arrange_helper")}</p>
         </button>
       </div>
     </>
