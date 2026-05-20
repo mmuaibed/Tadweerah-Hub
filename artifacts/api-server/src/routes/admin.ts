@@ -892,14 +892,16 @@ router.get("/admin/transport-quotes", requireAdminKey, async (req, res) => {
 });
 
 // PATCH /admin/transport-quotes/:quoteId/select
-// Selects a quote: marks it as 'selected', rejects all others for the same TR,
-// and assigns the transporter to the transport request.
+// Marks a single quote as 'selected' (admin shortlist/preference only).
+// Does NOT assign the transporter to the transport request.
+// Does NOT auto-reject competing quotes.
+// Transport request state machine is untouched.
 
 router.patch("/admin/transport-quotes/:quoteId/select", requireAdminKey, async (req, res) => {
   const quoteId = req.params.quoteId as string;
 
   const [quote] = await db
-    .select()
+    .select({ id: transportQuotesTable.id, status: transportQuotesTable.status })
     .from(transportQuotesTable)
     .where(eq(transportQuotesTable.id, quoteId))
     .limit(1);
@@ -909,42 +911,39 @@ router.patch("/admin/transport-quotes/:quoteId/select", requireAdminKey, async (
     return;
   }
 
-  if (quote.status === "selected") {
-    res.status(422).json({ error: "UnprocessableEntity", message: "Quote is already selected" });
+  const [updated] = await db
+    .update(transportQuotesTable)
+    .set({ status: "selected", updated_at: new Date() })
+    .where(eq(transportQuotesTable.id, quoteId))
+    .returning({ id: transportQuotesTable.id, status: transportQuotesTable.status });
+
+  res.json(updated);
+});
+
+// PATCH /admin/transport-quotes/:quoteId/under_review
+// Marks a quote as 'under_review'.
+
+router.patch("/admin/transport-quotes/:quoteId/under_review", requireAdminKey, async (req, res) => {
+  const quoteId = req.params.quoteId as string;
+
+  const [quote] = await db
+    .select({ id: transportQuotesTable.id })
+    .from(transportQuotesTable)
+    .where(eq(transportQuotesTable.id, quoteId))
+    .limit(1);
+
+  if (!quote) {
+    res.status(404).json({ error: "NotFound", message: "Quote not found" });
     return;
   }
 
-  const now = new Date();
-
-  // Mark this quote as selected
-  await db
+  const [updated] = await db
     .update(transportQuotesTable)
-    .set({ status: "selected", updated_at: now })
-    .where(eq(transportQuotesTable.id, quoteId));
+    .set({ status: "under_review", updated_at: new Date() })
+    .where(eq(transportQuotesTable.id, quoteId))
+    .returning({ id: transportQuotesTable.id, status: transportQuotesTable.status });
 
-  // Reject all other quotes for the same TR
-  await db
-    .update(transportQuotesTable)
-    .set({ status: "rejected", updated_at: now })
-    .where(
-      and(
-        eq(transportQuotesTable.transport_request_id, quote.transport_request_id),
-        eq(transportQuotesTable.status, "submitted"),
-      ),
-    );
-
-  // Assign the selected transporter to the transport request
-  const [updatedTR] = await db
-    .update(transportRequestsTable)
-    .set({
-      transporter_company_id: quote.transporter_company_id,
-      status: "accepted",
-      updated_at: now,
-    })
-    .where(eq(transportRequestsTable.id, quote.transport_request_id))
-    .returning({ id: transportRequestsTable.id, status: transportRequestsTable.status });
-
-  res.json({ quote_id: quoteId, tr_id: updatedTR?.id ?? null, tr_status: updatedTR?.status ?? null });
+  res.json(updated);
 });
 
 // PATCH /admin/transport-quotes/:quoteId/reject

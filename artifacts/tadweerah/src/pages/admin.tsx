@@ -341,19 +341,27 @@ export function AdminPage() {
     try {
       const res = await callAdmin(`/transport-quotes/${quoteId}/select`, { method: "PATCH" });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      // Only update this quote's status — no auto-rejection of competing quotes
       setQuotesData((prev) =>
-        prev
-          ? prev.map((q) => {
-              if (q.id === quoteId) return { ...q, status: "selected" };
-              if (q.transport_request_id === prev.find((x) => x.id === quoteId)?.transport_request_id && q.status === "submitted") {
-                return { ...q, status: "rejected" };
-              }
-              return q;
-            })
-          : prev,
+        prev ? prev.map((q) => (q.id === quoteId ? { ...q, status: "selected" } : q)) : prev,
       );
     } catch {
       /* silent — reload will show correct state */
+    } finally {
+      setUpdatingQuoteId(null);
+    }
+  }
+
+  async function underReviewQuote(quoteId: string) {
+    setUpdatingQuoteId(quoteId);
+    try {
+      const res = await callAdmin(`/transport-quotes/${quoteId}/under_review`, { method: "PATCH" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setQuotesData((prev) =>
+        prev ? prev.map((q) => (q.id === quoteId ? { ...q, status: "under_review" } : q)) : prev,
+      );
+    } catch {
+      /* silent */
     } finally {
       setUpdatingQuoteId(null);
     }
@@ -850,8 +858,9 @@ export function AdminPage() {
                           const isUpdating = updatingQuoteId === q.id;
                           const isSelected = q.status === "selected";
                           const isRejected = q.status === "rejected";
+                          const isUnderReview = q.status === "under_review";
                           return (
-                            <tr key={q.id} className={`hover:bg-muted/20 transition-colors ${isSelected ? "bg-green-50/40" : isRejected ? "opacity-60" : ""}`}>
+                            <tr key={q.id} className={`hover:bg-muted/20 transition-colors ${isSelected ? "bg-green-50/40" : isRejected ? "opacity-50" : ""}`}>
                               <td className="px-4 py-2.5">
                                 <div className="space-y-0.5">
                                   <span className="font-mono text-xs text-muted-foreground" dir="ltr">{q.transport_request_id.slice(0, 8)}…</span>
@@ -873,29 +882,42 @@ export function AdminPage() {
                               </td>
                               <td className="px-4 py-2.5">
                                 <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
-                                  isSelected  ? "bg-green-100 text-green-800 border-green-200" :
-                                  isRejected  ? "bg-red-100 text-red-700 border-red-200" :
-                                  q.status === "under_review" ? "bg-blue-100 text-blue-800 border-blue-200" :
+                                  isSelected    ? "bg-green-100 text-green-800 border-green-200" :
+                                  isRejected    ? "bg-red-100 text-red-700 border-red-200" :
+                                  isUnderReview ? "bg-blue-100 text-blue-800 border-blue-200" :
                                   "bg-yellow-100 text-yellow-800 border-yellow-200"
                                 }`}>
                                   {t(`transport.quote.status.${q.status}`)}
                                 </span>
                               </td>
                               <td className="px-4 py-2.5">
-                                {!isSelected && !isRejected && (
-                                  <div className="flex items-center gap-1.5">
-                                    <Button
-                                      size="sm"
-                                      className="h-7 px-2.5 text-xs"
-                                      disabled={isUpdating}
-                                      onClick={() => void selectQuote(q.id)}
-                                    >
-                                      {isUpdating ? <Loader2 className="h-3 w-3 animate-spin" /> : t("admin.quotes.select")}
-                                    </Button>
+                                {!isRejected && (
+                                  <div className="flex flex-wrap items-center gap-1.5">
+                                    {!isUnderReview && !isSelected && (
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="h-7 px-2 text-[11px]"
+                                        disabled={isUpdating}
+                                        onClick={() => void underReviewQuote(q.id)}
+                                      >
+                                        {isUpdating ? <Loader2 className="h-3 w-3 animate-spin" /> : t("admin.quotes.under_review")}
+                                      </Button>
+                                    )}
+                                    {!isSelected && (
+                                      <Button
+                                        size="sm"
+                                        className="h-7 px-2 text-[11px]"
+                                        disabled={isUpdating}
+                                        onClick={() => void selectQuote(q.id)}
+                                      >
+                                        {isUpdating ? <Loader2 className="h-3 w-3 animate-spin" /> : t("admin.quotes.select")}
+                                      </Button>
+                                    )}
                                     <Button
                                       size="sm"
                                       variant="outline"
-                                      className="h-7 px-2.5 text-xs"
+                                      className="h-7 px-2 text-[11px] text-destructive hover:text-destructive"
                                       disabled={isUpdating}
                                       onClick={() => void rejectQuote(q.id)}
                                     >
@@ -909,9 +931,12 @@ export function AdminPage() {
                         })}
                       </tbody>
                     </table>
-                    <div className="px-4 py-2 border-t border-border bg-muted/10">
+                    <div className="px-4 py-2.5 border-t border-border bg-muted/10 space-y-1">
                       <p className="text-[10px] text-muted-foreground">
                         {t("admin.quotes.count").replace("{n}", String(quotesData.length))}
+                      </p>
+                      <p className="text-[10px] text-amber-700/80 italic">
+                        ⚠ {t("admin.quotes.selection_note")}
                       </p>
                     </div>
                   </div>

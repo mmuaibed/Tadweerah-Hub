@@ -1,0 +1,72 @@
+Important correction: the implementation exceeded the approved MVP scope.
+
+We explicitly wanted quote comparison only, without automatic assignment or auto-rejection.
+
+Current issue:
+The PATCH /admin/transport-quotes/:quoteId/select route currently:
+- marks one quote as selected
+- auto-rejects competing quotes
+- assigns transporter_company_id to the transport request
+
+This must be changed.
+
+Required behavior for MVP:
+1) Selecting a quote should ONLY update that quote status to "selected".
+2) It should NOT automatically assign transporter_company_id to the transport request.
+3) It should NOT automatically reject all other quotes.
+4) Other submitted quotes should remain as submitted or under_review unless admin manually rejects them.
+5) Transport request status/state machine must remain unchanged.
+6) No automatic award logic.
+
+Admin can manually:
+- mark quote under_review
+- mark quote selected
+- mark quote rejected
+
+But selecting a quote is only an internal admin preference/shortlist, not a final assignment.
+
+Please update:
+- PATCH /admin/transport-quotes/:quoteId/select
+- any UI wording that implies automatic assignment
+- any backend logic that modifies transport_requests.transporter_company_id during quote selection
+- any logic that auto-rejects competing quotes
+
+If needed, rename the UI action from:
+"Select"
+to:
+"Mark as Selected"
+Arabic:
+"تحديد كمفضل"
+
+Add helper text:
+Arabic:
+"تحديد العرض كمفضل لا يعني تعيين الناقل نهائياً. يتم التواصل والتأكيد تشغيلياً قبل التعيين."
+English:
+"Marking a quote as selected does not automatically assign the transporter. Operational confirmation is still required."
+
+Keep:
+- quote table
+- transporter portal
+- quote submission
+- admin comparison
+- quote statuses
+
+Do not change:
+- deal lifecycle
+- transport request state machine
+- VAT/offers/pricing
+- reports
+- admin auth
+- buyer/seller flows
+
+After patch, run:
+- pnpm --filter @workspace/api-server run typecheck
+- pnpm run typecheck
+- curl -s http://localhost:80/api/healthz
+
+Final report:
+1) changed files
+2) confirmation no transport request assignment happens when selecting a quote
+3) confirmation competing quotes are not auto-rejected
+4) confirmation quote status can still be selected/rejected manually
+5) confirmation transport request state machine was not changed
