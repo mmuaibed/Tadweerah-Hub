@@ -46,7 +46,7 @@ export function fmtSAR(
     maximumFractionDigits: 2,
   });
   const symbol = lang === "ar" ? "ر.س" : "SAR";
-  return `${formatted} ${symbol}`;
+  return lang === "ar" ? `${formatted} ${symbol}` : `${symbol} ${formatted}`;
 }
 
 /**

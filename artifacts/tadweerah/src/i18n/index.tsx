@@ -1185,11 +1185,14 @@ const translations: Record<string, Record<Language, string>> = {
   "reports.role.seller": { ar: "بائع", en: "Seller" },
   "reports.role.buyer":  { ar: "مشترٍ", en: "Buyer" },
 
-  "reports.transport.not_required": { ar: "غير مطلوب", en: "Not Required" },
+  "reports.transport.not_required": { ar: "غير مطلوب",     en: "Not Required" },
   "reports.transport.pending":      { ar: "قيد الانتظار", en: "Pending" },
-  "reports.transport.in_transit":   { ar: "في الطريق",   en: "In Transit" },
-  "reports.transport.completed":    { ar: "مكتمل",       en: "Completed" },
-  "reports.transport.cancelled":    { ar: "ملغي",        en: "Cancelled" },
+  "reports.transport.accepted":     { ar: "مقبول",         en: "Accepted" },
+  "reports.transport.in_transit":   { ar: "قيد النقل",    en: "In Transit" },
+  "reports.transport.delivered":    { ar: "تم التسليم",   en: "Delivered" },
+  "reports.transport.closed":       { ar: "مغلق",          en: "Closed" },
+  "reports.transport.completed":    { ar: "مكتمل",         en: "Completed" },
+  "reports.transport.cancelled":    { ar: "ملغي",           en: "Cancelled" },
 
   // Admin reports tab
   "admin.tab.reports":           { ar: "التقارير",    en: "Reports" },
@@ -1699,7 +1702,7 @@ const translations: Record<string, Record<Language, string>> = {
   "admin.quotes.title":                    { ar: "عروض أسعار النقل", en: "Transport Price Quotes" },
   "admin.quotes.desc":                     { ar: "جميع العروض المقدمة من شركات النقل", en: "All quotes submitted by transporter companies" },
   "admin.quotes.load":                     { ar: "تحميل العروض", en: "Load Quotes" },
-  "admin.quotes.empty":                    { ar: "لا توجد عروض أسعار بعد", en: "No quotes found" },
+  "admin.quotes.empty":                    { ar: "لا توجد عروض نقل حالياً", en: "No transport quotes yet" },
   "admin.quotes.count":                    { ar: "{n} عرض", en: "{n} quotes" },
   "admin.quotes.select":                   { ar: "تحديد كمفضل", en: "Mark as Selected" },
   "admin.quotes.under_review":             { ar: "قيد المراجعة", en: "Under Review" },

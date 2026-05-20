@@ -151,6 +151,7 @@ router.get(
         city: wasteListingsTable.city,
         tr_id: transportRequestsTable.id,
         tr_status: transportRequestsTable.status,
+        tr_manifest_ref: transportRequestsTable.manifest_ref,
       })
       .from(dealsTable)
       .leftJoin(sql`companies seller`, sql`seller.id = ${dealsTable.producer_company_id}`)
@@ -190,6 +191,7 @@ router.get(
       transport_decision: r.transport_decision,
       tr_id: r.tr_id,
       tr_status: r.tr_status ?? null,
+      tr_manifest_ref: r.tr_manifest_ref ?? null,
       my_role: r.producer_company_id === cid ? "seller" : "buyer",
     }));
 
@@ -197,7 +199,7 @@ router.get(
     if (format === "csv") {
       const csvRows = serialized.map((r) => [
         new Date(r.created_at).toLocaleDateString("en-GB"),
-        r.deal_id.slice(0, 8),
+        r.tr_manifest_ref ?? r.deal_id.slice(0, 8),
         r.my_role,
         r.seller_name,
         r.buyer_name,

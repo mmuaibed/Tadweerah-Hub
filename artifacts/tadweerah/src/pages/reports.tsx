@@ -54,6 +54,7 @@ interface DealReportRow {
   city: string | null;
   transport_decision: string | null;
   tr_status: string | null;
+  tr_manifest_ref: string | null;
   my_role: "seller" | "buyer";
 }
 
@@ -362,7 +363,12 @@ export function ReportsPage() {
                       return (
                         <tr key={row.deal_id} className="hover:bg-muted/20 transition-colors">
                           <Td mono>{fmtDate(row.created_at, lang)}</Td>
-                          <Td mono dim>{row.deal_id.slice(0, 8)}</Td>
+                          <Td mono dim>
+                            {row.tr_manifest_ref
+                              ? <span dir="ltr">{row.tr_manifest_ref}</span>
+                              : <span dir="ltr">{row.deal_id.slice(0, 8)}…</span>
+                            }
+                          </Td>
                           <Td>
                             <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${
                               isSeller ? "bg-blue-100 text-blue-800" : "bg-teal-100 text-teal-800"

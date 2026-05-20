@@ -53,6 +53,7 @@ interface AdminReportRow {
   city: string | null;
   transport_decision: string | null;
   tr_status: string | null;
+  tr_manifest_ref: string | null;
 }
 
 interface AdminDeal {
@@ -1073,11 +1074,17 @@ export function AdminPage() {
                             cancelled: "bg-red-100 text-red-700",
                           };
                           const matLabel = (lang === "ar" ? row.subcategory_ar : row.subcategory_en) ?? row.subcategory_ar ?? row.material ?? "—";
-                          const trLabel = row.tr_status ?? (row.transport_decision === "not_required" ? t("reports.transport.not_required") : "—");
+                          const trLabel = row.tr_status
+                            ? (t(`reports.transport.${row.tr_status}`) || row.tr_status)
+                            : row.transport_decision === "not_required"
+                              ? t("reports.transport.not_required")
+                              : "—";
                           return (
                             <tr key={row.deal_id} className="hover:bg-muted/20 transition-colors">
                               <td className="px-3 py-2.5 whitespace-nowrap text-muted-foreground">{fmtDate(row.created_at, lang)}</td>
-                              <td className="px-3 py-2.5 whitespace-nowrap font-mono text-muted-foreground">{row.deal_id.slice(0,8)}…</td>
+                              <td className="px-3 py-2.5 whitespace-nowrap font-mono text-muted-foreground" dir="ltr">
+                                {row.tr_manifest_ref ?? `${row.deal_id.slice(0, 8)}…`}
+                              </td>
                               <td className="px-3 py-2.5 whitespace-nowrap">{row.seller_name ?? "—"}<br/><span className="text-muted-foreground">{row.seller_city ?? ""}</span></td>
                               <td className="px-3 py-2.5 whitespace-nowrap">{row.buyer_name ?? "—"}<br/><span className="text-muted-foreground">{row.buyer_city ?? ""}</span></td>
                               <td className="px-3 py-2.5 whitespace-nowrap">{matLabel}</td>
