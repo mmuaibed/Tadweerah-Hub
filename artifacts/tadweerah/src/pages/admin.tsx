@@ -254,7 +254,7 @@ export function AdminPage() {
                 <p className="text-sm text-muted-foreground">{t("admin.page.subtitle")}</p>
                 {userLoaded && userEmail && (
                   <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2 py-0.5 text-[11px] font-semibold text-primary">
-                    {lang === "ar" ? "مدير تدويرة" : "Tadweerah Admin"} · {userEmail}
+                    {t("admin.role.label")} · {userEmail}
                   </span>
                 )}
               </div>
@@ -303,7 +303,7 @@ export function AdminPage() {
                 ? <><Building2 className="h-4 w-4" />{t("admin.tab.companies")}</>
                 : t2 === "deals"
                   ? <><FileText className="h-4 w-4" />{t("admin.tab.deals")}</>
-                  : <><Truck className="h-4 w-4" />{lang === "ar" ? "طلبات النقل" : "Transport Requests"}</>
+                  : <><Truck className="h-4 w-4" />{t("admin.tab.transport")}</>
               }
             </button>
           ))}
@@ -325,7 +325,7 @@ export function AdminPage() {
                 >
                   {licenseOptions.map((s) => (
                     <option key={s} value={s}>
-                      {s ? licenseLabel(s, lang).label : (lang === "ar" ? "جميع الحالات" : "All statuses")}
+                      {s ? licenseLabel(s, lang).label : t("admin.filter.all_statuses")}
                     </option>
                   ))}
                 </select>
@@ -403,7 +403,7 @@ export function AdminPage() {
                                     className="h-7 rounded border border-input bg-background px-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
                                     disabled={isUpdating}
                                   >
-                                    <option value="">{lang === "ar" ? "اختر..." : "Select..."}</option>
+                                    <option value="">{t("admin.action.select")}</option>
                                     {licenseTargetOptions.map((s) => (
                                       <option key={s} value={s}>{licenseLabel(s, lang).label}</option>
                                     ))}
@@ -417,7 +417,7 @@ export function AdminPage() {
                                   >
                                     {isUpdating
                                       ? <Loader2 className="h-3 w-3 animate-spin" />
-                                      : (lang === "ar" ? "تطبيق" : "Apply")
+                                      : t("admin.action.apply")
                                     }
                                   </Button>
                                 </div>
@@ -550,18 +550,16 @@ export function AdminPage() {
             <div className="rounded-xl border border-border bg-white p-4 flex flex-wrap gap-3 items-center justify-between">
               <div>
                 <p className="text-sm font-semibold text-foreground">
-                  {lang === "ar" ? "طلبات النقل المعلقة (platform-ops)" : "Pending Platform Transport Requests"}
+                  {t("admin.transport.title")}
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  {lang === "ar"
-                    ? "الطلبات التي اختار فيها المنتج 'رتّب النقل لي' وتحتاج تنسيقًا"
-                    : "Requests where the producer chose 'Arrange Transport for Me' and need coordination"}
+                  {t("admin.transport.desc")}
                 </p>
               </div>
               <Button onClick={() => void fetchPendingTransport()} disabled={transportLoading}>
                 {transportLoading
                   ? <><Loader2 className="h-4 w-4 me-2 animate-spin" />{t("admin.loading")}</>
-                  : <><RefreshCw className="h-4 w-4 me-2" />{lang === "ar" ? "تحميل الطلبات" : "Load Requests"}</>
+                  : <><RefreshCw className="h-4 w-4 me-2" />{t("admin.transport.load")}</>
                 }
               </Button>
             </div>
@@ -577,13 +575,13 @@ export function AdminPage() {
                 <div className="px-4 py-3 border-b border-border">
                   <p className="text-sm font-semibold text-foreground">
                     {transportReqs.length > 0
-                      ? (lang === "ar" ? `${transportReqs.length} طلب معلق` : `${transportReqs.length} pending requests`)
-                      : (lang === "ar" ? "لا توجد طلبات معلقة" : "No pending requests")}
+                      ? t("admin.transport.count").replace("{n}", String(transportReqs.length))
+                      : t("admin.transport.empty_count")}
                   </p>
                 </div>
                 {transportReqs.length === 0 ? (
                   <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-                    {lang === "ar" ? "لا توجد طلبات نقل معلقة حاليًا." : "No pending transport requests at this time."}
+                    {t("admin.transport.empty")}
                   </div>
                 ) : (
                   <div className="divide-y divide-border">
@@ -596,7 +594,7 @@ export function AdminPage() {
                             )}
                             <span className="inline-flex items-center gap-1 text-[10px] font-semibold rounded-full bg-amber-100 text-amber-800 px-2 py-0.5">
                               <Truck className="h-3 w-3" />
-                              {lang === "ar" ? "معلق" : "Pending"}
+                              {t("admin.transport.status.pending")}
                             </span>
                           </div>
                           <span className="text-xs text-muted-foreground shrink-0">{formatDate(tr.created_at)}</span>
@@ -621,7 +619,7 @@ export function AdminPage() {
 
                         {tr.planned_pickup_at && (
                           <p className="text-xs text-muted-foreground">
-                            {lang === "ar" ? "موعد الاستلام المخطط: " : "Planned pickup: "}
+                            {t("admin.transport.planned_pickup")}
                             {formatDate(tr.planned_pickup_at)}
                           </p>
                         )}

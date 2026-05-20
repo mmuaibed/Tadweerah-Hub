@@ -1470,8 +1470,22 @@ const translations: Record<string, Record<Language, string>> = {
   "admin.logout": { ar: "تسجيل الخروج", en: "Logout" },
 
   /* ── Admin: Companies tab ── */
-  "admin.tab.companies": { ar: "الشركات", en: "Companies" },
-  "admin.tab.deals":     { ar: "الصفقات", en: "Deals" },
+  "admin.tab.companies":  { ar: "الشركات",     en: "Companies" },
+  "admin.tab.deals":      { ar: "الصفقات",     en: "Deals" },
+  "admin.tab.transport":  { ar: "طلبات النقل", en: "Transport Requests" },
+
+  /* ── Admin: Transport tab ── */
+  "admin.transport.title":       { ar: "طلبات النقل المعلقة (platform-ops)", en: "Pending Platform Transport Requests" },
+  "admin.transport.desc":        { ar: "الطلبات التي اختار فيها المنتج 'رتّب النقل لي' وتحتاج تنسيقًا", en: "Requests where the producer chose 'Arrange Transport for Me' and need coordination" },
+  "admin.transport.load":        { ar: "تحميل الطلبات", en: "Load Requests" },
+  "admin.transport.count":       { ar: "{n} طلب معلق", en: "{n} pending requests" },
+  "admin.transport.empty_count": { ar: "لا توجد طلبات معلقة", en: "No pending requests" },
+  "admin.transport.empty":       { ar: "لا توجد طلبات نقل معلقة حاليًا.", en: "No pending transport requests at this time." },
+  "admin.transport.status.pending": { ar: "معلق", en: "Pending" },
+  "admin.transport.planned_pickup": { ar: "موعد الاستلام المخطط: ", en: "Planned pickup: " },
+  "admin.action.select":            { ar: "اختر...", en: "Select..." },
+  "admin.action.apply":             { ar: "تطبيق", en: "Apply" },
+  "admin.role.label":               { ar: "مدير تدويرة", en: "Tadweerah Admin" },
   "admin.company.fetch":         { ar: "تحميل الشركات", en: "Load Companies" },
   "admin.company.count":         { ar: "{n} شركة", en: "{n} companies" },
   "admin.company.empty":         { ar: "لا توجد شركات تطابق الفلتر", en: "No companies match the filter" },
