@@ -13,6 +13,9 @@ const BASE_URL = process.env.PLATFORM_URL ?? "https://tadweerah.sa";
 let resend: Resend | null = null;
 if (API_KEY) {
   resend = new Resend(API_KEY);
+  console.info("[email] Resend initialised. FROM:", FROM);
+} else {
+  console.info("[email] RESEND_API_KEY absent — all emails disabled.");
 }
 
 interface EmailPayload {
@@ -197,8 +200,9 @@ export async function sendSupportNotification(p: SupportNotificationParams): Pro
   const subjectLine = p.subject
     ? `[تدويرة] ${p.subject} — Issue Report ${p.reportId}`
     : `[تدويرة] بلاغ جديد من المستخدم — Issue Report ${p.reportId}`;
+  console.info("[email:support] attempting send →", supportEmail, "| report:", p.reportId, "| from:", FROM);
   try {
-    await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from: FROM,
       to: supportEmail,
       subject: subjectLine,
@@ -231,8 +235,13 @@ export async function sendSupportNotification(p: SupportNotificationParams): Pro
 </td></tr></table>
 </body></html>`,
     });
+    if (error) {
+      console.error("[email:support] Resend API error — name:", error.name, "| message:", error.message, "| report:", p.reportId);
+    } else {
+      console.info("[email:support] Resend accepted — message id:", data?.id, "| report:", p.reportId);
+    }
   } catch (err) {
-    console.error("[email] support notification send failed:", err);
+    console.error("[email:support] unexpected exception — report:", p.reportId, err);
   }
 }
 
