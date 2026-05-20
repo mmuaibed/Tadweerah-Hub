@@ -1056,6 +1056,11 @@ router.post(
       const finalAmountAtCreation =
         settlementType === "fixed" ? String(estimatedAmount) : null;
 
+      // VAT at standard Saudi rate of 15%
+      const vatRate = 0.15;
+      const vatAmount = Math.round(estimatedAmount * vatRate * 1000) / 1000;
+      const totalAmountVal = Math.round((estimatedAmount + vatAmount) * 1000) / 1000;
+
       await tx.insert(dealsTable).values({
         offer_id: offerId,
         listing_id: offer.waste_listing_id,
@@ -1065,6 +1070,9 @@ router.post(
         price_per_unit: offer.price_per_unit,
         estimated_amount: String(estimatedAmount),
         final_amount: finalAmountAtCreation,
+        vat_rate: vatRate.toFixed(4),
+        vat_amount: vatAmount.toFixed(3),
+        total_amount: totalAmountVal.toFixed(3),
       });
     });
 

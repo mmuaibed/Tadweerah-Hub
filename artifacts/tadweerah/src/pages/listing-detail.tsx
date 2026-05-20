@@ -42,6 +42,7 @@ import {
   Info,
   AlertCircle,
   Shield,
+  Truck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -1454,6 +1455,13 @@ export function ListingDetailPage() {
         )}
         <CompactRow icon={<Building2 className="h-3.5 w-3.5" />} label={t("listing.detail.publishedBy")} value={listing.company_name} />
         <CompactRow icon={<Calendar className="h-3.5 w-3.5" />} label={t("listing.publishedOn")} value={dateStr} />
+        {(listing as typeof listing & { transport_responsibility?: string }).transport_responsibility && (
+          <CompactRow
+            icon={<Truck className="h-3.5 w-3.5" />}
+            label={t("listing.transport_responsibility.label")}
+            value={t(`listing.transport_responsibility.${(listing as typeof listing & { transport_responsibility?: string }).transport_responsibility}`)}
+          />
+        )}
       </div>
     </div>
   );

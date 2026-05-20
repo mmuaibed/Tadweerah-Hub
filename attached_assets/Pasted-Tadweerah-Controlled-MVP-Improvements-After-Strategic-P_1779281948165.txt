@@ -1,0 +1,402 @@
+Tadweerah — Controlled MVP Improvements After Strategic Partner Demo
+
+We need to implement a limited and safe set of MVP improvements based on strategic partner feedback.
+
+Important operating rules:
+- Do not refactor unrelated files.
+- Do not rename routes, enums, API contracts, internal keys, database tables, or existing business states unless strictly required.
+- Do not modify the atomic offer acceptance logic.
+- Do not modify deal lifecycle states except for displaying additional financial/transport information.
+- Do not change existing eligibility, company approval, licensing, or offer comparison logic unless explicitly required below.
+- Do not build a full invoicing engine.
+- Do not build ZATCA e-invoicing integration.
+- Do not build MWAN integration.
+- Do not build transporter marketplace.
+- Do not implement multi-material bundled listings now.
+- Do not implement partial acceptance or line-level offers.
+- Do not touch unrelated UI labels, navigation routes, or internal route keys.
+- Keep all changes minimal, backward-compatible, and regression-safe.
+- Before making database changes, list the exact migration changes and confirm they are additive only.
+- If any requested change requires a risky core transaction refactor, stop and report before implementing.
+
+Scope approved for implementation:
+Only implement items 1–5 below. Item 6 is deferred.
+
+==================================================
+1) VAT 15% — pricing visibility across auctions, offers, deals, contracts, reports, and invoice views
+==================================================
+
+Business requirement:
+Tadweerah must clearly show three financial numbers wherever a transaction value appears:
+1. subtotal before VAT
+2. VAT amount at 15%
+3. total including VAT
+
+VAT must be visible to both buyer and seller before and after financial commitment.
+
+Required behavior:
+
+A) During bidding / offer submission:
+- When the buyer enters an offer amount, show live calculated values:
+  - offer amount before VAT
+  - VAT 15%
+  - total including VAT
+- Make it clear that the offer/base price is before VAT.
+- VAT must be a separate line item, not merged into the base price.
+
+B) Seller offer review:
+- When the seller views submitted offers, show:
+  - offer amount before VAT
+  - VAT 15%
+  - total including VAT
+- Do not change offer ranking logic.
+- Offers should continue to be compared based on the pre-VAT offer amount unless the current code already uses another method.
+
+C) Deal creation / accepted offer:
+- When an offer is accepted and a deal is created, store the accepted financial values if this can be done safely with additive fields:
+  - subtotal_amount
+  - vat_rate
+  - vat_amount
+  - total_amount
+- If storing all four values requires risky changes, stop and report before implementation.
+- Do not change price_per_unit.
+- Do not change existing deal creation logic except to persist or display VAT values safely.
+
+D) Deal summary / payment confirmation:
+Show:
+- subtotal before VAT
+- VAT 15%
+- total including VAT
+- transport responsibility as a separate non-financial line
+
+E) Contracts:
+Where contract values are displayed, show:
+- contract value before VAT
+- VAT 15%
+- total including VAT
+If contract material lines exist, show the calculation at line or summary level only if safe.
+Do not redesign the contract module.
+
+F) Reports:
+If financial reports already exist, add or display:
+- amount before VAT
+- VAT amount
+- total including VAT
+Do not create a new reporting module if it does not exist.
+
+G) Invoice views:
+If invoice views already exist, show:
+- subtotal
+- VAT 15%
+- total including VAT
+Do not build full invoice generation or ZATCA integration.
+
+VAT rules:
+- Default VAT rate is 15%.
+- VAT applies by default for standard Saudi local taxable transactions.
+- If a vat_applicable field is added, it should default to true, not false, unless there is a strong technical reason. If there is a reason to default false, stop and explain before implementation.
+- Keep VAT logic simple and MVP-safe.
+
+==================================================
+2) Transport responsibility — listing-level, two options only
+==================================================
+
+Business requirement:
+The marketplace listing must clearly show who is responsible for arranging and bearing transportation cost before buyers place bids.
+
+Add a required listing-level field:
+
+transport_responsibility:
+- seller
+- buyer
+
+Meaning:
+The selected party is responsible for arranging transportation and bearing transportation cost.
+
+Important:
+- Use only these two options for MVP.
+- Do not add shared, included_in_price, external agreement, or other options.
+- Do not calculate transport price.
+- Do not include transport cost in VAT calculation.
+- Transport responsibility is informational/contractual and should influence buyer bidding decisions, but the system should not price transport now.
+
+Show transport responsibility in:
+- listing creation form
+- marketplace listing cards
+- listing detail page before submitting an offer
+- offer/deal summary after acceptance
+- deal panel
+- transport request section if a transport request is created
+- admin/ops view if relevant
+
+Suggested helper text:
+English:
+“Transport responsibility means the selected party is responsible for arranging transportation and bearing its cost.”
+
+Arabic:
+“مسؤولية النقل تعني أن الطرف المحدد هو المسؤول عن ترتيب النقل وتحمل تكلفته.”
+
+Default:
+- Prefer making the field required at listing creation.
+- If a default is technically required, use buyer as the default, but still show it clearly to the listing creator.
+
+Important implementation note:
+This should be stored on the listing/deal context, not only on transport_requests, because it must be visible in the marketplace before bidding.
+
+==================================================
+3) Improve Smart-Assist Transport clarity
+==================================================
+
+Business requirement:
+The current transport flow feels unclear. Improve the wording and step structure without changing backend business logic.
+
+Frontend-only if possible.
+
+Improve the transport section in the deal panel to clearly show three user choices:
+1. Need Tadweerah transport assistance
+2. Transport arranged by the responsible party / self-managed
+3. No transport required
+
+Show a clear current transport status:
+- not_required
+- requested
+- under_tadweerah_review
+- arranged_externally / self_managed
+- completed
+
+Important:
+- Use existing backend routes and fields if already available.
+- Do not build a transporter marketplace.
+- Do not change dispatch/deal gating unless already required by the current code.
+- Do not change deal lifecycle states.
+- Do not change transport decision logic beyond clearer display and wording.
+- If a backend change is required, keep it minimal and explain it.
+
+==================================================
+4) Tadweerah Admin / Operations account
+==================================================
+
+Business requirement:
+Tadweerah needs an internal admin/operations account to manage pilot operations.
+
+Current issue:
+There is no actual Tadweerah admin account available to the team. We need a simple and safe method to make an existing user account an admin/ops user.
+
+Preferred admin email:
+mmuaibed@stc.com.sa
+
+Required assessment before implementation:
+First inspect the existing auth/admin implementation:
+- Is there an admin page?
+- Is there an admin API route?
+- Is there an existing admin guard?
+- Is there ADMIN_API_KEY or X_ADMIN_KEY logic?
+- Is Clerk used for user identity?
+- Is user email available in the frontend/backend session?
+- Is company role/status used for access?
+- Is there any existing role field for platform admin?
+
+Implementation goal:
+Create the simplest safe way to allow the user with email mmuaibed@stc.com.sa to access Tadweerah admin/ops functions.
+
+Allowed approaches, in order of preference:
+
+Option A — Environment variable allowlist, no DB migration:
+- Add an env var such as:
+  TADWEERAH_ADMIN_EMAILS=mmuaibed@stc.com.sa
+- Admin/ops UI checks the authenticated Clerk user email against this allowlist.
+- Backend admin/ops routes remain protected by existing admin guard/API key if already present.
+- This is preferred if it avoids database migration and avoids changing company logic.
+
+Option B — Admin role field, only if already supported:
+- If there is an existing user role model or role field, add platform_admin or tadweerah_ops safely.
+- Do not create a broad new RBAC system unless absolutely necessary.
+
+Option C — Platform company approach:
+- Use PLATFORM_COMPANY_ID only if the platform-company pattern already exists or can be added safely.
+- Do not force Tadweerah admin to behave as a buyer or seller company.
+
+Important:
+- Do not replace or break the current usage of mmuaibed@stc.com.sa if it is tied to an existing company unless you explain the impact first.
+- If mmuaibed@stc.com.sa currently belongs to a normal company/user flow, do not destructively convert it without preserving existing access or explaining the tradeoff.
+- Admin should be a platform operations role, not a seller/buyer role.
+- If changing this account could break existing test data, stop and report before implementation.
+
+Minimum admin/ops capabilities for MVP:
+- View all listings
+- View all deals
+- View transport requests
+- View companies and approval/license status
+- Update company approval/license status manually if route already exists or can be safely exposed
+- Update listing/deal/transport statuses only where existing backend routes allow it safely
+- Add or view internal notes only if already supported or easy to add safely
+- See transport requests that need Tadweerah intervention
+
+Security:
+- Admin access must not be public.
+- Do not rely only on frontend hiding if backend mutation routes are exposed.
+- Keep existing admin API key protection if present.
+- If backend cannot safely verify Clerk email, keep backend protected by existing admin key and limit frontend access using email allowlist.
+
+Deliverable for this item:
+- Explain which admin approach was chosen and why.
+- Provide exact env vars needed.
+- Provide exact steps for me to make mmuaibed@stc.com.sa the admin account.
+- Do not hardcode secrets.
+
+==================================================
+5) MWAN eManifest readiness display only
+==================================================
+
+Business requirement:
+Tadweerah should collect and display deal/transport data in a way that can later map to MWAN eManifest and reduce duplicate entry for users.
+
+Important:
+- Do not integrate with MWAN now.
+- Do not call MWAN APIs.
+- Do not create eManifest records.
+- Do not build external submission.
+- Use existing fields wherever possible.
+- Do not add excessive fields now.
+
+Display or improve MWAN/eManifest readiness panel using existing data such as:
+- waste generator
+- receiver / processor
+- transporter if available
+- material category/subcategory
+- waste description
+- hazardous/non-hazardous if available
+- pickup location/city/facility
+- destination location/city/facility
+- planned pickup date
+- vehicle plate if available
+- quantity/weight/unit from deal/listing/transport context
+- manifest reference if already exists
+- readiness status or missing fields
+
+Add helper wording:
+English:
+“Data is captured in a MWAN/eManifest-ready structure to reduce duplicate entry in future integrations.”
+
+Arabic:
+“يتم جمع بيانات الطلب بطريقة مهيأة للتوافق مع متطلبات موان/eManifest لتقليل الإدخال المكرر مستقبلاً.”
+
+Important:
+- If waste_un_code or hazardous material fields require a DB migration, defer unless already easy and clearly needed.
+- Do not expand hazardous materials functionality now.
+
+==================================================
+6) Multi-material listings — deferred
+==================================================
+
+Do not implement multi-material bundled listings now.
+
+Reason:
+This requires deeper changes to listing materials, offers, deal creation, VAT calculation, and acceptance logic. It is higher-risk and should be handled after GitHub migration / Antigravity transition.
+
+For now, only add a frontend helper note if it is easy and does not require backend/schema changes:
+
+English:
+“For listings with multiple material types, please create separate listings for each material in this MVP. Multi-material bundled listings are planned for a later phase.”
+
+Arabic:
+“في حال وجود أكثر من نوع مادة، يرجى إنشاء قائمة مستقلة لكل مادة في نسخة MVP الحالية. سيتم دعم حزم المواد المتعددة في مرحلة لاحقة.”
+
+Do not add listing_materials table now.
+Do not add bundle offers now.
+Do not add total_offer_price now.
+Do not add partial acceptance now.
+
+==================================================
+Implementation sequence
+==================================================
+
+Implement in this order only:
+
+1. Create backup/checkpoint and confirm current branch/status.
+2. Smart-Assist Transport clarity.
+3. MWAN/eManifest readiness display improvements using existing fields.
+4. Admin/Ops account method for mmuaibed@stc.com.sa.
+5. Transport responsibility at listing level.
+6. VAT display and persistence.
+
+If any step becomes risky, stop and report before proceeding.
+
+==================================================
+Required validation
+==================================================
+
+After implementation, run:
+
+- pnpm --filter @workspace/db run push
+  Only if schema changed.
+
+- pnpm --filter @workspace/api-server run typecheck
+
+- pnpm run typecheck
+
+- curl -s http://localhost:80/api/healthz
+
+Manual regression checklist:
+
+1. Authentication
+- Login as normal user still works.
+- Login/access as mmuaibed@stc.com.sa admin/ops works if implemented.
+- Non-admin users cannot access admin/ops pages.
+
+2. Listing creation
+- Create listing successfully.
+- Transport responsibility is required or clearly selected.
+- Listing appears in marketplace.
+- Listing card shows transport responsibility.
+- Listing detail shows transport responsibility.
+
+3. Offer flow
+- Buyer submits offer.
+- Buyer sees subtotal, VAT 15%, and total before submission.
+- Seller sees offer subtotal, VAT 15%, and total.
+- Offer comparison/acceptance logic still works.
+
+4. Deal flow
+- Seller accepts offer.
+- One deal is created correctly.
+- Other offers are still handled as before.
+- Deal summary shows:
+  - subtotal before VAT
+  - VAT 15%
+  - total including VAT
+  - transport responsibility
+
+5. Payment/dispatch/closure
+- Existing payment confirmation still works.
+- Dispatch flow still works.
+- Completion/receipt flow still works.
+- No deal lifecycle state is broken.
+
+6. Transport
+- User can request Tadweerah transport assistance.
+- User can mark transport as self-managed or not required if existing flow supports it.
+- Transport section is clearer.
+- Transport request displays transport responsibility.
+
+7. MWAN readiness
+- MWAN/eManifest readiness panel still loads.
+- Existing manifest readiness route still works.
+- Missing fields are shown clearly without blocking the deal.
+
+8. Contracts
+- Existing contract flow still works.
+- Contract value displays subtotal/VAT/total where values are shown.
+- Do not break contract material lines or shipments.
+
+9. Reports / invoices
+- Existing report or invoice views still load.
+- If financial values are shown, they show subtotal/VAT/total where safe.
+
+Final deliverables:
+- Summary of changed files.
+- DB migration summary.
+- Env vars required, especially for admin account.
+- What was intentionally deferred.
+- Typecheck/build result.
+- Any known limitations.

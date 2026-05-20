@@ -16,7 +16,7 @@ import {
 } from "@workspace/api-client-react";
 import {
   Loader2, ImagePlus, X, Scale, Tag, Gavel, ShoppingBag, Percent,
-  Shield, Lock, Globe, Users, Check, ChevronRight,
+  Shield, Lock, Globe, Users, Check, ChevronRight, Truck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -120,6 +120,7 @@ export function ListingNewPage() {
   const [companySearching, setCompanySearching] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<{ id: string; name: string; city: string } | null>(null);
   const [targetCategoryIds, setTargetCategoryIds] = useState<Set<string>>(new Set());
+  const [transportResponsibility, setTransportResponsibility] = useState<"seller" | "buyer">("buyer");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -249,6 +250,7 @@ export function ListingNewPage() {
           ...(requiredServiceIds.size > 0
             ? { required_service_ids: Array.from(requiredServiceIds) }
             : {}),
+          transport_responsibility: transportResponsibility,
           eligible_company_type: eligibleCompanyType,
           ...(saleType === "direct" ? { targeting_type: targetingType } : {}),
           ...(saleType === "direct" && targetingType === "specific_company" && selectedCompany
@@ -372,6 +374,32 @@ export function ListingNewPage() {
                   </div>
                 );
               })()}
+
+              {/* Transport Responsibility — required, shown clearly before pricing */}
+              <div className="space-y-1.5">
+                <Label>{t("listing.transport_responsibility.form_label")}</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {(["buyer", "seller"] as const).map((party) => {
+                    const active = transportResponsibility === party;
+                    return (
+                      <button
+                        key={party}
+                        type="button"
+                        onClick={() => setTransportResponsibility(party)}
+                        className={`flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition-all ${
+                          active
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border bg-background text-muted-foreground hover:border-muted-foreground/40"
+                        }`}
+                      >
+                        <Truck className="h-4 w-4 shrink-0" />
+                        <span>{t(`listing.transport_responsibility.${party}`)}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-muted-foreground">{t("listing.transport_responsibility.helper")}</p>
+              </div>
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1.5">

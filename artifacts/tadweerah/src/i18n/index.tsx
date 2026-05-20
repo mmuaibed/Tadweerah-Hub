@@ -1524,6 +1524,61 @@ const translations: Record<string, Record<Language, string>> = {
 
   /* ── UX Polish: Waste code hint in TR form ── */
   "transport.create.waste_code_hint": { ar: "يجب أن يتبع الرمز تنسيق مَوَن أو بازل، مثال: 16-01-19", en: "Code should follow MWAN or Basel format, e.g. 16-01-19" },
+
+  /* ── Transport Responsibility (Item 2) ── */
+  "listing.transport_responsibility.label": { ar: "مسؤولية النقل", en: "Transport Responsibility" },
+  "listing.transport_responsibility.seller": { ar: "المورّد (البائع)", en: "Seller (Producer)" },
+  "listing.transport_responsibility.buyer": { ar: "المشتري", en: "Buyer" },
+  "listing.transport_responsibility.helper": {
+    ar: "مسؤولية النقل تعني أن الطرف المحدد هو المسؤول عن ترتيب النقل وتحمل تكلفته.",
+    en: "Transport responsibility means the selected party is responsible for arranging transportation and bearing its cost.",
+  },
+  "listing.transport_responsibility.form_label": { ar: "من المسؤول عن النقل؟", en: "Who is responsible for transport?" },
+  "deal.transport_responsibility.label": { ar: "مسؤولية النقل", en: "Transport Responsibility" },
+
+  /* ── VAT 15% (Item 1) ── */
+  "deal.vat.subtotal": { ar: "المبلغ قبل الضريبة", en: "Subtotal (before VAT)" },
+  "deal.vat.rate": { ar: "ضريبة القيمة المضافة (15%)", en: "VAT (15%)" },
+  "deal.vat.total": { ar: "الإجمالي شامل الضريبة", en: "Total (incl. VAT)" },
+  "deal.vat.note": { ar: "* الضريبة بنسبة 15% وفق نظام ضريبة القيمة المضافة السعودي.", en: "* VAT at 15% per Saudi VAT regulations." },
+  "offer.vat.subtotal": { ar: "قيمة العرض (قبل الضريبة)", en: "Offer amount (before VAT)" },
+  "offer.vat.rate": { ar: "ضريبة القيمة المضافة 15%", en: "VAT 15%" },
+  "offer.vat.total": { ar: "الإجمالي شامل الضريبة", en: "Total incl. VAT" },
+  "listing.vat_applicable.label": { ar: "تخضع للضريبة (15% ضريبة القيمة المضافة)", en: "VAT applicable (15% Saudi VAT)" },
+
+  /* ── MWAN eManifest helper (Item 5) ── */
+  "mwan.helper_text": {
+    ar: "يتم جمع بيانات الطلب بطريقة مهيأة للتوافق مع متطلبات موان/eManifest لتقليل الإدخال المكرر مستقبلاً.",
+    en: "Data is captured in a MWAN/eManifest-ready structure to reduce duplicate entry in future integrations.",
+  },
+
+  /* ── Multi-material deferred note (Item 6 — frontend only) ── */
+  "listing.multi_material.deferred_note": {
+    ar: "في حال وجود أكثر من نوع مادة، يرجى إنشاء قائمة مستقلة لكل مادة في نسخة MVP الحالية. سيتم دعم حزم المواد المتعددة في مرحلة لاحقة.",
+    en: "For listings with multiple material types, please create separate listings for each material in this MVP. Multi-material bundled listings are planned for a later phase.",
+  },
+
+  /* ── Smart-Assist Transport clarity (Item 3) ── */
+  "deal.transport.smart.self_managed_btn": { ar: "النقل مُرتَّب من الطرف المسؤول", en: "Transport arranged by responsible party" },
+  "deal.transport.smart.self_managed_note": {
+    ar: "الطرف المسؤول عن النقل سيقوم بترتيبه مباشرة دون الحاجة لوساطة المنصة.",
+    en: "The responsible party will arrange transport directly without platform assistance.",
+  },
+  "deal.transport.smart.self_managed_status": { ar: "النقل مُرتَّب ذاتياً", en: "Self-managed transport" },
+  "deal.transport.smart.options_title": { ar: "ماذا تحتاج لترتيب النقل؟", en: "How would you like to handle transport?" },
+  "deal.transport.smart.option1_title": { ar: "طلب مساعدة تدويرة للنقل", en: "Request Tadweerah transport assistance" },
+  "deal.transport.smart.option1_desc": { ar: "سنتواصل معك لتنسيق شاحنة مرخصة ومناسبة.", en: "We'll coordinate a licensed and appropriate vehicle for you." },
+  "deal.transport.smart.option2_title": { ar: "النقل مُرتَّب من الطرف المسؤول", en: "Transport arranged by responsible party" },
+  "deal.transport.smart.option2_desc": { ar: "الطرف المسؤول عن النقل سيرتبه بشكل مستقل.", en: "The responsible party will arrange transport independently." },
+  "deal.transport.smart.option3_title": { ar: "لا يلزم نقل", en: "No transport required" },
+  "deal.transport.smart.option3_desc": { ar: "الاستلام مباشرة أو لا حاجة لترتيب نقل.", en: "Direct pickup or no transport arrangement needed." },
+
+  /* ── Admin email guard (Item 4) ── */
+  "admin.access.denied.title": { ar: "الوصول مقيّد", en: "Access Restricted" },
+  "admin.access.denied.desc": {
+    ar: "هذه الصفحة مخصصة لفريق عمليات تدويرة فقط. حسابك الحالي لا يملك صلاحية الوصول.",
+    en: "This page is restricted to the Tadweerah operations team. Your current account does not have access.",
+  },
 };
 
 export const I18nProvider: React.FC<{

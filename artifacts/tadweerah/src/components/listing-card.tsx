@@ -15,6 +15,7 @@ import {
   Lock,
   MessageSquare,
   Calendar,
+  Truck,
 } from "lucide-react";
 import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
@@ -122,6 +123,15 @@ export function ListingCard({
                 {t("listing.eligible.badge")}
               </span>
             )}
+            {(() => {
+              const tr = (listing as WasteListing & { transport_responsibility?: string }).transport_responsibility;
+              return tr ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">
+                  <Truck className="h-2.5 w-2.5" />
+                  {t(`listing.transport_responsibility.${tr}`)}
+                </span>
+              ) : null;
+            })()}
           </div>
         </div>
 

@@ -129,6 +129,8 @@ function serialize(
     eligible_company_type: (r.eligible_company_type ?? "ALL") as "ALL" | "LICENSED_ONLY",
     target_category_ids: targetCategoryIds ?? [],
     image_url: row.image_url ?? undefined,
+    transport_responsibility: (row.transport_responsibility ?? "buyer") as "seller" | "buyer",
+    vat_applicable: row.vat_applicable ?? true,
     created_at: row.created_at.toISOString(),
     closed_at: row.closed_at?.toISOString() ?? undefined,
     offer_count: row.offer_count ?? undefined,
@@ -229,6 +231,8 @@ const baseSelect = {
   target_company_id: wasteListingsTable.target_company_id,
   eligible_company_type: wasteListingsTable.eligible_company_type,
   image_url: wasteListingsTable.image_url,
+  transport_responsibility: wasteListingsTable.transport_responsibility,
+  vat_applicable: wasteListingsTable.vat_applicable,
   created_at: wasteListingsTable.created_at,
   closed_at: wasteListingsTable.closed_at,
   company_name: companiesTable.name,
@@ -619,6 +623,13 @@ router.post(
     const eligibleCompanyType: "ALL" | "LICENSED_ONLY" =
       req.body.eligible_company_type === "LICENSED_ONLY" ? "LICENSED_ONLY" : "ALL";
 
+    // transport_responsibility: who arranges/bears transport cost — required field, defaults to "buyer"
+    const transportResponsibility: "seller" | "buyer" =
+      req.body.transport_responsibility === "seller" ? "seller" : "buyer";
+
+    // vat_applicable: whether VAT at 15% applies — defaults to true for standard Saudi transactions
+    const vatApplicable: boolean = req.body.vat_applicable !== false;
+
     const [created] = await db
       .insert(wasteListingsTable)
       .values({
@@ -639,6 +650,8 @@ router.post(
         targeting_type: targetingType,
         target_company_id: targetCompanyId,
         eligible_company_type: eligibleCompanyType,
+        transport_responsibility: transportResponsibility,
+        vat_applicable: vatApplicable,
       })
       .returning();
 

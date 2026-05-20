@@ -5,6 +5,7 @@ import {
   uuid,
   pgEnum,
   numeric,
+  boolean,
 } from "drizzle-orm/pg-core";
 import { companiesTable } from "./companies";
 import { unitOptionsTable } from "./unit-options";
@@ -210,6 +211,24 @@ export const wasteListingsTable = pgTable("waste_listings", {
   eligible_company_type: eligibleCompanyTypeEnum("eligible_company_type")
     .notNull()
     .default("ALL"),
+
+  /**
+   * Who is responsible for arranging transportation and bearing its cost.
+   * "seller" — the listing producer arranges and pays for transport
+   * "buyer"  — the winning buyer arranges and pays for transport
+   * Required at listing creation. Informational/contractual — does not affect pricing.
+   * Existing rows default to "buyer".
+   */
+  transport_responsibility: text("transport_responsibility")
+    .notNull()
+    .default("buyer"),
+
+  /**
+   * Whether VAT at the standard Saudi rate (15%) applies to this transaction.
+   * Defaults to true — standard local taxable transactions.
+   * When true, VAT amounts are computed and displayed separately from the base price.
+   */
+  vat_applicable: boolean("vat_applicable").notNull().default(true),
 });
 
 export type WasteListing = typeof wasteListingsTable.$inferSelect;

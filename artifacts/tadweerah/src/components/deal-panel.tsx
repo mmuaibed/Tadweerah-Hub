@@ -62,6 +62,16 @@ export interface DealInfo {
   estimated_amount: number;
   actual_quantity: number | null;
   final_amount: number | null;
+  /** VAT rate as a decimal (e.g. 0.15 = 15%). Always 0.15 for MVP. */
+  vat_rate?: number | null;
+  /** VAT amount = estimated_amount × vat_rate */
+  vat_amount?: number | null;
+  /** Total including VAT = estimated_amount + vat_amount */
+  total_amount?: number | null;
+  /** Transport Smart-Assist decision: null | 'not_required' */
+  transport_decision?: string | null;
+  /** Who is responsible for arranging and bearing transport cost: 'seller' | 'buyer' | null */
+  transport_responsibility?: string | null;
   status: DealStatus;
   counterparty: {
     name: string;
@@ -348,6 +358,12 @@ function MwanSummaryPanel({
           </span>
           <span className="ms-auto font-mono text-[10px] opacity-70">{data.readiness_score}</span>
         </div>
+      )}
+      {/* MWAN eManifest integration context */}
+      {data && (
+        <p className="px-4 py-1.5 text-[10px] text-muted-foreground/60 italic border-b border-border/40">
+          {t("mwan.helper_text")}
+        </p>
       )}
 
       <button
@@ -1196,7 +1212,7 @@ function SmartTransportBody({
             <span>{smartTrError}</span>
           </div>
         )}
-        {/* PRIMARY: arrange transport */}
+        {/* PRIMARY: request platform transport assistance */}
         <Button
           type="button"
           className="w-full h-11 text-sm font-bold"
@@ -1208,12 +1224,25 @@ function SmartTransportBody({
             : <Truck className="me-2 h-4 w-4 shrink-0" />}
           {t("deal.transport.smart.arrange_btn")}
         </Button>
-        {/* SECONDARY: opt-out requires explicit confirmation */}
+        {/* SECONDARY: responsible party will arrange independently — self-managed */}
         <div className="border-t border-border/50 pt-2">
+          <p className="text-[11px] text-muted-foreground/70 text-center mb-2">{t("deal.transport.smart.self_managed_note")}</p>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full h-9 text-xs text-muted-foreground"
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSkipConfirmOpen(true); }}
+            disabled={smartTrLoading}
+          >
+            {t("deal.transport.smart.self_managed_btn")}
+          </Button>
+        </div>
+        {/* TERTIARY: no transport needed at all */}
+        <div className="border-t border-border/50 pt-1">
           <Button
             type="button"
             variant="ghost"
-            className="w-full h-9 text-xs text-muted-foreground/70 hover:text-muted-foreground"
+            className="w-full h-8 text-[11px] text-muted-foreground/50 hover:text-muted-foreground"
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSkipConfirmOpen(true); }}
             disabled={smartTrLoading}
           >
@@ -1589,10 +1618,30 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
                   {deal.price_per_unit.toLocaleString()} {t("listing.sar")} / {unit}
                 </span>
 
-                <span className="text-muted-foreground">{t("deal.field.estimated_amount")}</span>
+                {/* Transport responsibility row */}
+                {deal.transport_responsibility && (
+                  <>
+                    <span className="text-muted-foreground">{t("deal.transport_responsibility.label")}</span>
+                    <span className="font-medium text-end">{t(`listing.transport_responsibility.${deal.transport_responsibility}`)}</span>
+                  </>
+                )}
+
+                {/* VAT breakdown — subtotal, VAT 15%, total */}
+                <span className="text-muted-foreground">
+                  {deal.vat_amount != null ? t("deal.vat.subtotal") : t("deal.field.estimated_amount")}
+                </span>
                 <span className="font-semibold text-primary text-end">
                   {deal.estimated_amount.toLocaleString()} {t("listing.sar")}
                 </span>
+
+                {deal.vat_amount != null && (
+                  <>
+                    <span className="text-muted-foreground">{t("deal.vat.rate")}</span>
+                    <span className="font-medium text-end">{deal.vat_amount.toLocaleString()} {t("listing.sar")}</span>
+                    <span className="text-muted-foreground font-semibold">{t("deal.vat.total")}</span>
+                    <span className="font-bold text-green-700 text-end">{deal.total_amount?.toLocaleString()} {t("listing.sar")}</span>
+                  </>
+                )}
 
                 {deal.actual_quantity != null && (
                   <>

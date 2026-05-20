@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useUser } from "@clerk/react";
 import {
   CheckCircle2,
   AlertCircle,
@@ -81,7 +82,24 @@ function licenseLabel(status: string | null, lang: string): { label: string; cls
 
 export function AdminPage() {
   const { t, lang } = useT();
+  const { user, isLoaded: userLoaded } = useUser();
   const dir = lang === "ar" ? "rtl" : "ltr";
+
+  // Email allowlist guard — Option A per spec
+  const allowlistRaw = (import.meta.env.VITE_TADWEERAH_ADMIN_EMAILS as string | undefined) ?? "";
+  const allowlist = allowlistRaw.split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
+  const userEmail = user?.primaryEmailAddress?.emailAddress?.toLowerCase() ?? "";
+  const isEmailAllowed = !userLoaded || allowlist.length === 0 || allowlist.includes(userEmail);
+
+  if (userLoaded && !isEmailAllowed) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 p-8 text-center" dir={dir}>
+        <ShieldCheck className="h-12 w-12 text-muted-foreground/40" />
+        <h2 className="text-lg font-semibold">{t("admin.access.denied.title")}</h2>
+        <p className="text-sm text-muted-foreground max-w-sm">{t("admin.access.denied.desc")}</p>
+      </div>
+    );
+  }
 
   const [adminKey, setAdminKey] = useState(() => sessionStorage.getItem("tdw_admin_key") ?? "");
   const [tab, setTab] = useState<"deals" | "companies" | "transport">("companies");

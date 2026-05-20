@@ -21,8 +21,20 @@ const router: IRouter = Router();
 function serializeDeal(
   deal: typeof dealsTable.$inferSelect,
   counterparty: { name: string; contactPhone: string; city: string | null; commercialRegistration?: string | null; license_status?: string | null },
+  listingExtra?: { transport_responsibility: string | null },
 ) {
   const isVerified = !!(counterparty.commercialRegistration && counterparty.license_status === "approved");
+
+  // Compute VAT display values. Use stored vat_rate if available, else default 15%.
+  const vatRate = deal.vat_rate != null ? Number(deal.vat_rate) : 0.15;
+  const subtotalAmount = Number(deal.estimated_amount);
+  const vatAmount = deal.vat_amount != null
+    ? Number(deal.vat_amount)
+    : Math.round(subtotalAmount * vatRate * 1000) / 1000;
+  const totalAmount = deal.total_amount != null
+    ? Number(deal.total_amount)
+    : Math.round((subtotalAmount + vatAmount) * 1000) / 1000;
+
   return {
     id: deal.id,
     offer_id: deal.offer_id,
@@ -31,11 +43,16 @@ function serializeDeal(
     buyer_company_id: deal.buyer_company_id,
     settlement_type: deal.settlement_type,
     price_per_unit: Number(deal.price_per_unit),
-    estimated_amount: Number(deal.estimated_amount),
+    estimated_amount: subtotalAmount,
     actual_quantity:
       deal.actual_quantity != null ? Number(deal.actual_quantity) : null,
     final_amount: deal.final_amount != null ? Number(deal.final_amount) : null,
+    vat_rate: vatRate,
+    vat_amount: vatAmount,
+    total_amount: totalAmount,
     status: deal.status,
+    transport_decision: deal.transport_decision ?? null,
+    transport_responsibility: listingExtra?.transport_responsibility ?? null,
     counterparty: {
       name: counterparty.name,
       contact_phone: counterparty.contactPhone,
@@ -79,21 +96,30 @@ async function fetchDealWithCounterparty(
     ? deal.buyer_company_id
     : deal.producer_company_id;
 
-  const [counterparty] = await db
-    .select({
-      name: companiesTable.name,
-      contactPhone: companiesTable.contactPhone,
-      city: companiesTable.city,
-      commercialRegistration: companiesTable.commercialRegistration,
-      license_status: companiesTable.license_status,
-    })
-    .from(companiesTable)
-    .where(eq(companiesTable.id, counterpartyId))
-    .limit(1);
+  const [counterparty, listingRow] = await Promise.all([
+    db
+      .select({
+        name: companiesTable.name,
+        contactPhone: companiesTable.contactPhone,
+        city: companiesTable.city,
+        commercialRegistration: companiesTable.commercialRegistration,
+        license_status: companiesTable.license_status,
+      })
+      .from(companiesTable)
+      .where(eq(companiesTable.id, counterpartyId))
+      .limit(1)
+      .then((rows) => rows[0]),
+    db
+      .select({ transport_responsibility: wasteListingsTable.transport_responsibility })
+      .from(wasteListingsTable)
+      .where(eq(wasteListingsTable.id, deal.listing_id))
+      .limit(1)
+      .then((rows) => rows[0] ?? null),
+  ]);
 
   if (!counterparty) throw new HttpError(500, "InternalError", "Counterparty not found");
 
-  return { deal, counterparty, isProducer, isBuyer };
+  return { deal, counterparty, isProducer, isBuyer, listingExtra: listingRow };
 }
 
 /**
@@ -273,12 +299,12 @@ router.get(
     const dealId = assertUuid(req.params.deal_id, "deal_id");
     const { company } = req as AuthedCompanyRequest;
 
-    const { deal, counterparty } = await fetchDealWithCounterparty(
+    const { deal, counterparty, listingExtra } = await fetchDealWithCounterparty(
       dealId,
       company.id,
     );
 
-    res.json(serializeDeal(deal, counterparty));
+    res.json(serializeDeal(deal, counterparty, listingExtra ?? undefined));
   },
 );
 

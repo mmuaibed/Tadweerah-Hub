@@ -137,6 +137,18 @@ export const dealsTable = pgTable(
      */
     transport_decision: text("transport_decision"),
 
+    /**
+     * VAT financial fields — computed at deal creation from estimated_amount.
+     * vat_rate    = decimal fraction (e.g. 0.15 = 15%)
+     * vat_amount  = estimated_amount × vat_rate
+     * total_amount = estimated_amount + vat_amount
+     * Null for deals created before VAT fields were added (legacy rows).
+     * Do NOT change price_per_unit or estimated_amount — they remain pre-VAT.
+     */
+    vat_rate: numeric("vat_rate", { precision: 5, scale: 4 }),
+    vat_amount: numeric("vat_amount", { precision: 14, scale: 3 }),
+    total_amount: numeric("total_amount", { precision: 14, scale: 3 }),
+
     created_at: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
