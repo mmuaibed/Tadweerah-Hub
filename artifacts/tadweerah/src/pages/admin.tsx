@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useUser } from "@clerk/react";
+import { useUser, useClerk } from "@clerk/react";
 import {
   CheckCircle2,
   AlertCircle,
@@ -83,6 +83,7 @@ function licenseLabel(status: string | null, lang: string): { label: string; cls
 export function AdminPage() {
   const { t, lang } = useT();
   const { user, isLoaded: userLoaded } = useUser();
+  const { signOut } = useClerk();
   const dir = lang === "ar" ? "rtl" : "ltr";
 
   // Email allowlist guard — empty allowlist blocks everyone (no accidental open access)
@@ -128,6 +129,7 @@ export function AdminPage() {
     setAdminKey("");
     setDeals(null);
     setCompanies(null);
+    void signOut({ redirectUrl: "/" });
   }
 
   function formatDate(iso: string) {
