@@ -1295,6 +1295,12 @@ components:
         highest_offer_total:
           type: number
           description: Highest offer as a total (price_per_unit × quantity). Null if no offers.
+        material_location_address:
+          type: string
+          description: Optional National Address or free-text description of the pickup location.
+        google_maps_url:
+          type: string
+          description: Optional Google Maps share URL for the pickup location. Starts with https://.
       required:
         [id, company_id, company_name, material, quantity, unit, city, status, created_at]
 
@@ -1355,6 +1361,14 @@ components:
           description: |
             Restricts who may submit offers. Defaults to ALL if not supplied.
             Immutable once published.
+        material_location_address:
+          type: string
+          maxLength: 500
+          description: Optional National Address or free-text description of the pickup location.
+        google_maps_url:
+          type: string
+          maxLength: 500
+          description: Optional Google Maps share URL for the pickup location. Must start with https://.
       required: [material, quantity, unit, city]
 
     OfferStatus:

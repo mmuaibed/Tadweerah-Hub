@@ -10,6 +10,7 @@ import {
   useImproveOffer,
   useAcceptOffer,
   useRejectOffer,
+  useGetMaterialCategories,
   getListMyListingsQueryKey,
   getGetListingOffersQueryKey,
   getGetOffersSummaryQueryKey,
@@ -1384,6 +1385,19 @@ export function ListingDetailPage() {
   const categoryNameEn = (listing as typeof listing & { material_category_name_en?: string | null }).material_category_name_en;
   const categoryLabel = lang === "ar" ? (categoryNameAr ?? categoryNameEn) : (categoryNameEn ?? categoryNameAr);
 
+  const { data: allCategoriesRaw = [] } = useGetMaterialCategories();
+  const allCats = allCategoriesRaw as Array<{ id: string; name_ar: string; name_en: string }>;
+  const subcategoryId = (listing as typeof listing & { material_subcategory_id?: string | null }).material_subcategory_id;
+  const subcategoryLabel = subcategoryId
+    ? (allCats.find((c) => c.id === subcategoryId)?.[lang === "ar" ? "name_ar" : "name_en"] ?? null)
+    : null;
+
+  const unitLabel = listing.unit ? t(`unit.${listing.unit}`) : "";
+  const displayTitle = `${subcategoryLabel ?? categoryLabel ?? materialLabel}${quantity > 0 ? ` — ${quantity.toLocaleString()} ${unitLabel}` : ""}`;
+
+  const listingLocationAddress = (listing as typeof listing & { material_location_address?: string | null }).material_location_address ?? null;
+  const listingMapsUrl = (listing as typeof listing & { google_maps_url?: string | null }).google_maps_url ?? null;
+
   // F1: Build close dialog description with pending count
   const closeDialogDesc = isOwner && pendingOfferCount > 0
     ? `${t("listing.close.confirm.pendingOffers").replace("{count}", String(pendingOfferCount))} ${t("listing.close.confirm.desc")}`
@@ -1396,8 +1410,20 @@ export function ListingDetailPage() {
   const saleType = (listing as typeof listing & { sale_type?: string }).sale_type ?? "auction";
 
   const subtitleNode = (
-    <span className="inline-flex items-center gap-1.5 mt-0.5">
-      <span className="text-sm text-muted-foreground">{ref}</span>
+    <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5 mt-0.5">
+      {(subcategoryLabel ? categoryLabel : null) && (
+        <span className="text-xs text-muted-foreground/70">{subcategoryLabel ? categoryLabel : null}</span>
+      )}
+      {(subcategoryLabel ? categoryLabel : null) && listing.city && (
+        <span className="text-xs text-muted-foreground/40">·</span>
+      )}
+      {listing.city && (
+        <span className="text-xs text-muted-foreground/70">{listing.city}</span>
+      )}
+      {(subcategoryLabel || listing.city) && (
+        <span className="text-xs text-muted-foreground/40">·</span>
+      )}
+      <span className="text-xs text-muted-foreground" dir="ltr">{ref}</span>
       <button
         type="button"
         onClick={() => { void navigator.clipboard.writeText(ref); setRefCopied(true); setTimeout(() => setRefCopied(false), 2000); }}
@@ -1458,12 +1484,33 @@ export function ListingDetailPage() {
             value={t(`listing.transport_responsibility.${(listing as typeof listing & { transport_responsibility?: string }).transport_responsibility}`)}
           />
         )}
+        {listingLocationAddress && (
+          <CompactRow
+            icon={<MapPin className="h-3.5 w-3.5 text-primary/60" />}
+            label={t("listing.location.address")}
+            value={listingLocationAddress}
+          />
+        )}
+        {listingMapsUrl && listingMapsUrl.startsWith("https://") && (
+          <div className="flex items-center gap-2 px-3 py-2.5 text-xs">
+            <MapPin className="h-3.5 w-3.5 text-primary/60 shrink-0" />
+            <span className="text-muted-foreground flex-1">{t("listing.location.open_maps")}</span>
+            <a
+              href={listingMapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-primary hover:underline"
+            >
+              ↗
+            </a>
+          </div>
+        )}
       </div>
     </div>
   );
 
   return (
-    <AppLayout showSignOut title={materialLabel} subtitle={subtitleNode} actions={backButton} width="wide">
+    <AppLayout showSignOut title={displayTitle} subtitle={subtitleNode} actions={backButton} width="wide">
       {/* Dialogs */}
       <ConfirmDialog
         open={confirmOpen}
@@ -1526,6 +1573,8 @@ export function ListingDetailPage() {
             listingDescription={(listing as typeof listing & { description?: string }).description}
             listingCategoryId={listing.material_category_id ?? undefined}
             listingSubcategoryId={(listing as typeof listing & { material_subcategory_id?: string }).material_subcategory_id ?? undefined}
+            listingLocationAddress={listingLocationAddress}
+            listingMapsUrl={listingMapsUrl}
             offersPanel={role === "producer" && isOwner ? (
               <ProducerOffersPanel
                 wasteListingId={wasteListingId}
@@ -1660,6 +1709,27 @@ export function ListingDetailPage() {
             )}
             <CompactRow icon={<Building2 className="h-3.5 w-3.5" />} label={t("listing.detail.publishedBy")} value={listing.company_name} />
             <CompactRow icon={<Calendar className="h-3.5 w-3.5" />} label={t("listing.publishedOn")} value={dateStr} />
+            {listingLocationAddress && (
+              <CompactRow
+                icon={<MapPin className="h-3.5 w-3.5 text-primary/60" />}
+                label={t("listing.location.address")}
+                value={listingLocationAddress}
+              />
+            )}
+            {listingMapsUrl && listingMapsUrl.startsWith("https://") && (
+              <div className="flex items-center gap-2 px-3 py-2.5 text-xs">
+                <MapPin className="h-3.5 w-3.5 text-primary/60 shrink-0" />
+                <span className="text-muted-foreground flex-1">{t("listing.location.open_maps")}</span>
+                <a
+                  href={listingMapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-primary hover:underline"
+                >
+                  ↗
+                </a>
+              </div>
+            )}
           </div>
 
           {/* Producer: close button */}
@@ -1700,6 +1770,8 @@ export function ListingDetailPage() {
                 listingDescription={(listing as typeof listing & { description?: string }).description}
                 listingCategoryId={listing.material_category_id ?? undefined}
                 listingSubcategoryId={(listing as typeof listing & { material_subcategory_id?: string }).material_subcategory_id ?? undefined}
+                listingLocationAddress={listingLocationAddress}
+                listingMapsUrl={listingMapsUrl}
               />
             </div>
           )}

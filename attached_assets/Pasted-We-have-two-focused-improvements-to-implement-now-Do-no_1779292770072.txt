@@ -1,0 +1,140 @@
+We have two focused improvements to implement now.
+
+Do not touch VAT calculation.
+Do not touch offer logic.
+Do not touch pricing_model.
+Do not touch offer_subtotal_amount.
+Do not touch deal lifecycle states.
+Do not touch transport state machine.
+Do not touch admin, MWAN integration, or multi-material logic.
+Keep this patch focused on deal title consistency and material location fields.
+
+==================================================
+Issue 1 — Standardize deal/listing title across all related pages
+==================================================
+
+Current problem:
+Some pages now show a better title such as:
+“حديد وصلب — 100 طن”
+
+But the main deal page header still shows only:
+“معادن”
+
+This is inconsistent and not useful.
+
+Required behavior:
+Create/use one consistent display rule for listing/deal identity across the platform.
+
+Primary title rule:
+- If subcategory/material exists:
+  show: subcategory/material + quantity + unit
+  Arabic example:
+  “حديد وصلب — 100 طن”
+  English example:
+  “Iron & Steel — 100 ton”
+
+- If subcategory is missing:
+  fallback to main category + quantity + unit
+  Arabic example:
+  “معادن — 100 طن”
+
+Secondary line rule:
+- show main category + city + reference
+Arabic example:
+“معادن • الجبيل • TDW-2026-7E9EA0”
+
+Apply this title consistently to:
+1) deal page header — buyer view
+2) deal page header — seller view
+3) pending actions cards
+4) printed deal report title/material section
+5) listing/deal summary cards if reused safely
+6) any compact deal header that currently shows only the main category
+
+Important:
+- Do not change category/subcategory data.
+- Do not change schema for this issue.
+- Prefer a shared helper function if already easy, but do not refactor broadly.
+- This is a display consistency fix.
+
+==================================================
+Issue 2 — Add material location details and Google Maps link
+==================================================
+
+Current problem:
+The listing/deal only shows the city, e.g. “الجبيل”.
+This is not enough for buyers, sellers, transport planning, or site inspection.
+
+Required behavior:
+Add material location fields to listing creation and display.
+
+Fields:
+1) material_location_address
+Arabic label:
+“العنوان الوطني / وصف موقع المواد”
+English label:
+“National Address / Material Location Description”
+
+2) google_maps_url
+Arabic label:
+“رابط الموقع على Google Maps”
+English label:
+“Google Maps Location URL”
+
+Expected behavior:
+- City remains required.
+- material_location_address should be added to listing creation.
+- google_maps_url is optional.
+- If google_maps_url is provided, show a clickable action:
+Arabic:
+“فتح الموقع على Google Maps”
+English:
+“Open in Google Maps”
+
+Display location details in:
+1) listing detail page
+2) deal page / deal panel
+3) printed deal report
+4) seller and buyer deal views
+5) MWAN/eManifest readiness panel if location data is already displayed there, without expanding MWAN logic
+
+Validation:
+- Do not embed Google Maps.
+- Do not use Google Maps API.
+- Do not calculate distance now.
+- Just store and display the link safely.
+- Links should open in a new tab.
+- Validate or sanitize the URL enough to avoid unsafe links.
+- If no Google Maps URL exists, show only address/city.
+
+Database:
+Before implementation, confirm whether listing schema already has a field for address/location notes or Google Maps URL.
+If no field exists, add only additive nullable fields to waste_listings:
+- material_location_address text nullable
+- google_maps_url text nullable
+
+Do not delete or rename existing fields.
+Do not break existing listings.
+Existing listings should simply show city only if these fields are null.
+
+Required implementation flow:
+1) Inspect current listing schema and serializers.
+2) Confirm DB migration needed or not.
+3) If migration is only additive nullable fields, proceed.
+4) Update listing creation form.
+5) Update listing serializer/API response.
+6) Update listing detail/deal panel/report display.
+7) Run validation.
+
+After implementation, run:
+- pnpm --filter @workspace/db run push, only if schema changed
+- pnpm --filter @workspace/api-server run typecheck
+- pnpm run typecheck
+- curl -s http://localhost:80/api/healthz
+
+Final report:
+1) changed files
+2) DB migration summary, if any
+3) where the title is now standardized
+4) where location/address/maps link appears
+5) confirmation that VAT/offers/deal lifecycle/transport logic were not changed

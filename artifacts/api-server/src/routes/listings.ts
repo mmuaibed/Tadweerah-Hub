@@ -75,6 +75,8 @@ type Row = WasteListing & {
   highest_offer_total?: number | null;
   highest_offer_price?: number | null;
   deal_status?: string | null;
+  material_location_address?: string | null;
+  google_maps_url?: string | null;
 };
 
 type RequiredServiceShape = {
@@ -131,6 +133,8 @@ function serialize(
     image_url: row.image_url ?? undefined,
     transport_responsibility: (row.transport_responsibility ?? "buyer") as "seller" | "buyer",
     vat_applicable: row.vat_applicable ?? true,
+    material_location_address: (row as Row).material_location_address ?? null,
+    google_maps_url: (row as Row).google_maps_url ?? null,
     created_at: row.created_at.toISOString(),
     closed_at: row.closed_at?.toISOString() ?? undefined,
     offer_count: row.offer_count ?? undefined,
@@ -233,6 +237,8 @@ const baseSelect = {
   image_url: wasteListingsTable.image_url,
   transport_responsibility: wasteListingsTable.transport_responsibility,
   vat_applicable: wasteListingsTable.vat_applicable,
+  material_location_address: wasteListingsTable.material_location_address,
+  google_maps_url: wasteListingsTable.google_maps_url,
   created_at: wasteListingsTable.created_at,
   closed_at: wasteListingsTable.closed_at,
   company_name: companiesTable.name,
@@ -630,6 +636,19 @@ router.post(
     // vat_applicable: whether VAT at 15% applies — defaults to true for standard Saudi transactions
     const vatApplicable: boolean = req.body.vat_applicable !== false;
 
+    // material_location_address: optional pickup location description
+    const materialLocationAddress: string | null =
+      typeof req.body.material_location_address === "string" && req.body.material_location_address.trim()
+        ? req.body.material_location_address.trim().slice(0, 500)
+        : null;
+
+    // google_maps_url: optional Maps link — must start with https:// to be stored
+    const rawMapsUrl: unknown = req.body.google_maps_url;
+    const googleMapsUrl: string | null =
+      typeof rawMapsUrl === "string" && rawMapsUrl.trim().startsWith("https://")
+        ? rawMapsUrl.trim().slice(0, 500)
+        : null;
+
     const [created] = await db
       .insert(wasteListingsTable)
       .values({
@@ -652,6 +671,8 @@ router.post(
         eligible_company_type: eligibleCompanyType,
         transport_responsibility: transportResponsibility,
         vat_applicable: vatApplicable,
+        material_location_address: materialLocationAddress,
+        google_maps_url: googleMapsUrl,
       })
       .returning();
 

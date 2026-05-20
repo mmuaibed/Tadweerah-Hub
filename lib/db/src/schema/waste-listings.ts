@@ -229,6 +229,20 @@ export const wasteListingsTable = pgTable("waste_listings", {
    * When true, VAT amounts are computed and displayed separately from the base price.
    */
   vat_applicable: boolean("vat_applicable").notNull().default(true),
+
+  /**
+   * Optional free-text address or National Address describing the material pickup location.
+   * For buyers, transporters, and site inspection coordination.
+   * Nullable — existing listings simply show city only.
+   */
+  material_location_address: text("material_location_address"),
+
+  /**
+   * Optional Google Maps share URL for the pickup location.
+   * Must start with https:// to be rendered as a link.
+   * Nullable — no map link shown when absent.
+   */
+  google_maps_url: text("google_maps_url"),
 });
 
 export type WasteListing = typeof wasteListingsTable.$inferSelect;

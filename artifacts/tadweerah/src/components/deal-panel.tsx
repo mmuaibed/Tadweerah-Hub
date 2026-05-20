@@ -125,6 +125,10 @@ interface DealPanelProps {
   offersPanel?: ReactNode;
   /** ReactNode rendered inside the "معلومات الإعلان" modal */
   listingInfoPanel?: ReactNode;
+  /** Material pickup location address (National Address / free text) */
+  listingLocationAddress?: string | null;
+  /** Google Maps share URL for the pickup location */
+  listingMapsUrl?: string | null;
 }
 
 type PendingAction = "submit-payment" | "confirm-payment" | "confirm-dispatch" | "confirm-receipt" | null;
@@ -908,6 +912,8 @@ function printDealReport(
     myCompanyName?: string;
     myPhone?: string;
     pricingModel?: string;
+    listingLocationAddress?: string | null;
+    listingMapsUrl?: string | null;
   },
 ) {
   const producerName = role === "producer"
@@ -1077,6 +1083,8 @@ function printDealReport(
     ${deal.final_amount != null ? `<tr><td>${lang === "ar" ? "الإجمالي النهائي" : "Final Amount"}</td><td style="font-weight:700;color:#16a34a">${deal.final_amount.toLocaleString()} ${sarLabel}</td></tr>` : ""}
     ${transportResp ? `<tr><td>${lang === "ar" ? "مسؤولية النقل" : "Transport Responsibility"}</td><td>${transportResp}</td></tr>` : ""}
     ${deal.payment_reference ? `<tr><td>${lang === "ar" ? "رقم الدفعة" : "Payment Reference"}</td><td>${deal.payment_reference}</td></tr>` : ""}
+    ${opts.listingLocationAddress ? `<tr><td>${lang === "ar" ? "موقع المواد" : "Material Location"}</td><td>${opts.listingLocationAddress}</td></tr>` : ""}
+    ${opts.listingMapsUrl && opts.listingMapsUrl.startsWith("https://") ? `<tr><td>${lang === "ar" ? "رابط الموقع" : "Map Link"}</td><td><a href="${opts.listingMapsUrl}" target="_blank" rel="noopener noreferrer" style="color:#1e40af">${opts.listingMapsUrl}</a></td></tr>` : ""}
   </table>
 
   <h2>${t("deal.print.timeline")}</h2>
@@ -1267,7 +1275,7 @@ function SmartTransportBody({
   );
 }
 
-export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSharePct, listingRef, listingMaterial, listingQuantity, myCompanyName, listingCategory, myPhone, listingCity, listingSaleType, counterpartyCity, listingDescription, listingCategoryId, listingSubcategoryId, offersPanel, listingInfoPanel }: DealPanelProps) {
+export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSharePct, listingRef, listingMaterial, listingQuantity, myCompanyName, listingCategory, myPhone, listingCity, listingSaleType, counterpartyCity, listingDescription, listingCategoryId, listingSubcategoryId, offersPanel, listingInfoPanel, listingLocationAddress, listingMapsUrl }: DealPanelProps) {
   const { t, lang } = useT();
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
@@ -2279,6 +2287,25 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
                   <span className="text-xs leading-relaxed text-foreground/80 bg-muted/30 rounded px-2 py-1.5">{listingDescription}</span>
                 </div>
               )}
+              {listingLocationAddress && (
+                <div className="flex flex-col gap-1 pt-0.5">
+                  <span className="text-xs text-muted-foreground">{lang === "ar" ? "موقع المواد" : "Material Location"}</span>
+                  <span className="text-xs leading-relaxed text-foreground/80 bg-muted/30 rounded px-2 py-1.5">{listingLocationAddress}</span>
+                </div>
+              )}
+              {listingMapsUrl && listingMapsUrl.startsWith("https://") && (
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs text-muted-foreground">{lang === "ar" ? "الموقع على الخريطة" : "Map Location"}</span>
+                  <a
+                    href={listingMapsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs font-medium text-primary hover:underline"
+                  >
+                    {lang === "ar" ? "فتح الخريطة ↗" : "Open Map ↗"}
+                  </a>
+                </div>
+              )}
               {listingSaleType && (
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs text-muted-foreground">{lang === "ar" ? "نوع البيع" : "Sale Type"}</span>
@@ -2380,12 +2407,14 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
             onClick={() =>
               printDealReport(deal, role, unit, lang, t, {
                 listingRef,
-                listingMaterial,
+                listingMaterial: displayMaterial ?? listingMaterial,
                 listingCategory,
                 listingQuantity,
                 myCompanyName,
                 myPhone,
                 pricingModel,
+                listingLocationAddress,
+                listingMapsUrl,
               })
             }
             className="flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-background px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"

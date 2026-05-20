@@ -122,6 +122,9 @@ export function ListingNewPage() {
   const [selectedCompany, setSelectedCompany] = useState<{ id: string; name: string; city: string } | null>(null);
   const [targetCategoryIds, setTargetCategoryIds] = useState<Set<string>>(new Set());
   const [transportResponsibility, setTransportResponsibility] = useState<"seller" | "buyer">("buyer");
+  const [materialLocationAddress, setMaterialLocationAddress] = useState("");
+  const [googleMapsUrl, setGoogleMapsUrl] = useState("");
+  const [mapsUrlError, setMapsUrlError] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -263,6 +266,10 @@ export function ListingNewPage() {
             : {}),
           ...(saleType === "direct" && targetingType === "category" && targetCategoryIds.size > 0
             ? { target_category_ids: Array.from(targetCategoryIds) }
+            : {}),
+          ...(materialLocationAddress.trim() ? { material_location_address: materialLocationAddress.trim() } : {}),
+          ...(googleMapsUrl.trim() && googleMapsUrl.trim().startsWith("https://")
+            ? { google_maps_url: googleMapsUrl.trim() }
             : {}),
         } as any,
       },
@@ -413,6 +420,37 @@ export function ListingNewPage() {
                   <Label htmlFor="quantity">{t("listing.form.quantity")}</Label>
                   <Input id="quantity" required type="number" inputMode="decimal" min={0} step="0.001" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
                 </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="material_location_address">{t("listing.form.material_location_address")}</Label>
+                <textarea
+                  id="material_location_address"
+                  className="flex min-h-[72px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
+                  maxLength={500}
+                  placeholder={t("listing.form.material_location_address.placeholder")}
+                  value={materialLocationAddress}
+                  onChange={(e) => setMaterialLocationAddress(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="google_maps_url">{t("listing.form.google_maps_url")}</Label>
+                <Input
+                  id="google_maps_url"
+                  type="url"
+                  inputMode="url"
+                  placeholder={t("listing.form.google_maps_url.placeholder")}
+                  value={googleMapsUrl}
+                  onChange={(e) => {
+                    setGoogleMapsUrl(e.target.value);
+                    setMapsUrlError(!!e.target.value && !e.target.value.startsWith("https://"));
+                  }}
+                  className={mapsUrlError ? "border-destructive" : ""}
+                />
+                {mapsUrlError && (
+                  <p className="text-xs text-destructive">{t("listing.form.google_maps_url.invalid")}</p>
+                )}
               </div>
 
               <div className={`grid gap-3 ${isOtherUnit ? "sm:grid-cols-2" : ""}`}>
