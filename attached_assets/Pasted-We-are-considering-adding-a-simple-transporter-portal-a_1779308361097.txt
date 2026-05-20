@@ -1,0 +1,158 @@
+We are considering adding a simple transporter portal and transport quotation flow.
+
+Do not implement yet. Assessment only.
+
+Business idea:
+Since Tadweerah supports transporter companies, we want transporters to have a dedicated page different from buyer/seller company pages.
+
+The page should show active transport requests that need pricing. Transporters can review request details and submit a shipping quote. Tadweerah Admin/Ops can then compare quotes and choose/follow up with the best option.
+
+Target MVP concept:
+
+1) Transporter-facing page
+Arabic label:
+"طلبات النقل المتاحة"
+
+English label:
+"Available Transport Requests"
+
+Visible only to companies/users with transporter role/capability.
+
+The transporter should see active transport requests with:
+- transport request reference
+- related deal reference
+- material/subcategory
+- quantity/weight
+- unit
+- pickup city / pickup location
+- delivery city / delivery location
+- material location address / Google Maps link if safe to show
+- required number of trucks, if available
+- truck type / transport requirements, if available
+- expected pickup date, if available
+- special notes / site instructions, if available
+
+2) Transport quote submission
+Transporter can submit:
+- quote amount
+- currency SAR
+- estimated pickup date
+- estimated delivery date
+- number of trucks offered
+- truck type / capacity
+- notes
+- validity period if simple
+
+3) Admin comparison
+Admin should see quotes per transport request:
+- transporter company
+- quote amount
+- number of trucks
+- estimated dates
+- notes
+- quote status
+- ability to compare quotes
+
+Do not implement auto-award now.
+Do not implement payment for transport now.
+Do not implement transporter rating now.
+Do not implement full dispatch workflow now.
+
+4) Admin decision
+For MVP, admin can mark one quote as:
+- selected / preferred
+or
+- under review
+or simply record status if that already fits current model.
+
+If selecting a quote requires new lifecycle complexity, defer selection and only show quotes for comparison.
+
+Assessment required:
+
+1) Current data model
+- Does the company model already support transporter role/capability?
+- How are company roles stored?
+- Can a company be transporter only?
+- Can a company have multiple roles?
+- Is there a current capability for Waste Transport?
+
+2) Current transport request model
+Inspect transport_requests:
+- What fields already exist?
+- Does it have pickup/delivery city?
+- Does it have material details through deal/listing join?
+- Does it have status?
+- Does it have assigned transporter fields?
+- Does it have truck count / truck type / capacity fields?
+- Does it have notes?
+
+3) Is a new table needed?
+Likely table:
+transport_quotes
+
+Potential fields:
+- id
+- transport_request_id
+- transporter_company_id
+- quote_amount
+- currency
+- estimated_pickup_date
+- estimated_delivery_date
+- truck_count
+- truck_type
+- capacity
+- notes
+- status
+- created_at
+- updated_at
+
+Please confirm whether this new table is needed or if existing schema already supports it.
+
+4) Backend routes needed
+Potential transporter routes:
+- GET /transport-requests/available
+- POST /transport-requests/:id/quotes
+- GET /transport-requests/my-quotes
+
+Potential admin routes:
+- GET /admin/transport-requests/:id/quotes
+- PATCH /admin/transport-quotes/:id/status
+
+Assess exact safe route design.
+
+5) Frontend pages needed
+- Transporter page in company app layout
+- Admin quote comparison panel inside Admin > Transport Requests
+
+6) Security/privacy
+Confirm:
+- Transporters should only see active transport requests intended for quotation.
+- Transporters should not see unrelated financial deal data beyond what is needed for pricing transport.
+- Transporters should not see buyer/seller sensitive data unless necessary.
+- Company reports and normal buyer/seller flows must not leak transporter quotes.
+- Admin can see all quotes.
+
+7) Risk and complexity
+Assess:
+- Can this be implemented safely as MVP now?
+- Does it require DB migration?
+- Does it risk touching deal lifecycle or transport state machine?
+- Can it be read/additive only?
+- Estimated complexity and time.
+- Recommended MVP scope now vs defer.
+
+Constraints:
+- Do not change deal lifecycle.
+- Do not change VAT/offers/pricing.
+- Do not change payment logic.
+- Do not change current transport request behavior unless required.
+- Do not modify existing reports.
+- Do not implement until I approve exact scope.
+
+Final response should be assessment only with:
+1) current model findings
+2) whether new table is needed
+3) proposed MVP architecture
+4) safe implementation plan
+5) what to defer
+6) risk level
