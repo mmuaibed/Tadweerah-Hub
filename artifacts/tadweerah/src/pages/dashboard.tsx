@@ -181,10 +181,7 @@ function NextActionBanner({ stats, t, Arrow }: NextBannerProps) {
             <p className="flex-1 text-sm font-semibold text-foreground">
               {t("dashboard.next.offers_received")}
             </p>
-            <span className="shrink-0 inline-flex items-center gap-1 rounded-lg border border-secondary/40 bg-card px-3 py-1.5 text-xs font-medium text-secondary">
-              {t("dashboard.next.offers_received.cta")}
-              <Arrow className="h-3 w-3" />
-            </span>
+            <Arrow className="h-4 w-4 shrink-0 text-secondary" />
           </div>
         </div>
       </Link>
