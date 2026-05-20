@@ -1,0 +1,72 @@
+Runtime error found after recent display/location/admin updates.
+
+Error:
+Rendered more hooks than during the previous render.
+
+Stack:
+lib/api-client-react/src/generated/api.ts:2083
+artifacts/tadweerah/src/pages/listing-detail.tsx:1388
+
+Likely cause:
+A React hook such as useGetMaterialCategories is being called conditionally, after an early return, or inside a nested render block in listing-detail.tsx.
+
+Required fix:
+1) Fix the hook usage in listing-detail.tsx.
+2) All React hooks must be called unconditionally at the top level of the component.
+3) Do not call hooks inside:
+   - if blocks
+   - conditionals
+   - loops
+   - nested functions
+   - JSX render branches
+   - after early returns
+4) Move useGetMaterialCategories and any related hooks to the top-level of ListingDetailPage, before any conditional return.
+5) If data is not needed in some render states, keep the hook enabled safely or use existing generated query options if supported, but do not conditionally call the hook.
+
+Important constraints:
+- Do not change VAT logic.
+- Do not change offer logic.
+- Do not change deal lifecycle.
+- Do not change transport state machine.
+- Do not change admin auth.
+- Do not change DB schema.
+- Do not refactor unrelated files.
+- This is a runtime stability fix.
+
+After fixing the hook error, perform a smart smoke test of the main app pages.
+
+Please verify these routes/screens do not crash:
+1) listing detail page as buyer
+2) listing detail page as seller
+3) deal page as buyer
+4) deal page as seller
+5) pending actions page
+6) marketplace page
+7) my listings page
+8) participations/offers page
+9) admin page
+10) admin Companies tab
+11) admin Deals tab
+12) admin Transport tab
+13) listing creation flow step 1, 2, 3
+14) print/download deal report if accessible
+
+For each page:
+- open/load it
+- check browser console/runtime overlay
+- confirm no React hook errors
+- confirm no visible i18n keys like deal.status.xxx or dashboard.pending.xxx where obvious
+- confirm no page is blocked by a runtime exception
+
+Run:
+- pnpm --filter @workspace/api-server run typecheck
+- pnpm run typecheck
+- curl -s http://localhost:80/api/healthz
+
+Final report:
+1) root cause of the hook error
+2) changed files
+3) confirmation hook rules are now respected
+4) smoke test result table for the pages above
+5) typecheck result
+6) health check result

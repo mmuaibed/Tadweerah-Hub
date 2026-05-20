@@ -1352,6 +1352,8 @@ export function ListingDetailPage() {
     </Link>
   );
 
+  const { data: allCategoriesRaw = [] } = useGetMaterialCategories();
+
   if (!isValidId) {
     return (
       <AppLayout showSignOut title={t("listing.invalidId.title")} actions={backButton}>
@@ -1384,8 +1386,6 @@ export function ListingDetailPage() {
   const categoryNameAr = (listing as typeof listing & { material_category_name_ar?: string | null }).material_category_name_ar;
   const categoryNameEn = (listing as typeof listing & { material_category_name_en?: string | null }).material_category_name_en;
   const categoryLabel = lang === "ar" ? (categoryNameAr ?? categoryNameEn) : (categoryNameEn ?? categoryNameAr);
-
-  const { data: allCategoriesRaw = [] } = useGetMaterialCategories();
   const allCats = allCategoriesRaw as Array<{ id: string; name_ar: string; name_en: string }>;
   const subcategoryId = (listing as typeof listing & { material_subcategory_id?: string | null }).material_subcategory_id;
   const subcategoryLabel = subcategoryId
