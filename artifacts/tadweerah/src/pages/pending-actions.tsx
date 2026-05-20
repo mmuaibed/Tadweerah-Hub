@@ -28,6 +28,8 @@ interface PendingDeal {
   quantity: string | number | null;
   unit: string | null;
   material_subcategory_id: string | null;
+  material_location_address: string | null;
+  google_maps_url: string | null;
   updated_at: string;
 }
 
@@ -219,6 +221,22 @@ export function PendingActionsPage() {
                       <span className="flex items-center gap-1">
                         <MapPin className="h-3 w-3 shrink-0" />
                         {deal.city}
+                        {deal.google_maps_url && deal.google_maps_url.startsWith("https://") && (
+                          <a
+                            href={deal.google_maps_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="ms-0.5 text-primary hover:underline font-medium"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            ↗
+                          </a>
+                        )}
+                      </span>
+                    )}
+                    {deal.material_location_address && (
+                      <span className="flex items-center gap-1 italic opacity-80">
+                        {deal.material_location_address}
                       </span>
                     )}
                     <span className="flex items-center gap-1">

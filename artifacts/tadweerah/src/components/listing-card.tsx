@@ -151,9 +151,27 @@ export function ListingCard({
               {listing.quantity} {listing.unit ? t(`unit.${listing.unit}`) : ""}
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            <MapPin className="h-4 w-4 shrink-0" />
-            <span>{listing.city}</span>
+          <div className="flex flex-col gap-0.5">
+            <div className="flex items-center gap-2">
+              <MapPin className="h-4 w-4 shrink-0" />
+              <span>{listing.city}</span>
+              {(listing as WasteListing & { google_maps_url?: string | null }).google_maps_url?.startsWith("https://") && (
+                <a
+                  href={(listing as WasteListing & { google_maps_url?: string | null }).google_maps_url!}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ms-auto text-xs text-primary hover:underline font-medium shrink-0"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  ↗ {t("listing.location.open_maps")}
+                </a>
+              )}
+            </div>
+            {(listing as WasteListing & { material_location_address?: string | null }).material_location_address && (
+              <p className="ps-6 text-xs text-muted-foreground/70 leading-tight">
+                {(listing as WasteListing & { material_location_address?: string | null }).material_location_address}
+              </p>
+            )}
           </div>
           {listing.created_at && (
             <div className="flex items-center gap-2">

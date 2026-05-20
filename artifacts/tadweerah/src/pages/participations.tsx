@@ -118,7 +118,23 @@ function OfferCard({ offer }: { offer: MyOffer }) {
         <span className="flex items-center gap-1">
           <MapPin className="h-3 w-3" />
           {offer.listing_city}
+          {(offer as typeof offer & { listing_google_maps_url?: string | null }).listing_google_maps_url?.startsWith("https://") && (
+            <a
+              href={(offer as typeof offer & { listing_google_maps_url?: string | null }).listing_google_maps_url!}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="ms-0.5 text-primary hover:underline font-medium"
+              onClick={(e) => e.stopPropagation()}
+            >
+              ↗
+            </a>
+          )}
         </span>
+        {(offer as typeof offer & { listing_material_location_address?: string | null }).listing_material_location_address && (
+          <span className="flex items-center gap-1 italic opacity-80">
+            {(offer as typeof offer & { listing_material_location_address?: string | null }).listing_material_location_address}
+          </span>
+        )}
         <span className="flex items-center gap-1">
           <Building2 className="h-3 w-3" />
           {offer.listing_company_name}
