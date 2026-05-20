@@ -1,0 +1,71 @@
+We found that allowing the buyer to switch between total amount and unit price during bidding creates rounding issues and business confusion.
+
+New business rule:
+Each listing must have one pricing method only, defined by the listing itself:
+1) total_price listing
+2) unit_price listing
+
+The bidder should not choose between total and unit during bidding.
+
+Required behavior:
+
+A) Listing pricing method
+Inspect the current listing schema and creation flow.
+If a pricing method field already exists, use it.
+If not, propose the safest additive field before implementation.
+
+Allowed pricing methods:
+- total_price
+- unit_price
+
+B) Buyer bidding screen
+In listing-detail.tsx, remove the toggle that allows switching between "unit price" and "total amount" during bidding.
+
+If listing pricing method = total_price:
+- Show only one input:
+  "Total offer amount before VAT"
+- Use this value directly as the offer subtotal.
+- Calculate VAT 15% from this subtotal.
+- Show total including VAT.
+- Do not calculate or display unit price.
+
+If listing pricing method = unit_price:
+- Show only one input:
+  "Unit price before VAT"
+- Calculate subtotal = unit price × listing quantity.
+- Calculate VAT 15% from subtotal.
+- Show total including VAT.
+- Do not allow entering total amount manually.
+
+C) Seller offer review
+Show the offer according to the listing pricing method:
+- For total_price listings: show submitted total amount before VAT, VAT, total including VAT.
+- For unit_price listings: show unit price, quantity, subtotal before VAT, VAT, total including VAT.
+
+D) Deal creation
+Preserve the same pricing method from listing to offer to deal.
+For total_price listings:
+- Deal subtotal should be the submitted total offer amount.
+For unit_price listings:
+- Deal subtotal should be unit price × quantity.
+
+E) Rounding/formatting
+Format SAR amounts consistently:
+- Maximum 2 decimals.
+- No 10,000.008 style values.
+- VAT should be calculated from the correct subtotal source.
+
+F) Constraints
+- Do not implement multi-material bundles.
+- Do not change deal lifecycle states.
+- Do not change atomic accept logic except to use the correct subtotal source.
+- Do not refactor unrelated files.
+- Do not touch admin, MWAN, transport responsibility, or Smart-Assist Transport.
+- Keep this patch focused on pricing method and bidding clarity only.
+
+Before implementation, confirm:
+1) Does a listing pricing method already exist?
+2) Which files will change?
+3) Is a DB migration required?
+4) How old listings will be handled safely?
+5) How offer comparison will work for total_price vs unit_price listings.
