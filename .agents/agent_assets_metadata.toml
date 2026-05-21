@@ -48,3 +48,9 @@ id = "W5rgU8EDEZ623DMSUG2Tr"
 uri = "file://.local/db-backups/tadweerah-final-clean-20260521.tar.gz"
 type = "unspecified"
 title = "Tadweerah — Final Clean Database Backup (2026-05-21)"
+
+[[outputs]]
+id = "ul00cHpu0K3ATUv3h1KTm"
+uri = "file://.local/tadweerah-env-variables.md"
+type = "text"
+title = "Tadweerah — Environment Variables Reference"
