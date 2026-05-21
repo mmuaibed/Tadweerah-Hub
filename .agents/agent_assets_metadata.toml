@@ -77,10 +77,16 @@ title = "DB Backup — After Admin Email Update (2026-05-21)"
 id = "uSK7u9caUCLiNSx4W7eyD"
 uri = "file://tadweerah-env-variables-final-20260521.md"
 type = "text"
-title = "Env Variables Reference — Final (MD)"
+title = "Env Variables (MD)"
 
 [[outputs]]
 id = "u1tVS6u3-PxwU0TkXrWaW"
 uri = "file://tadweerah-env-variables-final-20260521.txt"
 type = "text"
-title = "Env Variables Reference — Final (TXT)"
+title = "Env Variables (TXT)"
+
+[[outputs]]
+id = "uiZ7W_ddPdcNoGIy_mwBA"
+uri = "file://tadweerah-final-clean-after-admin-email-update-20260521.tar.gz"
+type = "unspecified"
+title = "Tadweerah Clean Archive (tar.gz)"

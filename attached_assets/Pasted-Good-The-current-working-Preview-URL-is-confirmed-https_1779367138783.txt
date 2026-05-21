@@ -1,0 +1,77 @@
+Good. The current working Preview URL is confirmed:
+
+https://5c2d44b4-5ccf-48f4-a328-eb7c99e617bc-00-1ugxdtcgb6yne.picard.replit.dev/
+
+Confirmed working deep link:
+
+https://5c2d44b4-5ccf-48f4-a328-eb7c99e617bc-00-1ugxdtcgb6yne.picard.replit.dev/onboarding/company
+
+Conclusion:
+- No routing/business-logic change is needed.
+- The previous 404 was most likely caused by an old Preview URL or browser/Replit cache.
+
+Now proceed with final packaging only.
+
+Please prepare these exact final downloadable files:
+
+1) tadweerah-env-variables-final-20260521.txt
+2) tadweerah-env-variables-final-20260521.md
+3) tadweerah-final-clean-after-admin-email-update-20260521.tar.gz
+
+Before creating the files, run and report these final checks:
+
+A) Confirm old email is fully removed:
+   grep -R "mmuaibed@stc.com.sa" . \
+     --exclude-dir=node_modules \
+     --exclude-dir=.git \
+     --exclude-dir=dist \
+     --exclude-dir=.cache \
+     --exclude-dir=.local \
+     --exclude-dir=.config \
+     --exclude="*.tar.gz" \
+     --exclude="*.zip"
+
+Expected:
+ZERO_OCCURRENCES
+
+B) Confirm replacement email exists where expected:
+   grep -R "mmuaibed@outlook.com" . \
+     --exclude-dir=node_modules \
+     --exclude-dir=.git \
+     --exclude-dir=dist \
+     --exclude-dir=.cache \
+     --exclude-dir=.local \
+     --exclude-dir=.config \
+     --exclude="*.tar.gz" \
+     --exclude="*.zip"
+
+C) Run typecheck.
+
+D) Run git status.
+
+E) Confirm attached_assets no longer contains files with the old email.
+
+F) Create the final tar.gz clean archive.
+   Exclude:
+   - node_modules
+   - .git
+   - dist/build cache if not needed
+   - temporary files
+   - old archives
+   - secrets or local-only cache folders
+
+G) Create the final env variable documentation files:
+   - txt version
+   - md version
+
+Important:
+- Do not print actual secret values in the report.
+- Do not modify business logic.
+- Do not change routing.
+- Do not create another cleanup unless a final check fails.
+
+Return:
+- Final check results
+- File sizes
+- Exact file paths
+- Confirmation that the three files are ready for download
