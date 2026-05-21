@@ -1,0 +1,79 @@
+The 404 issue is not solved.
+
+The app loads when navigating inside the Replit Preview, but direct access or refresh on a frontend route like:
+
+/onboarding/company
+
+returns:
+404 Not Found
+
+This means frontend deep links / SPA fallback are not handled correctly.
+
+Please fix this carefully.
+
+Goal:
+Any frontend route should load the React app correctly on direct access or refresh, including:
+- /
+- /onboarding/company
+- /dashboard
+- /marketplace
+- /reports
+- /admin
+
+Important:
+Do not change business logic.
+Do not change database.
+Do not touch VAT, deals, transport, reports, admin auth, support, or email.
+Do not create test data.
+
+Please inspect the current Replit/dev server routing setup:
+1) Which process serves port 80?
+2) Which process serves frontend/Vite?
+3) Why direct route /onboarding/company returns 404 while internal navigation works?
+4) Whether API routes are correctly separated under /api or /admin.
+
+Required behavior:
+- API routes should continue working:
+  /api/healthz
+  /api/...
+  /admin/...
+- Frontend routes should fallback to the React app:
+  /onboarding/company
+  /dashboard
+  /marketplace
+  /reports
+  /admin if applicable to frontend route
+
+Please implement the minimal safe fix for SPA fallback / Replit preview routing.
+
+After fix, verify with curl/browser:
+
+1) curl -I http://localhost:80/
+2) curl -I http://localhost:80/onboarding/company
+3) curl -I http://localhost:80/dashboard
+4) curl -s http://localhost:80/api/healthz
+
+Expected:
+- frontend routes return HTTP 200 and serve the frontend app
+- API health returns {"status":"ok"}
+- no API route is broken
+
+Also manually verify:
+- Open /onboarding/company directly in browser
+- Refresh while on /onboarding/company
+- Open /admin directly
+- Refresh while on /admin
+
+Run:
+- pnpm --filter @workspace/api-server run typecheck
+- pnpm run typecheck
+- curl -s http://localhost:80/api/healthz
+
+Final report:
+1) root cause
+2) files changed
+3) exact fix applied
+4) direct route verification results
+5) API verification results
+6) typecheck and health result
+7) confirm no business logic changed
