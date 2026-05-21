@@ -1,0 +1,118 @@
+We are ready to close today’s work.
+
+Please perform the final closure sequence in this exact order.
+
+Step 1 — Final verification before backup
+
+Run and report:
+
+1) Typecheck all packages.
+Expected: 0 errors.
+
+2) API health.
+Expected:
+{"status":"ok"}
+
+3) Confirm app routes:
+- / works
+- /admin works
+- /dashboard redirects to /admin for mmuaibed@outlook.com
+- /onboarding/company redirects to /admin for mmuaibed@outlook.com
+
+4) Confirm admin-only state:
+- Clerk email: mmuaibed@outlook.com
+- no linked company profile
+- no "Tadweerah Admin" company exists
+- admin access works via VITE_TADWEERAH_ADMIN_EMAILS only
+
+5) Confirm Replit Preview config:
+- Drizzle Studio outputType = console
+- frontend is the webview preview
+- preview root has no :8099 port
+
+6) Confirm password eye icon UX fix:
+- sign-in password field
+- sign-up password field
+- reset password field
+- RTL Arabic and LTR English alignment
+- no overlap with password dots
+
+7) Old email grep:
+grep -R "mmuaibed@stc.com.sa" . \
+  --exclude-dir=node_modules \
+  --exclude-dir=.git \
+  --exclude-dir=dist \
+  --exclude-dir=.cache \
+  --exclude-dir=.local \
+  --exclude-dir=.config \
+  --exclude="*.tar.gz" \
+  --exclude="*.zip"
+
+Expected:
+ZERO_OCCURRENCES
+
+8) Confirm new email:
+mmuaibed@outlook.com
+is present only where expected:
+- VITE_TADWEERAH_ADMIN_EMAILS
+- env documentation files
+- Clerk/user-related expected references if applicable
+
+9) Git status:
+Report:
+- branch
+- ahead/behind origin/main
+- modified files
+- untracked files
+
+Step 2 — Create final backup/download files
+
+Recreate these exact final files after the latest changes:
+
+- tadweerah-env-variables-final-20260521.txt
+- tadweerah-env-variables-final-20260521.md
+- tadweerah-final-clean-after-admin-email-update-20260521.tar.gz
+
+Archive rules:
+- include latest code changes
+- include .replit config changes
+- exclude node_modules
+- exclude .git
+- exclude old archives
+- exclude cache/temp folders
+- exclude pasted instruction files in attached_assets
+- do not include secrets
+- do not print secret values
+
+Step 3 — Commit and push to GitHub
+
+If all checks pass, commit and push the final state to GitHub.
+
+Suggested commit message:
+Finalize admin email migration and Replit preview cleanup
+
+Commit should include:
+- admin email update to mmuaibed@outlook.com
+- Clerk sign-up verification UX fixes
+- admin-only guard fix
+- password visibility UX fix
+- Replit Preview / Drizzle Studio outputType fix
+- final documentation/archive updates if tracked
+
+Do not commit generated tar.gz archive unless the repo convention says archives should be committed.
+If unsure, do not commit the tar.gz; just prepare it for download.
+
+Step 4 — Final report
+
+Return only:
+
+1) Final verification results
+2) GitHub push result and commit hash
+3) Final file sizes
+4) Final file paths
+5) Confirmation that the three downloadable files are ready
+6) Any remaining issue, if any
+
+Do not change business logic.
+Do not add new features.
+This is final closure only.
