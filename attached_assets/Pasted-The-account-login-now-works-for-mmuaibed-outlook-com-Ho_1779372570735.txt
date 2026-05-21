@@ -1,0 +1,62 @@
+The account login now works for:
+
+mmuaibed@outlook.com
+
+However, it is currently linked to a company profile shown as:
+Tadweerah Admin
+
+We need this user to be platform Admin only, not treated as a normal company account.
+
+Please diagnose and apply the safest minimal fix.
+
+Required checks:
+
+1) Confirm current user:
+   - Clerk email: mmuaibed@outlook.com
+   - Clerk user id
+   - linked company id/name if any
+
+2) Confirm admin access:
+   - Does /admin work for this user?
+   - Is admin access based on VITE_TADWEERAH_ADMIN_EMAILS only?
+   - Or does it require a DB company/user role?
+
+3) Confirm whether the app supports an admin user with no company profile.
+   Important:
+   - If company_id is required globally by auth middleware or dashboard layout, do NOT delete the company yet.
+   - If admin routes can work without company, then unlink/delete only the test company safely.
+
+4) Identify all DB records created during this test onboarding:
+   - company record
+   - company members/users mapping
+   - any profile/user record
+   - any listings/offers if created
+
+5) If safe, remove only the test company profile/linkage for this admin user, so mmuaibed@outlook.com remains an admin user only.
+
+6) If not safe to remove because the app requires company_id for all authenticated users:
+   - Do not delete it.
+   - Explain the exact blocking condition.
+   - Propose the smallest admin-only bypass/fix:
+     Admin users listed in VITE_TADWEERAH_ADMIN_EMAILS should be allowed to access /admin without requiring a company profile.
+   - Do not change marketplace/business logic.
+
+7) After the fix, test:
+   - /admin should work
+   - /dashboard behavior should be clear:
+     either not needed for admin-only, or redirects appropriately
+   - /onboarding/company should not force admin user to recreate a company unless explicitly intended
+
+Important:
+- Do not change business logic.
+- Do not change marketplace flows.
+- Do not change database schema unless absolutely required.
+- Do not delete anything until confirming it is safe.
+- This is only to separate platform admin identity from company account identity.
+
+Return:
+- Whether admin-only without company is supported
+- What DB records were found
+- What was deleted or changed, if anything
+- Final /admin test result
+- Final /dashboard/onboarding behavior

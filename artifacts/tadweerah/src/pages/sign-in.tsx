@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useSignIn } from "@clerk/react";
 import { useLocation } from "wouter";
-import { Loader2, ArrowRight } from "lucide-react";
+import { Loader2, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,9 +18,11 @@ export function SignInPage() {
   const [step, setStep] = useState<SignInStep>("credentials");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
   const [resetCode, setResetCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -138,15 +140,26 @@ export function SignInPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="si-password">{t("signin.password")}</Label>
-                  <Input
-                    id="si-password"
-                    type="password"
-                    required
-                    autoComplete="current-password"
-                    dir="ltr"
-                    value={password}
-                    onChange={(e) => { setPassword(e.target.value); setError(null); }}
-                  />
+                  <div className="relative">
+                    <Input
+                      id="si-password"
+                      type={showPassword ? "text" : "password"}
+                      required
+                      autoComplete="current-password"
+                      dir="ltr"
+                      value={password}
+                      onChange={(e) => { setPassword(e.target.value); setError(null); }}
+                      className="pe-10"
+                    />
+                    <button
+                      type="button"
+                      tabIndex={-1}
+                      onClick={() => setShowPassword(v => !v)}
+                      className="absolute inset-y-0 end-0 flex items-center pe-3 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                   <div className="flex justify-start">
                     <button
                       type="button"
@@ -245,16 +258,27 @@ export function SignInPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="new-password">{t("signin.reset.new_password")}</Label>
-                  <Input
-                    id="new-password"
-                    type="password"
-                    required
-                    minLength={8}
-                    autoComplete="new-password"
-                    dir="ltr"
-                    value={newPassword}
-                    onChange={(e) => { setNewPassword(e.target.value); setError(null); }}
-                  />
+                  <div className="relative">
+                    <Input
+                      id="new-password"
+                      type={showNewPassword ? "text" : "password"}
+                      required
+                      minLength={8}
+                      autoComplete="new-password"
+                      dir="ltr"
+                      value={newPassword}
+                      onChange={(e) => { setNewPassword(e.target.value); setError(null); }}
+                      className="pe-10"
+                    />
+                    <button
+                      type="button"
+                      tabIndex={-1}
+                      onClick={() => setShowNewPassword(v => !v)}
+                      className="absolute inset-y-0 end-0 flex items-center pe-3 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                   <p className="text-xs text-muted-foreground">{t("onboarding.account.password.hint")}</p>
                 </div>
 

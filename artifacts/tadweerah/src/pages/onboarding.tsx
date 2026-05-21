@@ -5,7 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { getGetMeQueryKey, useGetMe } from "@workspace/api-client-react";
 import {
   CheckSquare, Square, Loader2, ChevronRight, ChevronLeft,
-  Plus, Trash2, ChevronDown,
+  Plus, Trash2, ChevronDown, Eye, EyeOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -113,6 +113,7 @@ export function OnboardingPage() {
   /* ── Account (signed-out) ── */
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [verifyCode, setVerifyCode] = useState("");
 
   /* ── UI state ── */
@@ -904,8 +905,19 @@ export function OnboardingPage() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="acc-password">{t("onboarding.account.password")} *</Label>
-            <Input id="acc-password" type="password" required minLength={8} autoComplete="new-password" dir="ltr"
-              value={password} onChange={e => { setPassword(e.target.value); setError(null); }} />
+            <div className="relative">
+              <Input id="acc-password" type={showPassword ? "text" : "password"} required minLength={8}
+                autoComplete="new-password" dir="ltr" className="pe-10"
+                value={password} onChange={e => { setPassword(e.target.value); setError(null); }} />
+              <button
+                type="button"
+                tabIndex={-1}
+                onClick={() => setShowPassword(v => !v)}
+                className="absolute inset-y-0 end-0 flex items-center pe-3 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
             <p className="text-xs text-muted-foreground">{t("onboarding.account.password.hint")}</p>
           </div>
           {error && (
