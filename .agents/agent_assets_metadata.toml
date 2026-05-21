@@ -59,4 +59,10 @@ title = "Tadweerah — Environment Variables Reference"
 id = "u1yD-JrSQDLVyL6kLqDlj"
 uri = "file://tadweerah-env-variables.md"
 type = "text"
-title = "Tadweerah — Environment Variables Reference"
+title = "Tadweerah — Environment Variables (.md)"
+
+[[outputs]]
+id = "CEHUOkXgSELcjnOR7acWN"
+uri = "file://tadweerah-env-variables.txt"
+type = "text"
+title = "Tadweerah — Environment Variables (.txt)"
