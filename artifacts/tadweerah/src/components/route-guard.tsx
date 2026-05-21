@@ -46,5 +46,10 @@ export function RouteGuard({ requireCompany, children }: RouteGuardProps) {
     return <Redirect to="/dashboard" />;
   }
 
+  // Admin users with no company should never land on the onboarding flow
+  if (!requireCompany && !me?.company && isAdmin) {
+    return <Redirect to="/admin" />;
+  }
+
   return <>{children}</>;
 }
