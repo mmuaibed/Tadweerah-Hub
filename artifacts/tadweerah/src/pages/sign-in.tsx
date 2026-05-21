@@ -149,13 +149,13 @@ export function SignInPage() {
                       dir="ltr"
                       value={password}
                       onChange={(e) => { setPassword(e.target.value); setError(null); }}
-                      className="pe-10"
+                      className="pr-10"
                     />
                     <button
                       type="button"
                       tabIndex={-1}
                       onClick={() => setShowPassword(v => !v)}
-                      className="absolute inset-y-0 end-0 flex items-center pe-3 text-muted-foreground hover:text-foreground transition-colors"
+                      className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground transition-colors"
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
@@ -268,13 +268,13 @@ export function SignInPage() {
                       dir="ltr"
                       value={newPassword}
                       onChange={(e) => { setNewPassword(e.target.value); setError(null); }}
-                      className="pe-10"
+                      className="pr-10"
                     />
                     <button
                       type="button"
                       tabIndex={-1}
                       onClick={() => setShowNewPassword(v => !v)}
-                      className="absolute inset-y-0 end-0 flex items-center pe-3 text-muted-foreground hover:text-foreground transition-colors"
+                      className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground transition-colors"
                     >
                       {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>

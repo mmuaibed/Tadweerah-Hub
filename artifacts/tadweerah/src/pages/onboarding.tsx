@@ -907,13 +907,13 @@ export function OnboardingPage() {
             <Label htmlFor="acc-password">{t("onboarding.account.password")} *</Label>
             <div className="relative">
               <Input id="acc-password" type={showPassword ? "text" : "password"} required minLength={8}
-                autoComplete="new-password" dir="ltr" className="pe-10"
+                autoComplete="new-password" dir="ltr" className="pr-10"
                 value={password} onChange={e => { setPassword(e.target.value); setError(null); }} />
               <button
                 type="button"
                 tabIndex={-1}
                 onClick={() => setShowPassword(v => !v)}
-                className="absolute inset-y-0 end-0 flex items-center pe-3 text-muted-foreground hover:text-foreground transition-colors"
+                className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground transition-colors"
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
