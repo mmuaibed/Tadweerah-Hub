@@ -151,6 +151,20 @@ export function OnboardingPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSignedIn]);
 
+  /* ── Recover pending Clerk sign-up attempt on mount/refresh ── */
+  useEffect(() => {
+    if (
+      outerStep === "company" &&
+      signUp?.status === "missing_requirements" &&
+      Array.isArray(signUp.unverifiedFields) &&
+      signUp.unverifiedFields.includes("email_address")
+    ) {
+      if (signUp.emailAddress) setEmail(signUp.emailAddress);
+      setOuterStep("verify-email");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [signUp?.status]);
+
   if (!meLoading && isSignedIn && me?.company) return <Redirect to="/dashboard" />;
 
   /* ── Helpers ── */
@@ -360,6 +374,23 @@ export function OnboardingPage() {
       } else {
         setError(t("onboarding.error.generic"));
       }
+    } catch (err: unknown) {
+      const clerkErr = (err as { errors?: { message: string }[] }).errors?.[0];
+      setError(clerkErr?.message ?? t("onboarding.error.generic"));
+    } finally {
+      setIsPending(false);
+    }
+  };
+
+  /* ── Resend verification code ── */
+  const [resendSent, setResendSent] = useState(false);
+  const handleResendCode = async () => {
+    setError(null);
+    setIsPending(true);
+    try {
+      await signUp.verifications.sendEmailCode();
+      setResendSent(true);
+      setTimeout(() => setResendSent(false), 4000);
     } catch (err: unknown) {
       const clerkErr = (err as { errors?: { message: string }[] }).errors?.[0];
       setError(clerkErr?.message ?? t("onboarding.error.generic"));
@@ -914,6 +945,14 @@ export function OnboardingPage() {
           {isPending && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
           {t("onboarding.verify.submit")}
         </Button>
+        {resendSent ? (
+          <p className="text-center text-sm text-primary">{t("onboarding.verify.resend.sent")}</p>
+        ) : (
+          <button type="button" onClick={handleResendCode} disabled={isPending}
+            className="w-full text-sm text-muted-foreground underline underline-offset-2 hover:text-foreground disabled:opacity-50">
+            {t("onboarding.verify.resend")}
+          </button>
+        )}
         <button type="button" onClick={() => { setOuterStep("account"); setError(null); }}
           className="w-full text-sm text-muted-foreground underline underline-offset-2 hover:text-foreground">
           {t("onboarding.verify.back")}

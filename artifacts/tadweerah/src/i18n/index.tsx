@@ -154,6 +154,8 @@ const translations: Record<string, Record<Language, string>> = {
   "onboarding.verify.code": { ar: "رمز التحقق", en: "Verification Code" },
   "onboarding.verify.submit": { ar: "تحقق وأكمل التسجيل", en: "Verify & Complete Registration" },
   "onboarding.verify.back": { ar: "العودة", en: "Back" },
+  "onboarding.verify.resend": { ar: "إعادة إرسال الرمز", en: "Resend Code" },
+  "onboarding.verify.resend.sent": { ar: "تم إعادة الإرسال", en: "Code resent" },
   "action.signout": { ar: "تسجيل الخروج", en: "Sign Out" },
   "action.getstarted": { ar: "ابدأ الآن", en: "Get Started" },
   "action.register_company": { ar: "سجّل شركتك مجاناً", en: "Register Your Company — Free" },
