@@ -66,3 +66,21 @@ id = "CEHUOkXgSELcjnOR7acWN"
 uri = "file://tadweerah-env-variables.txt"
 type = "text"
 title = "Tadweerah — Environment Variables (.txt)"
+
+[[outputs]]
+id = "yjwjfigDSsC3KvYpM47wX"
+uri = "file://.local/db-backups/tadweerah-final-clean-after-admin-email-update-20260521.tar.gz"
+type = "unspecified"
+title = "DB Backup — After Admin Email Update (2026-05-21)"
+
+[[outputs]]
+id = "uSK7u9caUCLiNSx4W7eyD"
+uri = "file://tadweerah-env-variables-final-20260521.md"
+type = "text"
+title = "Env Variables Reference — Final (MD)"
+
+[[outputs]]
+id = "u1tVS6u3-PxwU0TkXrWaW"
+uri = "file://tadweerah-env-variables-final-20260521.txt"
+type = "text"
+title = "Env Variables Reference — Final (TXT)"

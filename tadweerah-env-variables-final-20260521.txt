@@ -1,0 +1,68 @@
+Tadweerah — Environment Variables Reference
+Names only — no secret values included.
+Last updated: 2026-05-21 (post admin email update)
+
+==================================================
+1. DATABASE
+==================================================
+
+DATABASE_URL         Required    Full PostgreSQL connection string
+PGHOST               Replit-managed
+PGPORT               Replit-managed
+PGDATABASE           Replit-managed
+PGUSER               Replit-managed
+PGPASSWORD           Replit-managed
+
+==================================================
+2. CLERK (Authentication)
+==================================================
+
+CLERK_SECRET_KEY           Required    Backend — verifies Clerk tokens
+CLERK_PUBLISHABLE_KEY      Required    Backend — Clerk proxy middleware
+VITE_CLERK_PUBLISHABLE_KEY Required    Frontend — initialises Clerk React SDK
+
+==================================================
+3. ADMIN
+==================================================
+
+ADMIN_API_KEY              Required    Bearer token for /api/admin/* endpoints
+VITE_TADWEERAH_ADMIN_EMAILS Required   Comma-separated admin emails
+                                        Current value: mmuaibed@outlook.com
+
+==================================================
+4. RESEND / EMAIL
+==================================================
+
+RESEND_API_KEY      Required    Resend API authentication key
+SUPPORT_EMAIL       Required    Recipient for support issue notifications
+EMAIL_FROM          Required    Sender address for all outbound emails
+
+==================================================
+5. FRONTEND VITE VARIABLES
+==================================================
+
+VITE_CLERK_PUBLISHABLE_KEY    Required    (see Clerk section)
+VITE_TADWEERAH_ADMIN_EMAILS   Required    (see Admin section)
+VITE_CLERK_PROXY_URL          Optional    Custom Clerk proxy domain override
+
+==================================================
+6. OPTIONAL / FUTURE SERVICES
+==================================================
+
+TRANSPORT_REQUEST_EMAIL   Optional    Ops team email for transport notifications
+PLATFORM_URL              Optional    Base URL for email deep-links
+                                       Default: https://tadweerah.sa
+LOG_LEVEL                 Optional    Server log verbosity (debug/info/warn/error)
+                                       Default: info
+SESSION_SECRET            Optional    Session signing key (not actively used)
+
+==================================================
+REPLIT-MANAGED (do not set manually)
+==================================================
+
+REPLIT_DOMAINS       Auto-injected — public deployment domain(s)
+REPLIT_DEV_DOMAIN    Auto-injected — dev preview domain
+REPL_ID              Auto-injected — unique Repl identifier
+NODE_ENV             Set by workflow start script
+PORT                 Set per-artifact by Replit
+BASE_PATH            Set per-artifact by Replit

@@ -73,4 +73,4 @@ channel = "stable-25_05"
 
 [userenv.shared]
 TRANSPORT_REQUEST_EMAIL = "info@tadweerah.com"
-VITE_TADWEERAH_ADMIN_EMAILS = "mmuaibed@stc.com.sa"
+VITE_TADWEERAH_ADMIN_EMAILS = "mmuaibed@outlook.com"
