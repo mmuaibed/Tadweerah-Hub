@@ -42,3 +42,9 @@ id = "xc2kxrZn1R0GhrUMVL-NA"
 uri = "file://Tadweerah_Phase1_Operating_Model.zip"
 type = "unspecified"
 title = "Tadweerah_Phase1_Operating_Model.drawio — corrected (ZIP)"
+
+[[outputs]]
+id = "W5rgU8EDEZ623DMSUG2Tr"
+uri = "file://.local/db-backups/tadweerah-final-clean-20260521.tar.gz"
+type = "unspecified"
+title = "Tadweerah — Final Clean Database Backup (2026-05-21)"
