@@ -54,3 +54,9 @@ id = "ul00cHpu0K3ATUv3h1KTm"
 uri = "file://.local/tadweerah-env-variables.md"
 type = "text"
 title = "Tadweerah — Environment Variables Reference"
+
+[[outputs]]
+id = "u1yD-JrSQDLVyL6kLqDlj"
+uri = "file://tadweerah-env-variables.md"
+type = "text"
+title = "Tadweerah — Environment Variables Reference"
