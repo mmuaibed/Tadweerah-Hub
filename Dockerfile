@@ -21,6 +21,10 @@ ENV NODE_ENV=production
 
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
+RUN mkdir -p /app/public/uploads \
+    && chown -R appuser:appgroup /app/public \
+    && chown -R appuser:appgroup /app/artifacts/api-server/dist
+
 USER appuser
 
 EXPOSE 8080
