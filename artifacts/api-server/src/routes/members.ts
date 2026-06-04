@@ -198,7 +198,7 @@ router.post(
       title_en: `Invitation to join ${company.name}`,
       body_ar: `لقد تمت دعوتك للانضمام إلى شركة "${company.name}" في منصة تدويرة. قم بإنشاء حسابك أو تسجيل الدخول لقبول الدعوة.`,
       body_en: `You have been invited to join "${company.name}" on Tadweerah. Create an account or sign in to accept the invitation.`,
-      actionUrl: "https://staging.tadweerah.com/sign-up?invited=1",
+      actionUrl: `https://tadweerah.com/invite/${created.id}`,
       actionText_ar: "قبول الدعوة",
       actionText_en: "Accept Invitation",
     }).catch(err => {
