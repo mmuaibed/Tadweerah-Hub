@@ -1,6 +1,6 @@
-import { useClerk, Show } from "@clerk/react";
+import { useClerk, Show, useUser } from "@clerk/react";
 import { Link, useLocation } from "wouter";
-import { LogOut, Bell, MessageSquareWarning } from "lucide-react";
+import { LogOut, Bell, MessageSquareWarning, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { ReportIssueModal } from "@/components/report-issue-modal";
 import { Button } from "@/components/ui/button";
@@ -143,11 +143,16 @@ function NotificationBell() {
 
 export function Topbar({ showSignOut = false }: { showSignOut?: boolean }) {
   const { signOut } = useClerk();
-  const { t } = useT();
+  const { user, isLoaded } = useUser();
+  const { t, lang } = useT();
   const [location] = useLocation();
   const [reportOpen, setReportOpen] = useState(false);
 
   const isPublicPage = location === "/" || location === "/sign-in" || location === "/sign-up" || location === "/terms";
+
+  const adminAllowlist = ((import.meta.env.VITE_TADWEERAH_ADMIN_EMAILS as string | undefined) ?? "").split(",").map(e => e.trim().toLowerCase()).filter(Boolean);
+  const userEmail = user?.primaryEmailAddress?.emailAddress?.toLowerCase() ?? "";
+  const isAdmin = isLoaded && adminAllowlist.length > 0 && adminAllowlist.includes(userEmail);
 
   return (
     <>
@@ -161,7 +166,8 @@ export function Topbar({ showSignOut = false }: { showSignOut?: boolean }) {
           <img
             src={`${basePath}/logo.png`}
             alt="Tadweerah"
-            className="h-14 w-auto"
+            className="h-14 w-auto object-contain"
+            style={{ maxHeight: "56px", width: "auto" }}
           />
         </Link>
 
@@ -185,6 +191,14 @@ export function Topbar({ showSignOut = false }: { showSignOut?: boolean }) {
           <Show when="signed-in">
             {!isPublicPage && (
               <>
+                {isAdmin && (
+                  <Link to="/admin">
+                    <Button variant="outline" size="sm" className="hidden sm:flex gap-1.5 text-primary border-primary/20 hover:bg-primary/5 mr-2">
+                      <ShieldCheck className="h-4 w-4" />
+                      {lang === "ar" ? "لوحة الأدمن" : "Admin Panel"}
+                    </Button>
+                  </Link>
+                )}
                 <button
                   aria-label={t("report.button")}
                   title={t("report.button")}

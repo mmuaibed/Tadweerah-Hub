@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { Link } from "wouter";
 import { useAuth } from "@clerk/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { getGetMeQueryKey } from "@workspace/api-client-react";
@@ -15,6 +16,7 @@ import {
   Clock,
   AlertTriangle,
   Users,
+  Settings,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -486,6 +488,27 @@ export function CompanyProfilePage() {
               )}
               {t("profile.roles_save")}
             </Button>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* ── Services / Capabilities Section ──── */}
+      <div className="max-w-2xl mt-6">
+        <Card className="border-card-border bg-card">
+          <CardContent className="space-y-4 p-6">
+            <div className="flex items-center gap-2">
+              <Settings className="h-4 w-4 text-muted-foreground shrink-0" />
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {t("capabilities.title")}
+              </p>
+            </div>
+            <p className="text-xs text-muted-foreground">{t("capabilities.subtitle")}</p>
+            <Link to="/company/capabilities">
+              <Button type="button" size="sm" variant="outline" className="gap-2">
+                <Settings className="h-3.5 w-3.5" />
+                {lang === "ar" ? "تعديل الخدمات" : "Edit Capabilities"}
+              </Button>
+            </Link>
           </CardContent>
         </Card>
       </div>

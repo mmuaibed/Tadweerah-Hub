@@ -70,6 +70,14 @@ function StepIndicator({ labels, activeIndex }: StepIndicatorProps) {
   );
 }
 
+const DRAFT_KEY = "tadweerah_onboarding_draft";
+function loadDraft() {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
 /* ══════════════════════════════════════════════════════════════════════════
    Main page
 ══════════════════════════════════════════════════════════════════════════ */
@@ -81,30 +89,42 @@ export function OnboardingPage() {
   const queryClient = useQueryClient();
 
   const { data: me, isLoading: meLoading } = useGetMe();
+  const draft = loadDraft();
 
   /* ── Step state ── */
-  const [outerStep, setOuterStep] = useState<OuterStep>("company");
-  const [companySubStep, setCompanySubStep] = useState<CompanySubStep>(1);
+  const [outerStep, setOuterStep] = useState<OuterStep>(draft?.outerStep ?? "company");
+  const [companySubStep, setCompanySubStep] = useState<CompanySubStep>(draft?.companySubStep ?? 1);
   const autoSubmitRef = useRef(false);
 
   /* ── Company fields ── */
-  const [name, setName] = useState("");
-  const [city, setCity] = useState("");
-  const [contactPhone, setPhone] = useState("");
-  const [commercialRegistration, setCr] = useState("");
-  const [companyCategoryId, setCompanyCategoryId] = useState("");
-  const [companyCategoryOther, setCompanyCategoryOther] = useState("");
+  const [name, setName] = useState(draft?.name ?? "");
+  const [city, setCity] = useState(draft?.city ?? "");
+  const [contactPhone, setPhone] = useState(draft?.contactPhone ?? "");
+  const [commercialRegistration, setCr] = useState(draft?.commercialRegistration ?? "");
+  const [companyCategoryId, setCompanyCategoryId] = useState(draft?.companyCategoryId ?? "");
+  const [companyCategoryOther, setCompanyCategoryOther] = useState(draft?.companyCategoryOther ?? "");
 
   /* ── Activities ── */
-  const [selectedActionIds, setSelectedActionIds] = useState<Set<string>>(new Set());
-  const [otherActionDesc, setOtherActionDesc] = useState("");
+  const [selectedActionIds, setSelectedActionIds] = useState<Set<string>>(new Set(draft?.selectedActionIds ?? []));
+  const [otherActionDesc, setOtherActionDesc] = useState(draft?.otherActionDesc ?? "");
 
   /* ── Roles ── */
-  const [selectedRoles, setSelectedRoles] = useState<Set<"generator" | "receiver" | "transporter">>(new Set(["generator"]));
+  const [selectedRoles, setSelectedRoles] = useState<Set<"generator" | "receiver" | "transporter">>(new Set(draft?.selectedRoles ?? ["generator"]));
 
   /* ── Licenses ── */
-  const [multiLicense, setMultiLicense] = useState(false);
-  const [licenses, setLicenses] = useState<LicenseEntry[]>([emptyLicense()]);
+  const [multiLicense, setMultiLicense] = useState(draft?.multiLicense ?? false);
+  const [licenses, setLicenses] = useState<LicenseEntry[]>(draft?.licenses ?? [emptyLicense()]);
+
+  useEffect(() => {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({
+      outerStep, companySubStep, name, city, contactPhone, commercialRegistration,
+      companyCategoryId, companyCategoryOther,
+      selectedActionIds: Array.from(selectedActionIds),
+      otherActionDesc,
+      selectedRoles: Array.from(selectedRoles),
+      multiLicense, licenses
+    }));
+  }, [outerStep, companySubStep, name, city, contactPhone, commercialRegistration, companyCategoryId, companyCategoryOther, selectedActionIds, otherActionDesc, selectedRoles, multiLicense, licenses]);
 
   /* ── Terms ── */
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -291,6 +311,7 @@ export function OnboardingPage() {
         return;
       }
       await queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
+      localStorage.removeItem(DRAFT_KEY);
       setLocation("/dashboard");
     } catch {
       setError(t("onboarding.error.generic"));

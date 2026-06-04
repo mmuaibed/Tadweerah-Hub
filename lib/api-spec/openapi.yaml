@@ -1078,21 +1078,27 @@ components:
       properties:
         user_id:
           type: string
+        email:
+          type: string
+        invitation_id:
+          type: string
+        is_pending:
+          type: boolean
         role:
           type: string
           enum: [owner, member]
         created_at:
           type: string
           format: date-time
-      required: [user_id, role, created_at]
+      required: [role, created_at]
 
     InviteCompanyMemberBody:
       type: object
       properties:
-        user_id:
+        email:
           type: string
-          description: Clerk user ID of the person to invite
-      required: [user_id]
+          description: Email address of the person to invite
+      required: [email]
 
     Company:
       type: object

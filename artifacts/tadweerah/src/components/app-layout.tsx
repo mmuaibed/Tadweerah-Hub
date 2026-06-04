@@ -21,9 +21,9 @@ export function AppLayout({
   const maxWidthClass = width === "narrow" ? "max-w-2xl" : "max-w-6xl";
 
   return (
-    <div className="flex min-h-[100dvh] flex-col bg-background text-foreground">
+    <div className="flex min-h-[100dvh] w-full flex-col bg-background text-foreground">
       <Topbar showSignOut={showSignOut} />
-      <main className={`mx-auto flex flex-1 flex-col w-full ${maxWidthClass} px-4 py-3 sm:px-6 sm:py-5`}>
+      <main className={`mx-auto flex w-full flex-1 flex-col ${maxWidthClass} px-4 py-3 sm:px-6 sm:py-5`}>
         {(title || actions) && (
           <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div>

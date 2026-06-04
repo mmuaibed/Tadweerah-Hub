@@ -11,7 +11,8 @@
  */
 import { Router, type IRouter } from "express";
 import { and, eq } from "drizzle-orm";
-import { db, companyMembersTable } from "@workspace/db";
+import { clerkClient } from "@clerk/express";
+import { db, companyMembersTable, companyInvitationsTable, companiesTable } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import {
   requireCompany,
@@ -19,6 +20,7 @@ import {
 } from "../middlewares/requireCompany";
 import { HttpError, assertUuid } from "../middlewares/errorHandler";
 import { logAudit } from "../lib/audit";
+import { sendEmail } from "../lib/email";
 
 const router: IRouter = Router();
 
@@ -32,7 +34,7 @@ router.get(
   async (req, res) => {
     const { company } = req as AuthedCompanyRequest;
 
-    const rows = await db
+    const members = await db
       .select({
         user_id: companyMembersTable.user_id,
         role: companyMembersTable.role,
@@ -42,11 +44,60 @@ router.get(
       .where(eq(companyMembersTable.company_id, company.id))
       .orderBy(companyMembersTable.created_at);
 
-    res.json(rows.map((r) => ({
-      user_id: r.user_id,
-      role: r.role,
-      created_at: r.created_at.toISOString(),
-    })));
+    const invites = await db
+      .select({
+        id: companyInvitationsTable.id,
+        email: companyInvitationsTable.email,
+        role: companyInvitationsTable.role,
+        status: companyInvitationsTable.status,
+        created_at: companyInvitationsTable.created_at,
+      })
+      .from(companyInvitationsTable)
+      .where(
+        and(
+          eq(companyInvitationsTable.company_id, company.id),
+          eq(companyInvitationsTable.status, "pending")
+        )
+      )
+      .orderBy(companyInvitationsTable.created_at);
+
+    const userIds = members.map((m) => m.user_id);
+    const emailMap = new Map<string, string>();
+    if (userIds.length > 0) {
+      try {
+        const clerkUsers = await clerkClient.users.getUserList({ userId: userIds });
+        for (const u of clerkUsers.data) {
+          const email =
+            u.emailAddresses.find((e) => e.id === u.primaryEmailAddressId)?.emailAddress ||
+            u.emailAddresses[0]?.emailAddress;
+          if (email) {
+            emailMap.set(u.id, email);
+          }
+        }
+      } catch (err) {
+        req.log.error({ err }, "Failed to fetch user emails from Clerk");
+      }
+    }
+
+    const result = [
+      ...members.map((r) => ({
+        user_id: r.user_id,
+        email: emailMap.get(r.user_id),
+        role: r.role,
+        is_pending: false,
+        created_at: r.created_at.toISOString(),
+      })),
+      ...invites.map((r) => ({
+        user_id: undefined,
+        invitation_id: r.id,
+        email: r.email,
+        role: r.role,
+        is_pending: true,
+        created_at: r.created_at.toISOString(),
+      })),
+    ];
+
+    res.json(result);
   },
 );
 
@@ -69,34 +120,65 @@ router.post(
       throw new HttpError(403, "Forbidden", "Only the company owner can invite members");
     }
 
-    const inviteeUserId =
-      typeof req.body?.user_id === "string" ? req.body.user_id.trim() : "";
+    const inviteeEmail =
+      typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
 
-    if (!inviteeUserId) {
-      throw new HttpError(400, "ValidationError", "user_id is required");
+    if (!inviteeEmail) {
+      throw new HttpError(400, "ValidationError", "email is required");
     }
 
-    // Check the invitee is not already in a company
-    const [existing] = await db
-      .select({ company_id: companyMembersTable.company_id })
-      .from(companyMembersTable)
-      .where(eq(companyMembersTable.user_id, inviteeUserId))
+    // Look up the user in Clerk by email to see if they already exist
+    const clerkUsers = await clerkClient.users.getUserList({ emailAddress: [inviteeEmail] });
+    if (clerkUsers.data.length > 0) {
+      const targetUserId = clerkUsers.data[0].id;
+      
+      // Prevent owner from inviting themselves implicitly by this check
+      const [existingMember] = await db
+        .select({ company_id: companyMembersTable.company_id })
+        .from(companyMembersTable)
+        .where(eq(companyMembersTable.user_id, targetUserId))
+        .limit(1);
+
+      if (existingMember) {
+        throw new HttpError(
+          409,
+          "AlreadyMember",
+          "This user already belongs to a company"
+        );
+      }
+    }
+
+    // Check if there is already a pending invitation for this exact email in this company
+    const [existingInvite] = await db
+      .select({ id: companyInvitationsTable.id })
+      .from(companyInvitationsTable)
+      .where(
+        and(
+          eq(companyInvitationsTable.company_id, company.id),
+          eq(companyInvitationsTable.email, inviteeEmail),
+          eq(companyInvitationsTable.status, "pending")
+        )
+      )
       .limit(1);
 
-    if (existing) {
+    if (existingInvite) {
       throw new HttpError(
         409,
-        "AlreadyMember",
-        "This user already belongs to a company",
+        "AlreadyInvited",
+        "There is already a pending invitation for this email"
       );
     }
 
+    // NOTE: Ideally we check `company_members` to see if they are already a member, 
+    // but `company_members` uses `user_id`, not email. The auto-claim will fail safely if they are already in a company.
+    
     const [created] = await db
-      .insert(companyMembersTable)
+      .insert(companyInvitationsTable)
       .values({
         company_id: company.id,
-        user_id: inviteeUserId,
+        email: inviteeEmail,
         role: "member",
+        invited_by: (req as AuthedCompanyRequest).userId,
       })
       .returning();
 
@@ -106,12 +188,28 @@ router.post(
       action: "company.member.invited",
       entityType: "company",
       entityId: company.id,
-      details: { invitee_user_id: inviteeUserId },
+      details: { invitee_email: inviteeEmail, invitation_id: created.id },
+    });
+
+    // Send invitation email using existing Resend utility
+    void sendEmail({
+      to: inviteeEmail,
+      title_ar: `دعوة للانضمام إلى ${company.name}`,
+      title_en: `Invitation to join ${company.name}`,
+      body_ar: `لقد تمت دعوتك للانضمام إلى شركة "${company.name}" في منصة تدويرة. قم بإنشاء حسابك أو تسجيل الدخول لقبول الدعوة.`,
+      body_en: `You have been invited to join "${company.name}" on Tadweerah. Create an account or sign in to accept the invitation.`,
+      actionUrl: "https://staging.tadweerah.com/sign-up?invited=1",
+      actionText_ar: "قبول الدعوة",
+      actionText_en: "Accept Invitation",
+    }).catch(err => {
+      req.log.warn({ err, email: inviteeEmail }, "failed to send invitation email");
     });
 
     res.status(201).json({
-      user_id: created.user_id,
+      invitation_id: created.id,
+      email: created.email,
       role: created.role,
+      is_pending: true,
       created_at: created.created_at.toISOString(),
     });
   },
@@ -145,6 +243,32 @@ router.delete(
       );
     }
 
+    // Is it an invitation cancellation? UUID check
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetUserId);
+    if (isUuid) {
+      const [invite] = await db
+        .select({ id: companyInvitationsTable.id })
+        .from(companyInvitationsTable)
+        .where(
+          and(
+            eq(companyInvitationsTable.id, targetUserId),
+            eq(companyInvitationsTable.company_id, company.id),
+            eq(companyInvitationsTable.status, "pending")
+          )
+        )
+        .limit(1);
+      
+      if (invite) {
+        await db
+          .update(companyInvitationsTable)
+          .set({ status: "cancelled", cancelled_at: new Date() })
+          .where(eq(companyInvitationsTable.id, targetUserId));
+          
+        res.json({ success: true, cancelled: true });
+        return;
+      }
+    }
+
     // Check the target is actually a member of this company
     const [found] = await db
       .select({ role: companyMembersTable.role })
@@ -158,7 +282,7 @@ router.delete(
       .limit(1);
 
     if (!found) {
-      throw new HttpError(404, "NotFound", "Member not found in this company");
+      throw new HttpError(404, "NotFound", "Member or invitation not found");
     }
 
     await db
@@ -182,5 +306,39 @@ router.delete(
     res.json({ success: true });
   },
 );
+
+/**
+ * GET /invitations/:id — public endpoint to fetch basic invitation details.
+ * Used by the invite landing page to show company name and invited email.
+ */
+router.get("/invitations/:id", async (req, res) => {
+  const id = String(req.params.id || "").trim();
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+    throw new HttpError(400, "InvalidId", "Invalid invitation ID format");
+  }
+
+  const [invite] = await db
+    .select({
+      id: companyInvitationsTable.id,
+      email: companyInvitationsTable.email,
+      status: companyInvitationsTable.status,
+      companyName: companiesTable.name,
+    })
+    .from(companyInvitationsTable)
+    .innerJoin(companiesTable, eq(companyInvitationsTable.company_id, companiesTable.id))
+    .where(eq(companyInvitationsTable.id, id))
+    .limit(1);
+
+  if (!invite || invite.status !== "pending") {
+    throw new HttpError(404, "NotFound", "Invitation not found or no longer pending");
+  }
+
+  res.json({
+    id: invite.id,
+    email: invite.email,
+    status: invite.status,
+    companyName: invite.companyName,
+  });
+});
 
 export default router;

@@ -54,4 +54,8 @@ Represents the percentage of the buyer's resale revenue paid to the producer.
   offer_count?: number;
   /** Highest offer as a total (price_per_unit × quantity). Null if no offers. */
   highest_offer_total?: number;
+  /** Optional National Address or free-text description of the pickup location. */
+  material_location_address?: string;
+  /** Optional Google Maps share URL for the pickup location. Starts with https://. */
+  google_maps_url?: string;
 }

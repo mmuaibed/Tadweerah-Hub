@@ -9,9 +9,14 @@
  */
 import { Router, type Request, type Response, type NextFunction } from "express";
 import { and, count, desc, eq, gte, ilike, isNotNull, isNull, lte, or, sql } from "drizzle-orm";
+import { clerkClient } from "@clerk/express";
 import {
   db,
   companiesTable,
+  companyRolesTable,
+  companyCapabilitiesTable,
+  companyMembersTable,
+  companyInvitationsTable,
   issueReportsTable,
   auditLogTable,
   dealsTable,
@@ -100,6 +105,83 @@ router.get("/admin/companies", requireAdminKey, async (req, res) => {
     .offset(offset);
 
   res.json(rows);
+});
+
+/**
+ * GET /admin/stats
+ * Returns lightweight platform counts for admin dashboard.
+ */
+router.get("/admin/stats", requireAdminKey, async (req, res) => {
+  const [{ totalCompanies }] = await db.select({ totalCompanies: count() }).from(companiesTable);
+  const [{ totalMembers }] = await db.select({ totalMembers: count() }).from(companyMembersTable);
+  const [{ totalInvites }] = await db.select({ totalInvites: count() }).from(companyInvitationsTable);
+  const [{ totalListings }] = await db.select({ totalListings: count() }).from(wasteListingsTable);
+  const [{ totalDeals }] = await db.select({ totalDeals: count() }).from(dealsTable);
+  const [{ totalTRs }] = await db.select({ totalTRs: count() }).from(transportRequestsTable);
+  
+  const statusCounts = await db
+    .select({ status: companiesTable.license_status, c: count() })
+    .from(companiesTable)
+    .groupBy(companiesTable.license_status);
+
+  res.json({
+    totalCompanies,
+    totalMembers,
+    totalInvites,
+    totalListings,
+    totalDeals,
+    totalTRs,
+    companiesByStatus: statusCounts.reduce((acc, row) => ({ ...acc, [row.status || "null"]: row.c }), {} as Record<string, number>),
+  });
+});
+
+/**
+ * GET /admin/companies/:id/details
+ * On-demand detailed view of a company including Clerk-enriched emails and relations.
+ */
+router.get("/admin/companies/:id/details", requireAdminKey, async (req, res) => {
+  const id = String(req.params["id"]);
+
+  const [company] = await db.select().from(companiesTable).where(eq(companiesTable.id, id)).limit(1);
+  if (!company) { res.status(404).json({ error: "NotFound", message: "Company not found" }); return; }
+
+  const rolesRows = await db.select().from(companyRolesTable).where(eq(companyRolesTable.company_id, id));
+  const capsRows = await db.select().from(companyCapabilitiesTable).where(eq(companyCapabilitiesTable.company_id, id));
+  const membersRows = await db.select().from(companyMembersTable).where(eq(companyMembersTable.company_id, id));
+  const invitesRows = await db.select().from(companyInvitationsTable).where(eq(companyInvitationsTable.company_id, id));
+
+  const clerkUserIds = [company.owner_user_id, ...membersRows.map(m => m.user_id)].filter(Boolean) as string[];
+  const emailMap = new Map<string, string>();
+  if (clerkUserIds.length > 0) {
+    try {
+      const clerkUsers = await clerkClient.users.getUserList({ userId: Array.from(new Set(clerkUserIds)) });
+      for (const u of clerkUsers.data) {
+        const email = u.emailAddresses.find((e) => e.id === u.primaryEmailAddressId)?.emailAddress || u.emailAddresses[0]?.emailAddress;
+        if (email) emailMap.set(u.id, email);
+      }
+    } catch (err) {
+      req.log.error({ err }, "Failed to fetch admin company details clerk emails");
+    }
+  }
+
+  res.json({
+    ...company,
+    owner_email: company.owner_user_id ? emailMap.get(company.owner_user_id) || null : null,
+    roles: rolesRows.map(r => r.role),
+    capabilities: capsRows.map(c => c.capability),
+    members: membersRows.map(m => ({
+      user_id: m.user_id,
+      role: m.role,
+      email: emailMap.get(m.user_id) || null,
+      created_at: m.created_at,
+    })),
+    invitations: invitesRows.map(i => ({
+      email: i.email,
+      role: i.role,
+      status: i.status,
+      created_at: i.created_at,
+    }))
+  });
 });
 
 /**

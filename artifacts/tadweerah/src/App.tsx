@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { Switch, Route, Redirect, useLocation, Router as WouterRouter } from "wouter";
 import { ClerkProvider, Show, useClerk, useAuth, useUser } from "@clerk/react";
 import { shadcn } from "@clerk/themes";
+import { arSA, enUS } from "@clerk/localizations";
 import { setAuthTokenGetter } from "@workspace/api-client-react";
 import {
   QueryClient,
@@ -17,6 +18,7 @@ import { SignInPage } from "@/pages/sign-in";
 import { SignUpPage } from "@/pages/sign-up";
 import { OnboardingPage } from "@/pages/onboarding";
 import { DashboardPage } from "@/pages/dashboard";
+import { InvitePage } from "@/pages/invite";
 import { ListingNewPage } from "@/pages/listing-new";
 import { MyListingsPage } from "@/pages/my-listings";
 import { MarketplacePage } from "@/pages/marketplace";
@@ -38,7 +40,6 @@ import NotFound from "@/pages/not-found";
 const queryClient = new QueryClient();
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
-const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
 
 if (!clerkPubKey) {
   throw new Error("Missing VITE_CLERK_PUBLISHABLE_KEY");
@@ -53,16 +54,10 @@ function stripBase(path: string): string {
 }
 
 function HomeRedirect() {
-  const { user, isLoaded } = useUser();
-  const adminAllowlist = ((import.meta.env.VITE_TADWEERAH_ADMIN_EMAILS as string | undefined) ?? "")
-    .split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
-  const userEmail = user?.primaryEmailAddress?.emailAddress?.toLowerCase() ?? "";
-  const isAdmin = isLoaded && adminAllowlist.length > 0 && adminAllowlist.includes(userEmail);
-
   return (
     <>
       <Show when="signed-in">
-        <Redirect to={isAdmin ? "/admin" : "/dashboard"} />
+        <Redirect to="/dashboard" />
       </Show>
       <Show when="signed-out">
         <HomePage />
@@ -135,10 +130,9 @@ function buildAppearance(lang: "ar" | "en") {
   return {
     theme: shadcn,
     cssLayerName: "clerk",
-    options: {
-      logoPlacement: "inside" as const,
-      logoLinkUrl: basePath || "/",
-      logoImageUrl: `${window.location.origin}${basePath}/logo.png`,
+    layout: {
+      logoPlacement: "none",
+      direction: lang === "ar" ? "rtl" : "ltr",
     },
     variables: {
       colorPrimary: "hsl(223, 67%, 50%)",
@@ -160,27 +154,27 @@ function buildAppearance(lang: "ar" | "en") {
       card: "!shadow-none !border-0 !bg-transparent !rounded-none",
       footer: "!shadow-none !border-0 !bg-transparent !rounded-none",
       headerTitle: "text-foreground",
-      headerSubtitle: "text-muted-foreground",
-      formFieldLabel: "text-foreground",
+      headerSubtitle: "text-muted-foreground whitespace-pre-line",
+      formFieldLabel: "text-foreground font-medium",
       footerActionLink: "text-primary font-medium",
       footerActionText: "text-muted-foreground",
+      logoBox: "hidden",
+      logoImage: "hidden",
       dividerText: "text-muted-foreground",
       identityPreviewEditButton: "text-primary",
       formFieldSuccessText: "text-primary",
       alertText: "text-destructive",
-      logoBox: "justify-center",
-      logoImage: "h-10 w-auto",
       socialButtonsBlockButton:
         "border border-border bg-background hover:bg-muted",
       formButtonPrimary:
-        "bg-primary text-primary-foreground hover:bg-primary/90",
+        "inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 w-full",
       formFieldInput:
-        "bg-input border border-border text-foreground rounded-md",
+        "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
       footerAction: "text-sm",
       dividerLine: "bg-border",
-      alert: "border border-destructive/40 bg-destructive/10",
+      alert: "border border-destructive/40 bg-destructive/10 text-destructive",
       otpCodeFieldInput:
-        "bg-input border border-border text-foreground rounded-md",
+        "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-center",
       formFieldRow: "gap-2",
       main: "gap-4",
     },
@@ -189,19 +183,34 @@ function buildAppearance(lang: "ar" | "en") {
 
 const localizationByLang = {
   ar: {
+    ...arSA,
     signIn: {
-      start: { title: "أهلاً بعودتك", subtitle: "سجّل دخولك للمتابعة إلى تدويرة" },
+      ...arSA.signIn,
+      start: { 
+        ...arSA.signIn?.start, 
+        title: "أهلاً بعودتك", 
+        subtitle: "سجّل دخولك للمتابعة إلى منصة تدويرة\nيمكنك الدخول بكلمة المرور أو بكود تحقق يُرسل إلى بريدك الإلكتروني.",
+        actionText: "ليس لديك حساب في تدويرة؟",
+        actionLink: "أنشئ حساب شركة جديد",
+      },
     },
+    formFieldInputPlaceholder__emailAddress: "أدخل بريدك الإلكتروني",
+    formFieldLabel__emailAddress: "البريد الإلكتروني",
+    formButtonPrimary: "متابعة تسجيل الدخول",
     signUp: {
-      start: { title: "أنشئ حسابك", subtitle: "ابدأ رحلتك مع تدويرة اليوم" },
+      ...arSA.signUp,
+      start: { ...arSA.signUp?.start, title: "أنشئ حسابك", subtitle: "ابدأ رحلتك مع تدويرة اليوم" },
     },
   },
   en: {
+    ...enUS,
     signIn: {
-      start: { title: "Welcome back", subtitle: "Sign in to continue to Tadweerah" },
+      ...enUS.signIn,
+      start: { ...enUS.signIn?.start, title: "Welcome back", subtitle: "Sign in to continue to Tadweerah" },
     },
     signUp: {
-      start: { title: "Create your account", subtitle: "Get started with Tadweerah today" },
+      ...enUS.signUp,
+      start: { ...enUS.signUp?.start, title: "Create your account", subtitle: "Get started with Tadweerah today" },
     },
   },
 } as const;
@@ -213,7 +222,6 @@ function ClerkProviderWithRoutes() {
   return (
     <ClerkProvider
       publishableKey={clerkPubKey}
-      proxyUrl={clerkProxyUrl}
       appearance={buildAppearance(lang)}
       signInUrl={`${basePath}/sign-in`}
       signUpUrl={`${basePath}/sign-up`}
@@ -229,6 +237,7 @@ function ClerkProviderWithRoutes() {
             <Route path="/" component={HomeRedirect} />
             <Route path="/sign-in/*?" component={SignInPage} />
             <Route path="/sign-up/*?" component={SignUpPage} />
+            <Route path="/invite/:id" component={InvitePage} />
             <Route path="/onboarding/company" component={OnboardingRoute} />
             <Route path="/terms" component={TermsPage} />
             <Route path="/dashboard">

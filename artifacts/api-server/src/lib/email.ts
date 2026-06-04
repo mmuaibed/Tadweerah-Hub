@@ -25,6 +25,9 @@ interface EmailPayload {
   body_ar?: string;
   body_en?: string;
   listingId?: string;
+  actionUrl?: string;
+  actionText_ar?: string;
+  actionText_en?: string;
 }
 
 function buildHtml(p: EmailPayload): string {
@@ -58,9 +61,16 @@ function buildHtml(p: EmailPayload): string {
               <table cellpadding="0" cellspacing="0" style="margin-top:24px;">
                 <tr>
                   <td>
+                    ${p.actionUrl ? `
+                    <a href="${p.actionUrl}" style="display:inline-block;background:#1d4ed8;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:15px;font-weight:600;text-align:center;">
+                      ${p.actionText_ar ?? 'فتح الرابط'} &rarr;<br/>
+                      <span style="font-size:13px;font-weight:400;opacity:0.9">${p.actionText_en ?? 'Open Link'}</span>
+                    </a>
+                    ` : p.listingId ? `
                     <a href="${listingLink}" style="display:inline-block;background:#1d4ed8;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:15px;font-weight:600;">
                       فتح في تدويرة &rarr;
                     </a>
+                    ` : ""}
                   </td>
                 </tr>
               </table>
@@ -85,14 +95,19 @@ function buildHtml(p: EmailPayload): string {
 export async function sendEmail(p: EmailPayload): Promise<void> {
   if (!resend) return;
   try {
-    await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from: FROM,
       to: p.to,
       subject: `${p.title_ar} — ${p.title_en}`,
       html: buildHtml(p),
     });
+    if (error) {
+      console.error("[email] Resend API rejected email. reason:", error.name, error.message);
+    } else {
+      console.info("[email] Resend accepted email id:", data?.id);
+    }
   } catch (err) {
-    console.error("[email] send failed:", err);
+    console.error("[email] send failed:", err instanceof Error ? err.message : String(err));
   }
 }
 

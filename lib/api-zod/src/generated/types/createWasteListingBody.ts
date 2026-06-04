@@ -54,4 +54,14 @@ Leave empty (or omit) for no restrictions.
 Immutable once published.
  */
   eligible_company_type?: EligibleCompanyType;
+  /**
+   * Optional National Address or free-text description of the pickup location.
+   * @maxLength 500
+   */
+  material_location_address?: string;
+  /**
+   * Optional Google Maps share URL for the pickup location. Must start with https://.
+   * @maxLength 500
+   */
+  google_maps_url?: string;
 }

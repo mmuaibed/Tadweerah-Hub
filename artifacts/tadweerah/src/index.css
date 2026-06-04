@@ -1,7 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;900&display=swap');
 
-@layer theme, base, clerk, components, utilities;
 @import "tailwindcss";
+@source "./**/*.{ts,tsx,js,jsx}";
+@source "../index.html";
 @import "tw-animate-css";
 @import "@clerk/themes/shadcn.css";
 

@@ -165,7 +165,10 @@ export const UpdateMyCapabilitiesResponse = zod.array(
  * @summary List all members of the caller's company
  */
 export const GetCompanyMembersResponseItem = zod.object({
-  user_id: zod.string(),
+  user_id: zod.string().optional(),
+  email: zod.string().optional(),
+  invitation_id: zod.string().optional(),
+  is_pending: zod.boolean().optional(),
   role: zod.enum(["owner", "member"]),
   created_at: zod.coerce.date(),
 });
@@ -177,7 +180,7 @@ export const GetCompanyMembersResponse = zod.array(
  * @summary Invite a user to join the caller's company (owner only)
  */
 export const InviteCompanyMemberBody = zod.object({
-  user_id: zod.string().describe("Clerk user ID of the person to invite"),
+  email: zod.string().describe("Email address of the person to invite"),
 });
 
 /**
@@ -322,6 +325,18 @@ export const ListMarketplaceListingsResponseItem = zod.object({
     .describe(
       "Highest offer as a total (price_per_unit × quantity). Null if no offers.",
     ),
+  material_location_address: zod
+    .string()
+    .optional()
+    .describe(
+      "Optional National Address or free-text description of the pickup location.",
+    ),
+  google_maps_url: zod
+    .string()
+    .optional()
+    .describe(
+      "Optional Google Maps share URL for the pickup location. Starts with https:\/\/.",
+    ),
 });
 export const ListMarketplaceListingsResponse = zod.array(
   ListMarketplaceListingsResponseItem,
@@ -341,6 +356,10 @@ export const createWasteListingBodyPriceHintMin = 0;
 
 export const createWasteListingBodyRevenueSharePctMin = 0;
 export const createWasteListingBodyRevenueSharePctMax = 100;
+
+export const createWasteListingBodyMaterialLocationAddressMax = 500;
+
+export const createWasteListingBodyGoogleMapsUrlMax = 500;
 
 export const CreateWasteListingBody = zod.object({
   material: zod.enum([
@@ -408,6 +427,20 @@ export const CreateWasteListingBody = zod.object({
     .optional()
     .describe(
       "Restricts who may submit offers. Defaults to ALL if not supplied.\nImmutable once published.\n",
+    ),
+  material_location_address: zod
+    .string()
+    .max(createWasteListingBodyMaterialLocationAddressMax)
+    .optional()
+    .describe(
+      "Optional National Address or free-text description of the pickup location.",
+    ),
+  google_maps_url: zod
+    .string()
+    .max(createWasteListingBodyGoogleMapsUrlMax)
+    .optional()
+    .describe(
+      "Optional Google Maps share URL for the pickup location. Must start with https:\/\/.",
     ),
 });
 
@@ -530,6 +563,18 @@ export const ListMyListingsResponseItem = zod.object({
     .optional()
     .describe(
       "Highest offer as a total (price_per_unit × quantity). Null if no offers.",
+    ),
+  material_location_address: zod
+    .string()
+    .optional()
+    .describe(
+      "Optional National Address or free-text description of the pickup location.",
+    ),
+  google_maps_url: zod
+    .string()
+    .optional()
+    .describe(
+      "Optional Google Maps share URL for the pickup location. Starts with https:\/\/.",
     ),
 });
 export const ListMyListingsResponse = zod.array(ListMyListingsResponseItem);
@@ -654,6 +699,18 @@ export const GetWasteListingResponse = zod.object({
     .describe(
       "Highest offer as a total (price_per_unit × quantity). Null if no offers.",
     ),
+  material_location_address: zod
+    .string()
+    .optional()
+    .describe(
+      "Optional National Address or free-text description of the pickup location.",
+    ),
+  google_maps_url: zod
+    .string()
+    .optional()
+    .describe(
+      "Optional Google Maps share URL for the pickup location. Starts with https:\/\/.",
+    ),
 });
 
 /**
@@ -775,6 +832,18 @@ export const CloseWasteListingResponse = zod.object({
     .optional()
     .describe(
       "Highest offer as a total (price_per_unit × quantity). Null if no offers.",
+    ),
+  material_location_address: zod
+    .string()
+    .optional()
+    .describe(
+      "Optional National Address or free-text description of the pickup location.",
+    ),
+  google_maps_url: zod
+    .string()
+    .optional()
+    .describe(
+      "Optional Google Maps share URL for the pickup location. Starts with https:\/\/.",
     ),
 });
 

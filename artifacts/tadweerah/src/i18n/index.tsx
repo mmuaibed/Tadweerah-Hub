@@ -880,11 +880,11 @@ const translations: Record<string, Record<Language, string>> = {
   "members.role.member": { ar: "عضو", en: "Member" },
   "members.role.you": { ar: "أنت", en: "you" },
   "members.invite.title": { ar: "دعوة عضو جديد", en: "Invite a New Member" },
-  "members.invite.hint": { ar: "أدخل معرّف المستخدم (Clerk User ID) للشخص الذي تريد إضافته. يجب ألّا يكون منتسباً لشركة أخرى.", en: "Enter the Clerk User ID of the person you want to add. They must not already belong to another company." },
-  "members.invite.placeholder": { ar: "user_2....", en: "user_2...." },
+  "members.invite.hint": { ar: "أدخل البريد الإلكتروني للشخص الذي ترغب بإضافته كعضو. سيتم دعوته للشركة تلقائياً عند تسجيل الدخول.", en: "Enter the email of the person you want to add. They will be invited automatically upon sign in." },
+  "members.invite.placeholder": { ar: "member@example.com", en: "member@example.com" },
   "members.invite.cta": { ar: "إضافة", en: "Add" },
   "members.invite.success": { ar: "تمت إضافة العضو بنجاح", en: "Member added successfully" },
-  "members.invite.error.empty": { ar: "يرجى إدخال معرّف المستخدم", en: "Please enter a user ID" },
+  "members.invite.error.empty": { ar: "يرجى إدخال البريد الإلكتروني", en: "Please enter an email address" },
   "members.invite.error.generic": { ar: "حدث خطأ. يرجى المحاولة مجدداً", en: "Something went wrong. Please try again" },
   "members.remove.cta": { ar: "إزالة العضو", en: "Remove Member" },
   "members.remove.error.generic": { ar: "فشل إزالة العضو. يرجى المحاولة مرة أخرى.", en: "Failed to remove member. Please try again." },
@@ -893,7 +893,7 @@ const translations: Record<string, Record<Language, string>> = {
   "members.section.owner": { ar: "مالك الحساب", en: "Account Owner" },
   "members.section.members": { ar: "أعضاء الفريق", en: "Team Members" },
   "members.noMembers": { ar: "لا يوجد أعضاء إضافيون بعد", en: "No additional members yet" },
-  "members.userId.label": { ar: "معرّف المستخدم", en: "User ID" },
+  "members.userId.label": { ar: "نسخ المعرّف", en: "Copy ID" },
   "members.userId.copied": { ar: "تم النسخ!", en: "Copied!" },
   "members.dashboard.title": { ar: "أعضاء الفريق", en: "Team Members" },
   "members.dashboard.subtitle": { ar: "أضف زملاءك وادر فريق شركتك على المنصة", en: "Add colleagues and manage your company team on the platform" },
@@ -1249,8 +1249,8 @@ const translations: Record<string, Record<Language, string>> = {
   "profile.license.expired": { ar: "منتهي الصلاحية", en: "Expired" },
 
   // Company profile nav card in dashboard
-  "profile.nav.title": { ar: "ملف الشركة", en: "Company Profile" },
-  "profile.nav.subtitle": { ar: "عدّل بيانات شركتك ومعلوماتها", en: "Update your company details and contact info" },
+  "profile.nav.title": { ar: "معلومات الشركة", en: "Company Information" },
+  "profile.nav.subtitle": { ar: "عدّل بيانات شركتك وحدد الخدمات التي تستطيع تقديمها", en: "Update your company details and specify the services you provide" },
 
   // ── Contract Track ────────────────────────────────────────────────────────
   "contracts.nav": { ar: "العقود", en: "Contracts" },

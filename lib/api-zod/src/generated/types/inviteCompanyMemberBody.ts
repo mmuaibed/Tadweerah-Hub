@@ -7,6 +7,6 @@
  */
 
 export interface InviteCompanyMemberBody {
-  /** Clerk user ID of the person to invite */
-  user_id: string;
+  /** Email address of the person to invite */
+  email: string;
 }

@@ -216,7 +216,6 @@ function NextActionBanner({ stats, t, Arrow }: NextBannerProps) {
 const SECONDARY_CARDS = [
   { titleKey: "myListings.title",          descKey: "myListings.subtitle",          icon: FileText,   href: "/listings/mine" },
   { titleKey: "participations.title",      descKey: "participations.subtitle",      icon: TrendingUp, href: "/participations" },
-  { titleKey: "capabilities.title",        descKey: "capabilities.subtitle",        icon: Settings,   href: "/company/capabilities" },
   { titleKey: "reports.title",             descKey: "reports.subtitle",             icon: BarChart2,  href: "/reports" },
   { titleKey: "members.dashboard.title",   descKey: "members.dashboard.subtitle",   icon: Users,      href: "/company/members" },
   { titleKey: "profile.nav.title",         descKey: "profile.nav.subtitle",         icon: Building2,  href: "/company/profile" },

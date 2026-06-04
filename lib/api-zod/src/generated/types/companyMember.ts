@@ -8,7 +8,10 @@
 import type { CompanyMemberRole } from "./companyMemberRole";
 
 export interface CompanyMember {
-  user_id: string;
+  user_id?: string;
+  email?: string;
+  invitation_id?: string;
+  is_pending?: boolean;
   role: CompanyMemberRole;
   created_at: Date;
 }

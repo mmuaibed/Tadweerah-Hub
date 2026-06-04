@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, Fragment } from "react";
 import { useUser, useClerk } from "@clerk/react";
 import {
   CheckCircle2,
@@ -73,8 +73,27 @@ interface AdminCompany {
   type: string | null;
   city: string | null;
   license_status: string | null;
+  contactPhone?: string | null;
   commercial_registration: string | null;
   created_at: string;
+}
+
+interface AdminStats {
+  totalCompanies: number;
+  totalMembers: number;
+  totalInvites: number;
+  totalListings: number;
+  totalDeals: number;
+  totalTRs: number;
+  companiesByStatus: Record<string, number>;
+}
+
+interface AdminCompanyDetails extends AdminCompany {
+  owner_email: string | null;
+  roles: string[];
+  capabilities: string[];
+  members: { user_id: string; role: string; email: string | null; created_at: string }[];
+  invitations: { email: string; role: string; status: string; created_at: string }[];
 }
 
 interface PendingTransportRequest {
@@ -173,6 +192,13 @@ export function AdminPage() {
   const [licenseFilter, setLicenseFilter] = useState("");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [pendingStatus, setPendingStatus] = useState<Record<string, string>>({});
+  
+  const [stats, setStats] = useState<AdminStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [expandedCompanyId, setExpandedCompanyId] = useState<string | null>(null);
+  const [expandedDetails, setExpandedDetails] = useState<AdminCompanyDetails | null>(null);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [detailsError, setDetailsError] = useState<string | null>(null);
 
   /* Transport requests state */
   const [transportReqs, setTransportReqs] = useState<PendingTransportRequest[] | null>(null);
@@ -264,9 +290,22 @@ export function AdminPage() {
     }
   }
 
+  async function fetchStats() {
+    setStatsLoading(true);
+    try {
+      const res = await callAdmin(`/stats?t=${Date.now()}`);
+      if (res.ok) setStats(await res.json() as AdminStats);
+    } catch {
+      /* silent */
+    } finally {
+      setStatsLoading(false);
+    }
+  }
+
   async function fetchCompanies() {
     setCompaniesLoading(true);
     setCompaniesError(null);
+    void fetchStats();
     try {
       const params = licenseFilter ? `?licenseStatus=${encodeURIComponent(licenseFilter)}` : "";
       const res = await callAdmin(`/companies${params}`);
@@ -278,6 +317,27 @@ export function AdminPage() {
       setCompaniesError(e instanceof Error ? e.message : t("admin.error.generic"));
     } finally {
       setCompaniesLoading(false);
+    }
+  }
+
+  async function toggleCompanyDetails(id: string) {
+    if (expandedCompanyId === id) {
+      setExpandedCompanyId(null);
+      setExpandedDetails(null);
+      return;
+    }
+    setExpandedCompanyId(id);
+    setExpandedDetails(null);
+    setDetailsLoading(true);
+    setDetailsError(null);
+    try {
+      const res = await callAdmin(`/companies/${id}/details?t=${Date.now()}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setExpandedDetails(await res.json() as AdminCompanyDetails);
+    } catch (e) {
+      setDetailsError(e instanceof Error ? e.message : t("admin.error.generic"));
+    } finally {
+      setDetailsLoading(false);
     }
   }
 
@@ -546,6 +606,34 @@ export function AdminPage() {
         {/* ── Companies Tab ──────────────────────────────────────────────────── */}
         {tab === "companies" && (
           <div className="space-y-4">
+            {stats && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                <div className="rounded-xl border border-border bg-white p-3 flex flex-col justify-center">
+                  <span className="text-xl font-bold text-foreground">{stats.totalCompanies}</span>
+                  <span className="text-[10px] text-muted-foreground">{t("admin.stats.total_companies")} Total</span>
+                </div>
+                <div className="rounded-xl border border-border bg-white p-3 flex flex-col justify-center">
+                  <span className="text-xl font-bold text-amber-600">{stats.companiesByStatus["pending"] || 0}</span>
+                  <span className="text-[10px] text-muted-foreground">{t("admin.stats.pending_companies")} Pending</span>
+                </div>
+                <div className="rounded-xl border border-border bg-white p-3 flex flex-col justify-center">
+                  <span className="text-xl font-bold text-foreground">{stats.totalMembers}</span>
+                  <span className="text-[10px] text-muted-foreground">Members</span>
+                </div>
+                <div className="rounded-xl border border-border bg-white p-3 flex flex-col justify-center">
+                  <span className="text-xl font-bold text-foreground">{stats.totalListings}</span>
+                  <span className="text-[10px] text-muted-foreground">Listings</span>
+                </div>
+                <div className="rounded-xl border border-border bg-white p-3 flex flex-col justify-center">
+                  <span className="text-xl font-bold text-foreground">{stats.totalDeals}</span>
+                  <span className="text-[10px] text-muted-foreground">Deals</span>
+                </div>
+                <div className="rounded-xl border border-border bg-white p-3 flex flex-col justify-center">
+                  <span className="text-xl font-bold text-foreground">{stats.totalTRs}</span>
+                  <span className="text-[10px] text-muted-foreground">Transport Reqs</span>
+                </div>
+              </div>
+            )}
             {/* Companies filter + fetch */}
             <div className="rounded-xl border border-border bg-white p-4 flex flex-wrap gap-3 items-end">
               <div>
@@ -600,6 +688,7 @@ export function AdminPage() {
                           <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{t("admin.company.city")}</th>
                           <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{t("admin.company.status")}</th>
                           <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{t("admin.company.change_status")}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground"></th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border">
@@ -608,7 +697,8 @@ export function AdminPage() {
                           const pending = pendingStatus[c.id];
                           const isUpdating = updatingId === c.id;
                           return (
-                            <tr key={c.id} className="hover:bg-muted/20 transition-colors">
+                            <Fragment key={c.id}>
+                              <tr className="hover:bg-muted/20 transition-colors">
                               <td className="px-4 py-3">
                                 <p className="font-semibold text-foreground text-xs">{c.name}</p>
                                 <p className="text-[10px] text-muted-foreground font-mono">{c.id.slice(0, 8)}…</p>
@@ -656,10 +746,70 @@ export function AdminPage() {
                                   </Button>
                                 </div>
                               </td>
+                              <td className="px-4 py-3 text-end">
+                                <Button variant="ghost" size="sm" onClick={() => void toggleCompanyDetails(c.id)}>
+                                  {expandedCompanyId === c.id ? "إخفاء التفاصيل" : "عرض التفاصيل"}
+                                </Button>
+                              </td>
                             </tr>
-                          );
-                        })}
-                      </tbody>
+                            {expandedCompanyId === c.id && (
+                              <tr className="bg-muted/5 border-t-0">
+                                <td colSpan={7} className="px-4 py-4">
+                                  {detailsLoading ? (
+                                    <div className="flex items-center justify-center p-4 text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /></div>
+                                  ) : detailsError ? (
+                                    <div className="text-destructive text-sm p-4">{detailsError}</div>
+                                  ) : expandedDetails ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+                                      <div className="space-y-3">
+                                        <div>
+                                          <p className="font-semibold text-foreground border-b pb-1 mb-2">بيانات الشركة</p>
+                                          <p className="text-muted-foreground text-xs"><span className="text-foreground">المدينة:</span> {expandedDetails.city || "—"}</p>
+                                          <p className="text-muted-foreground text-xs"><span className="text-foreground">رقم الهاتف:</span> <span dir="ltr">{expandedDetails.contactPhone || "—"}</span></p>
+                                          <p className="text-muted-foreground text-xs"><span className="text-foreground">سجل تجاري:</span> <span dir="ltr">{expandedDetails.commercial_registration || "—"}</span></p>
+                                          <p className="text-muted-foreground text-xs"><span className="text-foreground">تاريخ التسجيل:</span> <span dir="ltr">{fmtDate(expandedDetails.created_at, lang)}</span></p>
+                                        </div>
+                                        <div>
+                                          <p className="font-semibold text-foreground border-b pb-1 mb-2">الأدوار والقدرات</p>
+                                          <div className="flex flex-wrap gap-1 mt-1">
+                                            {expandedDetails.roles.map(r => <Badge key={r} variant="outline" className="text-[10px]">{r}</Badge>)}
+                                            {expandedDetails.capabilities.map(cap => <Badge key={cap} variant="secondary" className="text-[10px]">{cap}</Badge>)}
+                                            {expandedDetails.roles.length === 0 && expandedDetails.capabilities.length === 0 && <span className="text-xs text-muted-foreground">—</span>}
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <div className="space-y-3">
+                                        <div>
+                                          <p className="font-semibold text-foreground border-b pb-1 mb-2">الأعضاء والدعوات</p>
+                                          <p className="text-muted-foreground text-xs mb-1"><span className="text-foreground">حساب المالك:</span> <span dir="ltr" className="font-mono">{expandedDetails.owner_email || "غير متوفر"}</span></p>
+                                          <div className="max-h-32 overflow-y-auto space-y-1 mt-2 pr-2">
+                                            {expandedDetails.members.map(m => (
+                                              <div key={m.user_id} className="flex justify-between items-center bg-white p-1.5 rounded border text-xs">
+                                                <span className="font-mono text-[11px]" dir="ltr">{m.email || "عضو"}</span>
+                                                <Badge variant="outline" className="text-[9px] h-4">{m.role}</Badge>
+                                              </div>
+                                            ))}
+                                            {expandedDetails.invitations.map(i => (
+                                              <div key={i.email} className="flex justify-between items-center bg-muted/30 p-1.5 rounded border text-xs">
+                                                <span className="font-mono text-[11px] text-muted-foreground" dir="ltr">{i.email}</span>
+                                                <div className="flex items-center gap-1">
+                                                  <span className="text-[9px] text-amber-600">{i.status}</span>
+                                                  <Badge variant="outline" className="text-[9px] h-4">{i.role}</Badge>
+                                                </div>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ) : null}
+                                </td>
+                              </tr>
+                            )}
+                          </Fragment>
+                        );
+                      })}
+                    </tbody>
                     </table>
                   </div>
                 )}

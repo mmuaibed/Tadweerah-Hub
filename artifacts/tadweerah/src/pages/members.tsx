@@ -23,6 +23,7 @@ import { AppLayout } from "@/components/app-layout";
 import { useT } from "@/i18n";
 import { useQueryClient } from "@tanstack/react-query";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { useToast } from "@/hooks/use-toast";
 
 function truncateUserId(id: string): string {
   if (id.length <= 20) return id;
@@ -42,40 +43,66 @@ function MemberRow({
   onRemove: () => void;
   removing: boolean;
 }) {
-  const { t } = useT();
+  const { t, lang } = useT();
+  const isRtl = lang === "ar";
   const [copied, setCopied] = useState(false);
+  const { toast } = useToast();
 
   function handleCopy() {
-    void navigator.clipboard.writeText(member.user_id);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (member.is_pending && member.invitation_id) {
+      const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+      const inviteUrl = `${window.location.origin}${basePath}/invite/${member.invitation_id}`;
+      void navigator.clipboard.writeText(inviteUrl);
+      setCopied(true);
+      toast({
+        title: isRtl ? "تم نسخ رابط الدعوة" : "Invite link copied",
+      });
+      setTimeout(() => setCopied(false), 2000);
+    } else if (member.user_id) {
+      void navigator.clipboard.writeText(member.user_id);
+      setCopied(true);
+      toast({
+        title: isRtl ? "تم نسخ المعرف" : "ID copied",
+      });
+      setTimeout(() => setCopied(false), 2000);
+    }
   }
 
   return (
     <div className="flex items-center justify-between gap-3 px-5 py-4">
       <div className="flex items-center gap-3 min-w-0">
         <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
-          member.role === "owner" ? "bg-amber-100 text-amber-600" : "bg-primary/10 text-primary"
+          member.role === "owner" ? "bg-amber-100 text-amber-600" : (member.is_pending ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary")
         }`}>
           {member.role === "owner"
             ? <Crown className="h-4 w-4" />
             : <Users className="h-4 w-4" />}
         </span>
         <div className="min-w-0">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
             <p className="text-sm font-medium text-foreground font-mono" dir="ltr">
-              {truncateUserId(member.user_id)}
+              {member.email ? member.email : (member.role === "owner" ? (isRtl ? "المالك" : "Owner") : (isRtl ? "عضو" : "Member"))}
             </p>
-            <button
-              type="button"
-              onClick={handleCopy}
-              className="text-muted-foreground/50 hover:text-muted-foreground transition-colors shrink-0"
-              title={copied ? t("members.userId.copied") : t("members.userId.label")}
-            >
-              {copied
-                ? <Check className="h-3 w-3 text-emerald-500" />
-                : <Copy className="h-3 w-3" />}
-            </button>
+            {!member.email && !member.is_pending && member.user_id && (
+              <span className="text-xs text-muted-foreground/50 font-mono" dir="ltr">
+                ({truncateUserId(member.user_id)})
+              </span>
+            )}
+            {!member.is_pending && (
+              <button
+                type="button"
+                onClick={handleCopy}
+                className="text-muted-foreground/50 hover:text-muted-foreground transition-colors shrink-0"
+                title={copied ? t("members.userId.copied") : t("members.userId.label")}
+              >
+                {copied
+                  ? <Check className="h-3 w-3 text-emerald-500" />
+                  : <Copy className="h-3 w-3" />}
+              </button>
+            )}
+            {member.is_pending && (
+              <span className="text-[10px] font-semibold tracking-wider text-muted-foreground bg-muted px-1.5 py-0.5 rounded uppercase ml-2">Pending</span>
+            )}
           </div>
           <p className="text-xs text-muted-foreground">
             {t(`members.role.${member.role}`)}
@@ -85,7 +112,23 @@ function MemberRow({
           </p>
         </div>
       </div>
-      {canRemove && (
+      <div className="flex items-center gap-2">
+        {member.is_pending && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleCopy}
+            className="shrink-0 h-8 font-medium gap-1.5 text-xs"
+          >
+            {copied ? (
+              <Check className="h-3.5 w-3.5 text-emerald-500" />
+            ) : (
+              <Copy className="h-3.5 w-3.5 text-primary" />
+            )}
+            {isRtl ? "نسخ رابط الدعوة" : "Copy invite link"}
+          </Button>
+        )}
+        {canRemove && (
         <Button
           variant="ghost"
           size="sm"
@@ -96,6 +139,7 @@ function MemberRow({
           <Trash2 className="h-4 w-4" />
         </Button>
       )}
+      </div>
     </div>
   );
 }
@@ -108,7 +152,7 @@ export function MembersPage() {
   const { data: me } = useGetMe();
   const { data: members = [], isLoading } = useGetCompanyMembers();
 
-  const [inviteId, setInviteId] = useState("");
+  const [inviteEmail, setInviteEmail] = useState("");
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [inviteSuccess, setInviteSuccess] = useState(false);
   const [pendingRemove, setPendingRemove] = useState<CompanyMember | null>(null);
@@ -124,7 +168,7 @@ export function MembersPage() {
   const { mutate: invite, isPending: inviting } = useInviteCompanyMember({
     mutation: {
       onSuccess: () => {
-        setInviteId("");
+        setInviteEmail("");
         setInviteError(null);
         setInviteSuccess(true);
         setTimeout(() => setInviteSuccess(false), 3000);
@@ -160,13 +204,13 @@ export function MembersPage() {
 
   function handleInvite(e: React.FormEvent) {
     e.preventDefault();
-    const trimmed = inviteId.trim();
+    const trimmed = inviteEmail.trim().toLowerCase();
     if (!trimmed) {
       setInviteError(t("members.invite.error.empty"));
       return;
     }
     setInviteError(null);
-    invite({ data: { user_id: trimmed } });
+    invite({ data: { email: trimmed } });
   }
 
   return (
@@ -194,13 +238,14 @@ export function MembersPage() {
             <p className="text-xs text-muted-foreground mb-4">{t("members.invite.hint")}</p>
             <form onSubmit={handleInvite} className="flex gap-2" dir={isRtl ? "rtl" : "ltr"}>
               <Input
-                value={inviteId}
-                onChange={(e) => { setInviteId(e.target.value); setInviteError(null); }}
+                type="email"
+                value={inviteEmail}
+                onChange={(e) => { setInviteEmail(e.target.value); setInviteError(null); }}
                 placeholder={t("members.invite.placeholder")}
                 className="flex-1 font-mono text-sm"
                 disabled={inviting}
               />
-              <Button type="submit" disabled={inviting || !inviteId.trim()} size="sm">
+              <Button type="submit" disabled={inviting || !inviteEmail.trim()} size="sm">
                 {inviting ? <Loader2 className="h-4 w-4 animate-spin" /> : t("members.invite.cta")}
               </Button>
             </form>
@@ -264,10 +309,10 @@ export function MembersPage() {
                 <div className="divide-y divide-border">
                   {memberRows.map((m) => (
                     <MemberRow
-                      key={m.user_id}
+                      key={m.invitation_id ?? m.user_id}
                       member={m}
-                      isSelf={m.user_id === myUserId}
-                      canRemove={isOwner && m.user_id !== myUserId}
+                      isSelf={!m.is_pending && m.user_id === myUserId}
+                      canRemove={isOwner && (!m.is_pending ? m.user_id !== myUserId : true)}
                       onRemove={() => setPendingRemove(m)}
                       removing={removing}
                     />
@@ -294,7 +339,7 @@ export function MembersPage() {
           description={t("members.remove.confirm.desc")}
           confirmLabel={t("members.remove.cta")}
           destructive
-          onConfirm={() => remove({ userId: pendingRemove.user_id })}
+          onConfirm={() => remove({ userId: pendingRemove.invitation_id ?? pendingRemove.user_id! })}
         />
       )}
     </AppLayout>

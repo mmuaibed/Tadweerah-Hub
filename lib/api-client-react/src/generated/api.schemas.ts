@@ -63,14 +63,17 @@ export const CompanyMemberRole = {
 } as const;
 
 export interface CompanyMember {
-  user_id: string;
+  user_id?: string;
+  email?: string;
+  invitation_id?: string;
+  is_pending?: boolean;
   role: CompanyMemberRole;
   created_at: string;
 }
 
 export interface InviteCompanyMemberBody {
-  /** Clerk user ID of the person to invite */
-  user_id: string;
+  /** Email address of the person to invite */
+  email: string;
 }
 
 export interface Company {
@@ -268,6 +271,10 @@ Represents the percentage of the buyer's resale revenue paid to the producer.
   offer_count?: number;
   /** Highest offer as a total (price_per_unit × quantity). Null if no offers. */
   highest_offer_total?: number;
+  /** Optional National Address or free-text description of the pickup location. */
+  material_location_address?: string;
+  /** Optional Google Maps share URL for the pickup location. Starts with https://. */
+  google_maps_url?: string;
 }
 
 export interface CreateWasteListingBody {
@@ -313,6 +320,16 @@ Leave empty (or omit) for no restrictions.
 Immutable once published.
  */
   eligible_company_type?: EligibleCompanyType;
+  /**
+   * Optional National Address or free-text description of the pickup location.
+   * @maxLength 500
+   */
+  material_location_address?: string;
+  /**
+   * Optional Google Maps share URL for the pickup location. Must start with https://.
+   * @maxLength 500
+   */
+  google_maps_url?: string;
 }
 
 export type OfferStatus = (typeof OfferStatus)[keyof typeof OfferStatus];

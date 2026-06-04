@@ -23,4 +23,5 @@ export * from "./mwan-role";
 export * from "./company-roles";
 export * from "./transport-requests";
 export * from "./transport-quotes";
+export * from "./company-invitations";
 export * from "./manifest-records";

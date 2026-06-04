@@ -1377,3 +1377,31 @@ ALTER TABLE ONLY public.waste_listings
 
 \unrestrict gAbegtVRIu6spxOapJPgJH29oEC7POet6z1UhkTBx44CA92Uk0PfuUYXv6vqCaX
 
+--
+-- Name: company_invitations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.company_invitations (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    company_id uuid NOT NULL,
+    email text NOT NULL,
+    role text DEFAULT 'member'::text NOT NULL,
+    invited_by text NOT NULL,
+    status text DEFAULT 'pending'::text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    accepted_at timestamp with time zone,
+    cancelled_at timestamp with time zone,
+    expires_at timestamp with time zone,
+    CONSTRAINT company_invitations_status_check CHECK (status IN ('pending', 'accepted', 'cancelled', 'expired')),
+    CONSTRAINT company_invitations_role_check CHECK (role = 'member'::text)
+);
+
+ALTER TABLE ONLY public.company_invitations
+    ADD CONSTRAINT company_invitations_pkey PRIMARY KEY (id);
+
+CREATE UNIQUE INDEX company_invitations_unique_pending_email_company
+    ON public.company_invitations USING btree (company_id, lower(email))
+    WHERE (status = 'pending'::text);
+
+ALTER TABLE ONLY public.company_invitations
+    ADD CONSTRAINT company_invitations_company_id_companies_id_fk FOREIGN KEY (company_id) REFERENCES public.companies(id) ON DELETE CASCADE;
