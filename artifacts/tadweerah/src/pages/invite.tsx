@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { useParams, Link, Redirect } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useParams, Link, useLocation } from "wouter";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useUser, useClerk } from "@clerk/react";
 import { Loader2, Mail, CheckCircle2, AlertTriangle } from "lucide-react";
 import { AppLayout } from "@/components/app-layout";
@@ -17,6 +17,8 @@ export function InvitePage() {
   const { id } = useParams<{ id: string }>();
   const { user, isLoaded: isUserLoaded } = useUser();
   const { signOut } = useClerk();
+  const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
   
   const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -36,6 +38,21 @@ export function InvitePage() {
     retry: false,
     enabled: !!id,
   });
+
+  const userEmail = user?.primaryEmailAddress?.emailAddress?.toLowerCase() ?? "";
+  const inviteEmail = data?.email?.toLowerCase() ?? "";
+
+  // If signed in, check email match
+  useEffect(() => {
+    if (user && data) {
+      if (userEmail === inviteEmail) {
+        // Clear the stale "me" query cache
+        queryClient.removeQueries({ queryKey: ["me"] });
+        // Redirect to dashboard where RouteGuard will force a fresh fetch
+        setLocation("/dashboard");
+      }
+    }
+  }, [user, data, userEmail, inviteEmail, queryClient, setLocation]);
 
   if (isLoading || !isUserLoaded) {
     return (
@@ -66,14 +83,18 @@ export function InvitePage() {
     );
   }
 
-  const userEmail = user?.primaryEmailAddress?.emailAddress?.toLowerCase() ?? "";
-  const inviteEmail = data.email.toLowerCase();
 
-  // If signed in, check email match
+
   if (user) {
     if (userEmail === inviteEmail) {
-      // Perfect match. Send them to dashboard, where RouteGuard & /api/me will claim the invite!
-      return <Redirect to="/dashboard" />;
+      // Wait for useEffect to redirect
+      return (
+        <AppLayout>
+          <div className="flex min-h-[50vh] items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        </AppLayout>
+      );
     } else {
       // Mismatch
       return (
@@ -102,34 +123,34 @@ export function InvitePage() {
   return (
     <AppLayout>
       <div className="flex min-h-[60vh] flex-col items-center justify-center px-4 py-12">
-        <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 sm:p-8 shadow-sm text-center flex flex-col items-center">
+        <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 sm:p-8 shadow-sm text-center flex flex-col items-center" dir="rtl">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary mb-6">
             <Mail className="h-8 w-8" />
           </div>
           
           <h1 className="text-2xl font-bold text-foreground mb-2">
-            You're Invited!
+            دعوة انضمام
           </h1>
           
-          <p className="text-muted-foreground leading-relaxed mb-8">
-            You have been invited to join <strong className="text-foreground">{data.companyName}</strong> on Tadweerah as a team member.
+          <p className="text-muted-foreground leading-relaxed mb-8 text-lg">
+            تمت دعوتك للانضمام إلى <strong className="text-foreground">{data.companyName}</strong> على منصة تدويرة كعضو فريق.
           </p>
 
           <div className="w-full space-y-3">
-            <Link to={`/sign-up?invited=1`}>
+            <Link to={`/sign-up?redirect_url=${encodeURIComponent(`/invite/${id}`)}`}>
               <Button className="w-full font-bold h-11" size="lg">
-                Create Account to Accept
+                إنشاء حساب لقبول الدعوة
               </Button>
             </Link>
-            <Link to="/sign-in">
+            <Link to={`/sign-in?redirect_url=${encodeURIComponent(`/invite/${id}`)}`}>
               <Button variant="outline" className="w-full h-11" size="lg">
-                I already have an account
+                تسجيل الدخول لقبول الدعوة
               </Button>
             </Link>
           </div>
           
           <p className="text-xs text-muted-foreground mt-8">
-            Invitation sent to {data.email}
+            أُرسلت الدعوة إلى {data.email}
           </p>
         </div>
       </div>
