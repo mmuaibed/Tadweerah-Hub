@@ -176,7 +176,7 @@ function licenseLabel(status: string | null, lang: string): { label: string; cls
 
 export function AdminPage() {
   const { t, lang } = useT();
-  const { user, isLoaded: userLoaded } = useUser();
+  const { user, isLoaded: userLoaded, isSignedIn } = useUser();
   const { signOut } = useClerk();
   const dir = lang === "ar" ? "rtl" : "ltr";
 
@@ -234,18 +234,30 @@ export function AdminPage() {
   const [reportCompanyId, setReportCompanyId] = useState("");
   const [reportExporting, setReportExporting] = useState(false);
 
-  // Email allowlist guard — empty allowlist blocks everyone (no accidental open access)
+  // Email allowlist guard
+  if (!userLoaded) {
+    return <div className="flex justify-center p-8"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+  }
+
+  if (!isSignedIn) {
+    window.location.href = "/sign-in";
+    return null;
+  }
+
   const allowlistRaw = (import.meta.env.VITE_TADWEERAH_ADMIN_EMAILS as string | undefined) ?? "";
   const allowlist = allowlistRaw.split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
-  const userEmail = user?.primaryEmailAddress?.emailAddress?.toLowerCase() ?? "";
-  const isEmailAllowed = !userLoaded || (allowlist.length > 0 && allowlist.includes(userEmail));
+  const userEmail = user.primaryEmailAddress?.emailAddress?.toLowerCase() ?? "";
+  const isEmailAllowed = allowlist.length > 0 && allowlist.includes(userEmail);
 
-  if (userLoaded && !isEmailAllowed) {
+  if (!isEmailAllowed) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 p-8 text-center" dir={dir}>
         <ShieldCheck className="h-12 w-12 text-muted-foreground/40" />
         <h2 className="text-lg font-semibold">{t("admin.access.denied.title")}</h2>
         <p className="text-sm text-muted-foreground max-w-sm">{t("admin.access.denied.desc")}</p>
+        <Button variant="outline" className="mt-4" onClick={() => void signOut().then(() => { window.location.href = "/"; })}>
+          {t("admin.logout")}
+        </Button>
       </div>
     );
   }
@@ -255,7 +267,9 @@ export function AdminPage() {
     setAdminKey("");
     setDeals(null);
     setCompanies(null);
-    void signOut({ redirectUrl: "/" });
+    void signOut().then(() => {
+      window.location.href = "/";
+    });
   }
 
   async function callAdmin(path: string, options?: RequestInit): Promise<Response> {
