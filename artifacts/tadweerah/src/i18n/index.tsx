@@ -1760,6 +1760,9 @@ const translations: Record<string, Record<Language, string>> = {
     ar: "هذه الصفحة مخصصة لفريق عمليات تدويرة فقط. حسابك الحالي لا يملك صلاحية الوصول.",
     en: "This page is restricted to the Tadweerah operations team. Your current account does not have access.",
   },
+  "admin.stats.title": { ar: "إحصائيات المنصة", en: "Platform Analytics" },
+  "admin.stats.total_companies": { ar: "إجمالي الشركات", en: "Total Companies" },
+  "admin.stats.pending_companies": { ar: "شركات بانتظار الاعتماد", en: "Pending Companies" },
 };
 
 export const I18nProvider: React.FC<{
