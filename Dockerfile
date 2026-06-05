@@ -13,7 +13,7 @@ COPY lib ./lib
 COPY scripts ./scripts
 COPY schema.sql ./schema.sql
 
-RUN pnpm install --ignore-scripts --frozen-lockfile
+RUN pnpm install --ignore-scripts --no-frozen-lockfile
 
 RUN pnpm --filter @workspace/api-server run build
 
