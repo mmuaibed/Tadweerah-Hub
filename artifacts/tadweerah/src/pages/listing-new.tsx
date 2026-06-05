@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/select";
 import { AppLayout } from "@/components/app-layout";
 import { useT } from "@/i18n";
+import { useDirtyFormWarning } from "@/hooks/use-dirty-form-warning";
 
 type PricingModel = "fixed" | "by_weight" | "revenue_share";
 type SaleType = "auction" | "direct";
@@ -131,6 +132,15 @@ export function ListingNewPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState(0);
+
+  const isDirty =
+    materialCategoryId !== "" ||
+    quantity !== "" ||
+    city !== "" ||
+    priceHint !== "" ||
+    description !== "" ||
+    imageFile !== null;
+  useDirtyFormWarning(isDirty);
 
   const { mutate, isPending } = useCreateWasteListing();
 

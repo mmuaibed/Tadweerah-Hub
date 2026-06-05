@@ -13,6 +13,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { AppLayout } from "@/components/app-layout";
 import { useT } from "@/i18n";
 import { useQueryClient } from "@tanstack/react-query";
+import { useDirtyFormWarning } from "@/hooks/use-dirty-form-warning";
 
 // P7 — Group capabilities by their key prefix so the UI shows logical sections.
 // Keys starting with cert / license / permit → certifications
@@ -41,6 +42,13 @@ export function CompanyCapabilitiesPage() {
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+
+  const isDirty =
+    selected.size !== myCapabilities.length ||
+    Array.from(selected).some(
+      (id) => !(myCapabilities as CompanyCapabilityRow[]).find((c) => c.capability_id === id)
+    );
+  useDirtyFormWarning(isDirty);
 
   useEffect(() => {
     const ids = new Set(

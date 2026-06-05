@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { AppLayout } from "@/components/app-layout";
 import { useT } from "@/i18n";
+import { useDirtyFormWarning } from "@/hooks/use-dirty-form-warning";
 
 /* ── Types ── */
 interface CompanyCategoryOption { id: string; key: string; name_ar: string; name_en: string; }
@@ -139,6 +140,9 @@ export function OnboardingPage() {
   /* ── UI state ── */
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const isDirty = outerStep === "company" && (name.trim() !== "" || city.trim() !== "" || commercialRegistration.trim() !== "");
+  useDirtyFormWarning(isDirty);
 
   /* ── Lookup data ── */
   const [categories, setCategories] = useState<CompanyCategoryOption[]>([]);

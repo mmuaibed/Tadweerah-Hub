@@ -26,6 +26,7 @@ import {
   transportQuotesTable,
   wasteListingsTable,
   materialCategoriesTable,
+  listingOffersTable,
 } from "@workspace/db";
 import { buildCsv } from "../lib/csv";
 import { logAudit } from "../lib/audit";
@@ -116,6 +117,8 @@ router.get("/admin/stats", requireAdminKey, async (req, res) => {
   const [{ totalMembers }] = await db.select({ totalMembers: count() }).from(companyMembersTable);
   const [{ totalInvites }] = await db.select({ totalInvites: count() }).from(companyInvitationsTable);
   const [{ totalListings }] = await db.select({ totalListings: count() }).from(wasteListingsTable);
+  const [{ activeListings }] = await db.select({ activeListings: count() }).from(wasteListingsTable).where(eq(wasteListingsTable.status, "open"));
+  const [{ totalOffers }] = await db.select({ totalOffers: count() }).from(listingOffersTable);
   const [{ totalDeals }] = await db.select({ totalDeals: count() }).from(dealsTable);
   const [{ totalTRs }] = await db.select({ totalTRs: count() }).from(transportRequestsTable);
   
@@ -124,14 +127,28 @@ router.get("/admin/stats", requireAdminKey, async (req, res) => {
     .from(companiesTable)
     .groupBy(companiesTable.license_status);
 
+  const dealStatusCounts = await db
+    .select({ status: dealsTable.status, c: count() })
+    .from(dealsTable)
+    .groupBy(dealsTable.status);
+
+  const trStatusCounts = await db
+    .select({ status: transportRequestsTable.status, c: count() })
+    .from(transportRequestsTable)
+    .groupBy(transportRequestsTable.status);
+
   res.json({
     totalCompanies,
     totalMembers,
     totalInvites,
     totalListings,
+    activeListings,
+    totalOffers,
     totalDeals,
     totalTRs,
     companiesByStatus: statusCounts.reduce((acc, row) => ({ ...acc, [row.status || "null"]: row.c }), {} as Record<string, number>),
+    dealsByStatus: dealStatusCounts.reduce((acc, row) => ({ ...acc, [row.status || "null"]: row.c }), {} as Record<string, number>),
+    transportReqsByStatus: trStatusCounts.reduce((acc, row) => ({ ...acc, [row.status || "null"]: row.c }), {} as Record<string, number>),
   });
 });
 
@@ -150,7 +167,7 @@ router.get("/admin/companies/:id/details", requireAdminKey, async (req, res) => 
   const membersRows = await db.select().from(companyMembersTable).where(eq(companyMembersTable.company_id, id));
   const invitesRows = await db.select().from(companyInvitationsTable).where(eq(companyInvitationsTable.company_id, id));
 
-  const clerkUserIds = [company.owner_user_id, ...membersRows.map(m => m.user_id)].filter(Boolean) as string[];
+  const clerkUserIds = [company.ownerUserId, ...membersRows.map(m => m.user_id)].filter(Boolean) as string[];
   const emailMap = new Map<string, string>();
   if (clerkUserIds.length > 0) {
     try {
@@ -166,9 +183,9 @@ router.get("/admin/companies/:id/details", requireAdminKey, async (req, res) => 
 
   res.json({
     ...company,
-    owner_email: company.owner_user_id ? emailMap.get(company.owner_user_id) || null : null,
+    owner_email: company.ownerUserId ? emailMap.get(company.ownerUserId) || null : null,
     roles: rolesRows.map(r => r.role),
-    capabilities: capsRows.map(c => c.capability),
+    capabilities: capsRows.map(c => c.capability_id),
     members: membersRows.map(m => ({
       user_id: m.user_id,
       role: m.role,

@@ -83,9 +83,13 @@ interface AdminStats {
   totalMembers: number;
   totalInvites: number;
   totalListings: number;
+  activeListings: number;
+  totalOffers: number;
   totalDeals: number;
   totalTRs: number;
   companiesByStatus: Record<string, number>;
+  dealsByStatus: Record<string, number>;
+  transportReqsByStatus: Record<string, number>;
 }
 
 interface AdminCompanyDetails extends AdminCompany {
@@ -570,6 +574,7 @@ export function AdminPage() {
               dir="ltr"
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
+                  void fetchStats();
                   void (tab === "companies" ? fetchCompanies() : fetchDeals());
                 }
               }}
@@ -603,37 +608,62 @@ export function AdminPage() {
           ))}
         </div>
 
+        {/* ── Pilot Analytics Overview ───────────────────────────────────────── */}
+        {stats && (
+          <div className="space-y-3 mb-6">
+            <h2 className="text-sm font-semibold text-foreground px-1">{t("admin.stats.title") || "Pilot Analytics Overview"}</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+              <div className="rounded-xl border border-border bg-white p-3 flex flex-col justify-center">
+                <span className="text-xl font-bold text-foreground">{stats.totalCompanies}</span>
+                <span className="text-[10px] text-muted-foreground">{t("admin.stats.total_companies") || "Total Companies"}</span>
+              </div>
+              <div className="rounded-xl border border-border bg-white p-3 flex flex-col justify-center">
+                <span className="text-xl font-bold text-amber-600">{stats.companiesByStatus["pending"] || 0}</span>
+                <span className="text-[10px] text-muted-foreground">{t("admin.stats.pending_companies") || "Pending Approvals"}</span>
+              </div>
+              <div className="rounded-xl border border-border bg-white p-3 flex flex-col justify-center">
+                <span className="text-xl font-bold text-green-600">{stats.companiesByStatus["approved"] || 0}</span>
+                <span className="text-[10px] text-muted-foreground">Approved Companies</span>
+              </div>
+              <div className="rounded-xl border border-border bg-white p-3 flex flex-col justify-center">
+                <span className="text-xl font-bold text-foreground">{stats.totalListings}</span>
+                <span className="text-[10px] text-muted-foreground">Total Listings</span>
+              </div>
+              <div className="rounded-xl border border-border bg-white p-3 flex flex-col justify-center">
+                <span className="text-xl font-bold text-blue-600">{stats.activeListings}</span>
+                <span className="text-[10px] text-muted-foreground">Active Listings</span>
+              </div>
+              <div className="rounded-xl border border-border bg-white p-3 flex flex-col justify-center">
+                <span className="text-xl font-bold text-foreground">{stats.totalOffers}</span>
+                <span className="text-[10px] text-muted-foreground">Total Offers</span>
+              </div>
+              <div className="rounded-xl border border-border bg-white p-3 flex flex-col justify-center">
+                <span className="text-xl font-bold text-foreground">{stats.totalDeals}</span>
+                <span className="text-[10px] text-muted-foreground">Total Deals</span>
+              </div>
+              <div className="rounded-xl border border-border bg-white p-3 flex flex-col justify-center">
+                <span className="text-xl font-bold text-amber-600">{stats.dealsByStatus["active"] || 0}</span>
+                <span className="text-[10px] text-muted-foreground">Active Deals</span>
+              </div>
+              <div className="rounded-xl border border-border bg-white p-3 flex flex-col justify-center">
+                <span className="text-xl font-bold text-green-600">{stats.dealsByStatus["completed"] || 0}</span>
+                <span className="text-[10px] text-muted-foreground">Completed Deals</span>
+              </div>
+              <div className="rounded-xl border border-border bg-white p-3 flex flex-col justify-center">
+                <span className="text-xl font-bold text-foreground">{stats.totalTRs}</span>
+                <span className="text-[10px] text-muted-foreground">Total Transports</span>
+              </div>
+              <div className="rounded-xl border border-border bg-white p-3 flex flex-col justify-center">
+                <span className="text-xl font-bold text-amber-600">{stats.transportReqsByStatus["pending"] || 0}</span>
+                <span className="text-[10px] text-muted-foreground">Pending Transports</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ── Companies Tab ──────────────────────────────────────────────────── */}
         {tab === "companies" && (
           <div className="space-y-4">
-            {stats && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                <div className="rounded-xl border border-border bg-white p-3 flex flex-col justify-center">
-                  <span className="text-xl font-bold text-foreground">{stats.totalCompanies}</span>
-                  <span className="text-[10px] text-muted-foreground">{t("admin.stats.total_companies")} Total</span>
-                </div>
-                <div className="rounded-xl border border-border bg-white p-3 flex flex-col justify-center">
-                  <span className="text-xl font-bold text-amber-600">{stats.companiesByStatus["pending"] || 0}</span>
-                  <span className="text-[10px] text-muted-foreground">{t("admin.stats.pending_companies")} Pending</span>
-                </div>
-                <div className="rounded-xl border border-border bg-white p-3 flex flex-col justify-center">
-                  <span className="text-xl font-bold text-foreground">{stats.totalMembers}</span>
-                  <span className="text-[10px] text-muted-foreground">Members</span>
-                </div>
-                <div className="rounded-xl border border-border bg-white p-3 flex flex-col justify-center">
-                  <span className="text-xl font-bold text-foreground">{stats.totalListings}</span>
-                  <span className="text-[10px] text-muted-foreground">Listings</span>
-                </div>
-                <div className="rounded-xl border border-border bg-white p-3 flex flex-col justify-center">
-                  <span className="text-xl font-bold text-foreground">{stats.totalDeals}</span>
-                  <span className="text-[10px] text-muted-foreground">Deals</span>
-                </div>
-                <div className="rounded-xl border border-border bg-white p-3 flex flex-col justify-center">
-                  <span className="text-xl font-bold text-foreground">{stats.totalTRs}</span>
-                  <span className="text-[10px] text-muted-foreground">Transport Reqs</span>
-                </div>
-              </div>
-            )}
             {/* Companies filter + fetch */}
             <div className="rounded-xl border border-border bg-white p-4 flex flex-wrap gap-3 items-end">
               <div>
