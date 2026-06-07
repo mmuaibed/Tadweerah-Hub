@@ -530,8 +530,8 @@ const translations: Record<string, Record<Language, string>> = {
   "listing.form.unit_notes.required": { ar: "يجب تحديد وصف الوحدة عند اختيار 'أخرى'", en: "Unit description is required when 'Other' is selected" },
   "listing.form.unit_notes.placeholder": { ar: "مثال: جولة، شحنة، رحلة...", en: "e.g. journey, shipment, trip..." },
 
-  "deal.status.active": { ar: "انتظار تأكيد الدفع", en: "Awaiting Payment" },
-  "deal.status.payment_confirmed": { ar: "تم تأكيد الدفع", en: "Payment Confirmed" },
+  "deal.status.active": { ar: "بانتظار تأكيد الدفع (حوالة بنكية)", en: "Awaiting Payment (Bank Transfer)" },
+  "deal.status.payment_confirmed": { ar: "تم تأكيد الدفع (الحوالة المستلمة)", en: "Payment Confirmed (Transfer Received)" },
   "deal.status.dispatched": { ar: "البضاعة في الطريق", en: "Goods in Transit" },
   "deal.status.completed": { ar: "مكتملة", en: "Completed" },
 
@@ -545,9 +545,9 @@ const translations: Record<string, Record<Language, string>> = {
   "deal.field.final_amount": { ar: "المبلغ النهائي", en: "Final amount" },
   "deal.field.quantity.placeholder": { ar: "أدخل الكمية الفعلية", en: "Enter actual quantity" },
 
-  "deal.action.confirm_payment": { ar: "تأكيد الدفع", en: "Confirm Payment" },
+  "deal.action.confirm_payment": { ar: "تأكيد استلام الدفع (حوالة بنكية)", en: "Confirm Payment Receipt (Bank Transfer)" },
   "deal.action.confirm_dispatch": { ar: "تأكيد إرسال البضاعة", en: "Confirm Dispatch" },
-  "deal.action.confirm_receipt": { ar: "تأكيد استلام البضاعة", en: "Confirm Receipt" },
+  "deal.action.confirm_receipt": { ar: "تأكيد استلام البضاعة في الموقع", en: "Confirm Site Receipt" },
 
   "deal.timestamp.payment_confirmed": { ar: "تم تأكيد الدفع", en: "Payment confirmed" },
   "deal.timestamp.dispatched": { ar: "تم إرسال البضاعة", en: "Goods dispatched" },
@@ -657,7 +657,7 @@ const translations: Record<string, Record<Language, string>> = {
   "deal.waiting.receipt_pending.buyer": { ar: "شكراً! تم تأكيد الاستلام وستكتمل الصفقة تلقائياً خلال 48 ساعة", en: "Thank you! Receipt confirmed — deal auto-completes within 48 hours." },
 
   // Confirmation dialogs
-  "deal.confirm.payment.title": { ar: "تأكيد الدفع", en: "Confirm Payment" },
+  "deal.confirm.payment.title": { ar: "تأكيد الدفع (حوالة بنكية)", en: "Confirm Payment (Bank Transfer)" },
   "deal.confirm.payment.desc": { ar: "هل تأكدت من تحصيل الدفع من المشتري؟ لا يمكن التراجع عن هذه الخطوة.", en: "Have you confirmed receipt of payment from the buyer? This step cannot be undone." },
   "deal.confirm.dispatch.title": { ar: "تأكيد إرسال البضاعة", en: "Confirm Dispatch" },
   "deal.confirm.dispatch.desc": { ar: "هل تأكدت من إرسال البضاعة للمشتري؟ لا يمكن التراجع عن هذه الخطوة.", en: "Have you dispatched the goods to the buyer? This step cannot be undone." },
@@ -668,7 +668,7 @@ const translations: Record<string, Record<Language, string>> = {
   "deal.field.payment_reference": { ar: "رقم الحوالة / مرجع الدفع", en: "Transfer Reference No." },
   "deal.field.payment_reference.placeholder": { ar: "مثال: TRF-20241201-001", en: "e.g. TRF-20241201-001" },
   "deal.field.payment_reference.hint": { ar: "أدخل رقم الحوالة البنكية أو مرجع العملية", en: "Enter bank transfer number or transaction reference" },
-  "deal.upload.label": { ar: "إثبات الدفع (اختياري)", en: "Payment Proof (Optional)" },
+  "deal.upload.label": { ar: "إثبات الدفع / إيصال الحوالة (اختياري)", en: "Payment Proof / Transfer Receipt (Optional)" },
   "deal.upload.hint": { ar: "JPG · PNG · PDF — حتى 5 ميغابايت", en: "JPG · PNG · PDF — up to 5MB" },
   "deal.upload.drop_hint": { ar: "اسحب الملف هنا أو", en: "Drop file here or" },
   "deal.upload.browse": { ar: "اختر ملفاً", en: "Browse" },
@@ -704,7 +704,7 @@ const translations: Record<string, Record<Language, string>> = {
   "deal.transport.smart.skip_confirm_desc": { ar: "هل أنت متأكد أن هذه الصفقة لا تحتاج إلى خدمة نقل؟ يمكنك التواصل معنا لاحقاً إذا احتجت مساعدة.", en: "Are you sure this deal doesn't require transport? You can contact us later if you need assistance." },
   "deal.transport.smart.skip_confirm_ok": { ar: "نعم، لا أحتاج نقل", en: "Yes, No Transport Needed" },
   "deal.transport.smart.dispatched_no_tr": { ar: "لم يتم ترتيب نقل لهذه الصفقة. البضاعة في طريقها إليك.", en: "No transport was arranged for this deal. Goods are on their way to you." },
-  "deal.transport.not_your_responsibility": { ar: "الطرف الآخر مسؤول عن ترتيب النقل في هذه الصفقة.", en: "The other party is responsible for arranging transport for this deal." },
+  "deal.transport.not_your_responsibility": { ar: "الطرف الآخر مسؤول بالكامل عن ترتيب النقل في هذه الصفقة.", en: "The other party is solely responsible for arranging transport for this deal." },
   "deal.transport.not_responsible_buyer": { ar: "النقل مسؤولية المشتري. بانتظار المشتري لاختيار طريقة النقل.", en: "Transport is the buyer's responsibility. Waiting for the buyer to choose a transport method." },
   "deal.transport.not_responsible_seller": { ar: "النقل مسؤولية البائع. بانتظار البائع لاختيار طريقة النقل.", en: "Transport is the seller's responsibility. Waiting for the seller to choose a transport method." },
   "deal.action.confirm_handover": { ar: "تأكيد تسليم البضاعة للمشتري / الناقل", en: "Confirm Handover to Buyer / Carrier" },
