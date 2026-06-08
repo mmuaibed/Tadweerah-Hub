@@ -9,7 +9,42 @@ if (!clerkKey) {
   console.error("❌ ERROR: VITE_CLERK_PUBLISHABLE_KEY is missing!");
   hasError = true;
 } else {
-  console.log("✅ VITE_CLERK_PUBLISHABLE_KEY is present.");
+  // Check prefix
+  if (!clerkKey.startsWith("pk_live_") && !clerkKey.startsWith("pk_test_")) {
+    console.error("❌ ERROR: VITE_CLERK_PUBLISHABLE_KEY must start with pk_live_ or pk_test_");
+    hasError = true;
+  }
+  
+  // Check bad values
+  const badValues = ["npm", "@clerk", "clerk-js", "undefined"];
+  if (badValues.some(bad => clerkKey.includes(bad))) {
+    console.error("❌ ERROR: VITE_CLERK_PUBLISHABLE_KEY contains forbidden substrings (npm, @clerk, etc.)");
+    hasError = true;
+  }
+
+  // Decode and check domain
+  try {
+    const payload = clerkKey.startsWith("pk_live_") ? clerkKey.slice(8) : clerkKey.slice(8);
+    const decoded = Buffer.from(payload, "base64").toString("utf8");
+    
+    if (!decoded.includes("clerk.tadweerah.com")) {
+      console.error(`❌ ERROR: Decoded Clerk key does not contain expected domain (clerk.tadweerah.com). Found: ${decoded}`);
+      hasError = true;
+    }
+    
+    const badDomains = ["replit.dev", "picard", "npm", "@clerk"];
+    if (badDomains.some(bad => decoded.includes(bad))) {
+      console.error(`❌ ERROR: Decoded Clerk key contains forbidden domain/substring. Found: ${decoded}`);
+      hasError = true;
+    }
+
+    if (!hasError) {
+      console.log(`✅ VITE_CLERK_PUBLISHABLE_KEY is valid for domain: ${decoded}`);
+    }
+  } catch (err) {
+    console.error("❌ ERROR: Failed to decode VITE_CLERK_PUBLISHABLE_KEY payload.");
+    hasError = true;
+  }
 }
 
 if (!adminEmails) {
