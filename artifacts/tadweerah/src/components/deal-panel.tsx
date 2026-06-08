@@ -26,6 +26,7 @@ import {
   Package,
   X,
   Upload,
+  CreditCard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -1074,10 +1075,28 @@ function printDealReport(
     ${deal.actual_quantity != null ? `<tr><td>${lang === "ar" ? "الكمية الفعلية" : "Actual Quantity"}</td><td>${fmtNumber(deal.actual_quantity)} ${unit}</td></tr>` : ""}
     ${deal.final_amount != null ? `<tr><td>${lang === "ar" ? "الإجمالي النهائي" : "Final Amount"}</td><td style="font-weight:700;color:#16a34a">${fmtNumber(deal.final_amount)} ${sarLabel}</td></tr>` : ""}
     ${transportResp ? `<tr><td>${lang === "ar" ? "مسؤولية النقل" : "Transport Responsibility"}</td><td>${transportResp}</td></tr>` : ""}
-    ${deal.payment_reference ? `<tr><td>${lang === "ar" ? "رقم الدفعة" : "Payment Reference"}</td><td>${deal.payment_reference}</td></tr>` : ""}
     ${opts.listingLocationAddress ? `<tr><td>${lang === "ar" ? "موقع المواد" : "Material Location"}</td><td>${opts.listingLocationAddress}</td></tr>` : ""}
     ${opts.listingMapsUrl && opts.listingMapsUrl.startsWith("https://") ? `<tr><td>${lang === "ar" ? "رابط الموقع" : "Map Link"}</td><td><a href="${opts.listingMapsUrl}" target="_blank" rel="noopener noreferrer" style="color:#1e40af">${opts.listingMapsUrl}</a></td></tr>` : ""}
   </table>
+
+  ${deal.payment_reference || deal.payment_submitted_at ? `
+  <h2>${lang === "ar" ? "تفاصيل الدفع" : "Payment Details"}</h2>
+  <table>
+    <tr><td>${lang === "ar" ? "حالة الدفع" : "Payment Status"}</td><td style="font-weight:600">${
+      deal.status === "payment_confirmed" || deal.status === "dispatched" || deal.status === "receipt_pending" || deal.status === "completed" 
+        ? (lang === "ar" ? "تم تأكيد استلام الدفع" : "Payment received confirmed") 
+        : (lang === "ar" ? "تم إرسال إثبات الدفع من المشتري" : "Payment proof submitted by buyer")
+    }</td></tr>
+    ${deal.payment_reference ? `<tr><td>${lang === "ar" ? "رقم الدفعة / الحوالة" : "Payment Reference"}</td><td style="font-weight:600;font-family:monospace;direction:ltr;text-align:${lang === "ar" ? "right" : "left"}">${deal.payment_reference}</td></tr>` : ""}
+    ${deal.payment_submitted_at ? `<tr><td>${lang === "ar" ? "تاريخ إرسال الإثبات" : "Submitted At"}</td><td>${formatTs(deal.payment_submitted_at)}</td></tr>` : ""}
+    ${deal.payment_confirmed_at ? `<tr><td>${lang === "ar" ? "تاريخ تأكيد الاستلام" : "Confirmed At"}</td><td>${formatTs(deal.payment_confirmed_at)}</td></tr>` : ""}
+    <tr><td>${lang === "ar" ? "إيصال التحويل" : "Transfer Receipt"}</td><td style="color:#1e40af;font-size:12px">${
+      deal.payment_proof_url 
+        ? (lang === "ar" ? "تم إرفاق إيصال الحوالة وهو متاح داخل صفحة الصفقة." : "The transfer receipt was submitted and is available in the deal page.")
+        : (lang === "ar" ? "لم يتم إرفاق إيصال حتى الآن" : "No receipt has been uploaded yet")
+    }</td></tr>
+  </table>
+  ` : ""}
 
   <h2>${t("deal.print.timeline")}</h2>
   <div style="margin-bottom:20px">
@@ -1298,6 +1317,7 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
   const [skipConfirmOpen, setSkipConfirmOpen] = useState(false);
   const [offersOpen, setOffersOpen] = useState(false);
   const [listingInfoOpen, setListingInfoOpen] = useState(false);
+  const [paymentDetailsOpen, setPaymentDetailsOpen] = useState(false);
 
   // Share cache key with MwanSummaryPanel — no extra network call
   const { data: mwanHeaderData } = useQuery<MwanSummary>({
@@ -2025,42 +2045,7 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
               {/* Producer + payment_submitted: confirm payment receipt */}
               {role === "producer" && deal.status === "payment_submitted" && (
                 <div className="space-y-3">
-                  {deal.payment_reference && (
-                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 space-y-2">
-                      <p className="text-[11px] text-amber-700 font-medium">
-                        {lang === "ar" ? "معلومات الدفع المُرسلة من المشتري:" : "Payment details submitted by buyer:"}
-                      </p>
-                      
-                      {deal.payment_submitted_at && (
-                        <p className="text-[10px] text-amber-800/80">
-                          {formatDate(deal.payment_submitted_at, lang)}
-                        </p>
-                      )}
-
-                      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[10px] text-amber-700/60 uppercase tracking-wide">
-                            {lang === "ar" ? "مرجع الدفع" : "Reference"}
-                          </p>
-                          <p className="text-sm font-bold text-amber-900 font-mono" dir="ltr">{deal.payment_reference}</p>
-                        </div>
-                        
-                        {deal.payment_proof_url && (
-                          <a 
-                            href={deal.payment_proof_url} 
-                            target="_blank" 
-                            rel="noreferrer"
-                            className="shrink-0 flex items-center gap-2 rounded border border-amber-300 bg-white/60 px-2 py-1.5 hover:bg-white transition-colors"
-                          >
-                            <FileTextIcon className="h-4 w-4 text-amber-600" />
-                            <span className="text-xs font-semibold text-amber-800">
-                              {lang === "ar" ? "عرض إيصال التحويل" : "View Receipt"}
-                            </span>
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                  )}
+                  {/* Payment details moved to dedicated dialog */}
                   <Button
                     className="w-full h-11 text-base font-bold"
                     onClick={requestConfirmPaymentReceipt}
@@ -2445,7 +2430,94 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
             <FileTextIcon className="h-4 w-4 text-primary/60 shrink-0" />
             <span>{lang === "ar" ? "تفاصيل الصفقة" : "Deal Details"}</span>
           </button>
+          
+          {(deal.payment_reference || ["payment_submitted", "payment_confirmed", "dispatched", "receipt_pending", "completed"].includes(deal.status)) && (
+            <button
+              type="button"
+              onClick={() => setPaymentDetailsOpen(true)}
+              className="flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5 text-xs font-medium text-amber-900 hover:bg-amber-100 hover:text-amber-950 transition-colors"
+            >
+              <CreditCard className="h-4 w-4 text-amber-600 shrink-0" />
+              <span>{lang === "ar" ? "تفاصيل الدفع" : "Payment Details"}</span>
+            </button>
+          )}
         </div>
+
+        <Dialog open={paymentDetailsOpen} onOpenChange={setPaymentDetailsOpen}>
+          <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{lang === "ar" ? "تفاصيل الدفع" : "Payment Details"}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 pt-2">
+              <div className="flex items-center justify-between border-b border-border pb-3">
+                <span className="text-sm text-muted-foreground">{lang === "ar" ? "حالة الدفع" : "Payment Status"}</span>
+                <Badge variant={deal.status === "payment_submitted" ? "secondary" : "default"}>
+                  {deal.status === "payment_submitted" || deal.status === "active"
+                    ? (lang === "ar" ? "بانتظار تأكيد استلام الدفع" : "Awaiting payment confirmation")
+                    : (lang === "ar" ? "تم تأكيد استلام الدفع" : "Payment received confirmed")
+                  }
+                </Badge>
+              </div>
+
+              {deal.payment_reference && (
+                <div className="flex items-center justify-between border-b border-border pb-3">
+                  <span className="text-sm text-muted-foreground">{lang === "ar" ? "رقم مرجع الدفع / الحوالة" : "Payment / transfer reference"}</span>
+                  <span className="text-sm font-bold font-mono tracking-tight" dir="ltr">{deal.payment_reference}</span>
+                </div>
+              )}
+
+              {deal.payment_submitted_at && (
+                <div className="flex items-center justify-between border-b border-border pb-3">
+                  <span className="text-sm text-muted-foreground">{lang === "ar" ? "تاريخ ووقت إرسال إثبات الدفع" : "Payment proof submitted at"}</span>
+                  <span className="text-sm font-medium">{formatDate(deal.payment_submitted_at, lang)}</span>
+                </div>
+              )}
+
+              {deal.payment_confirmed_at && (
+                <div className="flex items-center justify-between border-b border-border pb-3">
+                  <span className="text-sm text-muted-foreground">{lang === "ar" ? "تاريخ تأكيد الاستلام" : "Payment confirmed at"}</span>
+                  <span className="text-sm font-medium">{formatDate(deal.payment_confirmed_at, lang)}</span>
+                </div>
+              )}
+
+              <div className="flex flex-col gap-2 pt-2">
+                <span className="text-sm text-muted-foreground mb-1">{lang === "ar" ? "إيصال التحويل" : "Transfer Receipt"}</span>
+                {deal.payment_proof_url ? (
+                  <div className="space-y-3">
+                    {deal.payment_proof_url.startsWith("data:image/") && (
+                      <div className="rounded-md border border-border overflow-hidden bg-muted/30 p-2">
+                        <img 
+                          src={deal.payment_proof_url} 
+                          alt="Payment Proof" 
+                          className="w-full max-h-[300px] object-contain rounded"
+                        />
+                      </div>
+                    )}
+                    <a 
+                      href={deal.payment_proof_url} 
+                      target="_blank" 
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-2 rounded-md bg-secondary px-4 py-2.5 text-sm font-medium text-secondary-foreground hover:bg-secondary/80 transition-colors w-full justify-center"
+                    >
+                      <FileTextIcon className="h-4 w-4" />
+                      {lang === "ar" ? "عرض إيصال الحوالة" : "View transfer receipt"}
+                    </a>
+                  </div>
+                ) : (
+                  <div className="rounded-md border border-dashed border-border bg-muted/20 px-4 py-6 text-center">
+                    <p className="text-sm text-muted-foreground">
+                      {lang === "ar" ? "لم يتم إرفاق إيصال حتى الآن" : "No receipt has been uploaded yet"}
+                    </p>
+                  </div>
+                )}
+              </div>
+              
+              <div className="text-xs text-muted-foreground text-center pt-2 mt-4 border-t border-border/50">
+                {lang === "ar" ? "تم الإرسال بواسطة:" : "Submitted by:"} <span className="font-semibold">{role === "buyer" ? (lang === "ar" ? "أنت" : "You") : (deal.counterparty?.name ?? "—")}</span>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* 5. PRINT BUTTON */}
         <div className="px-4 pb-4 border-t border-border pt-3">
