@@ -886,6 +886,9 @@ router.get(
         price_per_unit: dealsTable.price_per_unit,
         created_at: dealsTable.created_at,
         payment_confirmed_at: dealsTable.payment_confirmed_at,
+        payment_submitted_at: dealsTable.payment_submitted_at,
+        payment_reference: dealsTable.payment_reference,
+        payment_proof_url: dealsTable.payment_proof_url,
         dispatched_at: dealsTable.dispatched_at,
         received_at: dealsTable.received_at,
       })
@@ -1193,6 +1196,27 @@ router.get(
     }
 
     hr();
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 3.5. PAYMENT DETAILS (If available)
+    // ─────────────────────────────────────────────────────────────────────────
+    if (deal.payment_reference || deal.payment_submitted_at) {
+      sectionTitle("تفاصيل الدفع  /  Payment Details");
+      
+      row("حالة الدفع / Payment Status:", deal.payment_confirmed_at ? "تم التأكيد / Confirmed" : "قيد المراجعة / Under Review", { bold: true });
+      row("مرجع الحوالة / Transfer Ref:", deal.payment_reference);
+      
+      if (deal.payment_submitted_at) {
+        row("تاريخ الإرسال / Submitted Date:", fmt(deal.payment_submitted_at));
+      }
+      
+      if (deal.payment_proof_url) {
+        row("إيصال التحويل / Transfer Receipt:", "مرفق في لوحة الصفقة / Attached in Deal Panel");
+      }
+      
+      Y += 4;
+      hr();
+    }
 
     // ─────────────────────────────────────────────────────────────────────────
     // 4. PARTIES (two-column cards)

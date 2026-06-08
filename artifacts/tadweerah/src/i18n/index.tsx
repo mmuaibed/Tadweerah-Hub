@@ -1448,7 +1448,7 @@ const translations: Record<string, Record<Language, string>> = {
   "mwan.loading": { ar: "جارٍ تحميل بيانات مَوَن...", en: "Loading MWAN data..." },
   "mwan.error": { ar: "تعذّر تحميل ملخص مَوَن", en: "Could not load MWAN summary" },
   "mwan.banner.missing_one": { ar: "عنصر واحد مطلوب لاكتمال البيان الإلكتروني", en: "1 item needed to complete the eManifest" },
-  "mwan.banner.missing_many": { ar: "{n} عناصر مطلوبة لاكتمال البيان الإلكتروني", en: "{n} items needed to complete the eManifest" },
+  "mwan.banner.missing_many": { ar: "سيتم استكمال بيانات النقل والبيان الإلكتروني بعد تأكيد الدفع وتحديد تفاصيل الشحن.", en: "Transport and e-manifest details will be completed after payment confirmation and shipment details are provided." },
   "mwan.banner.ready": { ar: "البيان الإلكتروني مكتمل", en: "eManifest ready" },
   "mwan.section.deal": { ar: "الصفقة", en: "Deal" },
   "mwan.section.checklist": { ar: "قائمة التحقق", en: "Checklist" },

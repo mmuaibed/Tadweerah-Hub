@@ -2026,11 +2026,39 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
               {role === "producer" && deal.status === "payment_submitted" && (
                 <div className="space-y-3">
                   {deal.payment_reference && (
-                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 space-y-1">
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 space-y-2">
                       <p className="text-[11px] text-amber-700 font-medium">
-                        {lang === "ar" ? "مرجع الدفع المُرسَل من المشتري:" : "Payment reference submitted by buyer:"}
+                        {lang === "ar" ? "معلومات الدفع المُرسلة من المشتري:" : "Payment details submitted by buyer:"}
                       </p>
-                      <p className="text-sm font-bold text-amber-900 font-mono" dir="ltr">{deal.payment_reference}</p>
+                      
+                      {deal.payment_submitted_at && (
+                        <p className="text-[10px] text-amber-800/80">
+                          {formatDate(deal.payment_submitted_at, lang)}
+                        </p>
+                      )}
+
+                      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[10px] text-amber-700/60 uppercase tracking-wide">
+                            {lang === "ar" ? "مرجع الدفع" : "Reference"}
+                          </p>
+                          <p className="text-sm font-bold text-amber-900 font-mono" dir="ltr">{deal.payment_reference}</p>
+                        </div>
+                        
+                        {deal.payment_proof_url && (
+                          <a 
+                            href={deal.payment_proof_url} 
+                            target="_blank" 
+                            rel="noreferrer"
+                            className="shrink-0 flex items-center gap-2 rounded border border-amber-300 bg-white/60 px-2 py-1.5 hover:bg-white transition-colors"
+                          >
+                            <FileTextIcon className="h-4 w-4 text-amber-600" />
+                            <span className="text-xs font-semibold text-amber-800">
+                              {lang === "ar" ? "عرض إيصال التحويل" : "View Receipt"}
+                            </span>
+                          </a>
+                        )}
+                      </div>
                     </div>
                   )}
                   <Button
