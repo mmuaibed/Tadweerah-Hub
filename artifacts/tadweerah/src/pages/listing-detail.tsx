@@ -1214,6 +1214,7 @@ export function ListingDetailPage() {
   const queryClient = useQueryClient();
 
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const [closeError, setCloseError] = useState<string | null>(null);
   const [isClosing, setIsClosing] = useState(false);
   const [pendingOffersDialogOpen, setPendingOffersDialogOpen] = useState(false);
@@ -1442,9 +1443,9 @@ export function ListingDetailPage() {
 
   const listingInfoPanel = (
     <div className="space-y-3">
-      {imageUrl ? (
+      {imageUrl && !imageError ? (
         <div className="w-full h-[180px] overflow-hidden rounded-xl border border-border">
-          <img src={imageUrl} alt={materialLabel} className="h-full w-full object-cover" />
+          <img src={imageUrl} alt={materialLabel} className="h-full w-full object-cover" onError={() => setImageError(true)} />
         </div>
       ) : (
         <div className="w-full h-[120px] rounded-xl border border-border bg-muted/30 flex items-center justify-center">
@@ -1612,9 +1613,9 @@ export function ListingDetailPage() {
         {/* ── LEFT: image + title + description + what's next ── */}
         <div className="flex flex-col gap-3 min-h-0 overflow-y-auto">
           {/* Image */}
-          {imageUrl ? (
+          {imageUrl && !imageError ? (
             <div className="w-full h-[240px] overflow-hidden rounded-xl border border-border shrink-0">
-              <img src={imageUrl} alt={materialLabel} className="h-full w-full object-cover" />
+              <img src={imageUrl} alt={materialLabel} className="h-full w-full object-cover" onError={() => setImageError(true)} />
             </div>
           ) : (
             <div className="w-full h-[240px] rounded-xl border border-border bg-muted/30 flex items-center justify-center shrink-0">

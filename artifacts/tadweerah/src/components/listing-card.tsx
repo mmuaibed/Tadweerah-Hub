@@ -17,6 +17,7 @@ import {
   Calendar,
   Truck,
 } from "lucide-react";
+import { useState } from "react";
 import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -44,6 +45,7 @@ export function ListingCard({
   footer,
 }: ListingCardProps) {
   const { t, lang } = useT();
+  const [imageError, setImageError] = useState(false);
   const isOpen = listing.status === "open";
   const isRtl = lang === "ar";
   const imageUrl = (listing as WasteListing & { image_url?: string }).image_url;
@@ -80,11 +82,12 @@ export function ListingCard({
     >
       {/* Listing image — always shown; falls back to a material-icon placeholder */}
       <div className="h-36 w-full shrink-0 overflow-hidden bg-muted">
-        {imageUrl ? (
+        {imageUrl && !imageError ? (
           <img
             src={imageUrl}
             alt={t(`material.${listing.material}`)}
             className="h-full w-full object-cover"
+            onError={() => setImageError(true)}
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center">

@@ -31,23 +31,20 @@ import { logAudit } from "../lib/audit";
 import { notifyPrivateDealInvitation, notifyOfferRejected } from "../lib/notify";
 import { listingRef as makeListingRef } from "../lib/listing-ref";
 
-// Multer storage — saves to <project-root>/public/uploads/
-const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
-fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+import { Storage } from "@google-cloud/storage";
 
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, UPLOAD_DIR),
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname) || ".jpg";
-    cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
-  },
-});
+const storageClient = new Storage();
+const BUCKET_NAME = process.env.GCS_LISTING_IMAGES_BUCKET || "tadweerah-staging-listing-images";
+
+// Use memory storage so we can upload the buffer directly to GCS
+const storage = multer.memoryStorage();
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB limit
   fileFilter: (_req, file, cb) => {
-    if (!file.mimetype.startsWith("image/")) {
-      return cb(new Error("Only image files are allowed"));
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowedTypes.includes(file.mimetype)) {
+      return cb(new Error("Only JPEG, PNG, and WebP images are allowed"));
     }
     cb(null, true);
   },
@@ -1078,13 +1075,28 @@ router.post(
       throw new HttpError(403, "Forbidden", "Not the owner of this listing");
     }
 
-    // Delete old image file if it exists
-    if (existing.image_url) {
-      const oldFile = path.join(process.cwd(), "public", existing.image_url.replace(/^\//, ""));
-      if (fs.existsSync(oldFile)) fs.unlinkSync(oldFile);
-    }
+    // Note: We don't delete the old image from GCS here to keep the MVP simple and avoid 
+    // requiring delete permissions, but in production we might want to clean it up.
 
-    const imageUrl = `/api/uploads/${req.file.filename}`;
+    const ext = path.extname(req.file.originalname).toLowerCase() || ".jpg";
+    const filename = `listings/${id}/${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
+    const blob = storageClient.bucket(BUCKET_NAME).file(filename);
+
+    const stream = blob.createWriteStream({
+      resumable: false,
+      metadata: {
+        contentType: req.file.mimetype,
+      },
+    });
+
+    await new Promise<void>((resolve, reject) => {
+      stream.on("error", (err) => reject(err));
+      stream.on("finish", () => resolve());
+      stream.end(req.file!.buffer);
+    });
+
+    // Bucket is public, so we store the direct public URL
+    const imageUrl = `https://storage.googleapis.com/${BUCKET_NAME}/${filename}`;
 
     await db
       .update(wasteListingsTable)
