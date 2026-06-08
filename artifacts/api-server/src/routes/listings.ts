@@ -28,7 +28,7 @@ import {
   assertUuid,
 } from "../middlewares/errorHandler";
 import { logAudit } from "../lib/audit";
-import { notifyPrivateDealInvitation, notifyOfferRejected } from "../lib/notify";
+import { notifyPrivateDealInvitation, notifyOfferRejected, notifyNewListingPublished } from "../lib/notify";
 import { listingRef as makeListingRef } from "../lib/listing-ref";
 
 import { Storage } from "@google-cloud/storage";
@@ -711,6 +711,42 @@ router.post(
         listingRef: makeListingRef(created.id),
         producerName: company.name,
       });
+    }
+
+    // Notify all approved buyers when an open listing is published
+    if (targetingType === "open") {
+      void (async () => {
+        try {
+          const eligibleBuyers = await db
+            .select({ id: companiesTable.id })
+            .from(companiesTable)
+            .where(
+              and(
+                eq(companiesTable.type, "buyer"),
+                eq(companiesTable.license_status, "approved"),
+                eq(companiesTable.offer_submission_blocked, false)
+              )
+            );
+
+          const promises = eligibleBuyers
+            .filter((b) => b.id !== company.id)
+            .map((b) =>
+              notifyNewListingPublished({
+                buyerCompanyId: b.id,
+                listingId: created.id,
+                listingRef: makeListingRef(created.id),
+                material: data.material,
+                city: data.city,
+                quantity: `${data.quantity} ${data.unit || ""}`.trim(),
+                priceHintText: data.price_hint != null ? String(data.price_hint) : undefined,
+              })
+            );
+
+          await Promise.allSettled(promises);
+        } catch (err) {
+          console.error("[listings] Failed to broadcast new listing", err);
+        }
+      })();
     }
 
     // Fetch the required services + target categories for the response

@@ -229,3 +229,36 @@ export async function notifyDealStageChange({
     sendMail: true,
   });
 }
+
+export async function notifyNewListingPublished({
+  buyerCompanyId,
+  listingId,
+  listingRef,
+  material,
+  city,
+  quantity,
+  priceHintText,
+}: {
+  buyerCompanyId: string;
+  listingId: string;
+  listingRef: string;
+  material: string;
+  city: string;
+  quantity: string;
+  priceHintText?: string;
+}): Promise<void> {
+  const pHintAr = priceHintText || "غير محدد";
+  const pHintEn = priceHintText || "Not specified";
+
+  await createNotification({
+    companyId: buyerCompanyId,
+    type: "new_listing_published",
+    title_ar: `إعلان جديد متاح للمزايدة: ${material} في ${city}`,
+    title_en: `New Listing Available for Bidding: ${material} in ${city}`,
+    body_ar: `تم نشر إعلان جديد في منصة تدويرة متاح للمزايدة.\n\nرقم الإعلان: ${listingRef}\nالمادة: ${material}\nالكمية: ${quantity}\nالمدينة: ${city}\nالسعر الإرشادي: ${pHintAr}\n\nيمكنك مراجعة الإعلان وتقديم عرضك من خلال منصة تدويرة.`,
+    body_en: `A new listing is now available for bidding on Tadweerah.\n\nListing ID: ${listingRef}\nMaterial: ${material}\nQuantity: ${quantity}\nCity: ${city}\nIndicative price: ${pHintEn}\n\nYou can review the listing and submit your offer through Tadweerah.`,
+    relatedEntityType: "listing",
+    relatedEntityId: listingId,
+    sendMail: true,
+  });
+}
