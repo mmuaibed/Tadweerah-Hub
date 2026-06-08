@@ -990,6 +990,9 @@ router.get(
         counterparty: counterparty
           ? { name: counterparty.name, contact_phone: counterparty.contactPhone }
           : null,
+        payment_reference: d.payment_reference ?? null,
+        payment_proof_url: d.payment_proof_url ?? null,
+        payment_submitted_at: d.payment_submitted_at?.toISOString() ?? null,
         payment_confirmed_at: d.payment_confirmed_at?.toISOString() ?? null,
         dispatched_at: d.dispatched_at?.toISOString() ?? null,
         received_at: d.received_at?.toISOString() ?? null,
