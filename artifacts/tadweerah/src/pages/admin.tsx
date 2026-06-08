@@ -67,6 +67,18 @@ interface AdminDeal {
   created_at: string;
 }
 
+interface AdminDealDetails {
+  id: string;
+  status: string;
+  payment_reference: string | null;
+  payment_proof_url: string | null;
+  payment_submitted_at: string | null;
+  payment_confirmed_at: string | null;
+  buyer_name: string | null;
+  seller_name: string | null;
+  has_payment_proof: boolean;
+}
+
 interface AdminCompany {
   id: string;
   name: string;
@@ -188,6 +200,11 @@ export function AdminPage() {
   const [dealsLoading, setDealsLoading] = useState(false);
   const [dealsError, setDealsError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState("");
+  const [expandedDealId, setExpandedDealId] = useState<string | null>(null);
+  const [expandedDealDetails, setExpandedDealDetails] = useState<AdminDealDetails | null>(null);
+  const [dealDetailsLoading, setDealDetailsLoading] = useState(false);
+  const [dealDetailsError, setDealDetailsError] = useState<string | null>(null);
+  const [resubmittingId, setResubmittingId] = useState<string | null>(null);
 
   /* Companies state */
   const [companies, setCompanies] = useState<AdminCompany[] | null>(null);
@@ -356,6 +373,54 @@ export function AdminPage() {
       setDetailsError(e instanceof Error ? e.message : t("admin.error.generic"));
     } finally {
       setDetailsLoading(false);
+    }
+  }
+
+  async function toggleDealDetails(id: string) {
+    if (expandedDealId === id) {
+      setExpandedDealId(null);
+      setExpandedDealDetails(null);
+      return;
+    }
+    setExpandedDealId(id);
+    setExpandedDealDetails(null);
+    setDealDetailsLoading(true);
+    setDealDetailsError(null);
+    try {
+      const res = await callAdmin(`/deals/${id}/details?t=${Date.now()}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setExpandedDealDetails(await res.json() as AdminDealDetails);
+    } catch (e) {
+      setDealDetailsError(e instanceof Error ? e.message : t("admin.error.generic"));
+    } finally {
+      setDealDetailsLoading(false);
+    }
+  }
+
+  async function requestPaymentResubmission(id: string) {
+    if (!confirm(lang === "ar" ? "هل أنت متأكد من إعادة طلب إثبات الدفع من المشتري؟ سيؤدي هذا إلى مسح بيانات الدفع الحالية." : "Are you sure you want to request payment resubmission? This will clear current payment data.")) return;
+    setResubmittingId(id);
+    try {
+      const res = await callAdmin(`/deals/${id}/request-payment-resubmission`, { method: "PATCH" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      
+      // Update local state
+      setDeals((prev) => prev ? prev.map(d => d.deal_id === id ? { ...d, status: "active" } : d) : prev);
+      if (expandedDealId === id && expandedDealDetails) {
+        setExpandedDealDetails({
+          ...expandedDealDetails,
+          status: "active",
+          payment_reference: null,
+          payment_proof_url: null,
+          payment_submitted_at: null,
+          payment_confirmed_at: null,
+          has_payment_proof: false
+        });
+      }
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Error");
+    } finally {
+      setResubmittingId(null);
     }
   }
 
@@ -924,44 +989,97 @@ export function AdminPage() {
                           <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{t("admin.deal.mwan_score")}</th>
                           <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{t("admin.deal.missing")}</th>
                           <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{t("admin.deal.created_at")}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground"></th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border">
                         {deals.map((d) => (
-                          <tr key={d.deal_id} className={`hover:bg-muted/20 transition-colors ${d.is_mwan_ready ? "" : "bg-amber-50/20"}`}>
-                            <td className="px-4 py-2.5">
-                              <span className="font-mono text-xs text-muted-foreground" dir="ltr">{d.deal_id.slice(0, 8)}…</span>
-                            </td>
-                            <td className="px-4 py-2.5">
-                              <Badge variant={DEAL_STATUS_VARIANTS[d.status] ?? "outline"} className="text-[10px]">
-                                {t(`deal.status.${d.status}`)}
-                              </Badge>
-                            </td>
-                            <td className="px-4 py-2.5">
-                              {d.manifest_ref
-                                ? <span className="font-mono text-xs font-semibold text-primary" dir="ltr">{d.manifest_ref}</span>
-                                : <span className="text-[11px] text-muted-foreground/60">—</span>
-                              }
-                            </td>
-                            <td className="px-4 py-2.5">
-                              <div className="flex items-center gap-1.5">
-                                {d.is_mwan_ready
-                                  ? <CheckCircle2 className="h-3.5 w-3.5 text-green-600 shrink-0" />
-                                  : <AlertCircle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                          <Fragment key={d.deal_id}>
+                            <tr className={`hover:bg-muted/20 transition-colors ${d.is_mwan_ready ? "" : "bg-amber-50/20"}`}>
+                              <td className="px-4 py-2.5">
+                                <span className="font-mono text-xs text-muted-foreground" dir="ltr">{d.deal_id.slice(0, 8)}…</span>
+                              </td>
+                              <td className="px-4 py-2.5">
+                                <Badge variant={DEAL_STATUS_VARIANTS[d.status] ?? "outline"} className="text-[10px]">
+                                  {t(`deal.status.${d.status}`)}
+                                </Badge>
+                              </td>
+                              <td className="px-4 py-2.5">
+                                {d.manifest_ref
+                                  ? <span className="font-mono text-xs font-semibold text-primary" dir="ltr">{d.manifest_ref}</span>
+                                  : <span className="text-[11px] text-muted-foreground/60">—</span>
                                 }
-                                <span className={`text-xs font-mono font-semibold ${d.is_mwan_ready ? "text-green-700" : "text-amber-700"}`} dir="ltr">
-                                  {d.mwan_score}
-                                </span>
-                              </div>
-                            </td>
-                            <td className="px-4 py-2.5">
-                              {d.missing_count > 0
-                                ? <span className="inline-flex items-center rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5">{d.missing_count}</span>
-                                : <span className="text-[11px] text-green-700 font-semibold">✓</span>
-                              }
-                            </td>
-                            <td className="px-4 py-2.5 text-xs text-muted-foreground">{fmtDate(d.created_at, lang)}</td>
-                          </tr>
+                              </td>
+                              <td className="px-4 py-2.5">
+                                <div className="flex items-center gap-1.5">
+                                  {d.is_mwan_ready
+                                    ? <CheckCircle2 className="h-3.5 w-3.5 text-green-600 shrink-0" />
+                                    : <AlertCircle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                                  }
+                                  <span className={`text-xs font-mono font-semibold ${d.is_mwan_ready ? "text-green-700" : "text-amber-700"}`} dir="ltr">
+                                    {d.mwan_score}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="px-4 py-2.5">
+                                {d.missing_count > 0
+                                  ? <span className="inline-flex items-center rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5">{d.missing_count}</span>
+                                  : <span className="text-[11px] text-green-700 font-semibold">✓</span>
+                                }
+                              </td>
+                              <td className="px-4 py-2.5 text-xs text-muted-foreground">{fmtDate(d.created_at, lang)}</td>
+                              <td className="px-4 py-2.5 text-end">
+                                <Button variant="ghost" size="sm" onClick={() => void toggleDealDetails(d.deal_id)}>
+                                  {expandedDealId === d.deal_id ? (lang === "ar" ? "إخفاء" : "Hide") : (lang === "ar" ? "عرض التفاصيل" : "Details")}
+                                </Button>
+                              </td>
+                            </tr>
+                            {expandedDealId === d.deal_id && (
+                              <tr className="bg-muted/5 border-t-0">
+                                <td colSpan={7} className="px-4 py-4">
+                                  {dealDetailsLoading ? (
+                                    <div className="flex items-center justify-center p-4 text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /></div>
+                                  ) : dealDetailsError ? (
+                                    <div className="text-destructive text-sm p-4">{dealDetailsError}</div>
+                                  ) : expandedDealDetails ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+                                      <div className="space-y-3">
+                                        <div>
+                                          <p className="font-semibold text-foreground border-b pb-1 mb-2">{lang === "ar" ? "معلومات الأطراف" : "Parties Info"}</p>
+                                          <p className="text-muted-foreground text-xs"><span className="text-foreground">{lang === "ar" ? "البائع:" : "Seller:"}</span> {expandedDealDetails.seller_name || "—"}</p>
+                                          <p className="text-muted-foreground text-xs"><span className="text-foreground">{lang === "ar" ? "المشتري:" : "Buyer:"}</span> {expandedDealDetails.buyer_name || "—"}</p>
+                                          <p className="text-muted-foreground text-xs"><span className="text-foreground">{lang === "ar" ? "حالة الصفقة:" : "Deal Status:"}</span> {t(`deal.status.${expandedDealDetails.status}`)}</p>
+                                        </div>
+                                      </div>
+                                      <div className="space-y-3">
+                                        <div>
+                                          <p className="font-semibold text-foreground border-b pb-1 mb-2">{lang === "ar" ? "معلومات الدفع" : "Payment Info"}</p>
+                                          <p className="text-muted-foreground text-xs"><span className="text-foreground">{lang === "ar" ? "مرجع الدفع:" : "Payment Ref:"}</span> <span dir="ltr">{expandedDealDetails.payment_reference || "—"}</span></p>
+                                          <p className="text-muted-foreground text-xs"><span className="text-foreground">{lang === "ar" ? "إيصال الدفع:" : "Payment Proof:"}</span> {expandedDealDetails.has_payment_proof ? (lang === "ar" ? "مرفق" : "Attached") : (lang === "ar" ? "غير مرفق" : "Not Attached")}</p>
+                                          <p className="text-muted-foreground text-xs"><span className="text-foreground">{lang === "ar" ? "تاريخ إرسال الدفع:" : "Submitted At:"}</span> <span dir="ltr">{expandedDealDetails.payment_submitted_at ? fmtDate(expandedDealDetails.payment_submitted_at, lang) : "—"}</span></p>
+                                          
+                                          {["active", "payment_submitted"].includes(expandedDealDetails.status) && (
+                                            <div className="mt-4 border-t pt-3">
+                                              <Button 
+                                                variant="outline" 
+                                                size="sm" 
+                                                className="w-full text-amber-600 border-amber-200 hover:bg-amber-50 hover:text-amber-700"
+                                                disabled={resubmittingId === d.deal_id}
+                                                onClick={() => void requestPaymentResubmission(d.deal_id)}
+                                              >
+                                                {resubmittingId === d.deal_id ? <Loader2 className="h-4 w-4 animate-spin me-2" /> : <RefreshCw className="h-4 w-4 me-2" />}
+                                                {lang === "ar" ? "إعادة طلب إثبات الدفع من المشتري" : "Request payment proof resubmission"}
+                                              </Button>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ) : null}
+                                </td>
+                              </tr>
+                            )}
+                          </Fragment>
                         ))}
                       </tbody>
                     </table>

@@ -1303,6 +1303,7 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
   const [paymentProofFile, setPaymentProofFile] = useState<File | null>(null);
   const [paymentProofPreviewUrl, setPaymentProofPreviewUrl] = useState<string | null>(null);
   const [paymentProofDataUrl, setPaymentProofDataUrl] = useState<string | null>(null);
+  const [paymentProofProcessing, setPaymentProofProcessing] = useState(false);
   const [proofUploadError, setProofUploadError] = useState<string | null>(null);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
@@ -1366,12 +1367,18 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
       setPaymentProofPreviewUrl(null);
     }
     // Pre-read as data URL for submission
+    setPaymentProofProcessing(true);
     const reader = new FileReader();
     reader.onload = (e) => {
       setPaymentProofDataUrl(e.target?.result as string ?? null);
+      setPaymentProofProcessing(false);
+    };
+    reader.onerror = () => {
+      setProofUploadError(lang === "ar" ? "فشل قراءة الملف" : "Failed to read file");
+      setPaymentProofProcessing(false);
     };
     reader.readAsDataURL(file);
-  }, [t]);
+  }, [t, lang]);
 
   function clearProofFile() {
     if (paymentProofPreviewUrl) URL.revokeObjectURL(paymentProofPreviewUrl);
@@ -1379,6 +1386,7 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
     setPaymentProofPreviewUrl(null);
     setPaymentProofDataUrl(null);
     setProofUploadError(null);
+    setPaymentProofProcessing(false);
   }
 
   function handleDropZoneDrop(e: React.DragEvent<HTMLDivElement>) {
@@ -1482,8 +1490,15 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
   }
 
   function requestSubmitPayment() {
+    if (paymentProofProcessing) {
+      return;
+    }
     if (!paymentRef.trim()) {
       setError(t("deal.error.payment_reference_required"));
+      return;
+    }
+    if (!paymentProofDataUrl) {
+      setError(lang === "ar" ? "يرجى إرفاق إيصال الحوالة قبل إرسال مرجع الدفع." : "Please attach the transfer receipt before submitting payment details.");
       return;
     }
     setError(null);
@@ -2032,12 +2047,15 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
                   <Button
                     className="w-full h-11 text-base font-bold"
                     onClick={requestSubmitPayment}
-                    disabled={loading || !paymentRef.trim()}
+                    disabled={loading || paymentProofProcessing || !paymentRef.trim() || !paymentProofDataUrl}
                   >
-                    {loading && pendingAction === null ? (
+                    {(loading && pendingAction === null) || paymentProofProcessing ? (
                       <Loader2 className="me-2 h-4 w-4 animate-spin" />
                     ) : null}
-                    {lang === "ar" ? "إرسال مرجع الدفع" : "Submit Payment Reference"}
+                    {paymentProofProcessing
+                      ? (lang === "ar" ? "جارٍ تجهيز إيصال الحوالة..." : "Preparing transfer receipt...")
+                      : (lang === "ar" ? "إرسال مرجع الدفع" : "Submit Payment Reference")
+                    }
                   </Button>
                 </div>
               )}

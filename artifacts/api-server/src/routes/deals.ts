@@ -344,6 +344,14 @@ router.post(
       ? String(req.body.payment_proof_url).trim() || null
       : null;
 
+    if (!payment_proof_url) {
+      throw new HttpError(
+        400,
+        "PaymentProofRequired",
+        "payment_proof_url (transfer receipt image) is required",
+      );
+    }
+
     const [deal] = await db
       .select()
       .from(dealsTable)

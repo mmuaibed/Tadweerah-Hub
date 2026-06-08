@@ -411,6 +411,63 @@ router.post("/admin/deals/:id/cancel", requireAdminKey, async (req, res) => {
 });
 
 /**
+ * PATCH /admin/deals/:id/request-payment-resubmission
+ * Admin requests the buyer to resubmit payment proof.
+ * Valid only for payment_submitted or active deals.
+ */
+router.patch("/admin/deals/:id/request-payment-resubmission", requireAdminKey, async (req, res) => {
+  const id = String(req.params["id"]);
+
+  const [deal] = await db
+    .select()
+    .from(dealsTable)
+    .where(eq(dealsTable.id, id))
+    .limit(1);
+
+  if (!deal) {
+    res.status(404).json({ error: "NotFound", message: "Deal not found" });
+    return;
+  }
+
+  if (!["active", "payment_submitted"].includes(deal.status)) {
+    res.status(409).json({
+      error: "InvalidState",
+      message: `Cannot request payment resubmission from status '${deal.status}'.`,
+    });
+    return;
+  }
+
+  const now = new Date();
+
+  const [updated] = await db
+    .update(dealsTable)
+    .set({
+      status: "active",
+      payment_reference: null,
+      payment_proof_url: null,
+      payment_submitted_at: null,
+      payment_confirmed_at: null,
+      updated_at: now,
+    })
+    .where(eq(dealsTable.id, id))
+    .returning();
+
+  void logAudit({
+    action: "deal.payment_resubmission_requested",
+    entityType: "deal",
+    entityId: id,
+    actorRole: "admin",
+    statusBefore: deal.status,
+    statusAfter: "active",
+  });
+
+  // We skip formal Resend email here for brevity, but we log the intent.
+  // The frontend will show it as 'active' again, prompting the user.
+
+  res.json(updated);
+});
+
+/**
  * POST /admin/deals/:id/force-complete
  * Force a deal into 'completed' status regardless of lifecycle state.
  * Skips transport and receipt confirmation checks.
@@ -707,6 +764,36 @@ router.get("/admin/deals", requireAdminKey, async (req, res) => {
   });
 
   res.json(result);
+});
+
+/**
+ * GET /admin/deals/:id/details
+ * Fetch detailed information for a specific deal including buyer/seller names and payment proof status.
+ */
+router.get("/admin/deals/:id/details", requireAdminKey, async (req, res) => {
+  const id = String(req.params["id"]);
+
+  const [dealRow] = await db
+    .select({
+      deal: dealsTable,
+      buyer_name: sql<string>`(SELECT name FROM companies WHERE id = ${dealsTable.buyer_company_id})`,
+      seller_name: sql<string>`(SELECT name FROM companies WHERE id = ${dealsTable.producer_company_id})`,
+    })
+    .from(dealsTable)
+    .where(eq(dealsTable.id, id))
+    .limit(1);
+
+  if (!dealRow) {
+    res.status(404).json({ error: "NotFound", message: "Deal not found" });
+    return;
+  }
+
+  res.json({
+    ...dealRow.deal,
+    buyer_name: dealRow.buyer_name,
+    seller_name: dealRow.seller_name,
+    has_payment_proof: !!dealRow.deal.payment_proof_url,
+  });
 });
 
 // ── GET /admin/transport-requests/pending ─────────────────────────────────────
