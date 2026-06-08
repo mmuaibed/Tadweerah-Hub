@@ -535,8 +535,56 @@ router.post(
       );
     }
 
-    // Transport is optional — dispatch does not depend on transport request status.
+    const vehiclePlate = req.body?.vehicle_plate;
+    const transporterName = req.body?.transporter_name;
+    const transportMode = req.body?.transport_mode;
+    const notes = req.body?.notes;
+    const manifestRef = req.body?.manifest_ref;
+
+    if (!vehiclePlate || typeof vehiclePlate !== "string" || vehiclePlate.trim() === "") {
+      throw new HttpError(400, "VehiclePlateRequired", "vehicle_plate is required to confirm dispatch");
+    }
+    if (!transporterName || typeof transporterName !== "string" || transporterName.trim() === "") {
+      throw new HttpError(400, "TransporterNameRequired", "transporter_name is required to confirm dispatch");
+    }
+
     const now = new Date();
+
+    // MWAN Transport Data Sync
+    const [existingTr] = await db
+      .select()
+      .from(transportRequestsTable)
+      .where(eq(transportRequestsTable.deal_id, dealId))
+      .limit(1);
+
+    if (existingTr) {
+      await db.update(transportRequestsTable)
+        .set({
+          vehicle_plate: vehiclePlate.trim(),
+          transporter_name: transporterName.trim(),
+          notes: notes ? String(notes).trim() : existingTr.notes,
+          manifest_ref: manifestRef ? String(manifestRef).trim() : existingTr.manifest_ref,
+          status: "in_transit",
+          actual_pickup_at: now,
+          updated_at: now
+        })
+        .where(eq(transportRequestsTable.id, existingTr.id));
+    } else {
+      await db.insert(transportRequestsTable).values({
+        deal_id: dealId,
+        created_by_company_id: company.id,
+        transport_mode: transportMode === "platform" ? "platform" : "self_managed",
+        transporter_name: transporterName.trim(),
+        vehicle_plate: vehiclePlate.trim(),
+        notes: notes ? String(notes).trim() : null,
+        manifest_ref: manifestRef ? String(manifestRef).trim() : null,
+        status: "in_transit",
+        actual_pickup_at: now,
+        created_at: now,
+        updated_at: now
+      });
+    }
+
     const dispatchUpdate: Partial<typeof dealsTable.$inferInsert> = {
       status: "dispatched",
       dispatched_at: now,

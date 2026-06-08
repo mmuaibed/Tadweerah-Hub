@@ -136,7 +136,7 @@ interface DealPanelProps {
   listingLocationNotes?: string | null;
 }
 
-type PendingAction = "submit-payment" | "confirm-payment" | "confirm-dispatch" | "confirm-receipt" | null;
+type PendingAction = "submit-payment" | "confirm-payment" | "confirm-receipt" | null;
 
 const STEPPER_DISPLAY_STEPS: Array<"active" | "payment_confirmed" | "dispatched" | "completed"> = [
   "active",
@@ -1321,6 +1321,11 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
   const [offersOpen, setOffersOpen] = useState(false);
   const [listingInfoOpen, setListingInfoOpen] = useState(false);
   const [paymentDetailsOpen, setPaymentDetailsOpen] = useState(false);
+  const [dispatchModalOpen, setDispatchModalOpen] = useState(false);
+  const [dispatchTransporterName, setDispatchTransporterName] = useState("");
+  const [dispatchVehiclePlate, setDispatchVehiclePlate] = useState("");
+  const [dispatchNotes, setDispatchNotes] = useState("");
+  const [dispatchManifestRef, setDispatchManifestRef] = useState("");
 
   // Share cache key with MwanSummaryPanel — no extra network call
   const { data: mwanHeaderData } = useQuery<MwanSummary>({
@@ -1521,7 +1526,7 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
       }
     }
     setError(null);
-    setPendingAction("confirm-dispatch");
+    setDispatchModalOpen(true);
   }
 
   function handleConfirmed() {
@@ -1536,11 +1541,31 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
       executeAction("submit-payment", body);
     } else if (pendingAction === "confirm-payment") {
       executeAction("confirm-payment");
-    } else if (pendingAction === "confirm-dispatch" && deal.settlement_type === "by_weight") {
-      executeAction("confirm-dispatch", { actual_quantity: parseFloat(actualQty) });
     } else {
       executeAction(pendingAction);
     }
+  }
+
+  function handleDispatchSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!dispatchTransporterName.trim() || !dispatchVehiclePlate.trim()) {
+      setError(lang === "ar" ? "يرجى تعبئة كافة الحقول الإلزامية." : "Please fill all required fields.");
+      return;
+    }
+    const body: Record<string, unknown> = {
+      transporter_name: dispatchTransporterName.trim(),
+      vehicle_plate: dispatchVehiclePlate.trim(),
+    };
+    if (dispatchNotes.trim()) body.notes = dispatchNotes.trim();
+    if (dispatchManifestRef.trim()) body.manifest_ref = dispatchManifestRef.trim();
+    // Default transport_mode to 'self_managed' unless we have a platform TR
+    body.transport_mode = mwanHeaderData?.transport?.transport_mode === "platform" ? "platform" : "self_managed";
+    
+    if (deal.settlement_type === "by_weight") {
+      body.actual_quantity = parseFloat(actualQty);
+    }
+    setDispatchModalOpen(false);
+    executeAction("confirm-dispatch", body);
   }
 
   const statusLabel = (s: DealStatus) => t(`deal.status.${s}`);
@@ -1582,11 +1607,6 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
       title: t("deal.confirm.payment.title"),
       desc: t("deal.confirm.payment.desc"),
       label: t("deal.action.confirm_payment"),
-    },
-    "confirm-dispatch": {
-      title: t("deal.confirm.dispatch.title"),
-      desc: t("deal.confirm.dispatch.desc"),
-      label: t("deal.action.confirm_dispatch"),
     },
     "confirm-receipt": {
       title: t("deal.confirm.receipt.title"),
@@ -2536,6 +2556,99 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
                 {lang === "ar" ? "تم الإرسال بواسطة:" : "Submitted by:"} <span className="font-semibold">{role === "buyer" ? (lang === "ar" ? "أنت" : "You") : (deal.counterparty?.name ?? "—")}</span>
               </div>
             </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={dispatchModalOpen} onOpenChange={setDispatchModalOpen}>
+          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{lang === "ar" ? "تأكيد الإرسال وبيانات النقل" : "Confirm Dispatch & Transport Data"}</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleDispatchSubmit} className="space-y-4 pt-2">
+              {mwanHeaderData?.transport?.transport_mode === "platform" && mwanHeaderData?.transport?.status === "pending" && (
+                <div className="rounded-md bg-blue-50 border border-blue-200 p-3 mb-4">
+                  <div className="flex gap-2">
+                    <Truck className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
+                    <p className="text-sm text-blue-800 leading-snug">
+                      {lang === "ar"
+                        ? "تم طلب ترتيب النقل عبر تدويرة. إذا كانت بيانات الناقل أو المركبة متوفرة لديك الآن، يمكنك إدخالها ليتم حفظها ضمن طلب النقل وتحديث حالة الشحنة."
+                        : "Tadweerah-assisted transport was requested. If vehicle or transporter details are now available, you can enter them and they will be saved to the transport request."}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-3">
+                <div>
+                  <label className="text-sm font-medium mb-1.5 block">
+                    {lang === "ar" ? "اسم الناقل (مطلوب)" : "Transporter Name (Required)"}
+                  </label>
+                  <Input
+                    required
+                    value={dispatchTransporterName}
+                    onChange={(e) => setDispatchTransporterName(e.target.value)}
+                    placeholder={lang === "ar" ? "اسم شركة النقل أو السائق" : "Transporter company or driver name"}
+                    className="w-full"
+                  />
+                </div>
+                
+                <div>
+                  <label className="text-sm font-medium mb-1.5 block">
+                    {lang === "ar" ? "لوحة المركبة (مطلوب)" : "Vehicle Plate (Required)"}
+                  </label>
+                  <Input
+                    required
+                    value={dispatchVehiclePlate}
+                    onChange={(e) => setDispatchVehiclePlate(e.target.value)}
+                    placeholder={lang === "ar" ? "مثال: ا ب ت 1234" : "e.g. ABC 1234"}
+                    className="w-full"
+                    dir="auto"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium mb-1.5 block text-muted-foreground">
+                    {lang === "ar" ? "رقم تواصل السائق / ملاحظات (اختياري)" : "Driver Contact / Notes (Optional)"}
+                  </label>
+                  <Input
+                    value={dispatchNotes}
+                    onChange={(e) => setDispatchNotes(e.target.value)}
+                    placeholder={lang === "ar" ? "رقم الجوال أو أي تفاصيل إضافية" : "Phone number or extra details"}
+                    className="w-full"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium mb-1.5 block text-muted-foreground">
+                    {lang === "ar" ? "رقم البيان الإلكتروني (اختياري)" : "eManifest Reference (Optional)"}
+                  </label>
+                  <Input
+                    value={dispatchManifestRef}
+                    onChange={(e) => setDispatchManifestRef(e.target.value)}
+                    placeholder={lang === "ar" ? "إذا تم إنشاء البيان مسبقاً" : "If manifest was already created"}
+                    className="w-full"
+                    dir="ltr"
+                  />
+                </div>
+              </div>
+
+              {error && (
+                <div className="flex items-start gap-2 rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                  <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 pt-4">
+                <Button type="button" variant="outline" onClick={() => setDispatchModalOpen(false)}>
+                  {lang === "ar" ? "إلغاء" : "Cancel"}
+                </Button>
+                <Button type="submit" disabled={loading}>
+                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {lang === "ar" ? "تأكيد الإرسال" : "Confirm Dispatch"}
+                </Button>
+              </div>
+            </form>
           </DialogContent>
         </Dialog>
 
