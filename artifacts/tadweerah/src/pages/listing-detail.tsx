@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, Link, useLocation, useSearch } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@clerk/react";
 import {
   useGetWasteListing,
   useGetMe,
@@ -1206,6 +1207,7 @@ function ProducerOffersPanel({
 }
 
 export function ListingDetailPage() {
+  const { getToken } = useAuth();
   const { t, lang } = useT();
   const params = useParams<{ waste_listing_id: string }>();
   const wasteListingId = params.waste_listing_id ?? "";
@@ -1293,14 +1295,21 @@ export function ListingDetailPage() {
   }
 
   async function callCloseListing(listingId: string, forceClose = false) {
+    const token = await getToken();
     const res = await fetch(`/api/listings/${listingId}`, {
       method: "DELETE",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       credentials: "include",
       body: JSON.stringify({ forceClose }),
     });
     if (res.ok) return { ok: true as const };
     const body = await res.json().catch(() => ({}));
+    if (res.status === 401) {
+      return { ok: false as const, isUnauthorized: true };
+    }
     if (res.status === 409 && body.requiresConfirmation) {
       return { ok: false as const, requiresConfirmation: true, pendingOffersCount: body.pendingOffersCount as number };
     }
@@ -1320,6 +1329,9 @@ export function ListingDetailPage() {
         setConfirmOpen(false);
         setPendingOffersCount(result.pendingOffersCount ?? 0);
         setPendingOffersDialogOpen(true);
+      } else if (result.isUnauthorized) {
+        setConfirmOpen(false);
+        setCloseError(lang === "ar" ? "انتهت الجلسة أو لا تملك صلاحية تنفيذ هذا الإجراء. يرجى تسجيل الدخول مرة أخرى." : "Your session expired or you are not authorized to perform this action. Please sign in again.");
       } else {
         setConfirmOpen(false);
         setCloseError(t("myListings.closeError"));
@@ -1337,6 +1349,9 @@ export function ListingDetailPage() {
         setPendingOffersDialogOpen(false);
         invalidateListing();
         navigate("/listings/mine");
+      } else if (result.isUnauthorized) {
+        setPendingOffersDialogOpen(false);
+        setCloseError(lang === "ar" ? "انتهت الجلسة أو لا تملك صلاحية تنفيذ هذا الإجراء. يرجى تسجيل الدخول مرة أخرى." : "Your session expired or you are not authorized to perform this action. Please sign in again.");
       } else {
         setPendingOffersDialogOpen(false);
         setCloseError(t("myListings.closeError"));
