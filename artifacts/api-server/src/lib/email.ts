@@ -7,8 +7,8 @@
 import { Resend } from "resend";
 
 const API_KEY = process.env.RESEND_API_KEY;
-const FROM = process.env.EMAIL_FROM ?? "تدويرة <noreply@tadweerah.sa>";
-const BASE_URL = process.env.PLATFORM_URL ?? "https://tadweerah.sa";
+const FROM = process.env.EMAIL_FROM ?? "تدويرة <noreply@tadweerah.com>";
+const BASE_URL = process.env.PLATFORM_URL ?? "https://tadweerah.com";
 
 let resend: Resend | null = null;
 if (API_KEY) {
