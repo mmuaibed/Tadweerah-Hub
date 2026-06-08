@@ -27,8 +27,15 @@ if (!clerkKey) {
     const payload = clerkKey.startsWith("pk_live_") ? clerkKey.slice(8) : clerkKey.slice(8);
     const decoded = Buffer.from(payload, "base64").toString("utf8");
     
-    if (!decoded.includes("clerk.tadweerah.com")) {
-      console.error(`❌ ERROR: Decoded Clerk key does not contain expected domain (clerk.tadweerah.com). Found: ${decoded}`);
+    // Strict domain check!
+    if (decoded !== "clerk.tadweerah.com$" && !decoded.startsWith("clerk.tadweerah.com$")) {
+      console.error(`❌ ERROR: Decoded Clerk key does not match exact domain format (clerk.tadweerah.com$). Found: ${decoded}`);
+      hasError = true;
+    }
+    
+    // Reject known corrupted suffixes like $2
+    if (decoded.includes("$2")) {
+      console.error(`❌ ERROR: Decoded Clerk key contains corrupted suffix ($2). This breaks the Clerk SDK parser! Found: ${decoded}`);
       hasError = true;
     }
     
@@ -46,6 +53,7 @@ if (!clerkKey) {
     hasError = true;
   }
 }
+
 
 if (!adminEmails) {
   console.error("❌ ERROR: VITE_TADWEERAH_ADMIN_EMAILS is missing!");
