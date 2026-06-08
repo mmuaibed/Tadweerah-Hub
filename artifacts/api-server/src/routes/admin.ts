@@ -8,7 +8,7 @@
  * GET    /admin/audit-log?entityType=&entityId=&action=&limit=100&offset=0
  */
 import { Router, type Request, type Response, type NextFunction } from "express";
-import { and, count, desc, eq, gte, ilike, isNotNull, isNull, lte, or, sql } from "drizzle-orm";
+import { and, count, desc, eq, gte, ilike, isNotNull, isNull, lte, or, sql, aliasedTable } from "drizzle-orm";
 import { clerkClient } from "@clerk/express";
 import {
   db,
@@ -146,9 +146,9 @@ router.get("/admin/stats", requireAdminKey, async (req, res) => {
     totalOffers,
     totalDeals,
     totalTRs,
-    companiesByStatus: statusCounts.reduce((acc, row) => ({ ...acc, [row.status || "null"]: row.c }), {} as Record<string, number>),
-    dealsByStatus: dealStatusCounts.reduce((acc, row) => ({ ...acc, [row.status || "null"]: row.c }), {} as Record<string, number>),
-    transportReqsByStatus: trStatusCounts.reduce((acc, row) => ({ ...acc, [row.status || "null"]: row.c }), {} as Record<string, number>),
+    companiesByStatus: statusCounts.reduce((acc, row) => ({ ...acc, [row.status || "null"]: Number(row.c) }), {} as Record<string, number>),
+    dealsByStatus: dealStatusCounts.reduce((acc, row) => ({ ...acc, [row.status || "null"]: Number(row.c) }), {} as Record<string, number>),
+    transportReqsByStatus: trStatusCounts.reduce((acc, row) => ({ ...acc, [row.status || "null"]: Number(row.c) }), {} as Record<string, number>),
   });
 });
 
@@ -805,6 +805,9 @@ router.get("/admin/transport-requests/pending", requireAdminKey, async (req, res
   const limit  = Math.min(Number(req.query.limit)  || 50, 200);
   const offset = Number(req.query.offset) || 0;
 
+  const producerCo = aliasedTable(companiesTable, "producer_co");
+  const buyerCo = aliasedTable(companiesTable, "buyer_co");
+
   const rows = await db
     .select({
       id:                    transportRequestsTable.id,
@@ -821,9 +824,24 @@ router.get("/admin/transport-requests/pending", requireAdminKey, async (req, res
       deal_id:               transportRequestsTable.deal_id,
       created_by_company_id: transportRequestsTable.created_by_company_id,
       company_name:          companiesTable.name,
+      listing_id:            dealsTable.listing_id,
+      buyer_company_name:    buyerCo.name,
+      seller_company_name:   producerCo.name,
+      buyer_contact_phone:   buyerCo.contactPhone,
+      seller_contact_phone:  producerCo.contactPhone,
+      material:              wasteListingsTable.material,
+      quantity:              wasteListingsTable.quantity,
+      unit:                  wasteListingsTable.unit,
+      pickup_address:        wasteListingsTable.material_location_address,
+      site_details:          wasteListingsTable.material_location_notes,
+      google_maps_url:       wasteListingsTable.google_maps_url,
     })
     .from(transportRequestsTable)
     .leftJoin(companiesTable, eq(transportRequestsTable.created_by_company_id, companiesTable.id))
+    .leftJoin(dealsTable, eq(transportRequestsTable.deal_id, dealsTable.id))
+    .leftJoin(wasteListingsTable, eq(dealsTable.listing_id, wasteListingsTable.id))
+    .leftJoin(producerCo, eq(dealsTable.producer_company_id, producerCo.id))
+    .leftJoin(buyerCo, eq(dealsTable.buyer_company_id, buyerCo.id))
     .where(
       and(
         eq(transportRequestsTable.ops_assigned_to, "platform-ops"),

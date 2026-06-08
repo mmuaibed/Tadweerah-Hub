@@ -278,6 +278,9 @@ interface TransportRequestNotificationParams {
   producerPhone: string;
   buyerName: string;
   buyerPhone: string;
+  pickupAddress?: string | null;
+  googleMapsUrl?: string | null;
+  siteDetails?: string | null;
 }
 
 function buildTransportRequestHtml(p: TransportRequestNotificationParams): string {
@@ -295,6 +298,9 @@ function buildTransportRequestHtml(p: TransportRequestNotificationParams): strin
     ["الكمية / Quantity", quantityLabel],
     ["مدينة الاستلام / Pickup City", p.pickupCity ?? "—"],
     ["مدينة التسليم / Delivery City", p.deliveryCity ?? "—"],
+    ...(p.pickupAddress ? [["عنوان الاستلام / Pickup Address", p.pickupAddress] as [string, string]] : []),
+    ...(p.siteDetails ? [["تفاصيل الموقع / Site Details", p.siteDetails] as [string, string]] : []),
+    ...(p.googleMapsUrl ? [["رابط خرائط جوجل / Google Maps", `<a href="${p.googleMapsUrl}" target="_blank" style="color:#1d4ed8;text-decoration:underline;">عرض الموقع</a>`] as [string, string]] : []),
     ...(p.wasteDescription ? [["وصف المادة / Waste Description", p.wasteDescription] as [string, string]] : []),
     ["البائع / Seller", p.producerName],
     ["جوال البائع / Seller Phone", p.producerPhone],

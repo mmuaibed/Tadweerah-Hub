@@ -192,6 +192,9 @@ router.post(
               quantity: wasteListingsTable.quantity,
               unit: wasteListingsTable.unit,
               city: wasteListingsTable.city,
+              pickupAddress: wasteListingsTable.material_location_address,
+              siteDetails: wasteListingsTable.material_location_notes,
+              googleMapsUrl: wasteListingsTable.google_maps_url,
             })
             .from(wasteListingsTable)
             .where(eq(wasteListingsTable.id, deal.listing_id))
@@ -227,6 +230,9 @@ router.post(
           producerPhone: producerCo?.contactPhone ?? "—",
           buyerName: buyerCo?.name ?? "—",
           buyerPhone: buyerCo?.contactPhone ?? "—",
+          pickupAddress: listing?.pickupAddress ?? null,
+          siteDetails: listing?.siteDetails ?? null,
+          googleMapsUrl: listing?.googleMapsUrl ?? null,
         });
 
         // Mark email_sent flag so ops can identify any delivery failures

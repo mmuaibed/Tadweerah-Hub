@@ -126,6 +126,17 @@ interface PendingTransportRequest {
   created_at: string;
   deal_id: string;
   company_name: string | null;
+  listing_id: string | null;
+  buyer_company_name: string | null;
+  seller_company_name: string | null;
+  buyer_contact_phone: string | null;
+  seller_contact_phone: string | null;
+  material: string | null;
+  quantity: string | number | null;
+  unit: string | null;
+  pickup_address: string | null;
+  site_details: string | null;
+  google_maps_url: string | null;
 }
 
 interface AdminTransportQuote {
@@ -201,6 +212,7 @@ export function AdminPage() {
   const [dealsError, setDealsError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState("");
   const [expandedDealId, setExpandedDealId] = useState<string | null>(null);
+  const [expandedTrId, setExpandedTrId] = useState<string | null>(null);
   const [expandedDealDetails, setExpandedDealDetails] = useState<AdminDealDetails | null>(null);
   const [dealDetailsLoading, setDealDetailsLoading] = useState(false);
   const [dealDetailsError, setDealDetailsError] = useState<string | null>(null);
