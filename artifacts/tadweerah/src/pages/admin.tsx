@@ -1144,47 +1144,129 @@ export function AdminPage() {
                 ) : (
                   <div className="divide-y divide-border">
                     {transportReqs.map((tr) => (
-                      <div key={tr.id} className="px-4 py-4 flex flex-col gap-2 hover:bg-muted/10 transition-colors">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            {tr.manifest_ref && (
-                              <span className="font-mono text-xs font-bold text-primary" dir="ltr">{tr.manifest_ref}</span>
-                            )}
-                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold rounded-full bg-amber-100 text-amber-800 px-2 py-0.5">
-                              <Truck className="h-3 w-3" />
-                              {t("admin.transport.status.pending")}
-                            </span>
+                      <div key={tr.id} className="flex flex-col border-b border-border last:border-0">
+                        <div 
+                          className="px-4 py-4 flex flex-col gap-2 hover:bg-muted/10 transition-colors cursor-pointer"
+                          onClick={() => setExpandedTrId(expandedTrId === tr.id ? null : tr.id)}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {tr.manifest_ref && (
+                                <span className="font-mono text-xs font-bold text-primary" dir="ltr">{tr.manifest_ref}</span>
+                              )}
+                              <span className="inline-flex items-center gap-1 text-[10px] font-semibold rounded-full bg-amber-100 text-amber-800 px-2 py-0.5">
+                                <Truck className="h-3 w-3" />
+                                {t("admin.transport.status.pending")}
+                              </span>
+                            </div>
+                            <span className="text-xs text-muted-foreground shrink-0">{fmtDate(tr.created_at, lang)}</span>
                           </div>
-                          <span className="text-xs text-muted-foreground shrink-0">{fmtDate(tr.created_at, lang)}</span>
+
+                          {tr.company_name && (
+                            <p className="text-sm font-medium text-foreground">{tr.company_name}</p>
+                          )}
+
+                          {(tr.pickup_city || tr.delivery_city) && (
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                              <MapPin className="h-3 w-3 shrink-0" />
+                              <span dir="rtl">
+                                {tr.pickup_city ?? "—"} → {tr.delivery_city ?? "—"}
+                              </span>
+                            </div>
+                          )}
+
+                          {tr.waste_description && (
+                            <p className="text-xs text-muted-foreground line-clamp-2">{tr.waste_description}</p>
+                          )}
+
+                          <div className="flex items-center justify-between mt-2">
+                            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/60">
+                              <span dir="ltr" className="font-mono">deal: {tr.deal_id.slice(0, 8)}…</span>
+                            </div>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="text-xs h-7 text-primary hover:text-primary"
+                            >
+                              {expandedTrId === tr.id ? "إخفاء التفاصيل" : "عرض التفاصيل"}
+                            </Button>
+                          </div>
                         </div>
 
-                        {tr.company_name && (
-                          <p className="text-sm font-medium text-foreground">{tr.company_name}</p>
-                        )}
+                        {/* Expanded details panel */}
+                        {expandedTrId === tr.id && (
+                          <div className="px-4 pb-4 pt-1 bg-muted/5 border-t border-border animate-in fade-in slide-in-from-top-2">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 mt-3">
+                              
+                              <div className="space-y-1">
+                                <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">العملية / Operation</p>
+                                <div className="text-sm space-y-0.5">
+                                  <p><span className="text-muted-foreground">رقم طلب النقل:</span> <span className="font-mono" dir="ltr">{tr.id}</span></p>
+                                  <p><span className="text-muted-foreground">رقم الصفقة:</span> <span className="font-mono" dir="ltr">{tr.deal_id}</span></p>
+                                  <p><span className="text-muted-foreground">رقم الإعلان:</span> <span className="font-mono" dir="ltr">{tr.listing_id || "—"}</span></p>
+                                  <p><span className="text-muted-foreground">الحالة:</span> {tr.status}</p>
+                                  <p><span className="text-muted-foreground">تاريخ الطلب:</span> {fmtDate(tr.created_at, lang)}</p>
+                                </div>
+                              </div>
 
-                        {(tr.pickup_city || tr.delivery_city) && (
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <MapPin className="h-3 w-3 shrink-0" />
-                            <span dir="rtl">
-                              {tr.pickup_city ?? "—"} → {tr.delivery_city ?? "—"}
-                            </span>
+                              <div className="space-y-1">
+                                <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">الأطراف / Parties</p>
+                                <div className="text-sm space-y-0.5">
+                                  <p className="flex items-center gap-2">
+                                    <span className="text-muted-foreground w-12">البائع:</span> 
+                                    <span className="font-semibold">{tr.seller_company_name || "—"}</span>
+                                    {tr.seller_contact_phone && (
+                                      <a href={`tel:${tr.seller_contact_phone}`} className="text-primary hover:underline" dir="ltr">
+                                        {tr.seller_contact_phone}
+                                      </a>
+                                    )}
+                                  </p>
+                                  <p className="flex items-center gap-2">
+                                    <span className="text-muted-foreground w-12">المشتري:</span> 
+                                    <span className="font-semibold">{tr.buyer_company_name || "—"}</span>
+                                    {tr.buyer_contact_phone && (
+                                      <a href={`tel:${tr.buyer_contact_phone}`} className="text-primary hover:underline" dir="ltr">
+                                        {tr.buyer_contact_phone}
+                                      </a>
+                                    )}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div className="space-y-1">
+                                <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">المواد / Material</p>
+                                <div className="text-sm space-y-0.5">
+                                  <p><span className="text-muted-foreground">النوع:</span> {tr.material || "—"} - {tr.waste_description || "—"}</p>
+                                  <p><span className="text-muted-foreground">الكمية:</span> {tr.quantity || "—"} {tr.unit || ""}</p>
+                                </div>
+                              </div>
+
+                              <div className="space-y-1">
+                                <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">الموقع / Location</p>
+                                <div className="text-sm space-y-0.5">
+                                  <p><span className="text-muted-foreground">المدينة:</span> {tr.pickup_city || "—"}</p>
+                                  <p><span className="text-muted-foreground">العنوان:</span> {tr.pickup_address || "—"}</p>
+                                  {tr.site_details && <p><span className="text-muted-foreground">تفاصيل:</span> {tr.site_details}</p>}
+                                  {tr.google_maps_url && (
+                                    <a href={tr.google_maps_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline mt-1">
+                                      <MapPin className="h-3 w-3" /> رابط Google Maps
+                                    </a>
+                                  )}
+                                </div>
+                              </div>
+
+                            </div>
+
+                            <div className="mt-4 pt-3 border-t border-border/50">
+                              <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mb-2">الإجراء التالي / Next Action</p>
+                              <div className="flex gap-2">
+                                <Button variant="outline" size="sm" className="bg-white pointer-events-none opacity-50">
+                                  تعيين ناقل (قريباً)
+                                </Button>
+                              </div>
+                            </div>
                           </div>
                         )}
-
-                        {tr.waste_description && (
-                          <p className="text-xs text-muted-foreground line-clamp-2">{tr.waste_description}</p>
-                        )}
-
-                        {tr.planned_pickup_at && (
-                          <p className="text-xs text-muted-foreground">
-                            {t("admin.transport.planned_pickup")}
-                            {fmtDate(tr.planned_pickup_at, lang)}
-                          </p>
-                        )}
-
-                        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/60 mt-0.5">
-                          <span dir="ltr" className="font-mono">deal: {tr.deal_id.slice(0, 8)}…</span>
-                        </div>
                       </div>
                     ))}
                   </div>
