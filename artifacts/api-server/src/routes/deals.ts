@@ -550,7 +550,7 @@ router.post(
     }
 
     if (listing.transport_responsibility === "buyer") {
-      if (deal.transport_decision !== "self_managed") {
+      if (deal.transport_decision !== "not_required") {
         const [tr] = await db
           .select()
           .from(transportRequestsTable)
