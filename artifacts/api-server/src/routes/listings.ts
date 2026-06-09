@@ -994,6 +994,8 @@ router.get(
         actual_quantity: d.actual_quantity != null ? Number(d.actual_quantity) : null,
         final_amount: d.final_amount != null ? Number(d.final_amount) : null,
         status: d.status,
+        transport_decision: d.transport_decision ?? null,
+        transport_responsibility: listing.transport_responsibility,
         counterparty: counterparty
           ? { name: counterparty.name, contact_phone: counterparty.contactPhone }
           : null,

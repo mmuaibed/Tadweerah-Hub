@@ -146,6 +146,7 @@ router.get(
       material_location_address: wasteListingsTable.material_location_address,
       google_maps_url: wasteListingsTable.google_maps_url,
       material_location_notes: wasteListingsTable.material_location_notes,
+      transport_responsibility: wasteListingsTable.transport_responsibility,
     };
 
     // ── 1. Producer deal-flow actions: payment_submitted → confirm_payment, payment_confirmed → confirm_dispatch
@@ -154,6 +155,7 @@ router.get(
         id: dealsTable.id,
         listing_id: dealsTable.listing_id,
         status: dealsTable.status,
+        transport_decision: dealsTable.transport_decision,
         ...listingExtraFields,
         updated_at: dealsTable.updated_at,
       })
@@ -173,6 +175,7 @@ router.get(
         id: dealsTable.id,
         listing_id: dealsTable.listing_id,
         status: dealsTable.status,
+        transport_decision: dealsTable.transport_decision,
         ...listingExtraFields,
         updated_at: dealsTable.updated_at,
       })
@@ -192,6 +195,7 @@ router.get(
         id: dealsTable.id,
         listing_id: dealsTable.listing_id,
         status: dealsTable.status,
+        transport_decision: dealsTable.transport_decision,
         ...listingExtraFields,
         updated_at: dealsTable.updated_at,
       })
@@ -213,6 +217,7 @@ router.get(
         id: dealsTable.id,
         listing_id: dealsTable.listing_id,
         status: dealsTable.status,
+        transport_decision: dealsTable.transport_decision,
         ...listingExtraFields,
         updated_at: transportRequestsTable.updated_at,
         producer_company_id: dealsTable.producer_company_id,
@@ -285,6 +290,8 @@ router.get(
           quantity: tr.quantity,
           unit: tr.unit,
           material_subcategory_id: tr.material_subcategory_id,
+          transport_decision: tr.transport_decision,
+          transport_responsibility: tr.transport_responsibility,
           role,
           action_needed: `transport_pending_${role}` as const,
           updated_at: tr.updated_at.toISOString(),
