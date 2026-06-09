@@ -9,4 +9,7 @@
 export interface OffersSummary {
   count: number;
   highest_price?: number;
+  /** The true subtotal amount of the highest offer (before VAT). For fixed offers, this is the buyer-entered subtotal.
+   */
+  highest_subtotal_amount?: number | null;
 }

@@ -225,6 +225,7 @@ function OfferPriceHero({
             pricingModel={pricingModel}
             size="lg"
             t={t}
+            subtotalOverride={summary.highest_subtotal_amount ?? undefined}
           />
         </div>
       ) : null}
@@ -487,6 +488,7 @@ function AcceptOfferDialog({
                   pricingModel={pricingModel}
                   size="sm"
                   t={t}
+                  subtotalOverride={offer.offer_subtotal_amount ?? undefined}
                 />
                 <p className="text-xs text-muted-foreground">{t("offer.accept.confirm.desc")}</p>
               </div>
@@ -687,6 +689,7 @@ function BuyerOfferSection({
           pricingModel={pricingModel}
           size="md"
           t={t}
+          subtotalOverride={myOffer.offer_subtotal_amount ?? undefined}
         />
       </div>
     );
@@ -709,6 +712,7 @@ function BuyerOfferSection({
             pricingModel={pricingModel}
             size="md"
             t={t}
+            subtotalOverride={myOffer.offer_subtotal_amount ?? undefined}
           />
         </div>
         {reasonText && (
@@ -757,6 +761,7 @@ function BuyerOfferSection({
             pricingModel={pricingModel}
             size="md"
             t={t}
+            subtotalOverride={myOffer.offer_subtotal_amount ?? undefined}
           />
           <p className="text-xs text-muted-foreground">{t("offer.mine.pending")}</p>
           {myOffer.message && (

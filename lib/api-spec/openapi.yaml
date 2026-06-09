@@ -1485,6 +1485,12 @@ components:
           type: integer
         highest_price:
           type: number
+        highest_subtotal_amount:
+          type: number
+          nullable: true
+          description: >
+            The true subtotal amount of the highest offer (before VAT).
+            For fixed offers, this is the buyer-entered subtotal.
       required: [count]
 
     MyOffer:
@@ -1517,6 +1523,10 @@ components:
           format: date-time
         price_per_unit:
           type: number
+        offer_subtotal_amount:
+          type: number
+          nullable: true
+          description: Pre-VAT subtotal for this offer.
         message:
           type: string
         status:

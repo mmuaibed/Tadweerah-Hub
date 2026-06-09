@@ -210,7 +210,10 @@ router.get(
         let listing_accepted_total: number | undefined;
         if (row.offer_status === "rejected" && row.listing_status === "closed") {
           const [accepted] = await db
-            .select({ price_per_unit: listingOffersTable.price_per_unit })
+            .select({ 
+              price_per_unit: listingOffersTable.price_per_unit,
+              offer_subtotal_amount: listingOffersTable.offer_subtotal_amount
+            })
             .from(listingOffersTable)
             .where(
               and(
@@ -220,7 +223,9 @@ router.get(
             )
             .limit(1);
           if (accepted) {
-            listing_accepted_total = Number(accepted.price_per_unit) * qty;
+            listing_accepted_total = accepted.offer_subtotal_amount != null
+              ? Number(accepted.offer_subtotal_amount)
+              : Number(accepted.price_per_unit) * qty;
           }
         }
 
@@ -270,18 +275,33 @@ router.get(
       "waste_listing_id",
     );
 
-    const [row] = await db
-      .select({
-        count: sql<number>`cast(count(*) as int)`,
-        highest_price: max(listingOffersTable.price_per_unit),
-      })
+    const [countRow] = await db
+      .select({ count: sql<number>`cast(count(*) as int)` })
       .from(listingOffersTable)
       .where(eq(listingOffersTable.waste_listing_id, listingId));
 
+    const [topOffer] = await db
+      .select({
+        highest_price: listingOffersTable.price_per_unit,
+        highest_subtotal_amount: listingOffersTable.offer_subtotal_amount,
+      })
+      .from(listingOffersTable)
+      .innerJoin(
+        wasteListingsTable,
+        eq(wasteListingsTable.id, listingOffersTable.waste_listing_id)
+      )
+      .where(eq(listingOffersTable.waste_listing_id, listingId))
+      .orderBy(
+        desc(
+          sql`COALESCE(${listingOffersTable.offer_subtotal_amount}, ${listingOffersTable.price_per_unit} * ${wasteListingsTable.quantity})`
+        )
+      )
+      .limit(1);
+
     res.json({
-      count: row?.count ?? 0,
-      highest_price:
-        row?.highest_price != null ? Number(row.highest_price) : null,
+      count: countRow?.count ?? 0,
+      highest_price: topOffer?.highest_price != null ? Number(topOffer.highest_price) : null,
+      highest_subtotal_amount: topOffer?.highest_subtotal_amount != null ? Number(topOffer.highest_subtotal_amount) : null,
     });
   },
 );

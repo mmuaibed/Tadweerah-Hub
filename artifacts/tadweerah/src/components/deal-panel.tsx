@@ -1144,12 +1144,13 @@ interface SmartTransportBodyProps {
   onSkipConfirm: () => void;
   t: (k: string) => string;
   lang: "ar" | "en";
+  dealId: string;
 }
 
 function SmartTransportBody({
   tr, trDecision, dealStatus, smartTrLoading, smartTrError,
   skipConfirmOpen, setSkipConfirmOpen,
-  onArrange, onSkipConfirm, t, lang,
+  onArrange, onSkipConfirm, t, lang, dealId,
 }: SmartTransportBodyProps): React.ReactNode {
   /* Transport exists: show status */
   if (tr) {
@@ -1180,7 +1181,7 @@ function SmartTransportBody({
             <p>{t("deal.transport.smart.requested_line2")}</p>
             <a
               href={`https://wa.me/${import.meta.env.VITE_TADWEERAH_SUPPORT_PHONE?.replace("+", "") || "966504927090"}?text=${encodeURIComponent(
-                lang === "ar" ? `مرحباً، أود الاستفسار بخصوص طلب النقل للصفقة رقم: ${deal.id}` : `Hello, I'd like to inquire about transport request for deal: ${deal.id}`
+                lang === "ar" ? `مرحباً، أود الاستفسار بخصوص طلب النقل للصفقة رقم: ${dealId}` : `Hello, I'd like to inquire about transport request for deal: ${dealId}`
               )}`}
               target="_blank"
               rel="noopener noreferrer"
@@ -2252,6 +2253,7 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
                   onSkipConfirm: handleSkipTransport,
                   t,
                   lang,
+                  dealId: deal.id,
                 })}
               </div>
             </div>

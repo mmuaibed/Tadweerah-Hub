@@ -28,6 +28,8 @@ export interface MyOffer {
   listing_company_name: string;
   listing_closed_at?: Date;
   price_per_unit: number;
+  /** Pre-VAT subtotal for this offer. */
+  offer_subtotal_amount?: number | null;
   message?: string;
   status: OfferStatus;
   /** Visible to this buyer only when their offer was rejected */

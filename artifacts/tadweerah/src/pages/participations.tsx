@@ -69,7 +69,7 @@ function OfferCard({ offer }: { offer: MyOffer }) {
     : null;
 
   const rejectionReason = translateRejectionReason(offer.rejection_reason, t);
-  const estimatedTotal = offer.price_per_unit * offer.listing_quantity;
+  const estimatedTotal = offer.offer_subtotal_amount ?? (offer.price_per_unit * offer.listing_quantity);
   const isCompleted = isAccepted && dealStatus === "completed";
 
   return (

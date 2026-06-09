@@ -410,6 +410,9 @@ export interface AcceptOfferBody {
 export interface OffersSummary {
   count: number;
   highest_price?: number;
+  /** The true subtotal amount of the highest offer (before VAT). For fixed offers, this is the buyer-entered subtotal.
+   */
+  highest_subtotal_amount?: number | null;
 }
 
 /**
@@ -430,6 +433,8 @@ export interface MyOffer {
   listing_company_name: string;
   listing_closed_at?: string;
   price_per_unit: number;
+  /** Pre-VAT subtotal for this offer. */
+  offer_subtotal_amount?: number | null;
   message?: string;
   status: OfferStatus;
   /** Visible to this buyer only when their offer was rejected */

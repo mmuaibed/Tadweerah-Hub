@@ -1073,6 +1073,12 @@ export const GetOffersSummaryParams = zod.object({
 export const GetOffersSummaryResponse = zod.object({
   count: zod.number(),
   highest_price: zod.number().optional(),
+  highest_subtotal_amount: zod
+    .number()
+    .nullish()
+    .describe(
+      "The true subtotal amount of the highest offer (before VAT). For fixed offers, this is the buyer-entered subtotal.\n",
+    ),
 });
 
 /**
@@ -1106,6 +1112,10 @@ export const ListMyOffersResponseItem = zod
     listing_company_name: zod.string().describe("Producer's company name"),
     listing_closed_at: zod.coerce.date().optional(),
     price_per_unit: zod.number(),
+    offer_subtotal_amount: zod
+      .number()
+      .nullish()
+      .describe("Pre-VAT subtotal for this offer."),
     message: zod.string().optional(),
     status: zod.enum(["pending", "accepted", "rejected", "withdrawn"]),
     rejection_reason: zod
