@@ -647,6 +647,7 @@ const translations: Record<string, Record<Language, string>> = {
   "participations.deal.payment_confirmed": { ar: "بانتظار الشحن", en: "Awaiting dispatch" },
   "participations.deal.dispatched": { ar: "بانتظار تأكيد الاستلام", en: "Awaiting receipt confirmation" },
   "participations.deal.completed": { ar: "مكتملة ✓", en: "Completed ✓" },
+  "participations.deal.receipt_pending": { ar: "بانتظار تأكيد الاستلام", en: "Pending receipt confirmation" },
 
   // Waiting-for status — who acts next
   "deal.waiting.active": { ar: "بانتظار المشتري لإرسال مرجع الدفع", en: "Waiting for buyer to submit payment reference" },
