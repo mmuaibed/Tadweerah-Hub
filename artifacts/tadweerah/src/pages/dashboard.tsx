@@ -191,21 +191,22 @@ function NextActionBanner({ stats, t, Arrow }: NextBannerProps) {
 
   if (stats.offers_made_count > 0) {
     return (
-      <div className="mb-4 rounded-xl border border-primary/20 bg-primary/5 p-3.5">
-        <div className="flex items-center gap-2.5">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <Package className="h-3.5 w-3.5" />
-          </span>
-          <p className="flex-1 text-sm font-semibold text-foreground">
-            {t("dashboard.next.offers_made")}
-          </p>
-          <Link to="/participations">
-            <button className="shrink-0 inline-flex items-center gap-1 rounded-lg border border-primary/40 bg-card px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/10 transition-colors">
-              {t("dashboard.next.offers_made.cta")}
-              <Arrow className="h-3 w-3" />
-            </button>
-          </Link>
-        </div>
+      <div className="mb-4">
+        <Link to="/participations">
+          <div className="group flex cursor-pointer items-center gap-3.5 rounded-xl border-2 border-primary/25 bg-primary/5 px-4 py-3.5 transition-all hover:border-primary/45 hover:bg-primary/10">
+            <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+              <Package className="h-5 w-5" />
+              <span className="absolute -top-1 -end-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground">
+                {stats.offers_made_count}
+              </span>
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] font-medium text-primary/80">{t("dashboard.next.offers_made.title")}</p>
+              <p className="text-sm font-bold text-foreground leading-snug">{t("dashboard.next.offers_made.helper")}</p>
+            </div>
+            <Arrow className="h-4 w-4 shrink-0 text-primary opacity-60 transition-opacity group-hover:opacity-100" />
+          </div>
+        </Link>
       </div>
     );
   }

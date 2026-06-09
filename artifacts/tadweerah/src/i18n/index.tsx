@@ -1222,6 +1222,8 @@ const translations: Record<string, Record<Language, string>> = {
   "dashboard.next.offers_received.cta": { ar: "إعلاناتي", en: "My listings" },
   "dashboard.next.offers_made":         { ar: "عروضك المقدمة قيد المراجعة", en: "Your submitted offers are under review" },
   "dashboard.next.offers_made.cta":     { ar: "مشاركاتي", en: "My participations" },
+  "dashboard.next.offers_made.title":   { ar: "عروضك قيد المراجعة", en: "Offers Under Review" },
+  "dashboard.next.offers_made.helper":  { ar: "تابع حالة العروض التي قدمتها", en: "Track the status of offers you submitted" },
   "dashboard.onboarding.title": {
     ar: "ابدأ رحلتك الأولى مع تدويرة",
     en: "Start your first journey with Tadweerah",
@@ -1389,6 +1391,8 @@ const translations: Record<string, Record<Language, string>> = {
   "dashboard.pending.empty": { ar: "لا توجد إجراءات معلقة حالياً", en: "No pending actions right now" },
   "dashboard.pending.cta": { ar: "اتخذ الإجراء", en: "Take Action" },
   "dashboard.pending.action.confirm_payment": { ar: "تأكيد استلام الدفع", en: "Confirm Payment Received" },
+  "dashboard.pending.action.submit_payment": { ar: "استكمال تأكيد الدفع", en: "Complete payment confirmation" },
+  "dashboard.pendingAction.submit_payment":  { ar: "استكمال تأكيد الدفع", en: "Complete payment confirmation" },
   "dashboard.pending.action.confirm_dispatch": { ar: "تأكيد إرسال البضاعة", en: "Confirm Goods Dispatch" },
   "dashboard.pending.action.confirm_receipt": { ar: "تأكيد استلام البضاعة", en: "Confirm Goods Receipt" },
   "dashboard.pending.action.choose_transport": { ar: "اختر طريقة النقل", en: "Choose Transport" },
