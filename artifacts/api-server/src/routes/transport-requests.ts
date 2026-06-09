@@ -1112,11 +1112,14 @@ router.get(
     }
 
     /** Horizontal rule */
-    function hr(gap = 12): void {
-      Y += gap / 2;
-      doc.moveTo(ML, Y).lineTo(ML + PW, Y).strokeColor(border).lineWidth(0.5).stroke();
-      Y += gap / 2;
-    }
+    const hr = () => {
+      Y += 8;
+      doc.moveTo(ML, Y).lineTo(ML + PW, Y).strokeColor(border).stroke();
+      Y += 12;
+    };
+
+    const fmt = (d: Date | null | undefined): string =>
+      d ? d.toLocaleString("en-GB", { timeZone: "Asia/Riyadh", hour12: false }) : "—";
 
     /** Single row in a section: label ── value */
     function row(label: string, value: string | null | undefined, opts?: { bold?: boolean }): void {
@@ -1274,8 +1277,6 @@ router.get(
     sectionTitle("الجدول الزمني  /  Transaction Timeline");
 
     type TimelineStep = { label: string; date: Date | null | undefined; done: boolean };
-    const fmt = (d: Date | null | undefined): string =>
-      d ? new Date(d).toLocaleDateString("en-SA", { year: "numeric", month: "short", day: "numeric" }) : "—";
 
     const steps: TimelineStep[] = [
       { label: "إنشاء الصفقة\nDeal Created",         date: deal.created_at,           done: true },

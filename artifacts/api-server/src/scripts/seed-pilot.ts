@@ -131,19 +131,19 @@ async function main() {
 
   // 4. Create an active listing
   let listing = await db.query.wasteListingsTable.findFirst({
-    where: sql`${wasteListingsTable.company_id} = ${sellerCompany.id} AND ${wasteListingsTable.description} LIKE '%PILOT DEMO%'`
+    where: sql`${wasteListingsTable.company_id} = ${sellerCompany!.id} AND ${wasteListingsTable.description} LIKE '%PILOT DEMO%'`
   });
 
   if (!listing) {
     if (isDryRun) {
-      console.log(`[DRY RUN] Would create Pilot Listing for Seller Company: ${sellerCompany.name}`);
+      console.log(`[DRY RUN] Would create Pilot Listing for Seller Company: ${sellerCompany!.name}`);
       listing = { id: "dry-run-listing-id" } as any;
     } else {
       const tonUnit = await db.query.unitOptionsTable.findFirst({ where: eq(unitOptionsTable.key, "ton") });
       const metalMat = await db.query.materialCategoriesTable.findFirst({ where: eq(materialCategoriesTable.key, "metal") });
 
       const [insertedListing] = await db.insert(wasteListingsTable).values({
-        company_id: sellerCompany.id,
+        company_id: sellerCompany!.id,
         material: "metal",
         quantity: "50.000",
         unit: "ton",
@@ -172,17 +172,17 @@ async function main() {
 
   // 5. Create an offer
   let offer = await db.query.listingOffersTable.findFirst({
-    where: sql`${listingOffersTable.waste_listing_id} = ${listing.id} AND ${listingOffersTable.buyer_company_id} = ${buyerCompany.id}`
+    where: sql`${listingOffersTable.waste_listing_id} = ${listing!.id} AND ${listingOffersTable.buyer_company_id} = ${buyerCompany!.id}`
   });
 
   if (!offer) {
     if (isDryRun) {
-      console.log(`[DRY RUN] Would create Pilot Offer for Buyer Company: ${buyerCompany.name} on Listing ID: ${listing.id}`);
+      console.log(`[DRY RUN] Would create Pilot Offer for Buyer Company: ${buyerCompany!.name} on Listing ID: ${listing!.id}`);
       offer = { id: "dry-run-offer-id" } as any;
     } else {
       const [insertedOffer] = await db.insert(listingOffersTable).values({
-        waste_listing_id: listing.id,
-        buyer_company_id: buyerCompany.id,
+        waste_listing_id: listing!.id,
+        buyer_company_id: buyerCompany!.id,
         price_per_unit: "1450.000",
         offer_subtotal_amount: "72500.00",
         message: `${PREFIX} We can pick this up tomorrow morning.`,
