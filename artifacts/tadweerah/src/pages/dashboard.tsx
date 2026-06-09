@@ -201,8 +201,8 @@ function NextActionBanner({ stats, t, Arrow }: NextBannerProps) {
               </span>
             </span>
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-medium text-primary/80">{t("dashboard.next.offers_made.title")}</p>
-              <p className="text-sm font-bold text-foreground leading-snug">{t("dashboard.next.offers_made.helper")}</p>
+              <p className="text-sm font-bold text-foreground leading-snug">{t("dashboard.next.offers_made.title")}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{t("dashboard.next.offers_made.helper")}</p>
             </div>
             <Arrow className="h-4 w-4 shrink-0 text-primary opacity-60 transition-opacity group-hover:opacity-100" />
           </div>
