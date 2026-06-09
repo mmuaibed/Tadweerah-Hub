@@ -2138,17 +2138,42 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
                       <p className="text-xs text-muted-foreground">{t("deal.field.actual_quantity.dispatch_hint")}</p>
                     </div>
                   )}
-                  {deal.transport_responsibility === "buyer" && (
-                    <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 leading-relaxed">
-                      {t("deal.dispatch.buyer_transport_hint")}
-                    </p>
-                  )}
-                  <Button className="w-full h-11 text-base font-bold" onClick={requestConfirmDispatch} disabled={loading}>
-                    {loading && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
-                    {deal.transport_responsibility === "buyer"
-                      ? t("deal.action.confirm_handover")
-                      : t("deal.action.confirm_dispatch")}
-                  </Button>
+                  {(() => {
+                    const isBuyerTransportReady = deal.transport_responsibility !== "buyer" || 
+                      mwanHeaderData?.transport_decision === "self_managed" || 
+                      (mwanHeaderData?.transport?.transporter_name && mwanHeaderData?.transport?.vehicle_plate);
+
+                    if (!isBuyerTransportReady) {
+                      return (
+                        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-1.5 text-center">
+                          <p className="text-sm font-bold text-amber-900">
+                            {lang === "ar" ? "بانتظار المشتري لترتيب وسيلة النقل" : "Waiting for buyer to arrange transport"}
+                          </p>
+                          <p className="text-xs text-amber-700 leading-relaxed">
+                            {lang === "ar"
+                              ? "لا يمكن تأكيد إرسال البضاعة حتى يحدد المشتري طريقة النقل وتتوفر بيانات الناقل."
+                              : "Dispatch can be confirmed after the buyer selects the transport method and transport details are available."}
+                          </p>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <>
+                        {deal.transport_responsibility === "buyer" && (
+                          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 leading-relaxed">
+                            {t("deal.dispatch.buyer_transport_hint")}
+                          </p>
+                        )}
+                        <Button className="w-full h-11 text-base font-bold" onClick={requestConfirmDispatch} disabled={loading}>
+                          {loading && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
+                          {deal.transport_responsibility === "buyer"
+                            ? t("deal.action.confirm_handover")
+                            : t("deal.action.confirm_dispatch")}
+                        </Button>
+                      </>
+                    );
+                  })()}
                 </div>
               )}
 
@@ -2622,12 +2647,12 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
 
                 <div>
                   <label className="text-sm font-medium mb-1.5 block text-muted-foreground">
-                    {lang === "ar" ? "رقم البيان الإلكتروني (اختياري)" : "eManifest Reference (Optional)"}
+                    {lang === "ar" ? "رقم البيان الإلكتروني / رقم تصريح النقل (اختياري)" : "Electronic Manifest / Transport Permit No. (Optional)"}
                   </label>
                   <Input
                     value={dispatchManifestRef}
                     onChange={(e) => setDispatchManifestRef(e.target.value)}
-                    placeholder={lang === "ar" ? "إذا تم إنشاء البيان مسبقاً" : "If manifest was already created"}
+                    placeholder={lang === "ar" ? "أدخل الرقم إذا تم إنشاء بيان نقل رسمي مسبقاً." : "Enter it only if an official transport manifest has already been created."}
                     className="w-full"
                     dir="ltr"
                   />

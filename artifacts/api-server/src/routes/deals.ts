@@ -517,13 +517,20 @@ router.post(
     const dealId = assertUuid(req.params.deal_id, "deal_id");
     const { company } = req as AuthedCompanyRequest;
 
-    const [deal] = await db
-      .select()
+    const [dealRecord] = await db
+      .select({
+        deal: dealsTable,
+        listing: wasteListingsTable,
+      })
       .from(dealsTable)
+      .innerJoin(wasteListingsTable, eq(dealsTable.listing_id, wasteListingsTable.id))
       .where(eq(dealsTable.id, dealId))
       .limit(1);
 
-    if (!deal) throw new HttpError(404, "NotFound", "Deal not found");
+    if (!dealRecord) throw new HttpError(404, "NotFound", "Deal not found");
+    
+    const { deal, listing } = dealRecord;
+    
     if (deal.producer_company_id !== company.id) {
       throw new HttpError(403, "Forbidden", "Not the producer of this deal");
     }
@@ -533,6 +540,24 @@ router.post(
         "InvalidState",
         "Deal must be in 'payment_confirmed' state. Current state: " + deal.status,
       );
+    }
+
+    if (listing.transport_responsibility === "buyer") {
+      if (deal.transport_decision !== "self_managed") {
+        const [tr] = await db
+          .select()
+          .from(transportRequestsTable)
+          .where(eq(transportRequestsTable.deal_id, dealId))
+          .limit(1);
+
+        if (!tr || !tr.transporter_name || !tr.vehicle_plate) {
+          throw new HttpError(
+            403,
+            "TransportNotReady",
+            "Dispatch cannot be confirmed until the buyer selects the transport method and transport details are available.",
+          );
+        }
+      }
     }
 
     const vehiclePlate = req.body?.vehicle_plate;
