@@ -301,7 +301,7 @@ export function MyListingsPage() {
 
                   {(listing.offer_count ?? 0) > 0 && (() => {
                     const highestPpu = (listing as WasteListing & { highest_offer_price?: number | null }).highest_offer_price;
-                    const highestTotal = (listing as WasteListing & { highest_offer_total?: number | null }).highest_offer_total;
+                    const highestSubtotal = (listing as WasteListing & { highest_subtotal_amount?: number | null }).highest_subtotal_amount;
                     const isFixed = listing.pricing_model === "fixed";
                     const qty = Number(listing.quantity);
                     return (
@@ -323,11 +323,11 @@ export function MyListingsPage() {
                             </span>
                           </div>
                         )}
-                        {isFixed && (highestTotal != null || highestPpu != null) && (
+                        {isFixed && highestSubtotal != null && (
                           <div className="flex items-center justify-between text-xs ps-5">
                             <span className="text-muted-foreground">{t("myListings.highestOffer.total")}:</span>
                             <span className="font-semibold text-foreground">
-                              {fmtNumber(highestTotal ?? (Number(highestPpu) * qty))} {t("listing.sar")}
+                              {fmtNumber(highestSubtotal)} {t("listing.sar")}
                             </span>
                           </div>
                         )}

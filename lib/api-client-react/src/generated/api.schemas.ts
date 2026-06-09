@@ -269,8 +269,10 @@ Represents the percentage of the buyer's resale revenue paid to the producer.
   closed_at?: string;
   /** Total number of active (non-withdrawn) offers on this listing. */
   offer_count?: number;
-  /** Highest offer as a total (price_per_unit × quantity). Null if no offers. */
-  highest_offer_total?: number;
+  /** Highest offer as a comparable subtotal before VAT. Null if no offers. */
+  highest_subtotal_amount?: number;
+  /** Unit price of the highest offer. Null if no offers. */
+  highest_offer_price?: number;
   /** Optional National Address or free-text description of the pickup location. */
   material_location_address?: string;
   /** Optional Google Maps share URL for the pickup location. Starts with https://. */

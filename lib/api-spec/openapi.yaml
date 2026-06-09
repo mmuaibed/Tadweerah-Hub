@@ -1298,9 +1298,12 @@ components:
         offer_count:
           type: integer
           description: Total number of active (non-withdrawn) offers on this listing.
-        highest_offer_total:
+        highest_subtotal_amount:
           type: number
-          description: Highest offer as a total (price_per_unit × quantity). Null if no offers.
+          description: Highest offer as a comparable subtotal before VAT. Null if no offers.
+        highest_offer_price:
+          type: number
+          description: Unit price of the highest offer. Null if no offers.
         material_location_address:
           type: string
           description: Optional National Address or free-text description of the pickup location.

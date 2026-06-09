@@ -52,7 +52,7 @@ export function ListingCard({
   const myRank = (listing as WasteListing & { my_rank?: number }).my_rank;
   const myOfferPrice = (listing as WasteListing & { my_offer_price?: string | number | null }).my_offer_price;
   const highestOfferPrice = (listing as WasteListing & { highest_offer_price?: number | null }).highest_offer_price;
-  const highestOfferTotal = (listing as WasteListing & { highest_offer_total?: number | null }).highest_offer_total;
+  const highestOfferTotal = (listing as WasteListing & { highest_subtotal_amount?: number | null }).highest_subtotal_amount;
   const requiredServices = (listing as WasteListing & { required_services?: Array<{ id: string; name_ar: string; name_en: string; requires_license?: boolean }> }).required_services ?? [];
   const targetingType = (listing as WasteListing & { targeting_type?: string }).targeting_type ?? "open";
   const eligibleCompanyType = (listing as WasteListing & { eligible_company_type?: string }).eligible_company_type ?? "ALL";
@@ -65,12 +65,14 @@ export function ListingCard({
   const qty = Number(listing.quantity);
   const unitLabel = listing.unit ? ` / ${t(`unit.${listing.unit}`)}` : "";
 
-  function fmtOffer(pricePerUnit: number | null | undefined, total?: number | null): string | null {
-    if (pricePerUnit == null) return null;
+  function fmtOffer(pricePerUnit: number | null | undefined, subtotal?: number | null): string | null {
     if (isFixed) {
-      const tot = total ?? Number(pricePerUnit) * qty;
-      return `${fmtNumber(tot)} ${t("listing.sar")}`;
+      if (subtotal != null) return `${fmtNumber(subtotal)} ${t("listing.sar")}`;
+      // Fallback for myOfferPrice where backend only provides pricePerUnit
+      if (pricePerUnit != null) return `${fmtNumber(Number(pricePerUnit) * qty)} ${t("listing.sar")}`;
+      return null;
     }
+    if (pricePerUnit == null) return null;
     return `${fmtNumber(pricePerUnit)} ${t("listing.sar")}${unitLabel}`;
   }
 

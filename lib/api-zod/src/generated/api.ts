@@ -319,12 +319,16 @@ export const ListMarketplaceListingsResponseItem = zod.object({
     .number()
     .optional()
     .describe("Total number of active (non-withdrawn) offers on this listing."),
-  highest_offer_total: zod
+  highest_subtotal_amount: zod
     .number()
     .optional()
     .describe(
-      "Highest offer as a total (price_per_unit × quantity). Null if no offers.",
+      "Highest offer as a comparable subtotal before VAT. Null if no offers.",
     ),
+  highest_offer_price: zod
+    .number()
+    .optional()
+    .describe("Unit price of the highest offer. Null if no offers."),
   material_location_address: zod
     .string()
     .optional()
@@ -558,12 +562,16 @@ export const ListMyListingsResponseItem = zod.object({
     .number()
     .optional()
     .describe("Total number of active (non-withdrawn) offers on this listing."),
-  highest_offer_total: zod
+  highest_subtotal_amount: zod
     .number()
     .optional()
     .describe(
-      "Highest offer as a total (price_per_unit × quantity). Null if no offers.",
+      "Highest offer as a comparable subtotal before VAT. Null if no offers.",
     ),
+  highest_offer_price: zod
+    .number()
+    .optional()
+    .describe("Unit price of the highest offer. Null if no offers."),
   material_location_address: zod
     .string()
     .optional()
@@ -693,12 +701,16 @@ export const GetWasteListingResponse = zod.object({
     .number()
     .optional()
     .describe("Total number of active (non-withdrawn) offers on this listing."),
-  highest_offer_total: zod
+  highest_subtotal_amount: zod
     .number()
     .optional()
     .describe(
-      "Highest offer as a total (price_per_unit × quantity). Null if no offers.",
+      "Highest offer as a comparable subtotal before VAT. Null if no offers.",
     ),
+  highest_offer_price: zod
+    .number()
+    .optional()
+    .describe("Unit price of the highest offer. Null if no offers."),
   material_location_address: zod
     .string()
     .optional()
@@ -827,12 +839,16 @@ export const CloseWasteListingResponse = zod.object({
     .number()
     .optional()
     .describe("Total number of active (non-withdrawn) offers on this listing."),
-  highest_offer_total: zod
+  highest_subtotal_amount: zod
     .number()
     .optional()
     .describe(
-      "Highest offer as a total (price_per_unit × quantity). Null if no offers.",
+      "Highest offer as a comparable subtotal before VAT. Null if no offers.",
     ),
+  highest_offer_price: zod
+    .number()
+    .optional()
+    .describe("Unit price of the highest offer. Null if no offers."),
   material_location_address: zod
     .string()
     .optional()

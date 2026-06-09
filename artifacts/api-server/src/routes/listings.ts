@@ -69,7 +69,7 @@ type Row = WasteListing & {
   material_category_name_ar?: string | null;
   material_category_name_en?: string | null;
   offer_count?: number;
-  highest_offer_total?: number | null;
+  highest_subtotal_amount?: number | null;
   highest_offer_price?: number | null;
   deal_status?: string | null;
   material_location_address?: string | null;
@@ -137,8 +137,8 @@ function serialize(
     created_at: row.created_at.toISOString(),
     closed_at: row.closed_at?.toISOString() ?? undefined,
     offer_count: row.offer_count ?? undefined,
-    highest_offer_total:
-      row.highest_offer_total != null ? Number(row.highest_offer_total) : undefined,
+    highest_subtotal_amount:
+      row.highest_subtotal_amount != null ? Number(row.highest_subtotal_amount) : undefined,
     highest_offer_price:
       row.highest_offer_price != null ? Number(row.highest_offer_price) : undefined,
     deal_status: row.deal_status ?? undefined,
@@ -249,19 +249,22 @@ const baseSelect = {
  * Withdrawn offers are excluded from both count and max calculation.
  */
 const offerAgg = db
-  .select({
+  .selectDistinctOn([listingOffersTable.waste_listing_id], {
     waste_listing_id: listingOffersTable.waste_listing_id,
     offer_count:
-      sql<number>`cast(count(*) filter (where ${listingOffersTable.status} != 'withdrawn') as int)`.as(
-        "offer_count",
-      ),
+      sql<number>`cast(count(*) over (partition by ${listingOffersTable.waste_listing_id}) as int)`.as("offer_count"),
+    highest_subtotal_amount:
+      sql<string>`coalesce(${listingOffersTable.offer_subtotal_amount}, ${listingOffersTable.price_per_unit} * ${wasteListingsTable.quantity})`.as("highest_subtotal_amount"),
     max_price_per_unit:
-      sql<string>`max(case when ${listingOffersTable.status} != 'withdrawn' then ${listingOffersTable.price_per_unit} end)`.as(
-        "max_price_per_unit",
-      ),
+      listingOffersTable.price_per_unit,
   })
   .from(listingOffersTable)
-  .groupBy(listingOffersTable.waste_listing_id)
+  .innerJoin(wasteListingsTable, eq(wasteListingsTable.id, listingOffersTable.waste_listing_id))
+  .where(ne(listingOffersTable.status, "withdrawn"))
+  .orderBy(
+    listingOffersTable.waste_listing_id,
+    desc(sql`coalesce(${listingOffersTable.offer_subtotal_amount}, ${listingOffersTable.price_per_unit} * ${wasteListingsTable.quantity})`)
+  )
   .as("offer_agg");
 
 /**
@@ -330,6 +333,7 @@ router.get(
         ...baseSelect,
         offer_count: offerAgg.offer_count,
         max_price_per_unit: offerAgg.max_price_per_unit,
+        highest_subtotal_amount: offerAgg.highest_subtotal_amount,
       })
       .from(wasteListingsTable)
       .innerJoin(companiesTable, eq(companiesTable.id, wasteListingsTable.company_id))
@@ -390,13 +394,14 @@ router.get(
       rows.map((r) => {
         const qty = Number(r.quantity);
         const maxPpu = r.max_price_per_unit != null ? Number(r.max_price_per_unit) : null;
+        const highestSubtotal = r.highest_subtotal_amount != null ? Number(r.highest_subtotal_amount) : null;
         const myOffer = myOfferMap.get(r.id);
         return {
           ...serialize(
             {
               ...r,
               offer_count: r.offer_count ?? 0,
-              highest_offer_total: maxPpu != null ? maxPpu * qty : null,
+              highest_subtotal_amount: highestSubtotal,
             },
             reqSvcMap.get(r.id) ?? [],
             targetCatMap.get(r.id) ?? [],
@@ -434,6 +439,7 @@ router.get(
         ...baseSelect,
         offer_count: offerAgg.offer_count,
         max_price_per_unit: offerAgg.max_price_per_unit,
+        highest_subtotal_amount: offerAgg.highest_subtotal_amount,
         deal_status: dealsTable.status,
       })
       .from(wasteListingsTable)
@@ -461,11 +467,12 @@ router.get(
       rows.map((r) => {
         const qty = Number(r.quantity);
         const maxPpu = r.max_price_per_unit != null ? Number(r.max_price_per_unit) : null;
+        const highestSubtotal = r.highest_subtotal_amount != null ? Number(r.highest_subtotal_amount) : null;
         return serialize(
           {
             ...r,
             offer_count: r.offer_count ?? 0,
-            highest_offer_total: maxPpu != null ? maxPpu * qty : null,
+            highest_subtotal_amount: highestSubtotal,
             highest_offer_price: maxPpu,
           },
           mineReqSvcMap.get(r.id) ?? [],
