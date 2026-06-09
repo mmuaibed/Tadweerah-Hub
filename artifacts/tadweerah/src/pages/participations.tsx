@@ -69,6 +69,7 @@ function OfferCard({ offer }: { offer: MyOffer }) {
     : null;
 
   const rejectionReason = translateRejectionReason(offer.rejection_reason, t);
+  const pricingModel = (offer as typeof offer & { listing_pricing_model?: "by_weight" | "fixed" }).listing_pricing_model ?? "by_weight";
   const estimatedTotal = offer.offer_subtotal_amount ?? (offer.price_per_unit * offer.listing_quantity);
   const isCompleted = isAccepted && dealStatus === "completed";
 
@@ -177,22 +178,35 @@ function OfferCard({ offer }: { offer: MyOffer }) {
 
       {/* Price */}
       <div className="space-y-0.5">
-        <div className="flex items-baseline gap-1">
-          <span className="text-lg font-bold text-foreground">
-            {fmtNumber(offer.price_per_unit)}
-          </span>
-          <span className="text-xs text-muted-foreground">
-            {t("listing.sar")} / {t("unit." + offer.listing_unit)}
-          </span>
-        </div>
-        <div className="text-xs text-muted-foreground">
-          {t("offer.mine.total")}:{" "}
-          <span className="font-semibold text-foreground">
-            {fmtNumber(estimatedTotal)} {t("listing.sar")}
-          </span>
-          {" "}
-          <span className="text-muted-foreground/60">{t("offer.quantityDisclaimer")}</span>
-        </div>
+        {pricingModel === "fixed" ? (
+          <div className="flex items-baseline gap-1">
+            <span className="text-lg font-bold text-foreground">
+              {fmtNumber(offer.offer_subtotal_amount ?? estimatedTotal)}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {t("listing.sar")}
+            </span>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-baseline gap-1">
+              <span className="text-lg font-bold text-foreground">
+                {fmtNumber(offer.price_per_unit)}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {t("listing.sar")} / {t("unit." + offer.listing_unit)}
+              </span>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {t("offer.mine.total")}:{" "}
+              <span className="font-semibold text-foreground">
+                {fmtNumber(estimatedTotal)} {t("listing.sar")}
+              </span>
+              {" "}
+              <span className="text-muted-foreground/60">{t("offer.quantityDisclaimer")}</span>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Rank */}

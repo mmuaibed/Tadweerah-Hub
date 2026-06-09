@@ -1516,6 +1516,8 @@ components:
           $ref: "#/components/schemas/WasteUnit"
         listing_city:
           type: string
+        listing_pricing_model:
+          $ref: "#/components/schemas/PricingModel"
         listing_status:
           $ref: "#/components/schemas/WasteListingStatus"
         listing_company_name:
