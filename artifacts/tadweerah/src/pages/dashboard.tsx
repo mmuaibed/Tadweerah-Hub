@@ -63,6 +63,48 @@ interface PendingDeal {
   updated_at: string;
 }
 
+// --- Contracts API type ---
+interface ContractDetail {
+  id: string;
+  reference: string;
+  seller_company_id: string;
+  buyer_company_id: string;
+  created_by_company_id: string | null;
+  seller_name: string;
+  buyer_name: string;
+  status: string;
+  updated_at: string;
+}
+
+function usePendingContracts() {
+  const { getToken } = useAuth();
+  const { data: me } = useGetMe();
+  const myCompanyId = me?.company?.id;
+
+  return useQuery<{ contracts: ContractDetail[] }>({
+    queryKey: ["pending-contracts", myCompanyId],
+    enabled: !!myCompanyId,
+    queryFn: async () => {
+      const token = await getToken();
+      const res = await fetch("/api/contracts", {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("contracts fetch failed");
+      const allContracts = (await res.json()) as ContractDetail[];
+      const pending = allContracts.filter(c => {
+        if (c.status !== "pending_confirmation") return false;
+        // Check if current user is the counterparty
+        return c.created_by_company_id 
+          ? c.created_by_company_id !== myCompanyId 
+          : c.seller_company_id !== myCompanyId; // Legacy: seller is creator
+      });
+      return { contracts: pending };
+    },
+    staleTime: 30_000,
+  });
+}
+
 function usePendingDeals() {
   const { getToken } = useAuth();
   return useQuery<{ deals: PendingDeal[] }>({
@@ -83,11 +125,14 @@ function usePendingDeals() {
 function PendingActionsSection({
   t, lang, Arrow,
 }: { t: (k: string) => string; lang: string; Arrow: typeof ArrowLeft }) {
-  const { data, isLoading } = usePendingDeals();
+  const { data, isLoading: dealsLoading } = usePendingDeals();
   const deals = data?.deals ?? [];
-  const count = deals.length;
+  const { data: contractsData, isLoading: contractsLoading } = usePendingContracts();
+  const contracts = contractsData?.contracts ?? [];
+  
+  const count = deals.length + contracts.length;
 
-  if (isLoading) return null;
+  if (dealsLoading || contractsLoading) return null;
   if (count === 0) return null;
 
   const summaryText = lang === "ar"

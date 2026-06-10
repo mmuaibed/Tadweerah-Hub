@@ -17,7 +17,49 @@ import { useT } from "@/i18n";
 import { fmtNumber, fmtDate } from "@/lib/format";
 import { dealRef } from "@/lib/listing-ref";
 import { LocationLink } from "@/components/location-link";
-import { useGetMaterialCategories } from "@workspace/api-client-react";
+import { useGetMaterialCategories, useGetMe } from "@workspace/api-client-react";
+
+// --- Contracts API type ---
+interface ContractDetail {
+  id: string;
+  reference: string;
+  seller_company_id: string;
+  buyer_company_id: string;
+  created_by_company_id: string | null;
+  seller_name: string;
+  buyer_name: string;
+  status: string;
+  updated_at: string;
+}
+
+function usePendingContracts() {
+  const { getToken } = useAuth();
+  const { data: me } = useGetMe();
+  const myCompanyId = me?.company?.id;
+
+  return useQuery<{ contracts: ContractDetail[] }>({
+    queryKey: ["pending-contracts", myCompanyId],
+    enabled: !!myCompanyId,
+    queryFn: async () => {
+      const token = await getToken();
+      const res = await fetch("/api/contracts", {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("contracts fetch failed");
+      const allContracts = (await res.json()) as ContractDetail[];
+      const pending = allContracts.filter(c => {
+        if (c.status !== "pending_confirmation") return false;
+        // Check if current user is the counterparty
+        return c.created_by_company_id 
+          ? c.created_by_company_id !== myCompanyId 
+          : c.seller_company_id !== myCompanyId; // Legacy: seller is creator
+      });
+      return { contracts: pending };
+    },
+    staleTime: 30_000,
+  });
+}
 
 interface PendingDeal {
   id: string;
@@ -96,8 +138,12 @@ export function PendingActionsPage() {
   const Arrow = lang === "ar" ? ArrowLeft : ArrowRight;
   const { data, isLoading } = usePendingDeals();
   const deals = data?.deals ?? [];
+  const { data: contractsData, isLoading: contractsLoading } = usePendingContracts();
+  const contracts = contractsData?.contracts ?? [];
   const { data: allCategories = [] } = useGetMaterialCategories();
   const nameKey = lang === "ar" ? "name_ar" : "name_en";
+
+  const totalPending = deals.length + contracts.length;
 
   return (
     <AppLayout>
@@ -125,22 +171,22 @@ export function PendingActionsPage() {
               : "Deals that require your attention"}
           </p>
         </div>
-        {deals.length > 0 && (
+        {totalPending > 0 && (
           <span className="ms-auto inline-flex h-6 items-center justify-center rounded-full bg-amber-500 px-2 text-xs font-bold text-white">
-            {deals.length}
+            {totalPending}
           </span>
         )}
       </div>
 
       {/* ── Loading ── */}
-      {isLoading && (
+      {(isLoading || contractsLoading) && (
         <div className="flex h-48 items-center justify-center">
           <Loader2 className="h-6 w-6 animate-spin text-primary" />
         </div>
       )}
 
       {/* ── Empty ── */}
-      {!isLoading && deals.length === 0 && (
+      {!(isLoading || contractsLoading) && totalPending === 0 && (
         <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-border bg-muted/20 py-16">
           <CheckCircle2 className="h-10 w-10 text-secondary" />
           <p className="text-sm font-semibold text-foreground">
@@ -155,8 +201,65 @@ export function PendingActionsPage() {
       )}
 
       {/* ── Deal list ── */}
-      {!isLoading && deals.length > 0 && (
+      {!(isLoading || contractsLoading) && totalPending > 0 && (
         <div className="space-y-3">
+          {contracts.map((contract) => (
+            <div
+              key={contract.id}
+              className={`rounded-xl border border-s-4 bg-card shadow-sm border-s-blue-400`}
+            >
+              <div className="flex flex-col gap-3 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted">
+                      <Package className="h-4 w-4 text-muted-foreground" />
+                    </span>
+                    <div>
+                      <p className="text-sm font-bold text-foreground">
+                        {lang === "ar" ? "عقد جديد: " : "New Contract: "}
+                        {contract.seller_name} / {contract.buyer_name}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">
+                        <span dir="ltr">{contract.reference}</span>
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-1.5 shrink-0">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[9px] font-bold text-amber-700">
+                      <AlertCircle className="h-2.5 w-2.5 shrink-0" />
+                      {t("deal.role.your_turn")}
+                    </span>
+                    <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold bg-blue-100 text-blue-700 border-blue-200">
+                      <span className="h-1.5 w-1.5 rounded-full bg-blue-400" />
+                      {lang === "ar" ? "مطلوب تأكيدك" : "Confirmation required"}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-3 w-3 shrink-0" />
+                    {fmtDate(contract.updated_at, lang)}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />
+                    {lang === "ar" ? "في انتظار التأكيد" : "Pending Confirmation"}
+                  </span>
+                </div>
+
+                <Link to={`/contracts/${contract.id}`}>
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-center gap-2 rounded-lg bg-foreground px-4 py-2 text-xs font-semibold text-background transition-opacity hover:opacity-80"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    {lang === "ar" ? "مراجعة وتأكيد العقد" : "Review & Confirm Contract"}
+                    <Arrow className="h-3.5 w-3.5" />
+                  </button>
+                </Link>
+              </div>
+            </div>
+          ))}
           {deals.map((deal) => {
             const actionKey = `dashboard.pending.action.${deal.action_needed}`;
             const colors = ACTION_COLOR[deal.action_needed] ?? {

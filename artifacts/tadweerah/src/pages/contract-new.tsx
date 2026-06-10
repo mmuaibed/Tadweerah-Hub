@@ -328,7 +328,10 @@ export function ContractNewPage() {
       return;
     }
 
+    const action = (e.nativeEvent as SubmitEvent).submitter?.getAttribute("value") || "draft";
+
     setCreating(true);
+    let createdContractId: string | null = null;
     try {
       const token = await getToken();
       const headers: Record<string, string> = {
@@ -378,6 +381,26 @@ export function ContractNewPage() {
         }
       }
 
+      createdContractId = contract.id;
+
+      if (action === "submit") {
+        const submitRes = await fetch(`/api/contracts/${contract.id}/submit`, {
+          method: "POST",
+          headers,
+          credentials: "include",
+        });
+        if (!submitRes.ok) {
+          const err = (await submitRes.json().catch(() => ({}))) as { message?: string };
+          toast({
+            title: lang === "ar" ? "تم الحفظ كمسودة، لكن فشل الإرسال" : "Saved as draft, but sending failed",
+            description: err.message ?? "Failed to send contract for confirmation.",
+            variant: "destructive",
+          });
+          navigate(`/contracts/${contract.id}`);
+          return; // Stop here, contract exists as draft
+        }
+      }
+
       navigate(`/contracts/${contract.id}`);
     } catch (err) {
       toast({
@@ -395,8 +418,8 @@ export function ContractNewPage() {
     : t("contract.new.counterparty_seller");
 
   const counterpartyPlaceholder = myRole === "seller"
-    ? t("contract.new.search_buyer")
-    : t("contract.new.search_seller");
+    ? (lang === "ar" ? "اكتب حرفين على الأقل للبحث عن الشركات المعتمدة" : "Type at least 2 characters to search approved companies")
+    : (lang === "ar" ? "اكتب حرفين على الأقل للبحث عن الشركات المعتمدة" : "Type at least 2 characters to search approved companies");
 
   return (
     <AppLayout
@@ -500,18 +523,18 @@ export function ContractNewPage() {
           <div className="space-y-1.5">
             <Label htmlFor="attachment_url" className="flex items-center gap-1.5">
               <Paperclip className="h-3.5 w-3.5" />
-              {t("contract.field.attachment")}
+              {lang === "ar" ? "رابط المرفق (URL)" : "Attachment Link (URL)"}
             </Label>
             <Input
               id="attachment_url"
               type="url"
               value={attachmentUrl}
               onChange={(e) => setAttachmentUrl(e.target.value)}
-              placeholder={lang === "ar" ? "رابط الوثيقة الداعمة (PDF، صورة...)" : "Supporting document URL (PDF, image...)"}
+              placeholder={lang === "ar" ? "https://... (رابط فقط)" : "https://... (Web link only)"}
               dir="ltr"
             />
             <p className="text-xs text-muted-foreground">
-              {t("contract.attachment.hint")}
+              {lang === "ar" ? "أدخل رابطاً للوثيقة (مثل رابط Google Drive). لا يمكن رفع الملفات مباشرة." : "Enter a web link to the document (e.g., Google Drive). Direct file uploads are not supported."}
             </p>
           </div>
 
@@ -571,18 +594,28 @@ export function ContractNewPage() {
             variant="outline"
             onClick={() => navigate("/contracts")}
             className="border-gray-400"
+            disabled={creating}
           >
             {t("action.cancel")}
           </Button>
-          <Button type="submit" disabled={creating} className="gap-2 min-w-32">
-            {creating ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                {t("contract.new.creating")}
-              </>
-            ) : (
-              t("contract.new.submit")
-            )}
+          <Button 
+            type="submit" 
+            name="action" 
+            value="draft" 
+            variant="secondary" 
+            disabled={creating} 
+            className="gap-2 min-w-32"
+          >
+            {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : (lang === "ar" ? "حفظ كمسودة" : "Save as Draft")}
+          </Button>
+          <Button 
+            type="submit" 
+            name="action" 
+            value="submit" 
+            disabled={creating} 
+            className="gap-2 min-w-32"
+          >
+            {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : (lang === "ar" ? "إنشاء وإرسال للتأكيد" : "Create & Send")}
           </Button>
         </div>
       </form>
