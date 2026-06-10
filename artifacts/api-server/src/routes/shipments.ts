@@ -15,6 +15,13 @@ import {
 import { HttpError, assertUuid } from "../middlewares/errorHandler";
 import { logAudit } from "../lib/audit";
 import { nextShipmentReference } from "../lib/contract-ref";
+import {
+  notifyContractShipmentCreated,
+  notifyContractShipmentDispatched,
+  notifyContractShipmentReceived,
+  notifyContractShipmentFinalized,
+  notifyContractShipmentCancelled,
+} from "../lib/notify";
 
 const router: IRouter = Router();
 
@@ -247,6 +254,14 @@ router.post(
         details: { contract_id: contract.id, reference: shipment.reference },
       });
 
+      const counterpartyId =
+        contract.seller_company_id === company.id
+          ? contract.buyer_company_id
+          : contract.seller_company_id;
+      void notifyContractShipmentCreated(counterpartyId, shipment.id).catch((err) =>
+        console.error("[notify] Shipment create error:", err),
+      );
+
       res.status(201).json(serializeShipment(shipment));
     } catch (err) {
       next(err);
@@ -348,6 +363,14 @@ router.post(
         details: { source_weight: sourceWeightVal },
       });
 
+      const counterpartyId =
+        contract.seller_company_id === company.id
+          ? contract.buyer_company_id
+          : contract.seller_company_id;
+      void notifyContractShipmentDispatched(counterpartyId, shipment.id).catch((err) =>
+        console.error("[notify] Shipment dispatch error:", err),
+      );
+
       res.json(serializeShipment(updated));
     } catch (err) {
       next(err);
@@ -427,6 +450,14 @@ router.post(
         statusAfter: "received",
         details: { destination_weight: destWeightVal },
       });
+
+      const counterpartyId =
+        contract.seller_company_id === company.id
+          ? contract.buyer_company_id
+          : contract.seller_company_id;
+      void notifyContractShipmentReceived(counterpartyId, shipment.id).catch((err) =>
+        console.error("[notify] Shipment receive error:", err),
+      );
 
       res.json(serializeShipment(updated));
     } catch (err) {
@@ -514,6 +545,14 @@ router.post(
         },
       });
 
+      const counterpartyId =
+        contract.seller_company_id === company.id
+          ? contract.buyer_company_id
+          : contract.seller_company_id;
+      void notifyContractShipmentFinalized(counterpartyId, shipment.id).catch((err) =>
+        console.error("[notify] Shipment finalize error:", err),
+      );
+
       res.json(serializeShipment(updated));
     } catch (err) {
       next(err);
@@ -563,6 +602,14 @@ router.post(
         statusAfter: "cancelled",
         entityId: shipment.id,
       });
+
+      const counterpartyId =
+        contract.seller_company_id === company.id
+          ? contract.buyer_company_id
+          : contract.seller_company_id;
+      void notifyContractShipmentCancelled(counterpartyId, shipment.id).catch((err) =>
+        console.error("[notify] Shipment cancel error:", err),
+      );
 
       res.json(serializeShipment(updated));
     } catch (err) {

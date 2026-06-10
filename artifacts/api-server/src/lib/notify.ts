@@ -262,3 +262,118 @@ export async function notifyNewListingPublished({
     sendMail: true,
   });
 }
+  
+// �� Contract Lite Notifications �����������������������������������������������  
+ 
+
+export async function notifyContractSubmitted(companyId: string, contractId: string) {
+  await createNotification({
+    companyId,
+    type: "contract_submitted",
+    title_ar: "عقد جديد بانتظار تأكيدك",
+    title_en: "New contract awaiting your confirmation",
+    body_ar: "تم إرسال عقد تنفيذ جديد إليك للمراجعة والتأكيد.",
+    body_en: "A new Contract Lite agreement has been sent to you for review and confirmation.",
+    relatedEntityType: "contract",
+    relatedEntityId: contractId,
+    sendMail: true,
+  });
+}
+
+export async function notifyContractConfirmed(companyId: string, contractId: string) {
+  await createNotification({
+    companyId,
+    type: "contract_confirmed",
+    title_ar: "تم تأكيد العقد",
+    title_en: "Contract confirmed",
+    body_ar: "قام الطرف الآخر بتأكيد العقد وأصبح جاهزاً لتنفيذ الشحنات.",
+    body_en: "The counterparty has confirmed the contract and it is now ready for shipment execution.",
+    relatedEntityType: "contract",
+    relatedEntityId: contractId,
+    sendMail: true,
+  });
+}
+
+export async function notifyContractCancelled(companyId: string, contractId: string) {
+  await createNotification({
+    companyId,
+    type: "contract_cancelled",
+    title_ar: "تم إلغاء العقد",
+    title_en: "Contract cancelled",
+    body_ar: "تم إلغاء عقد التنفيذ. يمكنك مراجعة التفاصيل من صفحة العقود.",
+    body_en: "The Contract Lite agreement was cancelled. You can review the details from the contracts page.",
+    relatedEntityType: "contract",
+    relatedEntityId: contractId,
+    sendMail: true,
+  });
+}
+
+export async function notifyContractShipmentCreated(companyId: string, shipmentId: string) {
+  await createNotification({
+    companyId,
+    type: "contract_shipment_created",
+    title_ar: "تمت إضافة شحنة على العقد",
+    title_en: "New shipment added",
+    body_ar: "تمت إضافة شحنة جديدة ضمن أحد عقود التنفيذ.",
+    body_en: "A new shipment has been added under a Contract Lite agreement.",
+    relatedEntityType: "contract_shipment",
+    relatedEntityId: shipmentId,
+    sendMail: true,
+  });
+}
+
+export async function notifyContractShipmentDispatched(companyId: string, shipmentId: string) {
+  await createNotification({
+    companyId,
+    type: "contract_shipment_dispatched",
+    title_ar: "تم إرسال الشحنة",
+    title_en: "Shipment dispatched",
+    body_ar: "تم تسجيل وزن الشحنة في موقع البائع وهي بانتظار الاستلام.",
+    body_en: "The shipment weight at the seller site has been recorded and is awaiting receipt.",
+    relatedEntityType: "contract_shipment",
+    relatedEntityId: shipmentId,
+    sendMail: true,
+  });
+}
+
+export async function notifyContractShipmentReceived(companyId: string, shipmentId: string) {
+  await createNotification({
+    companyId,
+    type: "contract_shipment_received",
+    title_ar: "تم استلام الشحنة",
+    title_en: "Shipment received",
+    body_ar: "تم تسجيل وزن الشحنة في موقع المشتري وهي جاهزة للمراجعة والاعتماد.",
+    body_en: "The shipment weight at the buyer site has been recorded and is ready for review and finalization.",
+    relatedEntityType: "contract_shipment",
+    relatedEntityId: shipmentId,
+    sendMail: true,
+  });
+}
+
+export async function notifyContractShipmentFinalized(companyId: string, shipmentId: string) {
+  await createNotification({
+    companyId,
+    type: "contract_shipment_finalized",
+    title_ar: "تم اعتماد الشحنة نهائياً",
+    title_en: "Shipment finalized",
+    body_ar: "تم اعتماد الشحنة نهائياً وتثبيت الوزن والقيمة النهائية.",
+    body_en: "The shipment has been finalized and the final weight and value have been recorded.",
+    relatedEntityType: "contract_shipment",
+    relatedEntityId: shipmentId,
+    sendMail: true,
+  });
+}
+
+export async function notifyContractShipmentCancelled(companyId: string, shipmentId: string) {
+  await createNotification({
+    companyId,
+    type: "contract_shipment_cancelled",
+    title_ar: "تم إلغاء الشحنة",
+    title_en: "Shipment cancelled",
+    body_ar: "تم إلغاء شحنة ضمن أحد عقود التنفيذ.",
+    body_en: "A shipment under a Contract Lite agreement has been cancelled.",
+    relatedEntityType: "contract_shipment",
+    relatedEntityId: shipmentId,
+    sendMail: true,
+  });
+}

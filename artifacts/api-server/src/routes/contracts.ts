@@ -17,6 +17,11 @@ import {
 import { HttpError, assertUuid } from "../middlewares/errorHandler";
 import { logAudit } from "../lib/audit";
 import { nextContractReference } from "../lib/contract-ref";
+import {
+  notifyContractSubmitted,
+  notifyContractConfirmed,
+  notifyContractCancelled,
+} from "../lib/notify";
 
 const router: IRouter = Router();
 
@@ -501,6 +506,14 @@ router.post(
         statusAfter: "pending_confirmation",
       });
 
+      const counterpartyId =
+        updated.seller_company_id === company.id
+          ? updated.buyer_company_id
+          : updated.seller_company_id;
+      void notifyContractSubmitted(counterpartyId, contract.id).catch((err) =>
+        console.error("[notify] Contract submit error:", err),
+      );
+
       const { seller, buyer } = await fetchPartyNames(
         updated.seller_company_id,
         updated.buyer_company_id,
@@ -555,6 +568,13 @@ router.post(
         statusBefore: "pending_confirmation",
         statusAfter: "active",
       });
+
+      const creatorId = contract.created_by_company_id ?? contract.seller_company_id;
+      if (creatorId !== company.id) {
+        void notifyContractConfirmed(creatorId, contract.id).catch((err) =>
+          console.error("[notify] Contract confirm error:", err),
+        );
+      }
 
       const { seller, buyer } = await fetchPartyNames(
         updated.seller_company_id,
@@ -697,6 +717,14 @@ router.post(
         statusBefore: contract.status,
         statusAfter: "cancelled",
       });
+
+      const counterpartyId =
+        updated.seller_company_id === company.id
+          ? updated.buyer_company_id
+          : updated.seller_company_id;
+      void notifyContractCancelled(counterpartyId, contract.id).catch((err) =>
+        console.error("[notify] Contract cancel error:", err),
+      );
 
       const { seller, buyer } = await fetchPartyNames(
         updated.seller_company_id,
