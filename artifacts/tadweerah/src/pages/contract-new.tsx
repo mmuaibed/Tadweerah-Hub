@@ -246,6 +246,9 @@ function MaterialLineRow({
             />
           </div>
         </div>
+        <p className="text-[11px] text-muted-foreground sm:col-span-2 bg-background/50 p-2 rounded border border-border/50 mt-1">
+          {lang === "ar" ? "إذا تُركت النسب فارغة، تُحتسب القيمة بالكامل للبائع." : "If left blank, 100% of the value is assumed for the seller."}
+        </p>
       </div>
     </div>
   );

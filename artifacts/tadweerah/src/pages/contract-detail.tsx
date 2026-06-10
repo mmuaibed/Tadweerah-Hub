@@ -668,10 +668,10 @@ function MaterialLinesSection({
                     {fmtNumber(m.price_per_unit)}
                   </td>
                   <td className="px-4 py-3 text-center text-muted-foreground">
-                    {m.seller_pct != null ? `${Number(m.seller_pct)}%` : "—"}
+                    {m.seller_pct != null ? `${Number(m.seller_pct)}%` : "100%"}
                   </td>
                   <td className="px-4 py-3 text-center text-muted-foreground">
-                    {m.buyer_pct != null ? `${Number(m.buyer_pct)}%` : "—"}
+                    {m.buyer_pct != null ? `${Number(m.buyer_pct)}%` : "0%"}
                   </td>
                   {isDraft && (
                     <td className="px-4 py-3 text-end">
@@ -719,6 +719,9 @@ function MaterialLinesSection({
               <Input type="number" min="0" max="100" step="0.01" value={addForm.buyerPct} onChange={e => setAddForm(f => ({ ...f, buyerPct: e.target.value }))} placeholder="%" />
             </div>
           </div>
+          <p className="text-[11px] text-muted-foreground bg-background/50 p-2 rounded border border-border/50 mt-1">
+            {lang === "ar" ? "إذا تُركت النسب فارغة، تُحتسب القيمة بالكامل للبائع." : "If left blank, 100% of the value is assumed for the seller."}
+          </p>
           <div className="flex gap-2">
             <Button size="sm" type="submit" disabled={adding} className="gap-1.5">
               {adding && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
