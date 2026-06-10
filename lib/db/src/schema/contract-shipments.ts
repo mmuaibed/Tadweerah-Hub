@@ -52,6 +52,9 @@ export const contractShipmentsTable = pgTable(
      */
     source_weight: numeric("source_weight", { precision: 12, scale: 3 }),
 
+    /** Optional evidence uploaded during dispatch */
+    source_ticket_url: text("source_ticket_url"),
+
     /**
      * Destination (buyer-side) weight.
      * Required when weight_policy is destination_weight_only, dual_source_final,
@@ -61,6 +64,9 @@ export const contractShipmentsTable = pgTable(
       precision: 12,
       scale: 3,
     }),
+
+    /** Optional evidence uploaded during receive */
+    destination_ticket_url: text("destination_ticket_url"),
 
     /**
      * Computed at close from weight_policy + recorded weights. Immutable after close.

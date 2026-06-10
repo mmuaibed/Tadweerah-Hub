@@ -23,6 +23,25 @@ import {
   notifyContractShipmentCancelled,
 } from "../lib/notify";
 
+import multer from "multer";
+import { Storage } from "@google-cloud/storage";
+import path from "path";
+
+const storageClient = new Storage();
+const BUCKET_NAME = process.env.GCS_CONTRACT_DOCS_BUCKET || "tadweerah-staging-contract-docs";
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB limit
+  fileFilter: (_req, file, cb) => {
+    const allowedTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
+    if (!allowedTypes.includes(file.mimetype)) {
+      return cb(new Error("Only PDF, JPEG, PNG, and WebP files are allowed"));
+    }
+    cb(null, true);
+  },
+});
+
 const router: IRouter = Router();
 
 // ---------------------------------------------------------------------------
@@ -37,8 +56,10 @@ function serializeShipment(s: ContractShipment) {
     material_line_id: s.material_line_id,
     status: s.status,
     source_weight: s.source_weight != null ? Number(s.source_weight) : null,
+    source_ticket_url: s.source_ticket_url ?? null,
     destination_weight:
       s.destination_weight != null ? Number(s.destination_weight) : null,
+    destination_ticket_url: s.destination_ticket_url ?? null,
     final_weight: s.final_weight != null ? Number(s.final_weight) : null,
     final_value: s.final_value != null ? Number(s.final_value) : null,
     notes: s.notes ?? null,
@@ -270,6 +291,63 @@ router.post(
 );
 
 // ---------------------------------------------------------------------------
+// POST /shipments/:id/evidence — upload scale ticket or evidence
+// ---------------------------------------------------------------------------
+
+router.post(
+  "/shipments/:id/evidence",
+  requireAuth,
+  requireCompany(),
+  upload.single("file"),
+  async (req, res, next) => {
+    try {
+      if (!req.file) {
+        throw new HttpError(400, "ValidationError", "No file uploaded");
+      }
+
+      const { type } = req.body as Record<string, unknown>;
+      if (type !== "source" && type !== "destination") {
+        throw new HttpError(400, "ValidationError", "Evidence type must be 'source' or 'destination'");
+      }
+
+      const company = (req as AuthedCompanyRequest).company;
+      const shipmentId = assertUuid(req.params.id, "id");
+
+      const { shipment, contract } = await fetchShipmentForParty(shipmentId, company.id);
+
+      // Verify the uploader is allowed based on the type
+      if (type === "source" && contract.seller_company_id !== company.id) {
+         throw new HttpError(403, "Forbidden", "Only the seller can upload source weight evidence");
+      }
+      if (type === "destination" && contract.buyer_company_id !== company.id) {
+         throw new HttpError(403, "Forbidden", "Only the buyer can upload destination weight evidence");
+      }
+
+      const ext = path.extname(req.file.originalname) || "";
+      const timestamp = Date.now();
+      const fileName = `contract-shipments/${shipment.id}/${type}/${timestamp}${ext}`;
+      const blob = storageClient.bucket(BUCKET_NAME).file(fileName);
+
+      await new Promise<void>((resolve, reject) => {
+        const blobStream = blob.createWriteStream({
+          resumable: false,
+          contentType: req.file!.mimetype,
+        });
+        blobStream.on("error", (err) => reject(err));
+        blobStream.on("finish", () => resolve());
+        blobStream.end(req.file!.buffer);
+      });
+
+      const publicUrl = `https://storage.googleapis.com/${BUCKET_NAME}/${fileName}`;
+
+      res.status(201).json({ url: publicUrl });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+// ---------------------------------------------------------------------------
 // GET /shipments/:id — get shipment detail
 // ---------------------------------------------------------------------------
 
@@ -315,7 +393,7 @@ router.post(
         );
       }
 
-      const { source_weight, notes } = req.body as Record<string, unknown>;
+      const { source_weight, notes, source_ticket_url } = req.body as Record<string, unknown>;
 
       const sourceWeightRequired = [
         "source_weight_only",
@@ -344,6 +422,7 @@ router.post(
       };
       if (sourceWeightVal != null) updates.source_weight = sourceWeightVal;
       if (typeof notes === "string") updates.notes = notes.trim();
+      if (typeof source_ticket_url === "string") updates.source_ticket_url = source_ticket_url.trim();
 
       const [updated] = await db
         .update(contractShipmentsTable)
@@ -403,7 +482,7 @@ router.post(
         );
       }
 
-      const { destination_weight, notes } = req.body as Record<string, unknown>;
+      const { destination_weight, notes, destination_ticket_url } = req.body as Record<string, unknown>;
 
       const destWeightRequired = [
         "destination_weight_only",
@@ -432,6 +511,7 @@ router.post(
       };
       if (destWeightVal != null) updates.destination_weight = destWeightVal;
       if (typeof notes === "string") updates.notes = notes.trim();
+      if (typeof destination_ticket_url === "string") updates.destination_ticket_url = destination_ticket_url.trim();
 
       const [updated] = await db
         .update(contractShipmentsTable)

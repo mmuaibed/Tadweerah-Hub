@@ -95,7 +95,9 @@ interface ContractShipment {
   material_line_id: string;
   status: ShipmentStatus;
   source_weight: number | string | null;
+  source_ticket_url?: string | null;
   destination_weight: number | string | null;
+  destination_ticket_url?: string | null;
   final_weight: number | string | null;
   final_value: number | string | null;
   notes: string | null;
@@ -763,6 +765,7 @@ function ShipmentMiniTimeline({
     isCancelled?: boolean;
     ts: string | null;
     weightNote?: string | null;
+    ticketUrl?: string | null;
   }
 
   const sellerLbl = ar ? "البائع"   : "Seller";
@@ -788,6 +791,7 @@ function ShipmentMiniTimeline({
       weightNote: shipment.source_weight != null
         ? fmtNumber(shipment.source_weight)
         : null,
+      ticketUrl: shipment.source_ticket_url,
     },
     {
       id: "received",
@@ -799,6 +803,7 @@ function ShipmentMiniTimeline({
       weightNote: shipment.destination_weight != null
         ? fmtNumber(shipment.destination_weight)
         : null,
+      ticketUrl: shipment.destination_ticket_url,
     },
   ];
 
@@ -850,7 +855,14 @@ function ShipmentMiniTimeline({
               )}
               {/* Weight note */}
               {step.weightNote && step.isDone && (
-                <p className="text-[9px] text-primary font-semibold text-center">{step.weightNote}</p>
+                <div className="flex flex-col items-center gap-0.5 mt-0.5">
+                  <span className="text-[9px] text-primary font-semibold text-center">{step.weightNote}</span>
+                  {step.ticketUrl && (
+                    <a href={step.ticketUrl} target="_blank" rel="noopener noreferrer" className="text-[9px] text-blue-600 hover:underline">
+                      {ar ? "عرض مستند الوزن" : "View weight document"}
+                    </a>
+                  )}
+                </div>
               )}
             </div>
             {/* Connector line */}
@@ -882,6 +894,7 @@ function ShipmentRow({
   const { toast } = useToast();
   const [inlineAction, setInlineAction] = useState<"dispatch" | "receive" | null>(null);
   const [weight, setWeight] = useState("");
+  const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
   const [confirmAction, setConfirmAction] = useState<"close" | "cancel" | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -902,12 +915,61 @@ function ShipmentRow({
         throw new Error(err.message ?? `HTTP ${res.status}`);
       }
       setWeight("");
+      setEvidenceFile(null);
       setInlineAction(null);
       setConfirmAction(null);
       onRefresh();
     } catch (e) {
       toast({ title: t("error.generic"), description: e instanceof Error ? e.message : undefined, variant: "destructive" });
     } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleInlineActionSubmit() {
+    try {
+      setLoading(true);
+      let evidenceUrl: string | undefined;
+
+      if (evidenceFile) {
+        const formData = new FormData();
+        formData.append("file", evidenceFile);
+        formData.append("type", inlineAction === "dispatch" ? "source" : "destination");
+
+        const token = await getToken();
+        const res = await fetch(`/api/shipments/${shipment.id}/evidence`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.message || "Upload failed");
+        }
+        const data = await res.json();
+        evidenceUrl = data.url;
+      }
+
+      const body: Record<string, unknown> = {};
+      if (weight) {
+        if (inlineAction === "dispatch") body.source_weight = Number(weight);
+        else body.destination_weight = Number(weight);
+      }
+      if (evidenceUrl) {
+        if (inlineAction === "dispatch") body.source_ticket_url = evidenceUrl;
+        else body.destination_ticket_url = evidenceUrl;
+      }
+      await doAction(inlineAction!, Object.keys(body).length > 0 ? body : undefined);
+    } catch (err) {
+      console.error(err);
+      toast({
+        variant: "destructive",
+        title: lang === "ar" ? "خطأ" : "Error",
+        description: err instanceof Error ? err.message : "Action failed",
+      });
       setLoading(false);
     }
   }
@@ -986,17 +1048,16 @@ function ShipmentRow({
                 placeholder="0"
                 className="flex-1"
               />
-              <Button size="sm" disabled={loading} onClick={() => {
-                const body: Record<string, unknown> = {};
-                if (weight) {
-                  if (inlineAction === "dispatch") body.source_weight = Number(weight);
-                  else body.destination_weight = Number(weight);
-                }
-                doAction(inlineAction, Object.keys(body).length > 0 ? body : undefined);
-              }}>
+              <Input
+                type="file"
+                accept="application/pdf,image/jpeg,image/png,image/webp"
+                onChange={(e) => setEvidenceFile(e.target.files?.[0] || null)}
+                className="flex-1"
+              />
+              <Button size="sm" disabled={loading} onClick={handleInlineActionSubmit}>
                 {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : t(`shipment.action.${inlineAction}`)}
               </Button>
-              <Button size="sm" variant="outline" onClick={() => { setInlineAction(null); setWeight(""); }} className="border-gray-400">
+              <Button size="sm" variant="outline" onClick={() => { setInlineAction(null); setWeight(""); setEvidenceFile(null); }} className="border-gray-400">
                 {t("action.cancel")}
               </Button>
             </div>
