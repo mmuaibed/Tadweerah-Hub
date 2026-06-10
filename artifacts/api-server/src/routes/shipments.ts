@@ -258,7 +258,7 @@ router.post(
         contract.seller_company_id === company.id
           ? contract.buyer_company_id
           : contract.seller_company_id;
-      void notifyContractShipmentCreated(counterpartyId, shipment.id).catch((err) =>
+      void notifyContractShipmentCreated(counterpartyId, shipment.id, contract.id, shipment.reference || contract.reference).catch((err) =>
         console.error("[notify] Shipment create error:", err),
       );
 
@@ -367,7 +367,7 @@ router.post(
         contract.seller_company_id === company.id
           ? contract.buyer_company_id
           : contract.seller_company_id;
-      void notifyContractShipmentDispatched(counterpartyId, shipment.id).catch((err) =>
+      void notifyContractShipmentDispatched(counterpartyId, shipment.id, contract.id, shipment.reference || contract.reference).catch((err) =>
         console.error("[notify] Shipment dispatch error:", err),
       );
 
@@ -455,7 +455,7 @@ router.post(
         contract.seller_company_id === company.id
           ? contract.buyer_company_id
           : contract.seller_company_id;
-      void notifyContractShipmentReceived(counterpartyId, shipment.id).catch((err) =>
+      void notifyContractShipmentReceived(counterpartyId, shipment.id, contract.id, shipment.reference || contract.reference).catch((err) =>
         console.error("[notify] Shipment receive error:", err),
       );
 
@@ -549,7 +549,7 @@ router.post(
         contract.seller_company_id === company.id
           ? contract.buyer_company_id
           : contract.seller_company_id;
-      void notifyContractShipmentFinalized(counterpartyId, shipment.id).catch((err) =>
+      void notifyContractShipmentFinalized(counterpartyId, shipment.id, contract.id, shipment.reference || contract.reference).catch((err) =>
         console.error("[notify] Shipment finalize error:", err),
       );
 
@@ -607,7 +607,7 @@ router.post(
         contract.seller_company_id === company.id
           ? contract.buyer_company_id
           : contract.seller_company_id;
-      void notifyContractShipmentCancelled(counterpartyId, shipment.id).catch((err) =>
+      void notifyContractShipmentCancelled(counterpartyId, shipment.id, contract.id, shipment.reference || contract.reference).catch((err) =>
         console.error("[notify] Shipment cancel error:", err),
       );
 

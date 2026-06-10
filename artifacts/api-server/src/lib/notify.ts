@@ -22,6 +22,9 @@ interface NotifyParams {
   relatedEntityId?: string;
   /** If true, also send a transactional email to the company owner. */
   sendMail?: boolean;
+  actionUrl?: string;
+  actionText_ar?: string;
+  actionText_en?: string;
 }
 
 async function lookupOwnerEmail(companyId: string): Promise<string | null> {
@@ -71,6 +74,9 @@ export async function createNotification(p: NotifyParams): Promise<void> {
           body_ar: p.body_ar,
           body_en: p.body_en,
           listingId: p.relatedEntityType === "listing" ? p.relatedEntityId : undefined,
+          actionUrl: p.actionUrl,
+          actionText_ar: p.actionText_ar,
+          actionText_en: p.actionText_en,
         });
       }
     })();
@@ -263,117 +269,151 @@ export async function notifyNewListingPublished({
   });
 }
   
-// �� Contract Lite Notifications �����������������������������������������������  
+// �� Contract Lite Notifications �����������������������������������������������  
  
 
-export async function notifyContractSubmitted(companyId: string, contractId: string) {
+const BASE_URL = process.env.PLATFORM_URL ?? "https://tadweerah.com";
+
+export async function notifyContractSubmitted(companyId: string, contractId: string, reference: string) {
+  const url = `${BASE_URL}/contracts/${contractId}`;
   await createNotification({
     companyId,
     type: "contract_submitted",
-    title_ar: "عقد جديد بانتظار تأكيدك",
-    title_en: "New contract awaiting your confirmation",
-    body_ar: "تم إرسال عقد تنفيذ جديد إليك للمراجعة والتأكيد.",
-    body_en: "A new Contract Lite agreement has been sent to you for review and confirmation.",
+    title_ar: `عقد جديد بانتظار تأكيدك: ${reference}`,
+    title_en: `New contract awaiting your confirmation: ${reference}`,
+    body_ar: `تم إرسال عقد جديد إليك لمراجعته وتأكيده.\n\nرابط العملية: ${url}`,
+    body_en: `A new Contract Lite agreement has been sent to you for review and confirmation.\n\nOperation link: ${url}`,
     relatedEntityType: "contract",
     relatedEntityId: contractId,
     sendMail: true,
+    actionUrl: url,
+    actionText_ar: "عرض العقد",
+    actionText_en: "View Contract",
   });
 }
 
-export async function notifyContractConfirmed(companyId: string, contractId: string) {
+export async function notifyContractConfirmed(companyId: string, contractId: string, reference: string) {
+  const url = `${BASE_URL}/contracts/${contractId}`;
   await createNotification({
     companyId,
     type: "contract_confirmed",
-    title_ar: "تم تأكيد العقد",
-    title_en: "Contract confirmed",
-    body_ar: "قام الطرف الآخر بتأكيد العقد وأصبح جاهزاً لتنفيذ الشحنات.",
-    body_en: "The counterparty has confirmed the contract and it is now ready for shipment execution.",
+    title_ar: `تم تأكيد العقد: ${reference}`,
+    title_en: `Contract confirmed: ${reference}`,
+    body_ar: `قام الطرف الآخر بتأكيد العقد وهو جاهز الآن للبدء بالتنفيذ.\n\nرابط العملية: ${url}`,
+    body_en: `The counterparty has confirmed the contract and it is now ready for shipment execution.\n\nOperation link: ${url}`,
     relatedEntityType: "contract",
     relatedEntityId: contractId,
     sendMail: true,
+    actionUrl: url,
+    actionText_ar: "عرض العقد",
+    actionText_en: "View Contract",
   });
 }
 
-export async function notifyContractCancelled(companyId: string, contractId: string) {
+export async function notifyContractCancelled(companyId: string, contractId: string, reference: string) {
+  const url = `${BASE_URL}/contracts/${contractId}`;
   await createNotification({
     companyId,
     type: "contract_cancelled",
-    title_ar: "تم إلغاء العقد",
-    title_en: "Contract cancelled",
-    body_ar: "تم إلغاء عقد التنفيذ. يمكنك مراجعة التفاصيل من صفحة العقود.",
-    body_en: "The Contract Lite agreement was cancelled. You can review the details from the contracts page.",
+    title_ar: `تم إلغاء العقد: ${reference}`,
+    title_en: `Contract cancelled: ${reference}`,
+    body_ar: `تم إلغاء عقد التنفيذ. يمكنك مراجعة التفاصيل من صفحة العقود.\n\nرابط العملية: ${url}`,
+    body_en: `The Contract Lite agreement was cancelled. You can review the details from the contracts page.\n\nOperation link: ${url}`,
     relatedEntityType: "contract",
     relatedEntityId: contractId,
     sendMail: true,
+    actionUrl: url,
+    actionText_ar: "عرض العقد",
+    actionText_en: "View Contract",
   });
 }
 
-export async function notifyContractShipmentCreated(companyId: string, shipmentId: string) {
+export async function notifyContractShipmentCreated(companyId: string, shipmentId: string, contractId: string, reference: string) {
+  const url = `${BASE_URL}/contracts/${contractId}`;
   await createNotification({
     companyId,
     type: "contract_shipment_created",
-    title_ar: "تمت إضافة شحنة على العقد",
-    title_en: "New shipment added",
-    body_ar: "تمت إضافة شحنة جديدة ضمن أحد عقود التنفيذ.",
-    body_en: "A new shipment has been added under a Contract Lite agreement.",
+    title_ar: `إضافة شحنة جديدة: ${reference}`,
+    title_en: `New shipment added: ${reference}`,
+    body_ar: `تم إضافة شحنة جديدة تحت عقد التنفيذ.\n\nرابط العملية: ${url}`,
+    body_en: `A new shipment has been added under a Contract Lite agreement.\n\nOperation link: ${url}`,
     relatedEntityType: "contract_shipment",
     relatedEntityId: shipmentId,
     sendMail: true,
+    actionUrl: url,
+    actionText_ar: "عرض العقد",
+    actionText_en: "View Contract",
   });
 }
 
-export async function notifyContractShipmentDispatched(companyId: string, shipmentId: string) {
+export async function notifyContractShipmentDispatched(companyId: string, shipmentId: string, contractId: string, reference: string) {
+  const url = `${BASE_URL}/contracts/${contractId}`;
   await createNotification({
     companyId,
     type: "contract_shipment_dispatched",
-    title_ar: "تم إرسال الشحنة",
-    title_en: "Shipment dispatched",
-    body_ar: "تم تسجيل وزن الشحنة في موقع البائع وهي بانتظار الاستلام.",
-    body_en: "The shipment weight at the seller site has been recorded and is awaiting receipt.",
+    title_ar: `تم إرسال الشحنة: ${reference}`,
+    title_en: `Shipment dispatched: ${reference}`,
+    body_ar: `تم تسجيل وزن الشحنة في موقع البائع وهي بانتظار الاستلام.\n\nرابط العملية: ${url}`,
+    body_en: `The shipment weight at the seller site has been recorded and is awaiting receipt.\n\nOperation link: ${url}`,
     relatedEntityType: "contract_shipment",
     relatedEntityId: shipmentId,
     sendMail: true,
+    actionUrl: url,
+    actionText_ar: "عرض العقد",
+    actionText_en: "View Contract",
   });
 }
 
-export async function notifyContractShipmentReceived(companyId: string, shipmentId: string) {
+export async function notifyContractShipmentReceived(companyId: string, shipmentId: string, contractId: string, reference: string) {
+  const url = `${BASE_URL}/contracts/${contractId}`;
   await createNotification({
     companyId,
     type: "contract_shipment_received",
-    title_ar: "تم استلام الشحنة",
-    title_en: "Shipment received",
-    body_ar: "تم تسجيل وزن الشحنة في موقع المشتري وهي جاهزة للمراجعة والاعتماد.",
-    body_en: "The shipment weight at the buyer site has been recorded and is ready for review and finalization.",
+    title_ar: `تم استلام الشحنة: ${reference}`,
+    title_en: `Shipment received: ${reference}`,
+    body_ar: `تم تسجيل وزن الشحنة في موقع المشتري وهي جاهزة للمراجعة.\n\nرابط العملية: ${url}`,
+    body_en: `The shipment weight at the buyer site has been recorded and is ready for review and finalization.\n\nOperation link: ${url}`,
     relatedEntityType: "contract_shipment",
     relatedEntityId: shipmentId,
     sendMail: true,
+    actionUrl: url,
+    actionText_ar: "عرض العقد",
+    actionText_en: "View Contract",
   });
 }
 
-export async function notifyContractShipmentFinalized(companyId: string, shipmentId: string) {
+export async function notifyContractShipmentFinalized(companyId: string, shipmentId: string, contractId: string, reference: string) {
+  const url = `${BASE_URL}/contracts/${contractId}`;
   await createNotification({
     companyId,
     type: "contract_shipment_finalized",
-    title_ar: "تم اعتماد الشحنة نهائياً",
-    title_en: "Shipment finalized",
-    body_ar: "تم اعتماد الشحنة نهائياً وتثبيت الوزن والقيمة النهائية.",
-    body_en: "The shipment has been finalized and the final weight and value have been recorded.",
+    title_ar: `تم اعتماد الشحنة نهائياً: ${reference}`,
+    title_en: `Shipment finalized: ${reference}`,
+    body_ar: `تم اعتماد الشحنة نهائياً وتوثيق الوزن والقيمة النهائية.\n\nرابط العملية: ${url}`,
+    body_en: `The shipment has been finalized and the final weight and value have been recorded.\n\nOperation link: ${url}`,
     relatedEntityType: "contract_shipment",
     relatedEntityId: shipmentId,
     sendMail: true,
+    actionUrl: url,
+    actionText_ar: "عرض العقد",
+    actionText_en: "View Contract",
   });
 }
 
-export async function notifyContractShipmentCancelled(companyId: string, shipmentId: string) {
+export async function notifyContractShipmentCancelled(companyId: string, shipmentId: string, contractId: string, reference: string) {
+  const url = `${BASE_URL}/contracts/${contractId}`;
   await createNotification({
     companyId,
     type: "contract_shipment_cancelled",
-    title_ar: "تم إلغاء الشحنة",
-    title_en: "Shipment cancelled",
-    body_ar: "تم إلغاء شحنة ضمن أحد عقود التنفيذ.",
-    body_en: "A shipment under a Contract Lite agreement has been cancelled.",
+    title_ar: `تم إلغاء الشحنة: ${reference}`,
+    title_en: `Shipment cancelled: ${reference}`,
+    body_ar: `تم إلغاء شحنة من تحت عقد التنفيذ.\n\nرابط العملية: ${url}`,
+    body_en: `A shipment under a Contract Lite agreement has been cancelled.\n\nOperation link: ${url}`,
     relatedEntityType: "contract_shipment",
     relatedEntityId: shipmentId,
     sendMail: true,
+    actionUrl: url,
+    actionText_ar: "عرض العقد",
+    actionText_en: "View Contract",
   });
 }

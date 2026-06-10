@@ -510,7 +510,7 @@ router.post(
         updated.seller_company_id === company.id
           ? updated.buyer_company_id
           : updated.seller_company_id;
-      void notifyContractSubmitted(counterpartyId, contract.id).catch((err) =>
+      void notifyContractSubmitted(counterpartyId, contract.id, updated.reference).catch((err) =>
         console.error("[notify] Contract submit error:", err),
       );
 
@@ -571,7 +571,7 @@ router.post(
 
       const creatorId = contract.created_by_company_id ?? contract.seller_company_id;
       if (creatorId !== company.id) {
-        void notifyContractConfirmed(creatorId, contract.id).catch((err) =>
+        void notifyContractConfirmed(creatorId, contract.id, updated.reference).catch((err) =>
           console.error("[notify] Contract confirm error:", err),
         );
       }
@@ -722,7 +722,7 @@ router.post(
         updated.seller_company_id === company.id
           ? updated.buyer_company_id
           : updated.seller_company_id;
-      void notifyContractCancelled(counterpartyId, contract.id).catch((err) =>
+      void notifyContractCancelled(counterpartyId, contract.id, updated.reference).catch((err) =>
         console.error("[notify] Contract cancel error:", err),
       );
 
