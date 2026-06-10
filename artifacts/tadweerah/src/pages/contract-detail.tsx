@@ -888,7 +888,7 @@ function ShipmentRow({
   const canDispatch = shipment.status === "planned";
   const canReceive = shipment.status === "dispatched";
   const canClose = shipment.status === "received";
-  const canCancel = !["closed", "cancelled"].includes(shipment.status);
+  const canCancel = ["planned", "dispatched"].includes(shipment.status);
 
   return (
     <>
