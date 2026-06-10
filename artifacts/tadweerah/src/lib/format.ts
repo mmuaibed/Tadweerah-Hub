@@ -10,7 +10,7 @@
  */
 
 const ARABIC_LATIN = "ar-SA-u-nu-latn";
-const ENGLISH = "en-US";
+const ENGLISH = "en-GB";
 
 function resolveLocale(lang: string): string {
   return lang === "ar" ? ARABIC_LATIN : ENGLISH;
@@ -62,8 +62,8 @@ export function fmtDate(
   if (isNaN(d.getTime())) return "";
   return d.toLocaleDateString(resolveLocale(lang), {
     year: "numeric",
-    month: "short",
-    day: "numeric",
+    month: "2-digit",
+    day: "2-digit",
   });
 }
 
@@ -80,8 +80,8 @@ export function fmtDateTime(
   if (isNaN(d.getTime())) return "";
   return d.toLocaleString(resolveLocale(lang), {
     year: "numeric",
-    month: "short",
-    day: "numeric",
+    month: "2-digit",
+    day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
   });

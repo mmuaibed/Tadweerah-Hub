@@ -519,7 +519,8 @@ export function ContractNewPage() {
             />
           </div>
 
-          {/* Attachment URL */}
+          {/* Attachment URL (Hidden for Phase 1 UAT) */}
+          {/*
           <div className="space-y-1.5">
             <Label htmlFor="attachment_url" className="flex items-center gap-1.5">
               <Paperclip className="h-3.5 w-3.5" />
@@ -537,6 +538,7 @@ export function ContractNewPage() {
               {lang === "ar" ? "أدخل رابطاً للوثيقة (مثل رابط Google Drive). لا يمكن رفع الملفات مباشرة." : "Enter a web link to the document (e.g., Google Drive). Direct file uploads are not supported."}
             </p>
           </div>
+          */}
 
           <div className="space-y-1.5">
             <Label htmlFor="notes">{t("contract.field.notes")}</Label>

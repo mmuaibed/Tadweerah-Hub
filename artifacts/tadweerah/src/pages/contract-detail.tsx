@@ -344,7 +344,7 @@ function ContractLifecyclePanel({
       isDone: contract.confirmed_at != null,
       isCurrent: status === "pending_confirmation",
       ts: contract.confirmed_at,
-      action: canConfirm ? { label: t("contract.action.confirm"), key: "confirm", primary: true } : null,
+      action: null,
     },
     {
       id: "shipments",
@@ -414,17 +414,41 @@ function ContractLifecyclePanel({
 
           {/* ── User Responsibility Message ── */}
           {responsibilityMsg && (
-            <div className={`flex items-start gap-2 rounded-lg px-3 py-2 border ${
+            <div className={`flex items-start gap-2 rounded-lg px-3 py-3 border ${
               isMyTurnHighlight
-                ? "bg-primary/5 border-primary/20"
+                ? "bg-primary/5 border-primary/30"
                 : "bg-muted/30 border-transparent"
             }`}>
               {isMyTurnHighlight && (
                 <div className="mt-1 h-1.5 w-1.5 rounded-full bg-primary animate-pulse shrink-0" />
               )}
-              <p className={`text-xs leading-relaxed ${isMyTurnHighlight ? "text-primary font-medium" : "text-muted-foreground"}`}>
-                {responsibilityMsg}
-              </p>
+              <div className="flex-1 space-y-3">
+                <p className={`text-xs leading-relaxed ${isMyTurnHighlight ? "text-primary font-medium" : "text-muted-foreground"}`}>
+                  {responsibilityMsg}
+                </p>
+                {canConfirm && (
+                  <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-primary/10">
+                    <Button
+                      size="sm"
+                      onClick={() => setPending("confirm")}
+                      disabled={loading}
+                      className="gap-1.5 flex-1 sm:flex-none"
+                    >
+                      {loading && pending === "confirm" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                      {t("contract.action.confirm")}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setPending("cancel")}
+                      disabled={loading}
+                      className="flex-1 sm:flex-none border-red-200 text-red-600 hover:bg-red-50"
+                    >
+                      {t("contract.action.cancel")}
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -698,7 +722,7 @@ function MaterialLinesSection({
           <div className="flex gap-2">
             <Button size="sm" type="submit" disabled={adding} className="gap-1.5">
               {adding && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-              {t("contracts.new")}
+              {lang === "ar" ? "حفظ البند" : "Save Line"}
             </Button>
             <Button size="sm" type="button" variant="outline" onClick={() => setShowAdd(false)} className="border-gray-400">{t("action.cancel")}</Button>
           </div>
@@ -922,11 +946,11 @@ function ShipmentRow({
         {/* Weights */}
         <div className="grid grid-cols-3 gap-x-3 text-xs">
           <div>
-            <span className="text-muted-foreground block">{t("contract.shipments.source_weight")}</span>
+            <span className="text-muted-foreground block">{lang === "ar" ? "الوزن في موقع البائع" : "Weight at seller site"}</span>
             <span className="font-medium">{shipment.source_weight != null ? fmtNumber(shipment.source_weight) : "—"}</span>
           </div>
           <div>
-            <span className="text-muted-foreground block">{t("contract.shipments.dest_weight")}</span>
+            <span className="text-muted-foreground block">{lang === "ar" ? "الوزن في موقع المشتري" : "Weight at buyer site"}</span>
             <span className="font-medium">{shipment.destination_weight != null ? fmtNumber(shipment.destination_weight) : "—"}</span>
           </div>
           <div>
@@ -947,7 +971,7 @@ function ShipmentRow({
         {inlineAction && (
           <div className="pt-2 border-t border-border space-y-2">
             <Label className="text-xs">
-              {inlineAction === "dispatch" ? t("shipment.field.source_weight") : t("shipment.field.dest_weight")}
+              {inlineAction === "dispatch" ? (lang === "ar" ? "الوزن في موقع البائع" : "Weight at seller site") : (lang === "ar" ? "الوزن في موقع المشتري" : "Weight at buyer site")}
             </Label>
             <div className="flex gap-2">
               <Input
@@ -993,7 +1017,7 @@ function ShipmentRow({
             )}
             {canClose && (
               <Button size="sm" variant="outline" className="h-7 text-xs border-gray-400 hover:border-green-400" onClick={() => setConfirmAction("close")}>
-                {t("shipment.action.close")}
+                {lang === "ar" ? "اعتماد الشحنة نهائياً" : "Finalize Shipment"}
               </Button>
             )}
             {canCancel && (
