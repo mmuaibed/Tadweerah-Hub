@@ -289,10 +289,10 @@ planned → dispatched → received → closed   (terminal — final_weight and 
 
 | Entity | Backend CRUD | Admin UI | Safe to expose in UI? |
 |--------|-------------|----------|----------------------|
-| Material categories | ✅ GET/POST/PATCH via `/admin/lookup/material-categories` | ❌ API-only | ✅ Yes — protect `key` field |
-| Unit options | ✅ GET/POST/PATCH via `/admin/lookup/unit-options` | ❌ API-only | ✅ Yes — protect `key` field |
-| Company categories | ✅ GET/POST/PATCH via `/admin/lookup/company-categories` | ❌ API-only | ✅ Yes — governed (deactivation blocked if referenced) |
-| Capabilities | ✅ Read-only via `/admin/lookup/capabilities` (active+inactive) | ❌ None | N/A — backend endpoint needed first |
+| Material categories | 🟢 GET/POST/PATCH via `/admin/lookup/material-categories` | 🟡 Read-only via Admin UI | 🟢 Yes - protect `key` field |
+| Unit options | 🟢 GET/POST/PATCH via `/admin/lookup/unit-options` | 🟡 Read-only via Admin UI | 🟢 Yes - protect `key` field |
+| Company categories | 🟢 GET/POST/PATCH via `/admin/lookup/company-categories` | 🟡 Read-only via Admin UI | 🟢 Yes - governed (deactivation blocked if referenced) |
+| Capabilities | 🟢 Read-only via `/admin/lookup/capabilities` (active+inactive) | 🟡 Read-only via Admin UI | N/A - backend endpoint needed first |
 | License status | ✅ Via `/admin/companies/:id/license` | ✅ Companies tab in admin UI | pending/approved/rejected/expired |
 | Lifecycle status enums | Not configurable (DB enum, schema-level) | N/A | 🚫 Must NOT be editable — drives backend logic |
 | Payment/financial fields | Not configurable | N/A | 🚫 Must NOT be editable |
@@ -396,7 +396,7 @@ Event occurs (route handler or hourly job)
 | `contract-new.tsx` | `/contracts/new` | Create contract |
 | `transport-requests.tsx` | `/transport-requests` | Transport requests + quote submission |
 | `reports.tsx` | `/reports` | Per-company deal reports + CSV export |
-| `admin.tsx` | `/admin` | Admin panel (Companies, Deals, Contracts, Shipments, Transport, Reports, Issues, Audit Log, Awaiting Review tabs; gated by Clerk email allowlist + ADMIN_API_KEY) |
+| `admin.tsx` | `/admin` | Admin panel (Companies, Deals, Contracts, Shipments, Transport, Reports, Issues, Audit Log, Awaiting Review, Master Data tabs; gated by Clerk email allowlist + ADMIN_API_KEY) |
 | `onboarding.tsx` | `/onboarding` | Company registration flow |
 | `company-profile.tsx` | `/profile` | Company profile + license |
 | `company-capabilities.tsx` | `/capabilities` | Waste-handling certifications |

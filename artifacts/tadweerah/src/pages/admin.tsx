@@ -17,6 +17,7 @@ import {
   TrendingUp,
   Clock,
   MessageSquare,
+  Database,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,6 +34,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { MasterDataTab } from "./MasterDataTab";
 
 /* ─── Types ──────────────────────────────────────────────────────────────── */
 
@@ -301,7 +303,7 @@ export function AdminPage() {
   const dir = lang === "ar" ? "rtl" : "ltr";
 
   const [adminKey, setAdminKey] = useState(() => sessionStorage.getItem("tdw_admin_key") ?? "");
-  const [tab, setTab] = useState<"deals" | "companies" | "transport" | "reports" | "issues" | "contracts" | "auditlog" | "shipments" | "overdue">("companies");
+  const [tab, setTab] = useState<"deals" | "companies" | "transport" | "reports" | "issues" | "contracts" | "auditlog" | "shipments" | "overdue" | "masterdata">("companies");
 
   /* Deals state */
   const [deals, setDeals] = useState<AdminDeal[] | null>(null);
@@ -1028,7 +1030,7 @@ export function AdminPage() {
 
         {/* Tabs */}
         <div className="flex flex-wrap gap-1 border-b border-border">
-          {(["companies", "deals", "contracts", "shipments", "transport", "reports", "issues", "auditlog", "overdue"] as const).map((t2) => (
+          {(["companies", "deals", "contracts", "shipments", "transport", "reports", "issues", "auditlog", "overdue", "masterdata"] as const).map((t2) => (
             <button
               key={t2}
               onClick={() => setTab(t2)}
@@ -1054,7 +1056,9 @@ export function AdminPage() {
                             ? <><MessageSquare className="h-4 w-4" />{t("admin.tab.issues")}</>
                             : t2 === "auditlog"
                               ? <><Clock className="h-4 w-4" />{lang === "ar" ? "سجل العمليات" : "Audit Log"}</>
-                              : <><Clock className="h-4 w-4" />{lang === "ar" ? "عمليات تحتاج مراجعة" : "Awaiting Review"}</>
+                              : t2 === "overdue"
+                                ? <><Clock className="h-4 w-4" />{lang === "ar" ? "عمليات تحتاج مراجعة" : "Awaiting Review"}</>
+                                : <><Database className="h-4 w-4" />{lang === "ar" ? "إدارة القوائم" : "Master Data"}</>
               }
             </button>
           ))}

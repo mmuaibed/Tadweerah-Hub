@@ -425,7 +425,7 @@ A simple admin-panel "Master Data" tab could expose:
     - Admin can activate/deactivate material categories from UI
     - Admin can activate/deactivate unit options from UI
     - Capabilities gap documented with backend ticket if needed
-  - **Progress Note:** Step 3A resolves the active-only GET limitation, providing admin read endpoints for active + inactive options necessary for the future UI.
+  - **Progress Note:** Step 3A resolves the active-only GET limitation, providing admin read endpoints for active + inactive options necessary for the future UI. Step 3B provides a read-only Admin UI shell before introducing write actions.
 
 ---
 
