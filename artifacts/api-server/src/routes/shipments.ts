@@ -57,9 +57,11 @@ function serializeShipment(s: ContractShipment) {
     status: s.status,
     source_weight: s.source_weight != null ? Number(s.source_weight) : null,
     source_ticket_url: s.source_ticket_url ?? null,
+    source_ticket_uploaded_by_company_id: s.source_ticket_uploaded_by_company_id ?? null,
     destination_weight:
       s.destination_weight != null ? Number(s.destination_weight) : null,
     destination_ticket_url: s.destination_ticket_url ?? null,
+    destination_ticket_uploaded_by_company_id: s.destination_ticket_uploaded_by_company_id ?? null,
     final_weight: s.final_weight != null ? Number(s.final_weight) : null,
     final_value: s.final_value != null ? Number(s.final_value) : null,
     notes: s.notes ?? null,
@@ -316,12 +318,8 @@ router.post(
       const { shipment, contract } = await fetchShipmentForParty(shipmentId, company.id);
 
       // Verify the uploader is allowed based on the type
-      if (type === "source" && contract.seller_company_id !== company.id) {
-         throw new HttpError(403, "Forbidden", "Only the seller can upload source weight evidence");
-      }
-      if (type === "destination" && contract.buyer_company_id !== company.id) {
-         throw new HttpError(403, "Forbidden", "Only the buyer can upload destination weight evidence");
-      }
+      // Role checking removed to allow either party to upload evidence, as the parent
+      // contract auth guarantees they are a party to the shipment.
 
       const ext = path.extname(req.file.originalname) || "";
       const timestamp = Date.now();
@@ -422,7 +420,14 @@ router.post(
       };
       if (sourceWeightVal != null) updates.source_weight = sourceWeightVal;
       if (typeof notes === "string") updates.notes = notes.trim();
-      if (typeof source_ticket_url === "string") updates.source_ticket_url = source_ticket_url.trim();
+      if (typeof source_ticket_url === "string") {
+        const url = source_ticket_url.trim();
+        if (!url.startsWith(`https://storage.googleapis.com/${BUCKET_NAME}/contract-shipments/${shipment.id}/`)) {
+          throw new HttpError(400, "ValidationError", "Invalid source ticket URL");
+        }
+        updates.source_ticket_url = url;
+        updates.source_ticket_uploaded_by_company_id = company.id;
+      }
 
       const [updated] = await db
         .update(contractShipmentsTable)
@@ -511,7 +516,14 @@ router.post(
       };
       if (destWeightVal != null) updates.destination_weight = destWeightVal;
       if (typeof notes === "string") updates.notes = notes.trim();
-      if (typeof destination_ticket_url === "string") updates.destination_ticket_url = destination_ticket_url.trim();
+      if (typeof destination_ticket_url === "string") {
+        const url = destination_ticket_url.trim();
+        if (!url.startsWith(`https://storage.googleapis.com/${BUCKET_NAME}/contract-shipments/${shipment.id}/`)) {
+          throw new HttpError(400, "ValidationError", "Invalid destination ticket URL");
+        }
+        updates.destination_ticket_url = url;
+        updates.destination_ticket_uploaded_by_company_id = company.id;
+      }
 
       const [updated] = await db
         .update(contractShipmentsTable)

@@ -96,8 +96,10 @@ interface ContractShipment {
   status: ShipmentStatus;
   source_weight: number | string | null;
   source_ticket_url?: string | null;
+  source_ticket_uploaded_by_company_id?: string | null;
   destination_weight: number | string | null;
   destination_ticket_url?: string | null;
+  destination_ticket_uploaded_by_company_id?: string | null;
   final_weight: number | string | null;
   final_value: number | string | null;
   notes: string | null;
@@ -741,9 +743,11 @@ function MaterialLinesSection({
 
 function ShipmentMiniTimeline({
   shipment,
+  contract,
   lang,
 }: {
   shipment: ContractShipment;
+  contract: ContractDetail;
   lang: string;
 }) {
   const ar = lang === "ar";
@@ -766,11 +770,19 @@ function ShipmentMiniTimeline({
     ts: string | null;
     weightNote?: string | null;
     ticketUrl?: string | null;
+    ticketUploadedBy?: string | null;
   }
 
   const sellerLbl = ar ? "البائع"   : "Seller";
   const buyerLbl  = ar ? "المشتري" : "Buyer";
   const bothLbl   = ar ? "الطرفان" : "Both";
+
+  function getUploaderLabel(companyId: string | null | undefined): string | null {
+    if (!companyId) return null;
+    if (companyId === contract.seller_company_id) return sellerLbl;
+    if (companyId === contract.buyer_company_id) return buyerLbl;
+    return ar ? "غير محدد" : "Unknown";
+  }
 
   const baseSteps: MiniStep[] = [
     {
@@ -792,6 +804,7 @@ function ShipmentMiniTimeline({
         ? fmtNumber(shipment.source_weight)
         : null,
       ticketUrl: shipment.source_ticket_url,
+      ticketUploadedBy: shipment.source_ticket_uploaded_by_company_id,
     },
     {
       id: "received",
@@ -804,6 +817,7 @@ function ShipmentMiniTimeline({
         ? fmtNumber(shipment.destination_weight)
         : null,
       ticketUrl: shipment.destination_ticket_url,
+      ticketUploadedBy: shipment.destination_ticket_uploaded_by_company_id,
     },
   ];
 
@@ -858,9 +872,16 @@ function ShipmentMiniTimeline({
                 <div className="flex flex-col items-center gap-0.5 mt-0.5">
                   <span className="text-[9px] text-primary font-semibold text-center">{step.weightNote}</span>
                   {step.ticketUrl && (
-                    <a href={step.ticketUrl} target="_blank" rel="noopener noreferrer" className="text-[9px] text-blue-600 hover:underline">
-                      {ar ? "عرض مستند الوزن" : "View weight document"}
-                    </a>
+                    <div className="flex flex-col items-center">
+                      <a href={step.ticketUrl} target="_blank" rel="noopener noreferrer" className="text-[9px] text-blue-600 hover:underline text-center">
+                        {ar ? "عرض مستند الوزن" : "View weight document"}
+                      </a>
+                      {step.ticketUploadedBy && (
+                        <span className="text-[8px] text-muted-foreground/70 text-center">
+                          {ar ? `مرفوع بواسطة: ${getUploaderLabel(step.ticketUploadedBy)}` : `Uploaded by: ${getUploaderLabel(step.ticketUploadedBy)}`}
+                        </span>
+                      )}
+                    </div>
                   )}
                 </div>
               )}
@@ -881,12 +902,12 @@ function ShipmentMiniTimeline({
 function ShipmentRow({
   shipment,
   materials,
-  contractId,
+  contract,
   onRefresh,
 }: {
   shipment: ContractShipment;
   materials: ContractMaterial[];
-  contractId: string;
+  contract: ContractDetail;
   onRefresh: () => void;
 }) {
   const { t, lang } = useT();
@@ -1006,7 +1027,7 @@ function ShipmentRow({
         </div>
 
         {/* Shipment Mini Timeline */}
-        <ShipmentMiniTimeline shipment={shipment} lang={lang} />
+        <ShipmentMiniTimeline shipment={shipment} contract={contract} lang={lang} />
 
         {/* Weights */}
         <div className="grid grid-cols-3 gap-x-3 text-xs">
@@ -1177,7 +1198,7 @@ function ShipmentsSection({
             key={s.id}
             shipment={s}
             materials={contract.materials}
-            contractId={contract.id}
+            contract={contract}
             onRefresh={onRefresh}
           />
         ))}

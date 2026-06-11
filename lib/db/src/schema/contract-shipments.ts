@@ -54,6 +54,7 @@ export const contractShipmentsTable = pgTable(
 
     /** Optional evidence uploaded during dispatch */
     source_ticket_url: text("source_ticket_url"),
+    source_ticket_uploaded_by_company_id: uuid("source_ticket_uploaded_by_company_id"),
 
     /**
      * Destination (buyer-side) weight.
@@ -67,6 +68,7 @@ export const contractShipmentsTable = pgTable(
 
     /** Optional evidence uploaded during receive */
     destination_ticket_url: text("destination_ticket_url"),
+    destination_ticket_uploaded_by_company_id: uuid("destination_ticket_uploaded_by_company_id"),
 
     /**
      * Computed at close from weight_policy + recorded weights. Immutable after close.
