@@ -3206,6 +3206,11 @@ export function AdminPage() {
 
       </div>
 
+        {/* ── Master Data Tab ────────────────────────────────────────────────── */}
+        {tab === "masterdata" && (
+          <MasterDataTab adminKey={adminKey} callAdmin={callAdmin} />
+        )}
+
       {/* Confirmation Modals */}
       <AdminConfirmModal
         open={contractCancelTarget !== null}
