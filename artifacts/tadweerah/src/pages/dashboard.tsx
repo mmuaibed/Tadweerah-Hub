@@ -122,6 +122,23 @@ function usePendingDeals() {
   });
 }
 
+function usePendingShipments() {
+  const { getToken } = useAuth();
+  return useQuery<{ shipments: any[] }>({
+    queryKey: ["pending-shipments"],
+    queryFn: async () => {
+      const token = await getToken();
+      const res = await fetch("/api/shipments/pending", {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("pending fetch failed");
+      return res.json();
+    },
+    staleTime: 30_000,
+  });
+}
+
 function PendingActionsSection({
   t, lang, Arrow,
 }: { t: (k: string) => string; lang: string; Arrow: typeof ArrowLeft }) {
@@ -129,10 +146,12 @@ function PendingActionsSection({
   const deals = data?.deals ?? [];
   const { data: contractsData, isLoading: contractsLoading } = usePendingContracts();
   const contracts = contractsData?.contracts ?? [];
+  const { data: shipmentsData, isLoading: shipmentsLoading } = usePendingShipments();
+  const shipments = shipmentsData?.shipments ?? [];
   
-  const count = deals.length + contracts.length;
+  const count = deals.length + contracts.length + shipments.length;
 
-  if (dealsLoading || contractsLoading) return null;
+  if (dealsLoading || contractsLoading || shipmentsLoading) return null;
   if (count === 0) return null;
 
   const summaryText = lang === "ar"
