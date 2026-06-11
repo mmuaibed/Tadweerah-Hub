@@ -359,6 +359,7 @@ export function AdminPage() {
   const [reportCity, setReportCity] = useState("");
   const [reportCompanyId, setReportCompanyId] = useState("");
   const [reportExporting, setReportExporting] = useState(false);
+  const [reportSubTab, setReportSubTab] = useState<"deals" | "contracts" | "shipments" | "companies" | "activity">("deals");
 
   /* Contracts state */
   const [contracts, setContracts] = useState<AdminContract[] | null>(null);
@@ -397,6 +398,21 @@ export function AdminPage() {
   const [dealCancelLoading, setDealCancelLoading] = useState(false);
 
   const [paymentResubmitTarget, setPaymentResubmitTarget] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (tab === "reports" && adminKey.trim()) {
+      void fetchStats();
+      if (reportSubTab === "deals" && reportRows === null) {
+        void fetchReport();
+      } else if (reportSubTab === "contracts" && contracts === null) {
+        void fetchContracts();
+      } else if (reportSubTab === "shipments" && shipments === null) {
+        void fetchShipments();
+      } else if (reportSubTab === "companies" && companies === null) {
+        void fetchCompanies();
+      }
+    }
+  }, [tab, reportSubTab, adminKey, reportRows, contracts, shipments, companies]);
 
   async function fetchContracts(overrideStatusFilter?: string) {
     setContractsLoading(true);
@@ -1914,156 +1930,683 @@ export function AdminPage() {
 
         {/* ── Reports Tab ───────────────────────────────────────────────────── */}
         {tab === "reports" && (
-          <div className="space-y-4">
-            {/* Filters */}
-            <div className="rounded-xl border border-border bg-white p-4 flex flex-wrap gap-3 items-end">
-              <div>
-                <label className="text-xs font-medium text-foreground mb-1 block">{t("reports.filter.date_from")}</label>
-                <Input type="date" value={reportDateFrom} onChange={(e) => setReportDateFrom(e.target.value)} className="h-9 w-36 text-sm" dir="ltr" />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-foreground mb-1 block">{t("reports.filter.date_to")}</label>
-                <Input type="date" value={reportDateTo} onChange={(e) => setReportDateTo(e.target.value)} className="h-9 w-36 text-sm" dir="ltr" />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-foreground mb-1 block">{t("reports.filter.status")}</label>
-                <select
-                  value={reportStatus}
-                  onChange={(e) => setReportStatus(e.target.value)}
-                  className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                >
-                  <option value="">{t("reports.filter.all_statuses")}</option>
-                  {["active","payment_submitted","payment_confirmed","dispatched","receipt_pending","completed","expired","cancelled"].map((s) => (
-                    <option key={s} value={s}>{t(`deal.status.${s}`)}</option>
+          <div className="space-y-5">
+            {/* Overview Strip: لمحة عامة */}
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold text-foreground px-1">
+                {lang === "ar" ? "لمحة عامة (مؤشرات سريعة)" : "Overview (Quick Indicators)"}
+              </h3>
+              {statsLoading && !stats ? (
+                <div className="flex justify-center p-4"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+              ) : stats ? (
+                <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+                  {[
+                    {
+                      label: lang === "ar" ? "إجمالي الشركات" : "Total Companies",
+                      value: stats.totalCompanies,
+                      color: "text-blue-700 bg-blue-50 border-blue-100",
+                    },
+                    {
+                      label: lang === "ar" ? "شركات قيد المراجعة" : "Pending Companies",
+                      value: stats.companiesByStatus["pending"] || 0,
+                      color: "text-amber-700 bg-amber-50 border-amber-100",
+                    },
+                    {
+                      label: lang === "ar" ? "إجمالي الصفقات" : "Total Deals",
+                      value: stats.totalDeals,
+                      color: "text-green-700 bg-green-50 border-green-100",
+                    },
+                    {
+                      label: lang === "ar" ? "الصفقات النشطة" : "Active Deals",
+                      value: stats.dealsByStatus["active"] || 0,
+                      color: "text-amber-700 bg-amber-50 border-amber-100",
+                    },
+                    {
+                      label: lang === "ar" ? "إجمالي الشحنات" : "Total Shipments",
+                      value: stats.totalTRs,
+                      color: "text-purple-700 bg-purple-50 border-purple-100",
+                    },
+                    {
+                      label: lang === "ar" ? "الإعلانات النشطة" : "Active Listings",
+                      value: stats.activeListings,
+                      color: "text-sky-700 bg-sky-50 border-sky-100",
+                    },
+                  ].map((item, idx) => (
+                    <div key={idx} className={`rounded-xl border p-3 flex flex-col justify-center ${item.color}`}>
+                      <span className="text-lg font-bold">{item.value}</span>
+                      <span className="text-[10px] opacity-90 font-medium mt-0.5 leading-tight">{item.label}</span>
+                    </div>
                   ))}
-                </select>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-foreground mb-1 block">{t("reports.filter.city")}</label>
-                <Input type="text" value={reportCity} onChange={(e) => setReportCity(e.target.value)} className="h-9 w-28 text-sm" placeholder="…" />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-foreground mb-1 block">{t("admin.reports.filter.company_id")}</label>
-                <Input type="text" value={reportCompanyId} onChange={(e) => setReportCompanyId(e.target.value)} className="h-9 w-40 text-sm font-mono" placeholder="uuid…" dir="ltr" />
-              </div>
-              <div className="flex gap-2 items-end">
-                <Button onClick={() => void fetchReport()} disabled={reportLoading}>
-                  {reportLoading
-                    ? <><Loader2 className="h-4 w-4 me-2 animate-spin" />{t("admin.loading")}</>
-                    : <><RefreshCw className="h-4 w-4 me-2" />{t("admin.reports.fetch")}</>
-                  }
-                </Button>
-                {reportRows !== null && (
-                  <Button variant="outline" onClick={() => void exportReportCsv()} disabled={reportExporting}>
-                    {reportExporting
-                      ? <><Loader2 className="h-4 w-4 me-2 animate-spin" />{t("reports.action.exporting")}</>
-                      : <><Download className="h-4 w-4 me-2" />{t("admin.reports.export_csv")}</>
-                    }
-                  </Button>
-                )}
-              </div>
+                </div>
+              ) : (
+                <div className="text-xs text-muted-foreground bg-white p-3 rounded-xl border border-border text-center">
+                  {lang === "ar" ? "أدخل رمز الوصول الخاص بالمسؤول لتحديث الإحصائيات" : "Enter admin access key to load statistics"}
+                </div>
+              )}
             </div>
 
-            {reportError && (
-              <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-                <AlertCircle className="h-4 w-4 shrink-0" />{reportError}
-              </div>
-            )}
+            {/* Sub-tabs for Reports/Dashboard */}
+            <div className="flex flex-wrap gap-1 border-b border-border bg-white rounded-xl p-1 border">
+              {[
+                { key: "deals", label: lang === "ar" ? "الصفقات" : "Deals", icon: FileText },
+                { key: "contracts", label: lang === "ar" ? "العقود" : "Contracts", icon: FileText },
+                { key: "shipments", label: lang === "ar" ? "الشحنات" : "Shipments", icon: Truck },
+                { key: "companies", label: lang === "ar" ? "الشركات" : "Companies", icon: Building2 },
+                { key: "activity", label: lang === "ar" ? "نشاط المنصة" : "Platform Activity", icon: BarChart3 },
+              ].map((sub) => {
+                const Icon = sub.icon;
+                const isSelected = reportSubTab === sub.key;
+                return (
+                  <button
+                    key={sub.key}
+                    onClick={() => setReportSubTab(sub.key as any)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+                      isSelected
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                    }`}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    {sub.label}
+                  </button>
+                );
+              })}
+            </div>
 
-            {/* Summary cards */}
-            {reportSummary && (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-                {[
-                  { icon: FileText,    label: t("reports.summary.total"),              value: String(reportSummary.total),              color: "bg-blue-100 text-blue-700" },
-                  { icon: CheckCircle2,label: t("reports.summary.completed"),           value: String(reportSummary.completed),           color: "bg-green-100 text-green-700" },
-                  { icon: Clock,       label: t("reports.summary.active"),              value: String(reportSummary.active),              color: "bg-amber-100 text-amber-700" },
-                  { icon: TrendingUp,  label: t("reports.summary.amount_before_vat"),   value: fmtSAR(reportSummary.estimated_amount_sum, lang), color: "bg-primary/10 text-primary" },
-                  { icon: Banknote,    label: t("reports.summary.vat_amount"),          value: fmtSAR(reportSummary.vat_amount_sum, lang),  color: "bg-orange-100 text-orange-700" },
-                  { icon: BarChart3,   label: t("reports.summary.total_with_vat"),      value: fmtSAR(reportSummary.total_amount_sum, lang), color: "bg-purple-100 text-purple-700" },
-                ].map(({ icon: Icon, label, value, color }) => (
-                  <div key={label} className="rounded-xl border border-border bg-white p-3 flex items-center gap-2.5">
-                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${color}`}>
-                      <Icon className="h-4 w-4" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-base font-bold text-foreground leading-none truncate">{value}</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">{label}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Table */}
-            {reportRows !== null && (
-              <div className="rounded-xl border border-border bg-white overflow-hidden">
-                <div className="px-4 py-3 border-b border-border">
-                  <p className="text-sm font-semibold text-foreground">
-                    {reportRows.length} {lang === "ar" ? "صفقة" : "deals"}
-                  </p>
+            {/* Sub-tab content */}
+            {reportSubTab === "deals" && (
+              <div className="space-y-4 animate-in fade-in duration-200">
+                <div className="flex items-center justify-between px-1">
+                  <h3 className="text-sm font-semibold text-foreground">
+                    {lang === "ar" ? "تقرير الصفقات المفصل" : "Detailed Deals Report"}
+                  </h3>
                 </div>
-                {reportRows.length === 0 ? (
-                  <div className="px-4 py-8 text-center text-sm text-muted-foreground">{t("admin.reports.empty")}</div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-xs">
-                      <thead>
-                        <tr className="border-b border-border bg-muted/30">
-                          {[
-                            t("reports.col.date"), t("reports.col.deal_id"),
-                            t("reports.col.seller"), t("reports.col.buyer"),
-                            t("reports.col.material"), t("reports.col.quantity"),
-                            t("reports.col.city"), t("reports.col.status"),
-                            t("reports.col.amount"), t("reports.col.vat"),
-                            t("reports.col.total"), t("reports.col.transport"),
-                          ].map((h) => (
-                            <th key={h} className="px-3 py-2.5 text-start font-semibold text-muted-foreground whitespace-nowrap">{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-border">
-                        {reportRows.map((row) => {
-                          const statusStyle: Record<string,string> = {
-                            completed: "bg-green-100 text-green-800",
-                            dispatched: "bg-blue-100 text-blue-800",
-                            payment_confirmed: "bg-teal-100 text-teal-800",
-                            payment_submitted: "bg-sky-100 text-sky-800",
-                            active: "bg-amber-100 text-amber-800",
-                            expired: "bg-gray-100 text-gray-500",
-                            cancelled: "bg-red-100 text-red-700",
-                          };
-                          const matLabel = (lang === "ar" ? row.subcategory_ar : row.subcategory_en) ?? row.subcategory_ar ?? row.material ?? "—";
-                          const trLabel = row.tr_status
-                            ? (t(`reports.transport.${row.tr_status}`) || row.tr_status)
-                            : row.transport_decision === "not_required"
-                              ? t("reports.transport.not_required")
-                              : "—";
-                          return (
-                            <tr key={row.deal_id} className="hover:bg-muted/20 transition-colors">
-                              <td className="px-3 py-2.5 whitespace-nowrap text-muted-foreground">{fmtDate(row.created_at, lang)}</td>
-                              <td className="px-3 py-2.5 whitespace-nowrap font-mono text-muted-foreground" dir="ltr">
-                                {row.tr_manifest_ref ?? `${row.deal_id.slice(0, 8)}…`}
-                              </td>
-                              <td className="px-3 py-2.5 whitespace-nowrap">{row.seller_name ?? "—"}<br/><span className="text-muted-foreground">{row.seller_city ?? ""}</span></td>
-                              <td className="px-3 py-2.5 whitespace-nowrap">{row.buyer_name ?? "—"}<br/><span className="text-muted-foreground">{row.buyer_city ?? ""}</span></td>
-                              <td className="px-3 py-2.5 whitespace-nowrap">{matLabel}</td>
-                              <td className="px-3 py-2.5 whitespace-nowrap font-mono">{row.quantity && row.unit ? `${row.quantity} ${row.unit}` : "—"}</td>
-                              <td className="px-3 py-2.5 whitespace-nowrap text-muted-foreground">{row.city ?? "—"}</td>
-                              <td className="px-3 py-2.5 whitespace-nowrap">
-                                <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${statusStyle[row.status] ?? "bg-gray-100 text-gray-600"}`}>
-                                  {t(`deal.status.${row.status}`) || row.status}
-                                </span>
-                              </td>
-                              <td className="px-3 py-2.5 whitespace-nowrap font-mono">{fmtSAR(row.estimated_amount, lang)}</td>
-                              <td className="px-3 py-2.5 whitespace-nowrap font-mono text-muted-foreground">{fmtSAR(row.vat_amount, lang)}</td>
-                              <td className="px-3 py-2.5 whitespace-nowrap font-mono font-semibold">{fmtSAR(row.total_amount, lang)}</td>
-                              <td className="px-3 py-2.5 whitespace-nowrap text-muted-foreground">{trLabel}</td>
+
+                {/* Filters */}
+                <div className="rounded-xl border border-border bg-white p-4 flex flex-wrap gap-3 items-end">
+                  <div>
+                    <label className="text-xs font-medium text-foreground mb-1 block">{t("reports.filter.date_from")}</label>
+                    <Input type="date" value={reportDateFrom} onChange={(e) => setReportDateFrom(e.target.value)} className="h-9 w-36 text-sm" dir="ltr" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-foreground mb-1 block">{t("reports.filter.date_to")}</label>
+                    <Input type="date" value={reportDateTo} onChange={(e) => setReportDateTo(e.target.value)} className="h-9 w-36 text-sm" dir="ltr" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-foreground mb-1 block">{t("reports.filter.status")}</label>
+                    <select
+                      value={reportStatus}
+                      onChange={(e) => setReportStatus(e.target.value)}
+                      className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                    >
+                      <option value="">{t("reports.filter.all_statuses")}</option>
+                      {["active","payment_submitted","payment_confirmed","dispatched","receipt_pending","completed","expired","cancelled"].map((s) => (
+                        <option key={s} value={s}>{t(`deal.status.${s}`)}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-foreground mb-1 block">{t("reports.filter.city")}</label>
+                    <Input type="text" value={reportCity} onChange={(e) => setReportCity(e.target.value)} className="h-9 w-28 text-sm" placeholder="…" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-foreground mb-1 block">{t("admin.reports.filter.company_id")}</label>
+                    <Input type="text" value={reportCompanyId} onChange={(e) => setReportCompanyId(e.target.value)} className="h-9 w-40 text-sm font-mono" placeholder="uuid…" dir="ltr" />
+                  </div>
+                  <div className="flex gap-2 items-end">
+                    <Button onClick={() => void fetchReport()} disabled={reportLoading}>
+                      {reportLoading
+                        ? <><Loader2 className="h-4 w-4 me-2 animate-spin" />{t("admin.loading")}</>
+                        : <><RefreshCw className="h-4 w-4 me-2" />{t("admin.reports.fetch")}</>
+                      }
+                    </Button>
+                    {reportRows !== null && (
+                      <Button variant="outline" onClick={() => void exportReportCsv()} disabled={reportExporting}>
+                        {reportExporting
+                          ? <><Loader2 className="h-4 w-4 me-2 animate-spin" />{t("reports.action.exporting")}</>
+                          : <><Download className="h-4 w-4 me-2" />{t("admin.reports.export_csv")}</>
+                        }
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {reportError && (
+                  <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                    <AlertCircle className="h-4 w-4 shrink-0" />{reportError}
+                  </div>
+                )}
+
+                {/* Summary cards */}
+                {reportSummary && (
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+                    {[
+                      { icon: FileText,    label: t("reports.summary.total"),              value: String(reportSummary.total),              color: "bg-blue-100 text-blue-700" },
+                      { icon: CheckCircle2,label: t("reports.summary.completed"),           value: String(reportSummary.completed),           color: "bg-green-100 text-green-700" },
+                      { icon: Clock,       label: t("reports.summary.active"),              value: String(reportSummary.active),              color: "bg-amber-100 text-amber-700" },
+                      { icon: TrendingUp,  label: t("reports.summary.amount_before_vat"),   value: fmtSAR(reportSummary.estimated_amount_sum, lang), color: "bg-primary/10 text-primary" },
+                      { icon: Banknote,    label: t("reports.summary.vat_amount"),          value: fmtSAR(reportSummary.vat_amount_sum, lang),  color: "bg-orange-100 text-orange-700" },
+                      { icon: BarChart3,   label: t("reports.summary.total_with_vat"),      value: fmtSAR(reportSummary.total_amount_sum, lang), color: "bg-purple-100 text-purple-700" },
+                    ].map(({ icon: Icon, label, value, color }) => (
+                      <div key={label} className="rounded-xl border border-border bg-white p-3 flex items-center gap-2.5">
+                        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${color}`}>
+                          <Icon className="h-4 w-4" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-base font-bold text-foreground leading-none truncate">{value}</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">{label}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Table */}
+                {reportRows !== null && (
+                  <div className="rounded-xl border border-border bg-white overflow-hidden">
+                    <div className="px-4 py-3 border-b border-border">
+                      <p className="text-sm font-semibold text-foreground">
+                        {reportRows.length} {lang === "ar" ? "صفقة" : "deals"}
+                      </p>
+                    </div>
+                    {reportRows.length === 0 ? (
+                      <div className="px-4 py-8 text-center text-sm text-muted-foreground">{t("admin.reports.empty")}</div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="border-b border-border bg-muted/30">
+                              {[
+                                t("reports.col.date"), t("reports.col.deal_id"),
+                                t("reports.col.seller"), t("reports.col.buyer"),
+                                t("reports.col.material"), t("reports.col.quantity"),
+                                t("reports.col.city"), t("reports.col.status"),
+                                t("reports.col.amount"), t("reports.col.vat"),
+                                t("reports.col.total"), t("reports.col.transport"),
+                              ].map((h) => (
+                                <th key={h} className="px-3 py-2.5 text-start font-semibold text-muted-foreground whitespace-nowrap">{h}</th>
+                              ))}
                             </tr>
+                          </thead>
+                          <tbody className="divide-y divide-border">
+                            {reportRows.map((row) => {
+                              const statusStyle: Record<string,string> = {
+                                completed: "bg-green-100 text-green-800",
+                                dispatched: "bg-blue-100 text-blue-800",
+                                payment_confirmed: "bg-teal-100 text-teal-800",
+                                payment_submitted: "bg-sky-100 text-sky-800",
+                                active: "bg-amber-100 text-amber-800",
+                                expired: "bg-gray-100 text-gray-500",
+                                cancelled: "bg-red-100 text-red-700",
+                              };
+                              const matLabel = (lang === "ar" ? row.subcategory_ar : row.subcategory_en) ?? row.subcategory_ar ?? row.material ?? "—";
+                              const trLabel = row.tr_status
+                                ? (t(`reports.transport.${row.tr_status}`) || row.tr_status)
+                                : row.transport_decision === "not_required"
+                                  ? t("reports.transport.not_required")
+                                  : "—";
+                              return (
+                                <tr key={row.deal_id} className="hover:bg-muted/20 transition-colors">
+                                  <td className="px-3 py-2.5 whitespace-nowrap text-muted-foreground">{fmtDate(row.created_at, lang)}</td>
+                                  <td className="px-3 py-2.5 whitespace-nowrap font-mono text-muted-foreground" dir="ltr">
+                                    {row.tr_manifest_ref ?? `${row.deal_id.slice(0, 8)}…`}
+                                  </td>
+                                  <td className="px-3 py-2.5 whitespace-nowrap">{row.seller_name ?? "—"}<br/><span className="text-muted-foreground">{row.seller_city ?? ""}</span></td>
+                                  <td className="px-3 py-2.5 whitespace-nowrap">{row.buyer_name ?? "—"}<br/><span className="text-muted-foreground">{row.buyer_city ?? ""}</span></td>
+                                  <td className="px-3 py-2.5 whitespace-nowrap">{matLabel}</td>
+                                  <td className="px-3 py-2.5 whitespace-nowrap font-mono">{row.quantity && row.unit ? `${row.quantity} ${row.unit}` : "—"}</td>
+                                  <td className="px-3 py-2.5 whitespace-nowrap text-muted-foreground">{row.city ?? "—"}</td>
+                                  <td className="px-3 py-2.5 whitespace-nowrap">
+                                    <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${statusStyle[row.status] ?? "bg-gray-100 text-gray-600"}`}>
+                                      {t(`deal.status.${row.status}`) || row.status}
+                                    </span>
+                                  </td>
+                                  <td className="px-3 py-2.5 whitespace-nowrap font-mono">{fmtSAR(row.estimated_amount, lang)}</td>
+                                  <td className="px-3 py-2.5 whitespace-nowrap font-mono text-muted-foreground">{fmtSAR(row.vat_amount, lang)}</td>
+                                  <td className="px-3 py-2.5 whitespace-nowrap font-mono font-semibold">{fmtSAR(row.total_amount, lang)}</td>
+                                  <td className="px-3 py-2.5 whitespace-nowrap text-muted-foreground">{trLabel}</td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {reportSubTab === "contracts" && (
+              <div className="space-y-4 animate-in fade-in duration-200">
+                <div className="flex items-center justify-between px-1">
+                  <h3 className="text-sm font-semibold text-foreground">
+                    {lang === "ar" ? "إحصائيات ومسار العقود" : "Contracts Status & Statistics"}
+                  </h3>
+                </div>
+
+                {contractsError && (
+                  <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                    <AlertCircle className="h-4 w-4 shrink-0" />{contractsError}
+                  </div>
+                )}
+
+                {contractsLoading && !contracts && (
+                  <div className="flex justify-center p-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+                )}
+
+                {contracts !== null && (
+                  <>
+                    {/* Compact cards */}
+                    <div className="grid grid-cols-3 gap-3">
+                      {[
+                        {
+                          label: lang === "ar" ? "إجمالي العقود" : "Total Contracts",
+                          value: contracts.length,
+                          color: "bg-blue-100 text-blue-700",
+                          icon: FileText,
+                        },
+                        {
+                          label: lang === "ar" ? "العقود النشطة" : "Active Contracts",
+                          value: contracts.filter(c => c.status === "active").length,
+                          color: "bg-green-100 text-green-700",
+                          icon: CheckCircle2,
+                        },
+                        {
+                          label: lang === "ar" ? "العقود المكتملة" : "Completed Contracts",
+                          value: contracts.filter(c => c.status === "completed").length,
+                          color: "bg-purple-100 text-purple-700",
+                          icon: Clock,
+                        },
+                      ].map((card, idx) => {
+                        const Icon = card.icon;
+                        return (
+                          <div key={idx} className="rounded-xl border border-border bg-white p-3 flex items-center gap-2.5">
+                            <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${card.color}`}>
+                              <Icon className="h-4 w-4" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-base font-bold text-foreground leading-none">{card.value}</p>
+                              <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">{card.label}</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Compact table */}
+                    <div className="rounded-xl border border-border bg-white overflow-hidden">
+                      <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+                        <p className="text-sm font-semibold text-foreground">
+                          {lang === "ar" ? `قائمة العقود (${contracts.length})` : `Contracts List (${contracts.length})`}
+                        </p>
+                        <Button size="sm" variant="outline" onClick={() => void fetchContracts()} disabled={contractsLoading}>
+                          {contractsLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                        </Button>
+                      </div>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="border-b border-border bg-muted/30">
+                              <th className="px-4 py-2.5 text-start font-semibold text-muted-foreground">{lang === "ar" ? "رقم العقد" : "Contract Ref"}</th>
+                              <th className="px-4 py-2.5 text-start font-semibold text-muted-foreground">{lang === "ar" ? "البائع" : "Seller"}</th>
+                              <th className="px-4 py-2.5 text-start font-semibold text-muted-foreground">{lang === "ar" ? "المشتري" : "Buyer"}</th>
+                              <th className="px-4 py-2.5 text-start font-semibold text-muted-foreground">{lang === "ar" ? "تاريخ النهاية الإرشادي" : "End Date"}</th>
+                              <th className="px-4 py-2.5 text-start font-semibold text-muted-foreground">{lang === "ar" ? "الحالة" : "Status"}</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-border">
+                            {contracts.slice(0, 150).map((c) => {
+                              const statusStyle: Record<string, string> = {
+                                draft: "bg-gray-100 text-gray-700",
+                                pending_confirmation: "bg-amber-100 text-amber-800",
+                                active: "bg-green-100 text-green-800",
+                                completed: "bg-blue-100 text-blue-800",
+                                cancelled: "bg-red-100 text-red-700",
+                              };
+                              return (
+                                <tr key={c.id} className="hover:bg-muted/10 transition-colors">
+                                  <td className="px-4 py-2.5 font-semibold font-mono">{c.reference}</td>
+                                  <td className="px-4 py-2.5">{c.seller_name || "—"}</td>
+                                  <td className="px-4 py-2.5">{c.buyer_name || "—"}</td>
+                                  <td className="px-4 py-2.5 text-muted-foreground">{c.end_date ? fmtDate(c.end_date, lang) : "—"}</td>
+                                  <td className="px-4 py-2.5">
+                                    <span className={`inline-flex items-center rounded-full text-[10px] font-bold px-2 py-0.5 ${statusStyle[c.status] ?? "bg-gray-100"}`}>
+                                      {t(`contract.status.${c.status}`) || c.status}
+                                    </span>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {reportSubTab === "shipments" && (
+              <div className="space-y-4 animate-in fade-in duration-200">
+                <div className="flex items-center justify-between px-1">
+                  <h3 className="text-sm font-semibold text-foreground">
+                    {lang === "ar" ? "مسار الشحنات وحركة النقل" : "Shipments Tracking & Logistics"}
+                  </h3>
+                </div>
+
+                {shipmentsError && (
+                  <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                    <AlertCircle className="h-4 w-4 shrink-0" />{shipmentsError}
+                  </div>
+                )}
+
+                {shipmentsLoading && !shipments && (
+                  <div className="flex justify-center p-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+                )}
+
+                {shipments !== null && (() => {
+                  const closedShipments = shipments.filter((s: any) => s.status === "closed");
+                  const totalValue = closedShipments.reduce((sum: number, s: any) => sum + Number(s.final_value || 0), 0);
+                  
+                  const weightByUnit: Record<string, number> = {};
+                  closedShipments.forEach((s: any) => {
+                    const unit = s.unit_label || (lang === "ar" ? "طن" : "Ton");
+                    const w = Number(s.final_weight || 0);
+                    weightByUnit[unit] = (weightByUnit[unit] || 0) + w;
+                  });
+
+                  const weightStrings = Object.entries(weightByUnit).map(([unit, val]) => `${val.toFixed(2)} ${unit}`);
+                  const weightText = weightStrings.length > 0 ? weightStrings.join(" / ") : "—";
+
+                  return (
+                    <>
+                      {/* Compact cards */}
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                        {[
+                          {
+                            label: lang === "ar" ? "إجمالي الشحنات" : "Total Shipments",
+                            value: shipments.length,
+                            color: "bg-blue-100 text-blue-700",
+                            icon: Truck,
+                          },
+                          {
+                            label: lang === "ar" ? "مخططة" : "Planned",
+                            value: shipments.filter((s: any) => s.status === "planned").length,
+                            color: "bg-gray-100 text-gray-700",
+                            icon: Clock,
+                          },
+                          {
+                            label: lang === "ar" ? "قيد الشحن / تم الاستلام" : "In Transit / Received",
+                            value: shipments.filter((s: any) => s.status === "dispatched" || s.status === "received").length,
+                            color: "bg-amber-100 text-amber-700",
+                            icon: Clock,
+                          },
+                          {
+                            label: lang === "ar" ? "مغلقة" : "Closed",
+                            value: closedShipments.length,
+                            color: "bg-green-100 text-green-700",
+                            icon: CheckCircle2,
+                          },
+                          {
+                            label: lang === "ar" ? "إجمالي القيمة (من الشحنات المغلقة فقط)" : "Total Value (Closed Shipments)",
+                            value: fmtSAR(totalValue, lang),
+                            color: "bg-primary/10 text-primary",
+                            icon: Banknote,
+                          },
+                          {
+                            label: lang === "ar" ? "إجمالي الوزن (من الشحنات المغلقة فقط)" : "Total Weight (Closed Shipments)",
+                            value: weightText,
+                            color: "bg-orange-100 text-orange-700",
+                            icon: BarChart3,
+                          },
+                        ].map((card, idx) => {
+                          const Icon = card.icon;
+                          return (
+                            <div key={idx} className="rounded-xl border border-border bg-white p-3 flex items-center gap-2.5">
+                              <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${card.color}`}>
+                                <Icon className="h-4 w-4" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs font-bold text-foreground leading-none truncate" title={String(card.value)}>{card.value}</p>
+                                <p className="text-[9px] text-muted-foreground mt-1 leading-tight">{card.label}</p>
+                              </div>
+                            </div>
                           );
                         })}
-                      </tbody>
-                    </table>
+                      </div>
+
+                      {/* Compact table */}
+                      <div className="rounded-xl border border-border bg-white overflow-hidden">
+                        <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+                          <p className="text-sm font-semibold text-foreground">
+                            {lang === "ar" ? `قائمة الشحنات (${shipments.length})` : `Shipments List (${shipments.length})`}
+                          </p>
+                          <Button size="sm" variant="outline" onClick={() => void fetchShipments()} disabled={shipmentsLoading}>
+                            {shipmentsLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                          </Button>
+                        </div>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-xs">
+                            <thead>
+                              <tr className="border-b border-border bg-muted/30">
+                                <th className="px-4 py-2.5 text-start font-semibold text-muted-foreground">{lang === "ar" ? "رقم الشحنة" : "Shipment Ref"}</th>
+                                <th className="px-4 py-2.5 text-start font-semibold text-muted-foreground">{lang === "ar" ? "رقم العقد" : "Contract Ref"}</th>
+                                <th className="px-4 py-2.5 text-start font-semibold text-muted-foreground">{lang === "ar" ? "المادة" : "Material"}</th>
+                                <th className="px-4 py-2.5 text-start font-semibold text-muted-foreground">{lang === "ar" ? "البائع" : "Seller"}</th>
+                                <th className="px-4 py-2.5 text-start font-semibold text-muted-foreground">{lang === "ar" ? "المشتري" : "Buyer"}</th>
+                                <th className="px-4 py-2.5 text-start font-semibold text-muted-foreground">{lang === "ar" ? "الوزن النهائي" : "Final Weight"}</th>
+                                <th className="px-4 py-2.5 text-start font-semibold text-muted-foreground">{lang === "ar" ? "الحالة" : "Status"}</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border">
+                              {shipments.slice(0, 150).map((s: any) => {
+                                const statusStyle: Record<string, string> = {
+                                  planned: "bg-gray-100 text-gray-700",
+                                  dispatched: "bg-blue-100 text-blue-800",
+                                  received: "bg-amber-100 text-amber-800",
+                                  closed: "bg-green-100 text-green-800",
+                                  cancelled: "bg-red-100 text-red-700",
+                                };
+                                return (
+                                  <tr key={s.id} className="hover:bg-muted/10 transition-colors">
+                                    <td className="px-4 py-2.5 font-semibold font-mono">{s.reference}</td>
+                                    <td className="px-4 py-2.5 font-mono text-muted-foreground">{s.contract_reference}</td>
+                                    <td className="px-4 py-2.5">{s.material_label}</td>
+                                    <td className="px-4 py-2.5">{s.seller_name || "—"}</td>
+                                    <td className="px-4 py-2.5">{s.buyer_name || "—"}</td>
+                                    <td className="px-4 py-2.5 font-mono">
+                                      {s.final_weight !== null ? `${s.final_weight} ${s.unit_label}` : "—"}
+                                    </td>
+                                    <td className="px-4 py-2.5">
+                                      <span className={`inline-flex items-center rounded-full text-[10px] font-bold px-2 py-0.5 ${statusStyle[s.status] ?? "bg-gray-100"}`}>
+                                        {t(`contract.shipment.status.${s.status}`) || s.status}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+            )}
+
+            {reportSubTab === "companies" && (
+              <div className="space-y-4 animate-in fade-in duration-200">
+                <div className="flex items-center justify-between px-1">
+                  <h3 className="text-sm font-semibold text-foreground">
+                    {lang === "ar" ? "قائمة وشركاء المنصة" : "Platform Companies & Directory"}
+                  </h3>
+                </div>
+
+                {companiesError && (
+                  <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                    <AlertCircle className="h-4 w-4 shrink-0" />{companiesError}
                   </div>
+                )}
+
+                {companiesLoading && !companies && (
+                  <div className="flex justify-center p-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+                )}
+
+                {companies !== null && (
+                  <>
+                    {/* Compact cards */}
+                    <div className="grid grid-cols-3 gap-3">
+                      {[
+                        {
+                          label: lang === "ar" ? "إجمالي الشركات" : "Total Companies",
+                          value: companies.length,
+                          color: "bg-blue-100 text-blue-700",
+                          icon: Building2,
+                        },
+                        {
+                          label: lang === "ar" ? "الشركات المعتمدة" : "Approved Companies",
+                          value: companies.filter(c => c.license_status === "approved").length,
+                          color: "bg-green-100 text-green-700",
+                          icon: CheckCircle2,
+                        },
+                        {
+                          label: lang === "ar" ? "شركات قيد المراجعة" : "Pending Companies",
+                          value: companies.filter(c => c.license_status === "pending").length,
+                          color: "bg-amber-100 text-amber-700",
+                          icon: Clock,
+                        },
+                      ].map((card, idx) => {
+                        const Icon = card.icon;
+                        return (
+                          <div key={idx} className="rounded-xl border border-border bg-white p-3 flex items-center gap-2.5">
+                            <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${card.color}`}>
+                              <Icon className="h-4 w-4" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-base font-bold text-foreground leading-none">{card.value}</p>
+                              <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">{card.label}</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Compact table */}
+                    <div className="rounded-xl border border-border bg-white overflow-hidden">
+                      <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+                        <p className="text-sm font-semibold text-foreground">
+                          {lang === "ar" ? `قائمة الشركات (${companies.length})` : `Companies List (${companies.length})`}
+                        </p>
+                        <Button size="sm" variant="outline" onClick={() => void fetchCompanies()} disabled={companiesLoading}>
+                          {companiesLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                        </Button>
+                      </div>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="border-b border-border bg-muted/30">
+                              <th className="px-4 py-2.5 text-start font-semibold text-muted-foreground">{lang === "ar" ? "اسم الشركة" : "Company Name"}</th>
+                              <th className="px-4 py-2.5 text-start font-semibold text-muted-foreground">{lang === "ar" ? "النوع" : "Type"}</th>
+                              <th className="px-4 py-2.5 text-start font-semibold text-muted-foreground">{lang === "ar" ? "السجل التجاري" : "CR"}</th>
+                              <th className="px-4 py-2.5 text-start font-semibold text-muted-foreground">{lang === "ar" ? "المدينة" : "City"}</th>
+                              <th className="px-4 py-2.5 text-start font-semibold text-muted-foreground">{lang === "ar" ? "الحالة" : "Status"}</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-border">
+                            {companies.slice(0, 150).map((c) => {
+                              const { label, cls } = licenseLabel(c.license_status, lang);
+                              return (
+                                <tr key={c.id} className="hover:bg-muted/10 transition-colors">
+                                  <td className="px-4 py-2.5 font-semibold">{c.name}</td>
+                                  <td className="px-4 py-2.5 text-muted-foreground">{c.type ? t(`company.type.${c.type}`) : "—"}</td>
+                                  <td className="px-4 py-2.5 font-mono">{c.commercial_registration || "—"}</td>
+                                  <td className="px-4 py-2.5 text-muted-foreground">{c.city || "—"}</td>
+                                  <td className="px-4 py-2.5">
+                                    <span className={`inline-flex items-center rounded-full text-[10px] font-bold px-2 py-0.5 ${cls}`}>
+                                      {label}
+                                    </span>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {reportSubTab === "activity" && (
+              <div className="space-y-4 animate-in fade-in duration-200">
+                <div className="flex items-center justify-between px-1">
+                  <h3 className="text-sm font-semibold text-foreground">
+                    {lang === "ar" ? "مؤشرات نشاط المنصة" : "Platform Activity Statistics"}
+                  </h3>
+                </div>
+
+                {stats && (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      {[
+                        {
+                          label: lang === "ar" ? "إجمالي الإعلانات" : "Total Listings",
+                          value: stats.totalListings,
+                          subLabel: lang === "ar" ? `${stats.activeListings} نشط حالياً` : `${stats.activeListings} currently active`,
+                          color: "bg-blue-100 text-blue-700",
+                          icon: FileText,
+                        },
+                        {
+                          label: lang === "ar" ? "العروض المقدمة" : "Offers Submitted",
+                          value: stats.totalOffers,
+                          subLabel: lang === "ar" ? "إجمالي عروض الأسعار" : "Total price offers",
+                          color: "bg-amber-100 text-amber-700",
+                          icon: TrendingUp,
+                        },
+                        {
+                          label: lang === "ar" ? "الصفقات المنشأة" : "Deals Created",
+                          value: stats.totalDeals,
+                          subLabel: lang === "ar" ? "بين البائعين والمشترين" : "Between sellers & buyers",
+                          color: "bg-green-100 text-green-700",
+                          icon: CheckCircle2,
+                        },
+                      ].map((card, idx) => {
+                        const Icon = card.icon;
+                        return (
+                          <div key={idx} className="rounded-xl border border-border bg-white p-4 flex items-center gap-3">
+                            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${card.color}`}>
+                              <Icon className="h-5 w-5" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xl font-bold text-foreground leading-none">{card.value}</p>
+                              <p className="text-xs font-semibold text-foreground mt-1">{card.label}</p>
+                              <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">{card.subLabel}</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Disclaimer Note */}
+                    <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-4 text-amber-800 flex items-start gap-2.5">
+                      <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                      <div className="text-xs space-y-1">
+                        <p className="font-semibold">
+                          {lang === "ar"
+                            ? "ملاحظة حول مؤشرات النمو:"
+                            : "Note regarding growth metrics:"}
+                        </p>
+                        <p>
+                          {lang === "ar"
+                            ? "سيتم بناء مؤشرات النمو التفصيلية بعد تراكم بيانات تشغيلية كافية من مرحلة الإطلاق التجريبي."
+                            : "Detailed growth indicators will be built after sufficient operational data is accumulated from the pilot launch phase."}
+                        </p>
+                      </div>
+                    </div>
+                  </>
                 )}
               </div>
             )}
