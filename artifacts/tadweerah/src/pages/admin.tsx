@@ -365,6 +365,7 @@ export function AdminPage() {
   const [contractsLoading, setContractsLoading] = useState(false);
   const [contractsError, setContractsError] = useState<string | null>(null);
   const [contractsStatusFilter, setContractsStatusFilter] = useState("");
+  const [contractsSearchFilter, setContractsSearchFilter] = useState("");
   const [contractCancelTarget, setContractCancelTarget] = useState<string | null>(null);
   const [contractCancelLoading, setContractCancelLoading] = useState(false);
 
@@ -397,11 +398,12 @@ export function AdminPage() {
 
   const [paymentResubmitTarget, setPaymentResubmitTarget] = useState<string | null>(null);
 
-  async function fetchContracts() {
+  async function fetchContracts(overrideStatusFilter?: string) {
     setContractsLoading(true);
     setContractsError(null);
     try {
-      const params = contractsStatusFilter ? `?status=${encodeURIComponent(contractsStatusFilter)}` : "";
+      const status = overrideStatusFilter !== undefined ? overrideStatusFilter : contractsStatusFilter;
+      const params = status ? `?status=${encodeURIComponent(status)}` : "";
       const res = await callAdmin(`/contracts${params}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json() as AdminContract[];
@@ -701,9 +703,15 @@ export function AdminPage() {
     }
   }
 
-  function navigateToContract() {
+  function navigateToContract(reference?: string) {
     setTab("contracts");
-    void fetchContracts();
+    if (typeof reference === "string") {
+      setContractsSearchFilter(reference);
+      setContractsStatusFilter("");
+      void fetchContracts("");
+    } else {
+      void fetchContracts();
+    }
   }
 
   function navigateToShipment() {
@@ -1441,6 +1449,29 @@ export function AdminPage() {
             <div className="rounded-xl border border-border bg-white p-4 flex flex-wrap gap-3 items-end">
               <div>
                 <label className="text-xs font-medium text-foreground mb-1 block">
+                  {lang === "ar" ? "رقم العقد" : "Contract Ref"}
+                </label>
+                <div className="relative flex items-center">
+                  <Input
+                    type="text"
+                    value={contractsSearchFilter}
+                    onChange={(e) => setContractsSearchFilter(e.target.value)}
+                    placeholder={lang === "ar" ? "البحث برقم العقد..." : "Search contract ref..."}
+                    className="h-9 w-48 text-sm"
+                  />
+                  {contractsSearchFilter && (
+                    <button
+                      onClick={() => setContractsSearchFilter("")}
+                      className="absolute right-2.5 rtl:right-auto rtl:left-2.5 text-muted-foreground hover:text-foreground text-xs"
+                      type="button"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-foreground mb-1 block">
                   {lang === "ar" ? "حالة العقد" : "Contract Status"}
                 </label>
                 <select
@@ -1470,83 +1501,99 @@ export function AdminPage() {
               </div>
             )}
 
-            {contracts !== null && (
-              <div className="rounded-xl border border-border bg-white overflow-hidden">
-                <div className="px-4 py-3 border-b border-border">
-                  <p className="text-sm font-semibold text-foreground">
-                    {lang === "ar" ? `إجمالي العقود: ${contracts.length}` : `Total Contracts: ${contracts.length}`}
-                  </p>
+            {contracts !== null && (() => {
+              const query = contractsSearchFilter.trim().toLowerCase();
+              const filtered = contracts.filter((c) => {
+                if (!query) return true;
+                return (
+                  c.reference.toLowerCase().includes(query) ||
+                  (c.external_reference && c.external_reference.toLowerCase().includes(query)) ||
+                  (c.seller_name && c.seller_name.toLowerCase().includes(query)) ||
+                  (c.buyer_name && c.buyer_name.toLowerCase().includes(query))
+                );
+              });
+
+              return (
+                <div className="rounded-xl border border-border bg-white overflow-hidden">
+                  <div className="px-4 py-3 border-b border-border">
+                    <p className="text-sm font-semibold text-foreground">
+                      {lang === "ar"
+                        ? `إجمالي العقود: ${contracts.length}${query ? ` (المطابقة: ${filtered.length})` : ""}`
+                        : `Total Contracts: ${contracts.length}${query ? ` (Matching: ${filtered.length})` : ""}`}
+                    </p>
+                  </div>
+                  {filtered.length === 0 ? (
+                    <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+                      {lang === "ar" ? "لا توجد عقود مطابقة" : "No contracts match this filter"}
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-border bg-muted/30">
+                            <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "رقم العقد" : "Contract Ref"}</th>
+                            <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "سياسة الوزن" : "Weight Policy"}</th>
+                            <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "البائع" : "Seller"}</th>
+                            <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "المشتري" : "Buyer"}</th>
+                            <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "تاريخ البداية" : "Start Date"}</th>
+                            <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "تاريخ النهاية" : "End Date"}</th>
+                            <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "الحالة" : "Status"}</th>
+                            <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "الإجراء" : "Action"}</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border">
+                          {filtered.map((c) => {
+                            const statusStyle: Record<string, string> = {
+                              draft: "bg-gray-100 text-gray-700",
+                              pending_confirmation: "bg-amber-100 text-amber-800",
+                              active: "bg-green-100 text-green-800",
+                              completed: "bg-blue-100 text-blue-800",
+                              cancelled: "bg-red-100 text-red-700",
+                            };
+                            const isTerminal = ["completed", "cancelled"].includes(c.status);
+                            const isHighlighted = query !== "" && c.reference.toLowerCase() === query;
+                            return (
+                              <tr key={c.id} className={`transition-colors ${isHighlighted ? "bg-amber-100/40 hover:bg-amber-100/60 border-amber-200" : "hover:bg-muted/20"}`}>
+                                <td className="px-4 py-3">
+                                  <p className="font-semibold text-foreground text-xs">{c.reference}</p>
+                                  {c.external_reference && (
+                                    <p className="text-[10px] text-muted-foreground font-mono">ext: {c.external_reference}</p>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3 text-xs text-muted-foreground">
+                                  {t(`contract.policy.${c.weight_policy}`) || c.weight_policy}
+                                </td>
+                                <td className="px-4 py-3 text-xs font-medium text-foreground">{c.seller_name || "—"}</td>
+                                <td className="px-4 py-3 text-xs font-medium text-foreground">{c.buyer_name || "—"}</td>
+                                <td className="px-4 py-3 text-xs text-muted-foreground">{c.start_date ? fmtDate(c.start_date, lang) : "—"}</td>
+                                <td className="px-4 py-3 text-xs text-muted-foreground">{c.end_date ? fmtDate(c.end_date, lang) : "—"}</td>
+                                <td className="px-4 py-3">
+                                  <span className={`inline-flex items-center rounded-full text-[10px] font-bold px-2 py-0.5 ${statusStyle[c.status] ?? "bg-gray-100 text-gray-600"}`}>
+                                    {t(`contract.status.${c.status}`) || c.status}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3 text-end">
+                                  {!isTerminal && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-7 text-[11px] px-2 text-destructive border-destructive/20 hover:bg-destructive/10 font-medium"
+                                      onClick={() => setContractCancelTarget(c.id)}
+                                    >
+                                      {lang === "ar" ? "إلغاء" : "Cancel"}
+                                    </Button>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
-                {contracts.length === 0 ? (
-                  <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-                    {lang === "ar" ? "لا توجد عقود مطابقة" : "No contracts match this filter"}
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-border bg-muted/30">
-                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "رقم العقد" : "Contract Ref"}</th>
-                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "سياسة الوزن" : "Weight Policy"}</th>
-                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "البائع" : "Seller"}</th>
-                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "المشتري" : "Buyer"}</th>
-                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "تاريخ البداية" : "Start Date"}</th>
-                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "تاريخ النهاية" : "End Date"}</th>
-                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "الحالة" : "Status"}</th>
-                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "الإجراء" : "Action"}</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-border">
-                        {contracts.map((c) => {
-                          const statusStyle: Record<string, string> = {
-                            draft: "bg-gray-100 text-gray-700",
-                            pending_confirmation: "bg-amber-100 text-amber-800",
-                            active: "bg-green-100 text-green-800",
-                            completed: "bg-blue-100 text-blue-800",
-                            cancelled: "bg-red-100 text-red-700",
-                          };
-                          const isTerminal = ["completed", "cancelled"].includes(c.status);
-                          return (
-                            <tr key={c.id} className="hover:bg-muted/20 transition-colors">
-                              <td className="px-4 py-3">
-                                <p className="font-semibold text-foreground text-xs">{c.reference}</p>
-                                {c.external_reference && (
-                                  <p className="text-[10px] text-muted-foreground font-mono">ext: {c.external_reference}</p>
-                                )}
-                              </td>
-                              <td className="px-4 py-3 text-xs text-muted-foreground">
-                                {t(`contract.policy.${c.weight_policy}`) || c.weight_policy}
-                              </td>
-                              <td className="px-4 py-3 text-xs font-medium text-foreground">{c.seller_name || "—"}</td>
-                              <td className="px-4 py-3 text-xs font-medium text-foreground">{c.buyer_name || "—"}</td>
-                              <td className="px-4 py-3 text-xs text-muted-foreground">{c.start_date ? fmtDate(c.start_date, lang) : "—"}</td>
-                              <td className="px-4 py-3 text-xs text-muted-foreground">{c.end_date ? fmtDate(c.end_date, lang) : "—"}</td>
-                              <td className="px-4 py-3">
-                                <span className={`inline-flex items-center rounded-full text-[10px] font-bold px-2 py-0.5 ${statusStyle[c.status] ?? "bg-gray-100 text-gray-600"}`}>
-                                  {t(`contract.status.${c.status}`) || c.status}
-                                </span>
-                              </td>
-                              <td className="px-4 py-3 text-end">
-                                {!isTerminal && (
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="h-7 text-[11px] px-2 text-destructive border-destructive/20 hover:bg-destructive/10 font-medium"
-                                    onClick={() => setContractCancelTarget(c.id)}
-                                  >
-                                    {lang === "ar" ? "إلغاء" : "Cancel"}
-                                  </Button>
-                                )}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            )}
+              );
+            })()}
           </div>
         )}
 
@@ -2496,7 +2543,7 @@ export function AdminPage() {
                               </td>
                               <td className="px-4 py-2.5 text-muted-foreground font-mono">
                                 <button
-                                  onClick={navigateToContract}
+                                  onClick={() => navigateToContract(s.contract_reference)}
                                   className="hover:underline text-primary text-start font-semibold focus:outline-none"
                                 >
                                   {s.contract_reference}
@@ -2543,7 +2590,7 @@ export function AdminPage() {
                             <tr key={c.id} className="hover:bg-muted/10">
                               <td className="px-4 py-2.5 font-mono">
                                 <button
-                                  onClick={navigateToContract}
+                                  onClick={() => navigateToContract(c.reference)}
                                   className="hover:underline text-primary text-start font-semibold focus:outline-none"
                                 >
                                   {c.reference}
