@@ -421,10 +421,11 @@ A simple admin-panel "Master Data" tab could expose:
   - If yes: add CRUD UI for material categories + unit options (soft-delete only)
   - Protect: `key` fields read-only; `is_sensitive` clearly labeled
   - Document: capabilities endpoint gap (no admin write API)
-- **Exit criteria:**
-  - Admin can activate/deactivate material categories from UI
-  - Admin can activate/deactivate unit options from UI
-  - Capabilities gap documented with backend ticket if needed
+  - **Exit criteria:**
+    - Admin can activate/deactivate material categories from UI
+    - Admin can activate/deactivate unit options from UI
+    - Capabilities gap documented with backend ticket if needed
+  - **Progress Note:** Step 3A resolves the active-only GET limitation, providing admin read endpoints for active + inactive options necessary for the future UI.
 
 ---
 

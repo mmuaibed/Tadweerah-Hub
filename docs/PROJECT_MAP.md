@@ -289,10 +289,10 @@ planned → dispatched → received → closed   (terminal — final_weight and 
 
 | Entity | Backend CRUD | Admin UI | Safe to expose in UI? |
 |--------|-------------|----------|----------------------|
-| Material categories | ✅ POST/PATCH via `/admin/lookup/material-categories` | ❌ API-only | ✅ Yes — protect `key` field |
-| Unit options | ✅ POST/PATCH via `/admin/lookup/unit-options` | ❌ API-only | ✅ Yes — protect `key` field |
-| Company categories | ✅ POST/PATCH via `/admin/lookup/company-categories` | ❌ API-only | ✅ Yes — governed (deactivation blocked if referenced) |
-| Capabilities | ❌ Read-only via `/lookup/capabilities` — no admin write endpoint exists | ❌ None | N/A — backend endpoint needed first |
+| Material categories | ✅ GET/POST/PATCH via `/admin/lookup/material-categories` | ❌ API-only | ✅ Yes — protect `key` field |
+| Unit options | ✅ GET/POST/PATCH via `/admin/lookup/unit-options` | ❌ API-only | ✅ Yes — protect `key` field |
+| Company categories | ✅ GET/POST/PATCH via `/admin/lookup/company-categories` | ❌ API-only | ✅ Yes — governed (deactivation blocked if referenced) |
+| Capabilities | ✅ Read-only via `/admin/lookup/capabilities` (active+inactive) | ❌ None | N/A — backend endpoint needed first |
 | License status | ✅ Via `/admin/companies/:id/license` | ✅ Companies tab in admin UI | pending/approved/rejected/expired |
 | Lifecycle status enums | Not configurable (DB enum, schema-level) | N/A | 🚫 Must NOT be editable — drives backend logic |
 | Payment/financial fields | Not configurable | N/A | 🚫 Must NOT be editable |

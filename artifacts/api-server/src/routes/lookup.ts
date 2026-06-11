@@ -147,6 +147,61 @@ router.get(
 );
 
 /* -------------------------------------------------------------------------- */
+/* Admin read endpoints (returns active + inactive)                            */
+/* -------------------------------------------------------------------------- */
+
+router.get(
+  "/admin/lookup/company-categories",
+  requireAdminKey,
+  async (_req, res) => {
+    const rows = await db
+      .select()
+      .from(companyCategoriesTable)
+      .orderBy(asc(companyCategoriesTable.sort_order), asc(companyCategoriesTable.name_en));
+    res.json(rows);
+  },
+);
+
+router.get(
+  "/admin/lookup/unit-options",
+  requireAdminKey,
+  async (_req, res) => {
+    const rows = await db
+      .select()
+      .from(unitOptionsTable)
+      .orderBy(asc(unitOptionsTable.sort_order), asc(unitOptionsTable.name_en));
+    res.json(rows);
+  },
+);
+
+router.get(
+  "/admin/lookup/material-categories",
+  requireAdminKey,
+  async (_req, res) => {
+    const rows = await db
+      .select()
+      .from(materialCategoriesTable)
+      .orderBy(
+        asc(materialCategoriesTable.sort_order),
+        asc(materialCategoriesTable.name_en),
+      );
+    res.json(rows);
+  },
+);
+
+router.get(
+  "/admin/lookup/capabilities",
+  requireAdminKey,
+  async (_req, res) => {
+    const rows = await db
+      .select()
+      .from(capabilitiesTable)
+      .orderBy(asc(capabilitiesTable.sort_order), asc(capabilitiesTable.name_en));
+    res.json(rows);
+  },
+);
+
+/* -------------------------------------------------------------------------- */
 /* Admin write — company categories                                            */
 /* -------------------------------------------------------------------------- */
 

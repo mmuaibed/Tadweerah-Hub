@@ -394,4 +394,5 @@ This is a **high operational risk** during pilot logistics coordination.
 - **Company categories:** Deactivation is blocked if the category is currently referenced by any registered company in companies.
 - **Key immutability:** All list option keys are strictly immutable after creation. Backend enforces this by stripping key from PATCH requests.
 - **Hard deletion:** Not supported. `DELETE` HTTP methods have been safely routed to perform soft-deactivations and enforce reference checks.
+- **Visibility:** Deactivated records disappear from public endpoints. Dedicated admin read endpoints expose active and inactive records to admins for governance.
 
