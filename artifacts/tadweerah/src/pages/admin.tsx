@@ -301,7 +301,7 @@ export function AdminPage() {
   const dir = lang === "ar" ? "rtl" : "ltr";
 
   const [adminKey, setAdminKey] = useState(() => sessionStorage.getItem("tdw_admin_key") ?? "");
-  const [tab, setTab] = useState<"deals" | "companies" | "transport" | "reports" | "issues" | "contracts" | "auditlog">("companies");
+  const [tab, setTab] = useState<"deals" | "companies" | "transport" | "reports" | "issues" | "contracts" | "auditlog" | "shipments" | "overdue">("companies");
 
   /* Deals state */
   const [deals, setDeals] = useState<AdminDeal[] | null>(null);
@@ -375,6 +375,22 @@ export function AdminPage() {
   const [auditEntityTypeFilter, setAuditEntityTypeFilter] = useState("");
   const [auditActionFilter, setAuditActionFilter] = useState("");
 
+  /* Shipments state */
+  const [shipments, setShipments] = useState<any[] | null>(null);
+  const [shipmentsLoading, setShipmentsLoading] = useState(false);
+  const [shipmentsError, setShipmentsError] = useState<string | null>(null);
+  const [shipmentsStatusFilter, setShipmentsStatusFilter] = useState("");
+
+  /* Overdue state */
+  interface OverdueOperations {
+    deals: { id: string; status: string; seller_name: string; buyer_name: string; created_at: string; deadline: string | null; overdue_reason: string }[];
+    shipments: { id: string; reference: string; status: string; contract_reference: string; seller_name: string; buyer_name: string; material_label: string; unit_label: string; overdue_reason: string; reference_time: string | null }[];
+    contracts: { id: string; reference: string; status: string; end_date: string | null; seller_name: string; buyer_name: string; overdue_reason: string }[];
+  }
+  const [overdueData, setOverdueData] = useState<OverdueOperations | null>(null);
+  const [overdueLoading, setOverdueLoading] = useState(false);
+  const [overdueError, setOverdueError] = useState<string | null>(null);
+
   /* Reusable Modal triggers */
   const [dealCancelTarget, setDealCancelTarget] = useState<string | null>(null);
   const [dealCancelLoading, setDealCancelLoading] = useState(false);
@@ -434,6 +450,38 @@ export function AdminPage() {
       setAuditError(e instanceof Error ? e.message : t("admin.error.generic"));
     } finally {
       setAuditLoading(false);
+    }
+  }
+  async function fetchShipments() {
+    setShipmentsLoading(true);
+    setShipmentsError(null);
+    try {
+      const params = shipmentsStatusFilter ? `?status=${encodeURIComponent(shipmentsStatusFilter)}` : "";
+      const res = await callAdmin(`/shipments${params}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json() as any[];
+      sessionStorage.setItem("tdw_admin_key", adminKey.trim());
+      setShipments(data);
+    } catch (e) {
+      setShipmentsError(e instanceof Error ? e.message : t("admin.error.generic"));
+    } finally {
+      setShipmentsLoading(false);
+    }
+  }
+
+  async function fetchOverdue() {
+    setOverdueLoading(true);
+    setOverdueError(null);
+    try {
+      const res = await callAdmin("/overdue-operations");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json() as OverdueOperations;
+      sessionStorage.setItem("tdw_admin_key", adminKey.trim());
+      setOverdueData(data);
+    } catch (e) {
+      setOverdueError(e instanceof Error ? e.message : t("admin.error.generic"));
+    } finally {
+      setOverdueLoading(false);
     }
   }
 
@@ -896,6 +944,8 @@ export function AdminPage() {
                   else if (tab === "deals") void fetchDeals();
                   else if (tab === "contracts") void fetchContracts();
                   else if (tab === "auditlog") void fetchAuditLog();
+                  else if (tab === "shipments") void fetchShipments();
+                  else if (tab === "overdue") void fetchOverdue();
                 }
               }}
             />
@@ -904,7 +954,7 @@ export function AdminPage() {
 
         {/* Tabs */}
         <div className="flex flex-wrap gap-1 border-b border-border">
-          {(["companies", "deals", "contracts", "transport", "reports", "issues", "auditlog"] as const).map((t2) => (
+          {(["companies", "deals", "contracts", "shipments", "transport", "reports", "issues", "auditlog", "overdue"] as const).map((t2) => (
             <button
               key={t2}
               onClick={() => setTab(t2)}
@@ -920,13 +970,17 @@ export function AdminPage() {
                   ? <><FileText className="h-4 w-4" />{t("admin.tab.deals")}</>
                   : t2 === "contracts"
                     ? <><FileText className="h-4 w-4" />{lang === "ar" ? "العقود" : "Contracts"}</>
-                    : t2 === "transport"
-                      ? <><Truck className="h-4 w-4" />{t("admin.tab.transport")}</>
-                      : t2 === "reports"
-                        ? <><BarChart3 className="h-4 w-4" />{t("admin.tab.reports")}</>
-                        : t2 === "issues"
-                          ? <><MessageSquare className="h-4 w-4" />{t("admin.tab.issues")}</>
-                          : <><Clock className="h-4 w-4" />{lang === "ar" ? "سجل العمليات" : "Audit Log"}</>
+                    : t2 === "shipments"
+                      ? <><Truck className="h-4 w-4" />{lang === "ar" ? "الشحنات" : "Shipments"}</>
+                      : t2 === "transport"
+                        ? <><Truck className="h-4 w-4" />{t("admin.tab.transport")}</>
+                        : t2 === "reports"
+                          ? <><BarChart3 className="h-4 w-4" />{t("admin.tab.reports")}</>
+                          : t2 === "issues"
+                            ? <><MessageSquare className="h-4 w-4" />{t("admin.tab.issues")}</>
+                            : t2 === "auditlog"
+                              ? <><Clock className="h-4 w-4" />{lang === "ar" ? "سجل العمليات" : "Audit Log"}</>
+                              : <><Clock className="h-4 w-4" />{lang === "ar" ? "عمليات تحتاج مراجعة" : "Awaiting Review"}</>
               }
             </button>
           ))}
@@ -2191,6 +2245,265 @@ export function AdminPage() {
                     </table>
                   </div>
                 )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Shipments Tab ── */}
+        {tab === "shipments" && (
+          <div className="space-y-4">
+            <div className="rounded-xl border border-border bg-white p-4 flex flex-wrap gap-3 items-end">
+              <div>
+                <label className="text-xs font-medium text-foreground mb-1 block">
+                  {lang === "ar" ? "حالة الشحنة" : "Shipment Status"}
+                </label>
+                <select
+                  value={shipmentsStatusFilter}
+                  onChange={(e) => setShipmentsStatusFilter(e.target.value)}
+                  className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                >
+                  <option value="">{t("admin.filter.all_statuses")}</option>
+                  {["planned", "dispatched", "received", "closed", "cancelled"].map((s) => (
+                    <option key={s} value={s}>
+                      {t(`contract.shipment.status.${s}`) || s}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <Button onClick={() => void fetchShipments()} disabled={shipmentsLoading}>
+                {shipmentsLoading ? (
+                  <><Loader2 className="h-4 w-4 me-2 animate-spin" />{t("admin.loading")}</>
+                ) : (
+                  <><RefreshCw className="h-4 w-4 me-2" />{t("admin.fetch_button")}</>
+                )}
+              </Button>
+            </div>
+
+            {shipmentsError && (
+              <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                <AlertCircle className="h-4 w-4 shrink-0" />{shipmentsError}
+              </div>
+            )}
+
+            {shipments !== null && (
+              <div className="rounded-xl border border-border bg-white overflow-hidden">
+                <div className="px-4 py-3 border-b border-border">
+                  <p className="text-sm font-semibold text-foreground">
+                    {lang === "ar" ? `إجمالي الشحنات: ${shipments.length}` : `Total Shipments: ${shipments.length}`}
+                  </p>
+                </div>
+                {shipments.length === 0 ? (
+                  <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+                    {lang === "ar" ? "لا توجد شحنات مطابقة" : "No shipments found"}
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-border bg-muted/30">
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "رقم الشحنة" : "Shipment Ref"}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "رقم العقد" : "Contract Ref"}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "المادة" : "Material"}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "البائع" : "Seller"}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "المشتري" : "Buyer"}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "الأوزان (البائع / المشتري / النهائي)" : "Weights (Src / Dst / Final)"}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "الحالة" : "Status"}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {shipments.map((s) => {
+                          const statusStyle: Record<string, string> = {
+                            planned: "bg-gray-100 text-gray-700",
+                            dispatched: "bg-blue-100 text-blue-800",
+                            received: "bg-amber-100 text-amber-800",
+                            closed: "bg-green-100 text-green-800",
+                            cancelled: "bg-red-100 text-red-700",
+                          };
+                          return (
+                            <tr key={s.id} className="hover:bg-muted/20 transition-colors">
+                              <td className="px-4 py-3 font-mono text-xs">{s.reference}</td>
+                              <td className="px-4 py-3 text-xs text-muted-foreground">{s.contract_reference}</td>
+                              <td className="px-4 py-3 text-xs">{s.material_label}</td>
+                              <td className="px-4 py-3 text-xs">{s.seller_name}</td>
+                              <td className="px-4 py-3 text-xs">{s.buyer_name}</td>
+                              <td className="px-4 py-3 text-xs font-mono" dir="ltr">
+                                {s.source_weight ?? "—"} / {s.destination_weight ?? "—"} / <span className="font-semibold text-primary">{s.final_weight ?? "—"}</span> {s.unit_label}
+                              </td>
+                              <td className="px-4 py-3">
+                                <span className={`inline-flex items-center rounded-full text-[10px] font-bold px-2 py-0.5 ${statusStyle[s.status] ?? "bg-gray-100"}`}>
+                                  {t(`contract.shipment.status.${s.status}`) || s.status}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Overdue Operations Tab ── */}
+        {tab === "overdue" && (
+          <div className="space-y-6">
+            <div className="rounded-xl border border-border bg-white p-4 flex flex-wrap gap-3 items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">
+                  {lang === "ar" ? "عمليات تحتاج مراجعة" : "Operations Awaiting Review"}
+                </h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {lang === "ar" ? "يعرض العمليات التي تجاوزت الفترات الزمنية المعتادة أو تحتاج لمتابعة تشغيلية." : "Displays transactions that exceed standard thresholds or require operational follow-up."}
+                </p>
+              </div>
+              <Button onClick={() => void fetchOverdue()} disabled={overdueLoading}>
+                {overdueLoading ? (
+                  <><Loader2 className="h-4 w-4 me-2 animate-spin" />{t("admin.loading")}</>
+                ) : (
+                  <><RefreshCw className="h-4 w-4 me-2" />{lang === "ar" ? "تحديث البيانات" : "Refresh Data"}</>
+                )}
+              </Button>
+            </div>
+
+            {overdueError && (
+              <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                <AlertCircle className="h-4 w-4 shrink-0" />{overdueError}
+              </div>
+            )}
+
+            {overdueData !== null && (
+              <div className="space-y-6">
+                {/* Deals List */}
+                <div className="rounded-xl border border-border bg-white overflow-hidden">
+                  <div className="px-4 py-3 border-b border-border bg-muted/20">
+                    <h4 className="text-sm font-bold text-foreground">
+                      {lang === "ar" ? "صفقات تجاوزت المهلة النظامية" : "Deals Exceeding Thresholds"} ({overdueData.deals.length})
+                    </h4>
+                  </div>
+                  {overdueData.deals.length === 0 ? (
+                    <div className="px-4 py-6 text-center text-xs text-muted-foreground">
+                      {lang === "ar" ? "لا توجد صفقات معلقة متجاوزة للمهلة" : "No pending deals exceed thresholds"}
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-border bg-muted/10 text-xs text-muted-foreground">
+                            <th className="px-4 py-2 text-start font-semibold">{lang === "ar" ? "معرف الصفقة" : "Deal ID"}</th>
+                            <th className="px-4 py-2 text-start font-semibold">{lang === "ar" ? "البائع" : "Seller"}</th>
+                            <th className="px-4 py-2 text-start font-semibold">{lang === "ar" ? "المشتري" : "Buyer"}</th>
+                            <th className="px-4 py-2 text-start font-semibold">{lang === "ar" ? "الحالة" : "Status"}</th>
+                            <th className="px-4 py-2 text-start font-semibold">{lang === "ar" ? "تاريخ البدء" : "Started"}</th>
+                            <th className="px-4 py-2 text-start font-semibold">{lang === "ar" ? "تاريخ الاستحقاق" : "SLA Deadline"}</th>
+                            <th className="px-4 py-2 text-start font-semibold">{lang === "ar" ? "سبب المتابعة" : "Follow-up Reason"}</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border text-xs">
+                          {overdueData.deals.map((d) => (
+                            <tr key={d.id} className="hover:bg-muted/10">
+                              <td className="px-4 py-2.5 font-mono">{d.id.slice(0, 8)}…</td>
+                              <td className="px-4 py-2.5">{d.seller_name}</td>
+                              <td className="px-4 py-2.5">{d.buyer_name}</td>
+                              <td className="px-4 py-2.5">
+                                <Badge variant="outline" className="text-[9px] h-4">
+                                  {t(`deal.status.${d.status}`) || d.status}
+                                </Badge>
+                              </td>
+                              <td className="px-4 py-2.5 text-muted-foreground">{fmtDate(d.created_at, lang)}</td>
+                              <td className="px-4 py-2.5 text-destructive font-semibold">{d.deadline ? fmtDate(d.deadline, lang) : "—"}</td>
+                              <td className="px-4 py-2.5 font-semibold text-amber-700">{d.overdue_reason}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
+                {/* Shipments List */}
+                <div className="rounded-xl border border-border bg-white overflow-hidden">
+                  <div className="px-4 py-3 border-b border-border bg-muted/20">
+                    <h4 className="text-sm font-bold text-foreground">
+                      {lang === "ar" ? "شحنات تحتاج متابعة" : "Shipments Awaiting Follow-up"} ({overdueData.shipments.length})
+                    </h4>
+                  </div>
+                  {overdueData.shipments.length === 0 ? (
+                    <div className="px-4 py-6 text-center text-xs text-muted-foreground">
+                      {lang === "ar" ? "لا توجد شحنات معلقة تحتاج متابعة" : "No pending shipments require follow-up"}
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-border bg-muted/10 text-xs text-muted-foreground">
+                            <th className="px-4 py-2 text-start font-semibold">{lang === "ar" ? "مرجع الشحنة" : "Shipment Ref"}</th>
+                            <th className="px-4 py-2 text-start font-semibold">{lang === "ar" ? "مرجع العقد" : "Contract Ref"}</th>
+                            <th className="px-4 py-2 text-start font-semibold">{lang === "ar" ? "المادة" : "Material"}</th>
+                            <th className="px-4 py-2 text-start font-semibold">{lang === "ar" ? "البائع" : "Seller"}</th>
+                            <th className="px-4 py-2 text-start font-semibold">{lang === "ar" ? "المشتري" : "Buyer"}</th>
+                            <th className="px-4 py-2 text-start font-semibold">{lang === "ar" ? "تاريخ الإجراء" : "Action Date"}</th>
+                            <th className="px-4 py-2 text-start font-semibold">{lang === "ar" ? "سبب المتابعة" : "Follow-up Reason"}</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border text-xs">
+                          {overdueData.shipments.map((s) => (
+                            <tr key={s.id} className="hover:bg-muted/10">
+                              <td className="px-4 py-2.5 font-mono">{s.reference}</td>
+                              <td className="px-4 py-2.5 text-muted-foreground">{s.contract_reference}</td>
+                              <td className="px-4 py-2.5">{s.material_label}</td>
+                              <td className="px-4 py-2.5">{s.seller_name}</td>
+                              <td className="px-4 py-2.5">{s.buyer_name}</td>
+                              <td className="px-4 py-2.5 text-muted-foreground">{s.reference_time ? fmtDate(s.reference_time, lang) : "—"}</td>
+                              <td className="px-4 py-2.5 font-semibold text-amber-700">{s.overdue_reason}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
+                {/* Contracts List */}
+                <div className="rounded-xl border border-border bg-white overflow-hidden">
+                  <div className="px-4 py-3 border-b border-border bg-muted/20">
+                    <h4 className="text-sm font-bold text-foreground">
+                      {lang === "ar" ? "عقود تجاوزت تاريخ النهاية الإرشادي" : "Contracts Exceeding Advisory End Date"} ({overdueData.contracts.length})
+                    </h4>
+                  </div>
+                  {overdueData.contracts.length === 0 ? (
+                    <div className="px-4 py-6 text-center text-xs text-muted-foreground">
+                      {lang === "ar" ? "لا توجد عقود نشطة تجاوزت تاريخ النهاية" : "No active contracts exceed advisory end date"}
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-border bg-muted/10 text-xs text-muted-foreground">
+                            <th className="px-4 py-2 text-start font-semibold">{lang === "ar" ? "مرجع العقد" : "Contract Ref"}</th>
+                            <th className="px-4 py-2 text-start font-semibold">{lang === "ar" ? "البائع" : "Seller"}</th>
+                            <th className="px-4 py-2 text-start font-semibold">{lang === "ar" ? "المشتري" : "Buyer"}</th>
+                            <th className="px-4 py-2 text-start font-semibold">{lang === "ar" ? "تاريخ النهاية الإرشادي" : "Advisory End Date"}</th>
+                            <th className="px-4 py-2 text-start font-semibold">{lang === "ar" ? "سبب المتابعة" : "Follow-up Reason"}</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border text-xs">
+                          {overdueData.contracts.map((c) => (
+                            <tr key={c.id} className="hover:bg-muted/10">
+                              <td className="px-4 py-2.5 font-mono">{c.reference}</td>
+                              <td className="px-4 py-2.5">{c.seller_name}</td>
+                              <td className="px-4 py-2.5">{c.buyer_name}</td>
+                              <td className="px-4 py-2.5 text-destructive font-semibold">{c.end_date ? fmtDate(c.end_date, lang) : "—"}</td>
+                              <td className="px-4 py-2.5 font-semibold text-amber-700">{c.overdue_reason}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>

@@ -221,6 +221,8 @@ active → payment_submitted → payment_confirmed → dispatched
 | `POST /admin/deals/:id/force-complete` | Any non-terminal status | Sets `received_at` if unset; audit log severity=warn |
 | `PATCH /admin/deals/:id/request-payment-resubmission` | active, payment_submitted | Resets to active; clears all payment fields |
 | `PATCH /admin/companies/:id/unblock-offers` | — | Clears `offer_submission_blocked`; resets `receipt_failures_count` |
+| `GET /admin/shipments` | — | Returns all contract shipments with metadata for admin panel |
+| `GET /admin/overdue-operations` | — | Returns lists of overdue deals, shipments, and contracts for review |
 
 ---
 
@@ -393,7 +395,7 @@ Event occurs (route handler or hourly job)
 | `contract-new.tsx` | `/contracts/new` | Create contract |
 | `transport-requests.tsx` | `/transport-requests` | Transport requests + quote submission |
 | `reports.tsx` | `/reports` | Per-company deal reports + CSV export |
-| `admin.tsx` | `/admin` | Admin panel (email allowlist + `ADMIN_API_KEY` gated) |
+| `admin.tsx` | `/admin` | Admin panel (Companies, Deals, Contracts, Shipments, Transport, Reports, Issues, Audit Log, Awaiting Review tabs; gated by Clerk email allowlist + ADMIN_API_KEY) |
 | `onboarding.tsx` | `/onboarding` | Company registration flow |
 | `company-profile.tsx` | `/profile` | Company profile + license |
 | `company-capabilities.tsx` | `/capabilities` | Waste-handling certifications |

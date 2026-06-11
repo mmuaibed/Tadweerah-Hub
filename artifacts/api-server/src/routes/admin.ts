@@ -8,7 +8,7 @@
  * GET    /admin/audit-log?entityType=&entityId=&action=&limit=100&offset=0
  */
 import { Router, type Request, type Response, type NextFunction } from "express";
-import { and, count, desc, eq, gte, ilike, isNotNull, isNull, lte, or, sql, aliasedTable } from "drizzle-orm";
+import { and, count, desc, eq, gte, ilike, isNotNull, isNull, lte, or, sql, aliasedTable, inArray, lt } from "drizzle-orm";
 import { clerkClient } from "@clerk/express";
 import {
   db,
@@ -22,6 +22,7 @@ import {
   dealsTable,
   contractsTable,
   contractShipmentsTable,
+  contractMaterialsTable,
   transportRequestsTable,
   transportQuotesTable,
   wasteListingsTable,
@@ -1181,6 +1182,272 @@ router.patch("/admin/transport-quotes/:quoteId/reject", requireAdminKey, async (
     .returning({ id: transportQuotesTable.id, status: transportQuotesTable.status });
 
   res.json(updated);
+});
+
+/* -------------------------------------------------------------------------- */
+/* Shipments (admin)                                                          */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * GET /admin/shipments
+ * Returns all contract shipments with contract reference and buyer/seller names.
+ * Query params: status, limit (max 200), offset
+ */
+router.get("/admin/shipments", requireAdminKey, async (req, res) => {
+  const statusFilter = typeof req.query.status === "string" ? req.query.status : null;
+  const limit = Math.min(Number(req.query.limit) || 50, 200);
+  const offset = Number(req.query.offset) || 0;
+
+  const conditions = [];
+  if (statusFilter) {
+    conditions.push(eq(contractShipmentsTable.status, statusFilter as any));
+  }
+
+  const rows = await db
+    .select({
+      id: contractShipmentsTable.id,
+      reference: contractShipmentsTable.reference,
+      status: contractShipmentsTable.status,
+      source_weight: contractShipmentsTable.source_weight,
+      destination_weight: contractShipmentsTable.destination_weight,
+      final_weight: contractShipmentsTable.final_weight,
+      final_value: contractShipmentsTable.final_value,
+      notes: contractShipmentsTable.notes,
+      planned_at: contractShipmentsTable.planned_at,
+      dispatched_at: contractShipmentsTable.dispatched_at,
+      received_at: contractShipmentsTable.received_at,
+      closed_at: contractShipmentsTable.closed_at,
+      cancelled_at: contractShipmentsTable.cancelled_at,
+      created_at: contractShipmentsTable.created_at,
+      contract_id: contractsTable.id,
+      contract_reference: contractsTable.reference,
+      seller_company_id: contractsTable.seller_company_id,
+      buyer_company_id: contractsTable.buyer_company_id,
+      seller_name: sql<string>`(SELECT name FROM companies WHERE id = ${contractsTable.seller_company_id})`,
+      buyer_name: sql<string>`(SELECT name FROM companies WHERE id = ${contractsTable.buyer_company_id})`,
+      material_label: contractMaterialsTable.material_label,
+      unit_label: contractMaterialsTable.unit_label,
+    })
+    .from(contractShipmentsTable)
+    .innerJoin(contractsTable, eq(contractShipmentsTable.contract_id, contractsTable.id))
+    .innerJoin(contractMaterialsTable, eq(contractShipmentsTable.material_line_id, contractMaterialsTable.id))
+    .where(conditions.length ? and(...conditions) : undefined)
+    .orderBy(desc(contractShipmentsTable.created_at))
+    .limit(limit)
+    .offset(offset);
+
+  res.json(
+    rows.map((r) => ({
+      ...r,
+      source_weight: r.source_weight != null ? Number(r.source_weight) : null,
+      destination_weight: r.destination_weight != null ? Number(r.destination_weight) : null,
+      final_weight: r.final_weight != null ? Number(r.final_weight) : null,
+      final_value: r.final_value != null ? Number(r.final_value) : null,
+      planned_at: r.planned_at.toISOString(),
+      dispatched_at: r.dispatched_at?.toISOString() ?? null,
+      received_at: r.received_at?.toISOString() ?? null,
+      closed_at: r.closed_at?.toISOString() ?? null,
+      cancelled_at: r.cancelled_at?.toISOString() ?? null,
+      created_at: r.created_at.toISOString(),
+    }))
+  );
+});
+
+/* -------------------------------------------------------------------------- */
+/* Overdue operations (admin)                                                 */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * GET /admin/overdue-operations
+ * Returns overdue deals, shipments, and contracts that need admin follow-up.
+ */
+router.get("/admin/overdue-operations", requireAdminKey, async (req, res) => {
+  const now = new Date();
+
+  // Deal threshold limits
+  const MS = {
+    active: 31 * 24 * 60 * 60 * 1000,
+    payment_confirmed: 8 * 24 * 60 * 60 * 1000,
+    dispatched: 72 * 60 * 60 * 1000,
+  };
+  const RECEIPT_PENDING_MS = 48 * 60 * 60 * 1000;
+
+  const activeThreshold = new Date(now.getTime() - MS.active);
+  const paymentThreshold = new Date(now.getTime() - MS.payment_confirmed);
+  const dispatchThreshold = new Date(now.getTime() - MS.dispatched);
+  const receiptPendingThreshold = new Date(now.getTime() - RECEIPT_PENDING_MS);
+
+  // 1. Fetch overdue deals
+  const overdueDeals = await db
+    .select({
+      id: dealsTable.id,
+      status: dealsTable.status,
+      created_at: dealsTable.created_at,
+      payment_confirmed_at: dealsTable.payment_confirmed_at,
+      dispatched_at: dealsTable.dispatched_at,
+      receipt_pending_since: dealsTable.receipt_pending_since,
+      extended_until: dealsTable.extended_until,
+      seller_name: sql<string>`(SELECT name FROM companies WHERE id = ${dealsTable.producer_company_id})`,
+      buyer_name: sql<string>`(SELECT name FROM companies WHERE id = ${dealsTable.buyer_company_id})`,
+    })
+    .from(dealsTable)
+    .where(
+      and(
+        inArray(dealsTable.status, ["active", "payment_submitted", "payment_confirmed", "dispatched", "receipt_pending"]),
+        or(
+          and(
+            inArray(dealsTable.status, ["active", "payment_submitted"]),
+            isNull(dealsTable.extended_until),
+            lt(dealsTable.created_at, activeThreshold)
+          ),
+          and(
+            inArray(dealsTable.status, ["active", "payment_submitted"]),
+            isNotNull(dealsTable.extended_until),
+            sql`${dealsTable.extended_until} < ${now.toISOString()}`
+          ),
+          and(
+            eq(dealsTable.status, "payment_confirmed"),
+            isNull(dealsTable.extended_until),
+            sql`${dealsTable.payment_confirmed_at} IS NOT NULL AND ${dealsTable.payment_confirmed_at} < ${paymentThreshold.toISOString()}`
+          ),
+          and(
+            eq(dealsTable.status, "payment_confirmed"),
+            isNotNull(dealsTable.extended_until),
+            sql`${dealsTable.extended_until} < ${now.toISOString()}`
+          ),
+          and(
+            eq(dealsTable.status, "dispatched"),
+            sql`${dealsTable.dispatched_at} IS NOT NULL AND ${dealsTable.dispatched_at} < ${dispatchThreshold.toISOString()}`
+          ),
+          and(
+            eq(dealsTable.status, "receipt_pending"),
+            sql`${dealsTable.receipt_pending_since} IS NOT NULL AND ${dealsTable.receipt_pending_since} < ${receiptPendingThreshold.toISOString()}`
+          )
+        )
+      )
+    )
+    .orderBy(desc(dealsTable.created_at));
+
+  // Helper to compute reason & deadline
+  const formattedDeals = overdueDeals.map((d) => {
+    let deadline: Date | null = null;
+    let overdueReason = "";
+    if (["active", "payment_submitted"].includes(d.status)) {
+      deadline = d.extended_until ? new Date(d.extended_until) : new Date(d.created_at.getTime() + MS.active);
+      overdueReason = "تجاوز مهلة تعميد الصفقة (31 يوم)";
+    } else if (d.status === "payment_confirmed") {
+      deadline = d.extended_until ? new Date(d.extended_until) : (d.payment_confirmed_at ? new Date(d.payment_confirmed_at.getTime() + MS.payment_confirmed) : null);
+      overdueReason = "تجاوز مهلة شحن البضاعة (8 أيام)";
+    } else if (d.status === "dispatched") {
+      deadline = d.dispatched_at ? new Date(d.dispatched_at.getTime() + MS.dispatched) : null;
+      overdueReason = "تجاوز مهلة تأكيد استلام الشحنة (72 ساعة)";
+    } else if (d.status === "receipt_pending") {
+      deadline = d.receipt_pending_since ? new Date(d.receipt_pending_since.getTime() + RECEIPT_PENDING_MS) : null;
+      overdueReason = "معلق في انتظار إتمام الصفقة (48 ساعة)";
+    }
+
+    return {
+      id: d.id,
+      status: d.status,
+      seller_name: d.seller_name,
+      buyer_name: d.buyer_name,
+      created_at: d.created_at.toISOString(),
+      deadline: deadline?.toISOString() ?? null,
+      overdue_reason: overdueReason,
+    };
+  });
+
+  // 2. Fetch overdue shipments
+  const shipmentDispatchThreshold = new Date(now.getTime() - 72 * 60 * 60 * 1000); // 72 hours
+
+  const overdueShipments = await db
+    .select({
+      id: contractShipmentsTable.id,
+      reference: contractShipmentsTable.reference,
+      status: contractShipmentsTable.status,
+      planned_at: contractShipmentsTable.planned_at,
+      dispatched_at: contractShipmentsTable.dispatched_at,
+      contract_reference: contractsTable.reference,
+      seller_name: sql<string>`(SELECT name FROM companies WHERE id = ${contractsTable.seller_company_id})`,
+      buyer_name: sql<string>`(SELECT name FROM companies WHERE id = ${contractsTable.buyer_company_id})`,
+      material_label: contractMaterialsTable.material_label,
+      unit_label: contractMaterialsTable.unit_label,
+    })
+    .from(contractShipmentsTable)
+    .innerJoin(contractsTable, eq(contractShipmentsTable.contract_id, contractsTable.id))
+    .innerJoin(contractMaterialsTable, eq(contractShipmentsTable.material_line_id, contractMaterialsTable.id))
+    .where(
+      and(
+        inArray(contractShipmentsTable.status, ["planned", "dispatched"]),
+        or(
+          and(
+            eq(contractShipmentsTable.status, "planned"),
+            lt(contractShipmentsTable.planned_at, now)
+          ),
+          and(
+            eq(contractShipmentsTable.status, "dispatched"),
+            sql`${contractShipmentsTable.dispatched_at} IS NOT NULL AND ${contractShipmentsTable.dispatched_at} < ${shipmentDispatchThreshold.toISOString()}`
+          )
+        )
+      )
+    )
+    .orderBy(desc(contractShipmentsTable.created_at));
+
+  const formattedShipments = overdueShipments.map((s) => {
+    const isPlanned = s.status === "planned";
+    const overdueReason = isPlanned ? "تجاوز تاريخ الشحن المخطط" : "تجاوز مهلة التوصيل المتوقعة (72 ساعة)";
+    const referenceTime = isPlanned ? s.planned_at : s.dispatched_at;
+
+    return {
+      id: s.id,
+      reference: s.reference,
+      status: s.status,
+      contract_reference: s.contract_reference,
+      seller_name: s.seller_name,
+      buyer_name: s.buyer_name,
+      material_label: s.material_label,
+      unit_label: s.unit_label,
+      overdue_reason: overdueReason,
+      reference_time: referenceTime?.toISOString() ?? null,
+    };
+  });
+
+  // 3. Fetch overdue contracts (past end_date)
+  const todayStr = now.toISOString().slice(0, 10); // YYYY-MM-DD
+  const overdueContracts = await db
+    .select({
+      id: contractsTable.id,
+      reference: contractsTable.reference,
+      status: contractsTable.status,
+      end_date: contractsTable.end_date,
+      seller_name: sql<string>`(SELECT name FROM companies WHERE id = ${contractsTable.seller_company_id})`,
+      buyer_name: sql<string>`(SELECT name FROM companies WHERE id = ${contractsTable.buyer_company_id})`,
+    })
+    .from(contractsTable)
+    .where(
+      and(
+        eq(contractsTable.status, "active"),
+        isNotNull(contractsTable.end_date),
+        sql`${contractsTable.end_date} < ${todayStr}`
+      )
+    )
+    .orderBy(desc(contractsTable.created_at));
+
+  const formattedContracts = overdueContracts.map((c) => ({
+    id: c.id,
+    reference: c.reference,
+    status: c.status,
+    end_date: c.end_date,
+    seller_name: c.seller_name,
+    buyer_name: c.buyer_name,
+    overdue_reason: "تجاوز تاريخ النهاية الإرشادي",
+  }));
+
+  res.json({
+    deals: formattedDeals,
+    shipments: formattedShipments,
+    contracts: formattedContracts,
+  });
 });
 
 export default router;
