@@ -1,0 +1,44 @@
+# VCS
+.git/
+.gitignore
+
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Local build outputs
+dist/
+**/dist/
+.turbo/
+**/.turbo/
+
+# Env files
+.env
+.env.*
+!.env.example
+
+# Firebase local state
+.firebase/
+
+# Local tools / binaries
+cloud-sql-proxy.exe
+cloud-sql-proxy*.exe
+
+# Logs and local diagnostics
+*.log
+logs.json
+logs_delete.json
+logs*.json
+ERROR
+
+# Local planning / AI artifacts
+task.md
+walkthrough.md
+implementation_plan.md
+tadweerah-user-guide-source.md
+.gemini/
+.agents/
+
+# Local platform files
+.replit
+replit.md
