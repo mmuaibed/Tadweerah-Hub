@@ -9,12 +9,15 @@
  * Admin write endpoints (protected by X-Admin-Key header):
  * POST   /admin/lookup/company-categories
  * PUT    /admin/lookup/company-categories/:id
+ * PATCH  /admin/lookup/company-categories/:id
  * DELETE /admin/lookup/company-categories/:id   (sets is_active=false)
  * POST   /admin/lookup/unit-options
  * PUT    /admin/lookup/unit-options/:id
+ * PATCH  /admin/lookup/unit-options/:id
  * DELETE /admin/lookup/unit-options/:id
  * POST   /admin/lookup/material-categories
  * PUT    /admin/lookup/material-categories/:id
+ * PATCH  /admin/lookup/material-categories/:id
  * DELETE /admin/lookup/material-categories/:id
  */
 import { Router, type Request, type Response, type NextFunction } from "express";
@@ -25,10 +28,13 @@ import {
   unitOptionsTable,
   materialCategoriesTable,
   capabilitiesTable,
+  companiesTable,
+  wasteListingsTable,
 } from "@workspace/db";
-import { eq, asc } from "drizzle-orm";
+import { eq, asc, or } from "drizzle-orm";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requireCompany } from "../middlewares/requireCompany";
+import { logAudit } from "../lib/audit";
 
 const router = Router();
 
@@ -46,6 +52,23 @@ function requireAdminKey(req: Request, res: Response, next: NextFunction): void 
     return;
   }
   next();
+}
+
+/* -------------------------------------------------------------------------- */
+/* Validation helpers                                                         */
+/* -------------------------------------------------------------------------- */
+function validateKey(key: any): string | null {
+  if (typeof key !== "string") return null;
+  const trimmed = key.trim();
+  if (!/^[a-z0-9_]+$/.test(trimmed)) return null;
+  return trimmed;
+}
+
+function validateName(name: any): string | null {
+  if (typeof name !== "string") return null;
+  const trimmed = name.trim();
+  if (trimmed === "") return null;
+  return trimmed;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -132,64 +155,110 @@ router.post(
   requireAdminKey,
   async (req, res) => {
     const { key, name_ar, name_en, sort_order } = req.body ?? {};
-    if (!key || !name_ar || !name_en) {
-      res.status(400).json({ error: "ValidationError", message: "key, name_ar, name_en are required" });
+    const safeKey = validateKey(key);
+    if (!safeKey) {
+      res.status(400).json({ error: "ValidationError", message: "key is required and must be lowercase, alphanumeric, snake_case without spaces" });
       return;
     }
-    const [created] = await db
-      .insert(companyCategoriesTable)
-      .values({
-        key,
-        name_ar,
-        name_en,
-        sort_order: typeof sort_order === "number" ? sort_order : 99,
-        is_active: true,
-      })
-      .returning();
-    res.status(201).json(created);
+    const safeNameAr = validateName(name_ar);
+    const safeNameEn = validateName(name_en);
+    if (!safeNameAr || !safeNameEn) {
+      res.status(400).json({ error: "ValidationError", message: "name_ar and name_en are required and cannot be empty" });
+      return;
+    }
+
+    try {
+      const [created] = await db
+        .insert(companyCategoriesTable)
+        .values({
+          key: safeKey,
+          name_ar: safeNameAr,
+          name_en: safeNameEn,
+          sort_order: typeof sort_order === "number" ? sort_order : 99,
+          is_active: true,
+        })
+        .returning();
+
+      void logAudit({
+        action: "master_data.created",
+        entityType: "master_data",
+        entityId: created.id,
+        actorRole: "admin",
+        details: { list_type: "company_categories", key: safeKey, new_values: created }
+      });
+      res.status(201).json(created);
+    } catch (err: any) {
+      if (err.code === "23505") { // unique violation
+        res.status(409).json({ error: "Conflict", message: "key must be unique" });
+        return;
+      }
+      res.status(500).json({ error: "InternalError", message: err.message });
+    }
   },
 );
 
-router.put(
-  "/admin/lookup/company-categories/:id",
-  requireAdminKey,
-  async (req, res) => {
-    const id = String(req.params["id"]);
-    const { key, name_ar, name_en, sort_order, is_active } = req.body ?? {};
-    const updates: Record<string, unknown> = {};
-    if (key !== undefined) updates.key = key;
-    if (name_ar !== undefined) updates.name_ar = name_ar;
-    if (name_en !== undefined) updates.name_en = name_en;
-    if (sort_order !== undefined) updates.sort_order = sort_order;
-    if (is_active !== undefined) updates.is_active = is_active;
-    if (Object.keys(updates).length === 0) {
-      res.status(400).json({ error: "ValidationError", message: "No fields to update" });
+async function updateCompanyCategory(req: Request, res: Response, forceDeactivate = false) {
+  const id = String(req.params["id"]);
+  const { name_ar, name_en, sort_order, is_active } = req.body ?? {};
+
+  const [existing] = await db.select().from(companyCategoriesTable).where(eq(companyCategoriesTable.id, id)).limit(1);
+  if (!existing) { res.status(404).json({ error: "NotFound" }); return; }
+
+  const targetIsActive = forceDeactivate ? false : (typeof is_active === "boolean" ? is_active : existing.is_active);
+
+  if (targetIsActive === false && existing.is_active === true) {
+    const [ref] = await db.select({ id: companiesTable.id }).from(companiesTable).where(eq(companiesTable.company_category_id, id)).limit(1);
+    if (ref) {
+      res.status(409).json({ error: "CannotDeactivateReferencedOption", message: "Option is referenced by active companies" });
       return;
     }
-    const [updated] = await db
-      .update(companyCategoriesTable)
-      .set(updates)
-      .where(eq(companyCategoriesTable.id, id))
-      .returning();
-    if (!updated) { res.status(404).json({ error: "NotFound" }); return; }
-    res.json(updated);
-  },
-);
+  }
 
-router.delete(
-  "/admin/lookup/company-categories/:id",
-  requireAdminKey,
-  async (req, res) => {
-    const id = String(req.params["id"]);
-    const [updated] = await db
-      .update(companyCategoriesTable)
-      .set({ is_active: false })
-      .where(eq(companyCategoriesTable.id, id))
-      .returning();
-    if (!updated) { res.status(404).json({ error: "NotFound" }); return; }
-    res.json({ success: true, id: updated.id });
-  },
-);
+  const updates: Record<string, unknown> = {};
+  if (!forceDeactivate) {
+    if (name_ar !== undefined) {
+      const safeAr = validateName(name_ar);
+      if (!safeAr) { res.status(400).json({ error: "ValidationError", message: "name_ar cannot be empty" }); return; }
+      updates.name_ar = safeAr;
+    }
+    if (name_en !== undefined) {
+      const safeEn = validateName(name_en);
+      if (!safeEn) { res.status(400).json({ error: "ValidationError", message: "name_en cannot be empty" }); return; }
+      updates.name_en = safeEn;
+    }
+    if (typeof sort_order === "number") updates.sort_order = sort_order;
+    if (typeof is_active === "boolean") updates.is_active = is_active;
+  } else {
+    updates.is_active = false;
+  }
+
+  if (Object.keys(updates).length === 0) {
+    res.status(400).json({ error: "ValidationError", message: "No safe fields to update" });
+    return;
+  }
+
+  const [updated] = await db
+    .update(companyCategoriesTable)
+    .set(updates)
+    .where(eq(companyCategoriesTable.id, id))
+    .returning();
+
+  const actionType = (targetIsActive === false && existing.is_active === true) ? "master_data.deactivated" : "master_data.updated";
+
+  void logAudit({
+    action: actionType,
+    entityType: "master_data",
+    entityId: id,
+    actorRole: "admin",
+    details: { list_type: "company_categories", key: existing.key, previous_values: existing, new_values: updated }
+  });
+
+  res.json(updated);
+}
+
+router.patch("/admin/lookup/company-categories/:id", requireAdminKey, (req, res) => updateCompanyCategory(req, res));
+router.put("/admin/lookup/company-categories/:id", requireAdminKey, (req, res) => updateCompanyCategory(req, res));
+router.delete("/admin/lookup/company-categories/:id", requireAdminKey, (req, res) => updateCompanyCategory(req, res, true));
 
 /* -------------------------------------------------------------------------- */
 /* Admin write — unit options                                                   */
@@ -200,66 +269,116 @@ router.post(
   requireAdminKey,
   async (req, res) => {
     const { key, name_ar, name_en, symbol, sort_order } = req.body ?? {};
-    if (!key || !name_ar || !name_en || !symbol) {
-      res.status(400).json({ error: "ValidationError", message: "key, name_ar, name_en, symbol are required" });
+    const safeKey = validateKey(key);
+    if (!safeKey) {
+      res.status(400).json({ error: "ValidationError", message: "key is required and must be lowercase, alphanumeric, snake_case without spaces" });
       return;
     }
-    const [created] = await db
-      .insert(unitOptionsTable)
-      .values({
-        key,
-        name_ar,
-        name_en,
-        symbol,
-        sort_order: typeof sort_order === "number" ? sort_order : 99,
-        is_active: true,
-      })
-      .returning();
-    res.status(201).json(created);
+    const safeNameAr = validateName(name_ar);
+    const safeNameEn = validateName(name_en);
+    if (!safeNameAr || !safeNameEn) {
+      res.status(400).json({ error: "ValidationError", message: "name_ar and name_en are required and cannot be empty" });
+      return;
+    }
+    if (!symbol) {
+      res.status(400).json({ error: "ValidationError", message: "symbol is required" });
+      return;
+    }
+
+    try {
+      const [created] = await db
+        .insert(unitOptionsTable)
+        .values({
+          key: safeKey,
+          name_ar: safeNameAr,
+          name_en: safeNameEn,
+          symbol,
+          sort_order: typeof sort_order === "number" ? sort_order : 99,
+          is_active: true,
+        })
+        .returning();
+
+      void logAudit({
+        action: "master_data.created",
+        entityType: "master_data",
+        entityId: created.id,
+        actorRole: "admin",
+        details: { list_type: "unit_options", key: safeKey, new_values: created }
+      });
+      res.status(201).json(created);
+    } catch (err: any) {
+      if (err.code === "23505") {
+        res.status(409).json({ error: "Conflict", message: "key must be unique" });
+        return;
+      }
+      res.status(500).json({ error: "InternalError", message: err.message });
+    }
   },
 );
 
-router.put(
-  "/admin/lookup/unit-options/:id",
-  requireAdminKey,
-  async (req, res) => {
-    const id = String(req.params["id"]);
-    const { key, name_ar, name_en, symbol, sort_order, is_active } = req.body ?? {};
-    const updates: Record<string, unknown> = {};
-    if (key !== undefined) updates.key = key;
-    if (name_ar !== undefined) updates.name_ar = name_ar;
-    if (name_en !== undefined) updates.name_en = name_en;
+async function updateUnitOption(req: Request, res: Response, forceDeactivate = false) {
+  const id = String(req.params["id"]);
+  const { name_ar, name_en, symbol, sort_order, is_active } = req.body ?? {};
+
+  const [existing] = await db.select().from(unitOptionsTable).where(eq(unitOptionsTable.id, id)).limit(1);
+  if (!existing) { res.status(404).json({ error: "NotFound" }); return; }
+
+  const targetIsActive = forceDeactivate ? false : (typeof is_active === "boolean" ? is_active : existing.is_active);
+
+  if (targetIsActive === false && existing.is_active === true) {
+    const [ref] = await db.select({ id: wasteListingsTable.id }).from(wasteListingsTable).where(eq(wasteListingsTable.unit_option_id, id)).limit(1);
+    if (ref) {
+      res.status(409).json({ error: "CannotDeactivateReferencedOption", message: "Option is referenced by active listings" });
+      return;
+    }
+  }
+
+  const updates: Record<string, unknown> = {};
+  if (!forceDeactivate) {
+    if (name_ar !== undefined) {
+      const safeAr = validateName(name_ar);
+      if (!safeAr) { res.status(400).json({ error: "ValidationError", message: "name_ar cannot be empty" }); return; }
+      updates.name_ar = safeAr;
+    }
+    if (name_en !== undefined) {
+      const safeEn = validateName(name_en);
+      if (!safeEn) { res.status(400).json({ error: "ValidationError", message: "name_en cannot be empty" }); return; }
+      updates.name_en = safeEn;
+    }
     if (symbol !== undefined) updates.symbol = symbol;
-    if (sort_order !== undefined) updates.sort_order = sort_order;
-    if (is_active !== undefined) updates.is_active = is_active;
-    if (Object.keys(updates).length === 0) {
-      res.status(400).json({ error: "ValidationError", message: "No fields to update" });
-      return;
-    }
-    const [updated] = await db
-      .update(unitOptionsTable)
-      .set(updates)
-      .where(eq(unitOptionsTable.id, id))
-      .returning();
-    if (!updated) { res.status(404).json({ error: "NotFound" }); return; }
-    res.json(updated);
-  },
-);
+    if (typeof sort_order === "number") updates.sort_order = sort_order;
+    if (typeof is_active === "boolean") updates.is_active = is_active;
+  } else {
+    updates.is_active = false;
+  }
 
-router.delete(
-  "/admin/lookup/unit-options/:id",
-  requireAdminKey,
-  async (req, res) => {
-    const id = String(req.params["id"]);
-    const [updated] = await db
-      .update(unitOptionsTable)
-      .set({ is_active: false })
-      .where(eq(unitOptionsTable.id, id))
-      .returning();
-    if (!updated) { res.status(404).json({ error: "NotFound" }); return; }
-    res.json({ success: true, id: updated.id });
-  },
-);
+  if (Object.keys(updates).length === 0) {
+    res.status(400).json({ error: "ValidationError", message: "No safe fields to update" });
+    return;
+  }
+
+  const [updated] = await db
+    .update(unitOptionsTable)
+    .set(updates)
+    .where(eq(unitOptionsTable.id, id))
+    .returning();
+
+  const actionType = (targetIsActive === false && existing.is_active === true) ? "master_data.deactivated" : "master_data.updated";
+
+  void logAudit({
+    action: actionType,
+    entityType: "master_data",
+    entityId: id,
+    actorRole: "admin",
+    details: { list_type: "unit_options", key: existing.key, previous_values: existing, new_values: updated }
+  });
+
+  res.json(updated);
+}
+
+router.patch("/admin/lookup/unit-options/:id", requireAdminKey, (req, res) => updateUnitOption(req, res));
+router.put("/admin/lookup/unit-options/:id", requireAdminKey, (req, res) => updateUnitOption(req, res));
+router.delete("/admin/lookup/unit-options/:id", requireAdminKey, (req, res) => updateUnitOption(req, res, true));
 
 /* -------------------------------------------------------------------------- */
 /* Admin write — material categories                                           */
@@ -273,74 +392,128 @@ router.post(
       key, name_ar, name_en, parent_id, sort_order,
       regulatory_code, hazard_level, physical_state,
     } = req.body ?? {};
-    if (!key || !name_ar || !name_en) {
-      res.status(400).json({ error: "ValidationError", message: "key, name_ar, name_en are required" });
+    
+    const safeKey = validateKey(key);
+    if (!safeKey) {
+      res.status(400).json({ error: "ValidationError", message: "key is required and must be lowercase, alphanumeric, snake_case without spaces" });
       return;
     }
-    const [created] = await db
-      .insert(materialCategoriesTable)
-      .values({
-        key,
-        name_ar,
-        name_en,
-        parent_id: parent_id ?? null,
-        sort_order: typeof sort_order === "number" ? sort_order : 99,
-        is_active: true,
-        regulatory_code: regulatory_code ?? null,
-        hazard_level: hazard_level ?? null,
-        physical_state: physical_state ?? null,
-      })
-      .returning();
-    res.status(201).json(created);
+    const safeNameAr = validateName(name_ar);
+    const safeNameEn = validateName(name_en);
+    if (!safeNameAr || !safeNameEn) {
+      res.status(400).json({ error: "ValidationError", message: "name_ar and name_en are required and cannot be empty" });
+      return;
+    }
+
+    try {
+      const [created] = await db
+        .insert(materialCategoriesTable)
+        .values({
+          key: safeKey,
+          name_ar: safeNameAr,
+          name_en: safeNameEn,
+          parent_id: parent_id ?? null,
+          sort_order: typeof sort_order === "number" ? sort_order : 99,
+          is_active: true,
+          regulatory_code: regulatory_code ?? null,
+          hazard_level: hazard_level ?? null,
+          physical_state: physical_state ?? null,
+        })
+        .returning();
+
+      void logAudit({
+        action: "master_data.created",
+        entityType: "master_data",
+        entityId: created.id,
+        actorRole: "admin",
+        details: { list_type: "material_categories", key: safeKey, new_values: created }
+      });
+      res.status(201).json(created);
+    } catch (err: any) {
+      if (err.code === "23505") {
+        res.status(409).json({ error: "Conflict", message: "key must be unique" });
+        return;
+      }
+      res.status(500).json({ error: "InternalError", message: err.message });
+    }
   },
 );
 
-router.put(
-  "/admin/lookup/material-categories/:id",
-  requireAdminKey,
-  async (req, res) => {
-    const id = String(req.params["id"]);
-    const {
-      key, name_ar, name_en, parent_id, sort_order, is_active,
-      regulatory_code, hazard_level, physical_state,
-    } = req.body ?? {};
-    const updates: Record<string, unknown> = {};
-    if (key !== undefined) updates.key = key;
-    if (name_ar !== undefined) updates.name_ar = name_ar;
-    if (name_en !== undefined) updates.name_en = name_en;
+async function updateMaterialCategory(req: Request, res: Response, forceDeactivate = false) {
+  const id = String(req.params["id"]);
+  const {
+    name_ar, name_en, parent_id, sort_order, is_active,
+    regulatory_code, hazard_level, physical_state
+  } = req.body ?? {};
+
+  const [existing] = await db.select().from(materialCategoriesTable).where(eq(materialCategoriesTable.id, id)).limit(1);
+  if (!existing) { res.status(404).json({ error: "NotFound" }); return; }
+
+  const targetIsActive = forceDeactivate ? false : (typeof is_active === "boolean" ? is_active : existing.is_active);
+
+  if (targetIsActive === false && existing.is_active === true) {
+    const [ref] = await db.select({ id: wasteListingsTable.id })
+      .from(wasteListingsTable)
+      .where(
+        or(
+          eq(wasteListingsTable.material_category_id, id),
+          eq(wasteListingsTable.material_subcategory_id, id)
+        )
+      ).limit(1);
+    if (ref) {
+      res.status(409).json({ error: "CannotDeactivateReferencedOption", message: "Option is referenced by active listings" });
+      return;
+    }
+  }
+
+  const updates: Record<string, unknown> = {};
+  if (!forceDeactivate) {
+    if (name_ar !== undefined) {
+      const safeAr = validateName(name_ar);
+      if (!safeAr) { res.status(400).json({ error: "ValidationError", message: "name_ar cannot be empty" }); return; }
+      updates.name_ar = safeAr;
+    }
+    if (name_en !== undefined) {
+      const safeEn = validateName(name_en);
+      if (!safeEn) { res.status(400).json({ error: "ValidationError", message: "name_en cannot be empty" }); return; }
+      updates.name_en = safeEn;
+    }
     if (parent_id !== undefined) updates.parent_id = parent_id;
-    if (sort_order !== undefined) updates.sort_order = sort_order;
-    if (is_active !== undefined) updates.is_active = is_active;
+    if (typeof sort_order === "number") updates.sort_order = sort_order;
+    if (typeof is_active === "boolean") updates.is_active = is_active;
     if (regulatory_code !== undefined) updates.regulatory_code = regulatory_code;
     if (hazard_level !== undefined) updates.hazard_level = hazard_level;
     if (physical_state !== undefined) updates.physical_state = physical_state;
-    if (Object.keys(updates).length === 0) {
-      res.status(400).json({ error: "ValidationError", message: "No fields to update" });
-      return;
-    }
-    const [updated] = await db
-      .update(materialCategoriesTable)
-      .set(updates)
-      .where(eq(materialCategoriesTable.id, id))
-      .returning();
-    if (!updated) { res.status(404).json({ error: "NotFound" }); return; }
-    res.json(updated);
-  },
-);
+  } else {
+    updates.is_active = false;
+  }
 
-router.delete(
-  "/admin/lookup/material-categories/:id",
-  requireAdminKey,
-  async (req, res) => {
-    const id = String(req.params["id"]);
-    const [updated] = await db
-      .update(materialCategoriesTable)
-      .set({ is_active: false })
-      .where(eq(materialCategoriesTable.id, id))
-      .returning();
-    if (!updated) { res.status(404).json({ error: "NotFound" }); return; }
-    res.json({ success: true, id: updated.id });
-  },
-);
+  if (Object.keys(updates).length === 0) {
+    res.status(400).json({ error: "ValidationError", message: "No safe fields to update" });
+    return;
+  }
+
+  const [updated] = await db
+    .update(materialCategoriesTable)
+    .set(updates)
+    .where(eq(materialCategoriesTable.id, id))
+    .returning();
+
+  const actionType = (targetIsActive === false && existing.is_active === true) ? "master_data.deactivated" : "master_data.updated";
+
+  void logAudit({
+    action: actionType,
+    entityType: "master_data",
+    entityId: id,
+    actorRole: "admin",
+    details: { list_type: "material_categories", key: existing.key, previous_values: existing, new_values: updated }
+  });
+
+  res.json(updated);
+}
+
+router.patch("/admin/lookup/material-categories/:id", requireAdminKey, (req, res) => updateMaterialCategory(req, res));
+router.put("/admin/lookup/material-categories/:id", requireAdminKey, (req, res) => updateMaterialCategory(req, res));
+router.delete("/admin/lookup/material-categories/:id", requireAdminKey, (req, res) => updateMaterialCategory(req, res, true));
 
 export default router;

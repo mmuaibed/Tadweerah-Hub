@@ -289,9 +289,9 @@ planned → dispatched → received → closed   (terminal — final_weight and 
 
 | Entity | Backend CRUD | Admin UI | Safe to expose in UI? |
 |--------|-------------|----------|----------------------|
-| Material categories | ✅ Full CRUD via `/admin/lookup/material-categories` | ❌ API-only | ✅ Yes — protect `key` field (read-only in UI) |
-| Unit options | ✅ Full CRUD via `/admin/lookup/unit-options` | ❌ API-only | ✅ Yes — protect `key` field |
-| Company categories | ✅ Full CRUD via `/admin/lookup/company-categories` | ❌ API-only | ✅ Yes |
+| Material categories | ✅ POST/PATCH via `/admin/lookup/material-categories` | ❌ API-only | ✅ Yes — protect `key` field |
+| Unit options | ✅ POST/PATCH via `/admin/lookup/unit-options` | ❌ API-only | ✅ Yes — protect `key` field |
+| Company categories | ✅ POST/PATCH via `/admin/lookup/company-categories` | ❌ API-only | ✅ Yes — governed (deactivation blocked if referenced) |
 | Capabilities | ❌ Read-only via `/lookup/capabilities` — no admin write endpoint exists | ❌ None | N/A — backend endpoint needed first |
 | License status | ✅ Via `/admin/companies/:id/license` | ✅ Companies tab in admin UI | pending/approved/rejected/expired |
 | Lifecycle status enums | Not configurable (DB enum, schema-level) | N/A | 🚫 Must NOT be editable — drives backend logic |
@@ -299,12 +299,13 @@ planned → dispatched → received → closed   (terminal — final_weight and 
 
 ### 🎯 Target
 Admin should manage material categories, subcategories, unit options, and capabilities
-from a UI panel — without calling raw APIs. Operations: activate / deactivate / reorder / rename.
+from a UI panel — without calling raw APIs. Operations: add / deactivate / reorder / rename.
+**Hard Delete is prohibited** to maintain referential integrity. Deactivations (`is_active: false`) are blocked if the option is currently referenced by active deals, listings, or companies.
 
 **Protection rules for any UI implementation:**
-- `key` fields must be read-only (used in eligibility logic and deal/contract references)
-- `is_sensitive` flag on material categories must be clearly labeled (triggers buyer license check)
-- Lifecycle/payment/status fields must never be exposed as editable dropdowns
+- `key` fields are immutable after creation and must be read-only in UI.
+- `is_sensitive` flag on material categories must be clearly labeled (triggers buyer license check).
+- Lifecycle/payment/status fields must never be exposed as editable dropdowns.
 
 🖥️ Frontend-only change for material categories, unit options, company categories.
 🚫 Capabilities require a new backend write endpoint before UI can be built.

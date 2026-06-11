@@ -1,12 +1,12 @@
-﻿# Tadweerah â€” Readiness Findings & Risks
+# Tadweerah — Readiness Findings & Risks
 > Last updated: 2026-06-09 | Session: 6b53fc3f
-> Status: DOCUMENTATION ONLY â€” no application code changed
+> Status: DOCUMENTATION ONLY — no application code changed
 
 > **Legend:**
-> - ðŸŸ¢ Current behavior | ðŸŽ¯ Target behavior | âš ï¸ Gap
-> - ðŸ”´ High risk | ðŸŸ¡ Medium risk | ðŸŸ¢ Low risk
-> - ðŸš« Requires backend deploy | ðŸ–¥ï¸ Frontend-only fix | ðŸ“‹ Decision/documentation
-> - ðŸ” Needs manual verification
+> - 🟢 Current behavior | 🎯 Target behavior | ⚠️ Gap
+> - 🔴 High risk | 🟡 Medium risk | 🟢 Low risk
+> - 🚫 Requires backend deploy | 🖥️ Frontend-only fix | 📋 Decision/documentation
+> - 🔍 Needs manual verification
 
 ---
 
@@ -22,26 +22,26 @@ admin API controls, notification pipeline, and audit trail are correctly impleme
 
 However, three critical issues prevent a 9.5+ readiness rating:
 
-1. **Deal receipt lifecycle does not match target pilot behavior** â€” buyer confirming
+1. **Deal receipt lifecycle does not match target pilot behavior** — buyer confirming
    receipt should complete the deal immediately; the current 48h auto-complete fires
    blindly without admin review.
-2. **Contract Lite has not been deeply audited** â€” the UI, shipment lifecycle,
+2. **Contract Lite has not been deeply audited** — the UI, shipment lifecycle,
    weight policy behavior, and Al Qaryan UAT scenario are unknown.
-3. **Admin operations UI is incomplete** â€” cancel and force-complete require raw API
+3. **Admin operations UI is incomplete** — cancel and force-complete require raw API
    calls; parties are not notified after admin overrides.
 
 ---
 
-## Section 1: High-Priority Findings (ðŸ”´)
+## Section 1: High-Priority Findings (🔴)
 
-### H1 â€” Deal Receipt Lifecycle Mismatch (CRITICAL)
-**Severity: ðŸ”´ High | Deploy: ðŸš« Yes | Phase: Deal Lifecycle Correction**
+### H1 — Deal Receipt Lifecycle Mismatch (CRITICAL)
+**Severity: 🔴 High | Deploy: 🚫 Yes | Phase: Deal Lifecycle Correction**
 
-ðŸŸ¢ **Current:** Buyer calling `confirm-receipt` moves the deal to `receipt_pending`.
+🟢 **Current:** Buyer calling `confirm-receipt` moves the deal to `receipt_pending`.
 48 hours later, the hourly job auto-completes it. No admin review occurs.
 
-ðŸŽ¯ **Target:** Buyer confirms receipt â†’ deal completes **immediately**.
-If no receipt confirmed within 48h â†’ escalate to admin, do NOT auto-complete.
+🎯 **Target:** Buyer confirms receipt → deal completes **immediately**.
+If no receipt confirmed within 48h → escalate to admin, do NOT auto-complete.
 
 **Why this matters:**
 - A buyer may confirm receipt of an incorrect/partial shipment, completing the deal
@@ -50,23 +50,23 @@ If no receipt confirmed within 48h â†’ escalate to admin, do NOT auto-compl
 - Auto-completing sensitive real-world transactions without a human review step
   violates the pilot principle
 
-**Code locations:** `routes/deals.ts` L693â€“767 + `jobs/expire-deals.ts` L304â€“358
+**Code locations:** `routes/deals.ts` L693–767 + `jobs/expire-deals.ts` L304–358
 
 **Recommended fix:**
-1. Change `confirm-receipt` endpoint: `dispatched â†’ completed` directly
+1. Change `confirm-receipt` endpoint: `dispatched → completed` directly
 2. Change hourly job: after 48h without receipt, flag as "needs admin review" instead of auto-complete
 3. Add admin endpoint or UI view for "receipt not confirmed / needs verification"
 
 ---
 
-### H2 â€” Admin UI Missing Deal Override Buttons (CRITICAL for demo)
-**Severity: ðŸ”´ High | Deploy: ðŸ–¥ï¸ Frontend only | Phase: Admin Operations MVP**
+### H2 — Admin UI Missing Deal Override Buttons (CRITICAL for demo)
+**Severity: 🔴 High | Deploy: 🖥️ Frontend only | Phase: Admin Operations MVP**
 
-ðŸŸ¢ **Current:** `POST /admin/deals/:id/cancel` and `POST /admin/deals/:id/force-complete`
+🟢 **Current:** `POST /admin/deals/:id/cancel` and `POST /admin/deals/:id/force-complete`
 exist as production-ready API endpoints. The admin panel (`pages/admin.tsx`) Deals tab
 shows MWAN readiness scores but has **no buttons to trigger these actions**.
 
-ðŸŽ¯ **Target:** Admin can cancel, force-complete, or request payment resubmission
+🎯 **Target:** Admin can cancel, force-complete, or request payment resubmission
 directly from the admin panel UI, with:
 - Visible previous + new status
 - Required reason field
@@ -81,60 +81,60 @@ Reuse `callAdmin()` pattern already in the file. No backend changes needed.
 
 ---
 
-### H3 â€” Buyer Not Warned Before Deal Expires
-**Severity: ðŸ”´ High | Deploy: ðŸš« Yes | Phase: Notification/Timer Safety**
+### H3 — Buyer Not Warned Before Deal Expires
+**Severity: 🔴 High | Deploy: 🚫 Yes | Phase: Notification/Timer Safety**
 
-ðŸŸ¢ **Current:** Pre-expiry warning (3 days before deadline) sent to **producer only**.
+🟢 **Current:** Pre-expiry warning (3 days before deadline) sent to **producer only**.
 Buyer receives no advance notice.
 
-ðŸŽ¯ **Target:** Both buyer and producer receive the 3-day pre-expiry warning.
+🎯 **Target:** Both buyer and producer receive the 3-day pre-expiry warning.
 
 **Fix:** Add one `notifyDealStageChange` call for `buyer_company_id` in
-`jobs/expire-deals.ts` Step 1 (~L138). ðŸš« Requires backend deploy.
+`jobs/expire-deals.ts` Step 1 (~L138). 🚫 Requires backend deploy.
 
 ---
 
-### H4 â€” Admin Overrides Send No Notifications to Parties
-**Severity: ðŸ”´ High | Deploy: ðŸš« Yes | Phase: Admin Operations MVP**
+### H4 — Admin Overrides Send No Notifications to Parties
+**Severity: 🔴 High | Deploy: 🚫 Yes | Phase: Admin Operations MVP**
 
-ðŸŸ¢ **Current:** Admin cancel, force-complete, and payment resubmission write to
+🟢 **Current:** Admin cancel, force-complete, and payment resubmission write to
 audit_log but send no notification to buyer or producer. Parties discover status
 changes by refreshing the dashboard.
 
-ðŸŽ¯ **Target:** Any admin status change on a deal must notify both affected parties
+🎯 **Target:** Any admin status change on a deal must notify both affected parties
 with an appropriate in-app notification and email.
 
 **Fix:** Add `notifyDealStageChange` calls in `routes/admin.ts` after each deal mutation.
-Reason must be included in the notification body. ðŸš« Requires backend deploy.
+Reason must be included in the notification body. 🚫 Requires backend deploy.
 
 ---
 
-## Section 2: Medium-Priority Findings (ðŸŸ¡)
+## Section 2: Medium-Priority Findings (🟡)
 
-### M1 â€” Transport Quote "Select" Does Not Assign Transporter
-**Severity: ðŸŸ¡ Medium | Deploy: ðŸš« Yes (if fixed) | Phase: Admin Operations MVP**
+### M1 — Transport Quote "Select" Does Not Assign Transporter
+**Severity: 🟡 Medium | Deploy: 🚫 Yes (if fixed) | Phase: Admin Operations MVP**
 
-ðŸŸ¢ **Current:** `PATCH /admin/transport-quotes/:id/select` changes quote `status`
+🟢 **Current:** `PATCH /admin/transport-quotes/:id/select` changes quote `status`
 to `'selected'` only. Does not update `transporter_company_id` on the transport
 request. TR remains in `pending` status. No notification sent to transporter.
 
-ðŸŽ¯ **Target:** Selecting a quote should assign the transporter to the TR and
+🎯 **Target:** Selecting a quote should assign the transporter to the TR and
 transition TR status (e.g., to `assigned` or `confirmed`).
 
-âš ï¸ **Operational risk:** Ops staff may believe they have assigned a transporter
+⚠️ **Operational risk:** Ops staff may believe they have assigned a transporter
 when they have only annotated a preference. This could result in a no-show
 transport during Al Qaryan demo. **Verify this is understood by ops team before
 using quote-select operationally.**
 
 ---
 
-### M2 â€” Admin Cannot Cancel Dispatched or Receipt-Pending Deals Without Safeguards
-**Severity: ðŸŸ¡ Medium | Deploy: ðŸš« Yes (if expanded) | Phase: Admin Operations MVP**
+### M2 — Admin Cannot Cancel Dispatched or Receipt-Pending Deals Without Safeguards
+**Severity: 🟡 Medium | Deploy: 🚫 Yes (if expanded) | Phase: Admin Operations MVP**
 
-ðŸŸ¢ **Current:** `POST /admin/deals/:id/cancel` rejects `dispatched` and
+🟢 **Current:** `POST /admin/deals/:id/cancel` rejects `dispatched` and
 `receipt_pending` statuses. Only `force-complete` is available for these states.
 
-ðŸŽ¯ **Target pilot behavior (conservative):**
+🎯 **Target pilot behavior (conservative):**
 - Do NOT simply expand cancel to cover these states without safeguards
 - For dispatched/receipt_pending: admin should be able to flag as "operational hold" or "disputed"
 - Force-complete with mandatory reason is the appropriate path for verified arrivals
@@ -142,35 +142,35 @@ using quote-select operationally.**
 
 ---
 
-### M3 â€” Buyer Blocked Silently (No Notification)
-**Severity: ðŸŸ¡ Medium | Deploy: ðŸš« Yes | Phase: Notification/Timer Safety**
+### M3 — Buyer Blocked Silently (No Notification)
+**Severity: 🟡 Medium | Deploy: 🚫 Yes | Phase: Notification/Timer Safety**
 
-ðŸŸ¢ **Current:** When `offer_submission_blocked = true` triggers (2 receipt failures),
+🟢 **Current:** When `offer_submission_blocked = true` triggers (2 receipt failures),
 no email or in-app notification is sent. Buyer discovers block on next offer attempt.
 
-ðŸŽ¯ **Target:** Buyer receives a notification when blocked, explaining the reason.
+🎯 **Target:** Buyer receives a notification when blocked, explaining the reason.
 Additionally, the auto-block itself should ideally require admin confirmation under
 the pilot principle (carrier delays should not penalize buyers).
 
 ---
 
-### M4 â€” Contract Lite Has No Notifications
-**Severity: ðŸŸ¡ Medium | Phase: Contract Lite Deep Audit**
+### M4 — Contract Lite Has No Notifications
+**Severity: 🟡 Medium | Phase: Contract Lite Deep Audit**
 
-ðŸŸ¢ **Current:** No notification or email fires on any contract state change.
+🟢 **Current:** No notification or email fires on any contract state change.
 This is intentional (ops-internal tool).
 
-ðŸŽ¯ **Target (undecided):** Whether contract notifications are needed for Al Qaryan
+🎯 **Target (undecided):** Whether contract notifications are needed for Al Qaryan
 pilot is a **founder/CTO decision**. Cannot be determined from code alone.
 Add to Phase-CLT scope.
 
 ---
 
-### M5 â€” Rich Deal Completion Email Is Defined But Never Called (Confirmed)
-**Severity: ðŸŸ¡ Medium | Deploy: ðŸš« Yes (to wire it) | Resolved: âœ…**
+### M5 — Rich Deal Completion Email Is Defined But Never Called (Confirmed)
+**Severity: 🟡 Medium | Deploy: 🚫 Yes (to wire it) | Resolved: ✅**
 
-âœ… **Confirmed by full codebase search** (`artifacts/api-server/src/**/*.ts`):
-`sendDealCompletionEmail` appears **exactly once** â€” at its function definition in
+✅ **Confirmed by full codebase search** (`artifacts/api-server/src/**/*.ts`):
+`sendDealCompletionEmail` appears **exactly once** — at its function definition in
 `lib/email.ts:395`. There are **zero call sites** anywhere in the codebase.
 
 **What this means:**
@@ -184,19 +184,19 @@ Add to Phase-CLT scope.
 that would be important for compliance, record-keeping, and customer trust.
 
 **To fix:** Wire `sendDealCompletionEmail` to the deal completion path(s).
-ðŸš« Requires backend code change + Cloud Run deploy.
+🚫 Requires backend code change + Cloud Run deploy.
 
 ---
 
-### M6 â€” All Timer Values are Hard-Coded
-**Severity: ðŸŸ¡ Medium | Deploy: ðŸš« Yes (to change) | Phase: Post-Pilot**
+### M6 — All Timer Values are Hard-Coded
+**Severity: 🟡 Medium | Deploy: 🚫 Yes (to change) | Phase: Post-Pilot**
 
 All deal lifecycle durations are compile-time constants in `jobs/expire-deals.ts`:
 `MS.active` (31d), `MS.payment_confirmed` (8d), `MS.dispatched` (72h),
 `MS.pre_expiry_warn` (3d), `RECEIPT_PENDING_MS` (48h).
 Extension values are inline in `routes/deals.ts`.
 
-ðŸŽ¯ **Target:** These should become admin-configurable (stored in DB or env).
+🎯 **Target:** These should become admin-configurable (stored in DB or env).
 This is a post-pilot improvement, but must be acknowledged before launch.
 
 ---
@@ -208,39 +208,39 @@ This is a post-pilot improvement, but must be acknowledged before launch.
 
 | Finding | Files involved | Current source of truth | Recommended SOT | Risk | Phase | Founder decision needed? |
 |---------|---------------|------------------------|-----------------|------|-------|--------------------------|
-| **Timer durations** | `expire-deals.ts`, implicitly known by ops | Hard-coded constants | Admin-configurable table | ðŸŸ¡ Medium | Post-pilot | No, but CTO must acknowledge values |
-| **Deal status semantics** | `routes/deals.ts`, `pages/admin.tsx`, `pages/dashboard.tsx` | Backend enum | Backend enum (correct) | ðŸŸ¢ Low | â€” | No |
-| **Transport quote "select" implies assignment** | `routes/admin.ts`, `pages/admin.tsx` | Misleading â€” backend knows it's label-only; UI implies assignment | Clarify in UI label ("shortlist/prefer") | ðŸ”´ High | Admin UI fix | No |
-| **Receipt confirmation implies wait** | `routes/deals.ts` comment, notification body text, `expire-deals.ts` | Backend: 48h wait. Notification text: "auto-complete in 48h". Target: immediate complete | Fix route + job + text | ðŸ”´ High | Deal Lifecycle Correction | Yes â€” target behavior |
-| **`sendDealCompletionEmail` wiring** | `lib/email.ts` defines it; no active lifecycle call site found | Defined but not wired | Decide whether to wire into completion flow | 🟡 Medium | Deal Lifecycle Correction | Yes |
-| **Admin capabilities: API vs UI** | `routes/admin.ts` (full CRUD), `pages/admin.tsx` (partial) | API has more capabilities than UI | UI should expose all safe admin actions | ðŸŸ¡ Medium | Admin UI fix | No |
-| **Material categories: backend vs listing enum** | `material-categories` table (new), `wasteUnitEnum` (legacy enum on old listings) | Split â€” legacy enum for old, table for new | Migrate legacy listings (post-pilot) | ðŸŸ¢ Low | Post-pilot | No |
-| **VAT calculation** | `routes/deals.ts` (computed at creation), `routes/admin.ts` (reported in CSV) | Single compute at creation âœ… | Same | ðŸŸ¢ Low | â€” | No |
-| **pre_expiry_notified reset** | `routes/deals.ts` extend handler (resets to false) | Correct â€” resets so warning fires again | Same | ðŸŸ¢ Low | â€” | No |
-| **Contract created_by_company_id nullable** | `contracts.ts` schema comment | Nullable for backwards-compat (pre-field contracts) | Acceptable | ðŸŸ¢ Low | â€” | No |
+| **Timer durations** | `expire-deals.ts`, implicitly known by ops | Hard-coded constants | Admin-configurable table | 🟡 Medium | Post-pilot | No, but CTO must acknowledge values |
+| **Deal status semantics** | `routes/deals.ts`, `pages/admin.tsx`, `pages/dashboard.tsx` | Backend enum | Backend enum (correct) | 🟢 Low | — | No |
+| **Transport quote "select" implies assignment** | `routes/admin.ts`, `pages/admin.tsx` | Misleading — backend knows it's label-only; UI implies assignment | Clarify in UI label ("shortlist/prefer") | 🔴 High | Admin UI fix | No |
+| **Receipt confirmation implies wait** | `routes/deals.ts` comment, notification body text, `expire-deals.ts` | Backend: 48h wait. Notification text: "auto-complete in 48h". Target: immediate complete | Fix route + job + text | 🔴 High | Deal Lifecycle Correction | Yes — target behavior |
+| **`sendDealCompletionEmail` wiring** | `lib/email.ts` defines it; no active lifecycle call site found | Defined but not wired | Decide whether to wire into completion flow | ?? Medium | Deal Lifecycle Correction | Yes |
+| **Admin capabilities: API vs UI** | `routes/admin.ts` (full CRUD), `pages/admin.tsx` (partial) | API has more capabilities than UI | UI should expose all safe admin actions | 🟡 Medium | Admin UI fix | No |
+| **Material categories: backend vs listing enum** | `material-categories` table (new), `wasteUnitEnum` (legacy enum on old listings) | Split — legacy enum for old, table for new | Migrate legacy listings (post-pilot) | 🟢 Low | Post-pilot | No |
+| **VAT calculation** | `routes/deals.ts` (computed at creation), `routes/admin.ts` (reported in CSV) | Single compute at creation ✅ | Same | 🟢 Low | — | No |
+| **pre_expiry_notified reset** | `routes/deals.ts` extend handler (resets to false) | Correct — resets so warning fires again | Same | 🟢 Low | — | No |
+| **Contract created_by_company_id nullable** | `contracts.ts` schema comment | Nullable for backwards-compat (pre-field contracts) | Acceptable | 🟢 Low | — | No |
 
 ---
 
-## Section 4: Contract Lite â€” Phase-CLT Required
+## Section 4: Contract Lite — Phase-CLT Required
 
 > **Contract Lite is NOT ready for Al Qaryan demo until Phase-CLT is completed.**
 
 ### What Was Audited (Broad)
-- âœ… State machine (draft â†’ pending â†’ active â†’ completed/cancelled)
-- âœ… Creator vs. counterparty role logic
-- âœ… Material line management rules (creator-only, draft-only)
-- âœ… Shipment schema (planned/dispatched/received/closed/cancelled)
-- âœ… Weight policy schema (5 policies, fixed at creation)
-- âœ… Admin force-cancel capability
-- âœ… No auto-expiry
-- âœ… No notifications (confirmed intentional)
+- ✅ State machine (draft → pending → active → completed/cancelled)
+- ✅ Creator vs. counterparty role logic
+- ✅ Material line management rules (creator-only, draft-only)
+- ✅ Shipment schema (planned/dispatched/received/closed/cancelled)
+- ✅ Weight policy schema (5 policies, fixed at creation)
+- ✅ Admin force-cancel capability
+- ✅ No auto-expiry
+- ✅ No notifications (confirmed intentional)
 
-### What Was NOT Audited â€” Phase-CLT Scope
+### What Was NOT Audited — Phase-CLT Scope
 | Gap | Why it matters |
 |-----|----------------|
 | `contract-detail.tsx` (57,112 bytes) full UI flow | Al Qaryan operator uses this page; unknown UX gaps |
 | Contract shipments route logic | Shipment state transitions not verified against business rules |
-| Which weight policy to recommend for Al Qaryan | `source_weight_only` vs `dual_higher_final` â€” founder decision needed |
+| Which weight policy to recommend for Al Qaryan | `source_weight_only` vs `dual_higher_final` — founder decision needed |
 | Whether contract notifications are needed | Founder decision |
 | Admin/report visibility for contract shipments | Can admin see individual shipment weights? |
 | Step-by-step Al Qaryan Contract Lite UAT scenario | No test script exists |
@@ -264,12 +264,12 @@ This is a post-pilot improvement, but must be acknowledged before launch.
 ### Current State
 | Entity | Backend CRUD | Admin UI | Safe to expose freely? |
 |--------|-------------|----------|----------------------|
-| Material categories | âœ… Full CRUD (key, names, parent_id, is_sensitive, MWAN fields) | âŒ API-only | âœ… Yes â€” but protect `key` field from edits |
-| Unit options | âœ… Full CRUD (key, symbol, bilingual) | âŒ API-only | âœ… Yes â€” but protect `key` field |
-| Company categories | âœ… Full CRUD | âŒ API-only | âœ… Yes |
-| Capabilities | âŒ Read-only via `/lookup/capabilities` â€” no admin write endpoint | âŒ None | N/A â€” endpoint needed first |
-| Lifecycle status values | Not configurable (DB enums) | N/A | ðŸš« Must NOT be editable â€” they drive backend logic |
-| Payment/financial fields | Not configurable | N/A | ðŸš« Must NOT be editable |
+| Material categories | ✅ Full CRUD (key, names, parent_id, is_sensitive, MWAN fields) | ❌ API-only | ✅ Yes — but protect `key` field from edits |
+| Unit options | ✅ Full CRUD (key, symbol, bilingual) | ❌ API-only | ✅ Yes — but protect `key` field |
+| Company categories | ✅ Full CRUD | ❌ API-only | ✅ Yes |
+| Capabilities | ❌ Read-only via `/lookup/capabilities` — no admin write endpoint | ❌ None | N/A — endpoint needed first |
+| Lifecycle status values | Not configurable (DB enums) | N/A | 🚫 Must NOT be editable — they drive backend logic |
+| Payment/financial fields | Not configurable | N/A | 🚫 Must NOT be editable |
 
 ### Recommendation
 A simple admin-panel "Master Data" tab could expose:
@@ -283,7 +283,7 @@ A simple admin-panel "Master Data" tab could expose:
 - `is_sensitive` flag on material categories must be clearly labeled (triggers license check)
 - Lifecycle/status/payment fields must never be exposed as editable dropdowns
 
-ðŸ–¥ï¸ Frontend-only change for most; capabilities need ðŸš« backend deploy.
+🖥️ Frontend-only change for most; capabilities need 🚫 backend deploy.
 
 ---
 
@@ -294,10 +294,10 @@ A simple admin-panel "Master Data" tab could expose:
 
 | # | Assumption | How to verify | Risk if wrong |
 |---|-----------|--------------|---------------|
-| 1 | `RESEND_API_KEY` is set in Cloud Run revision `00046-pnj` | Cloud Run console â†’ env vars | All transactional email silently disabled |
-| 2 | `TRANSPORT_REQUEST_EMAIL` is set | Cloud Run console â†’ env vars | Ops never receives transport notifications |
-| 3 | `SUPPORT_EMAIL` is set | Cloud Run console â†’ env vars | Issue reports not forwarded to support |
-| 4 | Cloud Scheduler expire-deals job is running and last execution succeeded | Cloud Scheduler console â†’ job history | Deals never expire; no warnings fired |
+| 1 | `RESEND_API_KEY` is set in Cloud Run revision `00046-pnj` | Cloud Run console → env vars | All transactional email silently disabled |
+| 2 | `TRANSPORT_REQUEST_EMAIL` is set | Cloud Run console → env vars | Ops never receives transport notifications |
+| 3 | `SUPPORT_EMAIL` is set | Cloud Run console → env vars | Issue reports not forwarded to support |
+| 4 | Cloud Scheduler expire-deals job is running and last execution succeeded | Cloud Scheduler console → job history | Deals never expire; no warnings fired |
 | 5 | Contract Lite end-to-end flow works as expected in staging | Manual UAT walkthrough (Phase-CLT) | Demo fails at contract step |
 | 6 | Admin UI deal actions (cancel/force-complete) work via raw API in staging | Test with curl against staging API + valid ADMIN_API_KEY | Admin cannot intervene in stuck deals |
 | 7 | Quote "select" behavior is understood by ops team | Brief ops team; add UI label "shortlist only, not assigned" | Ops believes transporter is assigned when not |
@@ -326,14 +326,14 @@ A simple admin-panel "Master Data" tab could expose:
 
 ---
 
-## Section 8: 2â€“3 Day Execution Plan
+## Section 8: 2–3 Day Execution Plan
 
 > This plan assumes the team proceeds from this documentation session.
 > Days are approximate 6-hour working days.
 
 ---
 
-### Phase 0 â€” Docs Finalization (Current session)
+### Phase 0 — Docs Finalization (Current session)
 - **Type:** Documentation only
 - **Deploy:** None
 - **Estimated time:** Complete
@@ -341,11 +341,11 @@ A simple admin-panel "Master Data" tab could expose:
 
 ---
 
-### Phase 1 â€” Contract Lite Deep Audit + Al Qaryan UAT Script
+### Phase 1 — Contract Lite Deep Audit + Al Qaryan UAT Script
 - **Type:** Audit only (no implementation)
 - **Recommended model:** Gemini Pro / Claude Sonnet Thinking (reasoning quality matters)
 - **Deploy:** None
-- **Estimated time:** 3â€“4 hours
+- **Estimated time:** 3–4 hours
 - **Manual UAT required:** Yes (staging walkthrough)
 - **Files to read:** `pages/contract-detail.tsx`, `routes/contracts.ts` shipment sub-routes (if any), `lib/db/src/schema/contract-shipments.ts` (already read), admin.ts contracts section
 - **Exit criteria:**
@@ -357,29 +357,29 @@ A simple admin-panel "Master Data" tab could expose:
 
 ---
 
-### Phase 2 â€” Deal Lifecycle Correction
+### Phase 2 — Deal Lifecycle Correction
 - **Type:** Implementation
 - **Recommended model:** Gemini Pro High or Claude Sonnet (precise code change)
-- **Deploy:** ðŸš« Yes â€” backend `routes/deals.ts` + `jobs/expire-deals.ts`
-- **Estimated time:** 3â€“4 hours (code) + 1â€“2 hours (staging verification)
-- **Manual UAT required:** Yes â€” full deal flow from active â†’ dispatched â†’ buyer receipt â†’ completed
+- **Deploy:** 🚫 Yes — backend `routes/deals.ts` + `jobs/expire-deals.ts`
+- **Estimated time:** 3–4 hours (code) + 1–2 hours (staging verification)
+- **Manual UAT required:** Yes — full deal flow from active → dispatched → buyer receipt → completed
 - **Scope:**
-  - Change `confirm-receipt`: `dispatched â†’ completed` (direct)
-  - Change hourly job: 48h no-receipt â†’ flag/escalate instead of auto-complete
+  - Change `confirm-receipt`: `dispatched → completed` (direct)
+  - Change hourly job: 48h no-receipt → flag/escalate instead of auto-complete
   - Add notification to buyer on receipt-triggered completion
   - Update notification body text (remove "auto-complete in 48h" language)
 - **Exit criteria:**
-  - Manual UAT confirms: buyer receipt â†’ immediate complete
+  - Manual UAT confirms: buyer receipt → immediate complete
   - Manual UAT confirms: 48h without receipt does not auto-complete
   - Admin can view "needs verification" deals (even if just via status filter)
 
 ---
 
-### Phase 3 â€” Admin Operations MVP
+### Phase 3 — Admin Operations MVP
 - **Type:** Implementation (mix of frontend + backend)
 - **Recommended model:** Gemini Pro / Claude Sonnet
-- **Deploy:** ðŸš« Yes (backend for notifications); ðŸ–¥ï¸ Frontend only (deal action buttons)
-- **Estimated time:** 4â€“5 hours
+- **Deploy:** 🚫 Yes (backend for notifications); 🖥️ Frontend only (deal action buttons)
+- **Estimated time:** 4–5 hours
 - **Manual UAT required:** Yes
 - **Scope:**
   - Frontend: Add cancel + force-complete + payment resubmission buttons to admin Deals tab
@@ -393,10 +393,10 @@ A simple admin-panel "Master Data" tab could expose:
 
 ---
 
-### Phase 4 â€” Notification & Timer Safety Fixes
+### Phase 4 — Notification & Timer Safety Fixes
 - **Type:** Implementation
 - **Recommended model:** Any competent model
-- **Deploy:** ðŸš« Yes â€” `jobs/expire-deals.ts`
+- **Deploy:** 🚫 Yes — `jobs/expire-deals.ts`
 - **Estimated time:** 2 hours
 - **Manual UAT required:** Yes (verify buyer receives warning)
 - **Scope:**
@@ -410,11 +410,11 @@ A simple admin-panel "Master Data" tab could expose:
 
 ---
 
-### Phase 5 â€” Master Data / Dropdown UI Assessment
+### Phase 5 — Master Data / Dropdown UI Assessment
 - **Type:** Audit + optional frontend implementation
 - **Recommended model:** Any
-- **Deploy:** ðŸ–¥ï¸ Frontend only (for most); ðŸš« backend for capabilities CRUD
-- **Estimated time:** 2â€“3 hours
+- **Deploy:** 🖥️ Frontend only (for most); 🚫 backend for capabilities CRUD
+- **Estimated time:** 2–3 hours
 - **Manual UAT required:** Yes
 - **Scope:**
   - Assess: is a master data management UI tab in admin.tsx feasible?
@@ -428,19 +428,19 @@ A simple admin-panel "Master Data" tab could expose:
 
 ---
 
-### Phase 6 â€” Final Manual UAT & Closure Report
+### Phase 6 — Final Manual UAT & Closure Report
 - **Type:** Verification + documentation
 - **Recommended model:** Any (structured report writing)
 - **Deploy:** None (this is a verification phase)
-- **Estimated time:** 2â€“3 hours
+- **Estimated time:** 2–3 hours
 - **Scope:**
   - Full Al Qaryan scenario walkthrough in staging (producer + buyer + admin roles)
-  - Verify all Phase 1â€“5 exit criteria
+  - Verify all Phase 1–5 exit criteria
   - Decide whether to wire `sendDealCompletionEmail` into the completion flow
   - Verify listing status reset on deal cancel
   - Write closure report: UAT results, outstanding items, go/no-go recommendation
 - **Exit criteria:**
-  - All manual verification items in Â§Section 6 checked off
+  - All manual verification items in §Section 6 checked off
   - Go/no-go decision documented with any remaining risks accepted by CTO
 
 ---
@@ -448,17 +448,17 @@ A simple admin-panel "Master Data" tab could expose:
 ## Section 9: Go / No-Go Framing
 
 ### Ready for supervised internal UAT and pilot preparation:
-âœ… Core deal flow (marketplace â†’ offer â†’ deal â†’ payment â†’ dispatch)
-âœ… Audit trail
-âœ… Master data API management
-âœ… Admin company/license management
-âœ… Report export (CSV)
+✅ Core deal flow (marketplace → offer → deal → payment → dispatch)
+✅ Audit trail
+✅ Master data API management
+✅ Admin company/license management
+✅ Report export (CSV)
 
 ### NOT ready without completing:
-âš ï¸ Phase 1 (Contract Lite audit) â€” if Contract Lite is part of Al Qaryan scenario
-âš ï¸ Phase 2 (Deal receipt lifecycle fix) â€” current behavior diverges from target
-âš ï¸ Phase 3 (Admin UI deal actions) â€” admin cannot intervene without curl
-âš ï¸ Assumptions verified (Â§Section 6) â€” email, scheduler, env vars
+⚠️ Phase 1 (Contract Lite audit) — if Contract Lite is part of Al Qaryan scenario
+⚠️ Phase 2 (Deal receipt lifecycle fix) — current behavior diverges from target
+⚠️ Phase 3 (Admin UI deal actions) — admin cannot intervene without curl
+⚠️ Assumptions verified (§Section 6) — email, scheduler, env vars
 
 ### Decisions Required from Founder/CTO Before Pilot
 1. Accept or fix deal receipt flow (immediate vs 48h wait)?
