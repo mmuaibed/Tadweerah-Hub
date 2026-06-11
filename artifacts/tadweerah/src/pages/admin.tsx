@@ -383,6 +383,10 @@ export function AdminPage() {
   const [shipmentsError, setShipmentsError] = useState<string | null>(null);
   const [shipmentsStatusFilter, setShipmentsStatusFilter] = useState("");
 
+  /* Shipment action modal state */
+  const [shipmentActionTarget, setShipmentActionTarget] = useState<{ id: string; action: "cancel" | "restore" } | null>(null);
+  const [shipmentActionLoading, setShipmentActionLoading] = useState(false);
+
   /* Overdue state */
   interface OverdueOperations {
     deals: { id: string; status: string; seller_name: string; buyer_name: string; created_at: string; deadline: string | null; overdue_reason: string }[];
@@ -484,6 +488,24 @@ export function AdminPage() {
       setShipmentsError(e instanceof Error ? e.message : t("admin.error.generic"));
     } finally {
       setShipmentsLoading(false);
+    }
+  }
+
+  async function submitShipmentAction(reason: string) {
+    if (!shipmentActionTarget) return;
+    setShipmentActionLoading(true);
+    try {
+      const res = await callAdmin(`/shipments/${shipmentActionTarget.id}/${shipmentActionTarget.action}`, {
+        method: "POST",
+        body: JSON.stringify({ reason }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      void fetchShipments();
+      setShipmentActionTarget(null);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Error performing shipment action");
+    } finally {
+      setShipmentActionLoading(false);
     }
   }
 
@@ -2927,6 +2949,7 @@ export function AdminPage() {
                           <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "المشتري" : "Buyer"}</th>
                           <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "الأوزان (البائع / المشتري / النهائي)" : "Weights (Src / Dst / Final)"}</th>
                           <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "الحالة" : "Status"}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "إجراءات" : "Actions"}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border">
@@ -2952,6 +2975,28 @@ export function AdminPage() {
                                 <span className={`inline-flex items-center rounded-full text-[10px] font-bold px-2 py-0.5 ${statusStyle[s.status] ?? "bg-gray-100"}`}>
                                   {t(`contract.shipment.status.${s.status}`) || s.status}
                                 </span>
+                              </td>
+                              <td className="px-4 py-3">
+                                {["planned", "dispatched"].includes(s.status) && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setShipmentActionTarget({ id: s.id, action: "cancel" })}
+                                    className="h-7 text-[10px] border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
+                                  >
+                                    {lang === "ar" ? "إلغاء الشحنة (مشرف)" : "Cancel Shipment"}
+                                  </Button>
+                                )}
+                                {s.status === "cancelled" && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setShipmentActionTarget({ id: s.id, action: "restore" })}
+                                    className="h-7 text-[10px] border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
+                                  >
+                                    {lang === "ar" ? "استعادة الشحنة (مشرف)" : "Restore Shipment"}
+                                  </Button>
+                                )}
                               </td>
                             </tr>
                           );
@@ -3206,6 +3251,19 @@ export function AdminPage() {
           }
         }}
         isPending={resubmittingId !== null}
+        destructive={false}
+      />
+
+      <AdminConfirmModal
+        open={shipmentActionTarget !== null}
+        onOpenChange={(o) => { if (!o) setShipmentActionTarget(null); }}
+        title={shipmentActionTarget?.action === "cancel" ? (lang === "ar" ? "إلغاء الشحنة (مشرف)" : "Cancel Shipment") : (lang === "ar" ? "استعادة الشحنة (مشرف)" : "Restore Shipment")}
+        description={shipmentActionTarget?.action === "cancel" ? (lang === "ar" ? "هل أنت متأكد من إلغاء هذه الشحنة؟ هذا الإجراء قابل للتراجع من قِبل المشرف فقط." : "Are you sure you want to cancel this shipment? This action is reversible by admin only.") : (lang === "ar" ? "سيتم استعادة هذه الشحنة إلى حالتها السابقة. هذا الإجراء يُسجَّل في سجل المراجعة." : "This shipment will be restored to its previous state. This action is logged in the audit trail.")}
+        reasonLabel={lang === "ar" ? "سبب الإجراء (إلزامي)" : "Action Reason (Required)"}
+        confirmLabel={lang === "ar" ? "تأكيد" : "Confirm"}
+        requireReason={true}
+        onConfirm={(reason) => void submitShipmentAction(reason)}
+        isPending={shipmentActionLoading}
         destructive={false}
       />
 

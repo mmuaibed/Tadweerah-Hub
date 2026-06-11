@@ -378,3 +378,8 @@ This is a **high operational risk** during pilot logistics coordination.
 - [ ] Should buyer-blocking require admin review before triggering?
 
 
+
+
+## Admin Shipment Actions
+- **Admin-only cancel**: Allowed for planned/dispatched shipments only. Does not send emails or in-app notifications during UAT. Logs shipment.cancelled_by_admin.
+- **Admin-only restore**: Allowed for admin-cancelled shipments only. Reverts to planned or dispatched based on timestamps. Does not send emails/notifications during UAT. Logs shipment.restored_by_admin.

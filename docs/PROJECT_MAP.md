@@ -221,7 +221,7 @@ active → payment_submitted → payment_confirmed → dispatched
 | `POST /admin/deals/:id/force-complete` | Any non-terminal status | Sets `received_at` if unset; audit log severity=warn |
 | `PATCH /admin/deals/:id/request-payment-resubmission` | active, payment_submitted | Resets to active; clears all payment fields |
 | `PATCH /admin/companies/:id/unblock-offers` | — | Clears `offer_submission_blocked`; resets `receipt_failures_count` |
-| `GET /admin/shipments` | — | Returns all contract shipments with metadata for admin panel |
+| `GET /admin/shipments`<br>`POST /admin/shipments/:id/cancel`<br>`POST /admin/shipments/:id/restore` | — | Returns all contract shipments with metadata for admin panel |
 | `GET /admin/overdue-operations` | — | Returns lists of overdue deals, shipments, and contracts for review |
 
 ---

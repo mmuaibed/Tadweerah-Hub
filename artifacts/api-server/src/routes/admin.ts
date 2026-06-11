@@ -1253,6 +1253,168 @@ router.get("/admin/shipments", requireAdminKey, async (req, res) => {
   );
 });
 
+// ---------------------------------------------------------------------------
+// POST /admin/shipments/:id/cancel
+// ---------------------------------------------------------------------------
+router.post("/admin/shipments/:id/cancel", requireAdminKey, async (req, res) => {
+  const shipmentId = String(req.params["id"]);
+  const { reason } = req.body ?? {};
+
+  if (!reason || typeof reason !== "string" || reason.trim() === "") {
+    res.status(400).json({ error: "ValidationError", message: "Reason is required" });
+    return;
+  }
+
+  const [shipment] = await db
+    .select()
+    .from(contractShipmentsTable)
+    .where(eq(contractShipmentsTable.id, shipmentId))
+    .limit(1);
+
+  if (!shipment) {
+    res.status(404).json({ error: "NotFound", message: "Shipment not found" });
+    return;
+  }
+
+  const [contract] = await db
+    .select()
+    .from(contractsTable)
+    .where(eq(contractsTable.id, shipment.contract_id))
+    .limit(1);
+
+  if (!["planned", "dispatched"].includes(shipment.status)) {
+    res.status(409).json({
+      error: "InvalidState",
+      message: `Cannot cancel shipment from status '${shipment.status}'. Only planned or dispatched shipments can be admin-cancelled.`,
+    });
+    return;
+  }
+
+  const now = new Date();
+
+  const [updated] = await db
+    .update(contractShipmentsTable)
+    .set({ status: "cancelled", cancelled_at: now, updated_at: now })
+    .where(eq(contractShipmentsTable.id, shipment.id))
+    .returning();
+
+  void logAudit({
+    action: "shipment.cancelled_by_admin",
+    entityType: "contract_shipment",
+    entityId: shipment.id,
+    actorRole: "admin",
+    statusBefore: shipment.status,
+    statusAfter: "cancelled",
+    details: {
+      reason: reason.trim(),
+      previous_status: shipment.status,
+      shipment_reference: shipment.reference,
+      contract_id: contract?.id,
+      contract_reference: contract?.reference,
+      no_notifications_sent: true,
+    },
+    severity: "warn",
+  });
+
+  res.json(updated);
+});
+
+// ---------------------------------------------------------------------------
+// POST /admin/shipments/:id/restore
+// ---------------------------------------------------------------------------
+router.post("/admin/shipments/:id/restore", requireAdminKey, async (req, res) => {
+  const shipmentId = String(req.params["id"]);
+  const { reason } = req.body ?? {};
+
+  if (!reason || typeof reason !== "string" || reason.trim() === "") {
+    res.status(400).json({ error: "ValidationError", message: "Reason is required" });
+    return;
+  }
+
+  const [shipment] = await db
+    .select()
+    .from(contractShipmentsTable)
+    .where(eq(contractShipmentsTable.id, shipmentId))
+    .limit(1);
+
+  if (!shipment) {
+    res.status(404).json({ error: "NotFound", message: "Shipment not found" });
+    return;
+  }
+
+  if (shipment.status !== "cancelled") {
+    res.status(409).json({
+      error: "InvalidState",
+      message: `Cannot restore shipment from status '${shipment.status}'. Only cancelled shipments can be restored.`,
+    });
+    return;
+  }
+
+  // Verify through audit log that this shipment was previously cancelled by admin
+  const [latestCancelAudit] = await db
+    .select()
+    .from(auditLogTable)
+    .where(
+      and(
+        eq(auditLogTable.entity_type, "contract_shipment"),
+        eq(auditLogTable.entity_id, shipment.id),
+        eq(auditLogTable.action, "shipment.cancelled_by_admin")
+      )
+    )
+    .orderBy(desc(auditLogTable.created_at))
+    .limit(1);
+
+  if (!latestCancelAudit) {
+    res.status(409).json({
+      error: "InvalidState",
+      message: "Shipment cannot be restored because it was not cancelled by an admin.",
+    });
+    return;
+  }
+
+  const [contract] = await db
+    .select()
+    .from(contractsTable)
+    .where(eq(contractsTable.id, shipment.contract_id))
+    .limit(1);
+
+  // Infer restore target
+  let targetStatus: "planned" | "dispatched" = "planned";
+  if (shipment.dispatched_at) {
+    targetStatus = "dispatched";
+  }
+  // MVP constraint: Do not restore to `received` even if received_at exists.
+
+  const now = new Date();
+
+  const [updated] = await db
+    .update(contractShipmentsTable)
+    .set({ status: targetStatus, cancelled_at: null, updated_at: now })
+    .where(eq(contractShipmentsTable.id, shipment.id))
+    .returning();
+
+  void logAudit({
+    action: "shipment.restored_by_admin",
+    entityType: "contract_shipment",
+    entityId: shipment.id,
+    actorRole: "admin",
+    statusBefore: "cancelled",
+    statusAfter: targetStatus,
+    details: {
+      reason: reason.trim(),
+      restored_to_status: targetStatus,
+      inferred_from_timestamps: true,
+      shipment_reference: shipment.reference,
+      contract_id: contract?.id,
+      contract_reference: contract?.reference,
+      no_notifications_sent: true,
+    },
+    severity: "warn",
+  });
+
+  res.json(updated);
+});
+
 /* -------------------------------------------------------------------------- */
 /* Overdue operations (admin)                                                 */
 /* -------------------------------------------------------------------------- */

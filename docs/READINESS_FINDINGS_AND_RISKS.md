@@ -469,3 +469,7 @@ A simple admin-panel "Master Data" tab could expose:
 6. Should buyer auto-blocking require admin confirmation step?
 
 
+
+
+## Risk Note: Admin Shipment Restore
+Admin restore of shipments without DB migration relies on timestamps + audit log and is acceptable only for pilot. Long-term implementation should include cancelled_from_status and cancelled_reason columns in the database.
