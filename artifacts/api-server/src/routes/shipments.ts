@@ -1,7 +1,8 @@
 import { Router, type IRouter } from "express";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import {
   db,
+  companiesTable,
   contractsTable,
   contractMaterialsTable,
   contractShipmentsTable,
@@ -339,6 +340,110 @@ router.post(
       const publicUrl = `https://storage.googleapis.com/${BUCKET_NAME}/${fileName}`;
 
       res.status(201).json({ url: publicUrl });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+// ---------------------------------------------------------------------------
+// GET /shipments/pending — get pending shipment actions for the current company
+// MUST be registered before /shipments/:id
+// ---------------------------------------------------------------------------
+
+router.get(
+  "/shipments/pending",
+  requireAuth,
+  requireCompany(),
+  async (req, res, next) => {
+    try {
+      const { company } = req as AuthedCompanyRequest;
+
+      // 1. Seller shipments (status: planned)
+      const sellerShipments = await db
+        .select({
+          shipment: contractShipmentsTable,
+          contract: contractsTable,
+          material: contractMaterialsTable,
+        })
+        .from(contractShipmentsTable)
+        .innerJoin(contractsTable, eq(contractsTable.id, contractShipmentsTable.contract_id))
+        .innerJoin(contractMaterialsTable, eq(contractMaterialsTable.id, contractShipmentsTable.material_line_id))
+        .where(
+          and(
+            eq(contractsTable.seller_company_id, company.id),
+            eq(contractShipmentsTable.status, "planned"),
+            eq(contractsTable.status, "active"),
+          ),
+        );
+
+      // 2. Buyer shipments (status: dispatched)
+      const buyerShipments = await db
+        .select({
+          shipment: contractShipmentsTable,
+          contract: contractsTable,
+          material: contractMaterialsTable,
+        })
+        .from(contractShipmentsTable)
+        .innerJoin(contractsTable, eq(contractsTable.id, contractShipmentsTable.contract_id))
+        .innerJoin(contractMaterialsTable, eq(contractMaterialsTable.id, contractShipmentsTable.material_line_id))
+        .where(
+          and(
+            eq(contractsTable.buyer_company_id, company.id),
+            eq(contractShipmentsTable.status, "dispatched"),
+            eq(contractsTable.status, "active"),
+          ),
+        );
+
+      const allItems = [...sellerShipments, ...buyerShipments];
+
+      // Fetch company names
+      const companyIds = new Set<string>();
+      for (const item of allItems) {
+        companyIds.add(item.contract.seller_company_id);
+        companyIds.add(item.contract.buyer_company_id);
+      }
+
+      const companies =
+        companyIds.size > 0
+          ? await db
+              .select({ id: companiesTable.id, name: companiesTable.name })
+              .from(companiesTable)
+              .where(
+                companyIds.size === 1
+                  ? eq(companiesTable.id, Array.from(companyIds)[0])
+                  : sql`${companiesTable.id} = ANY(${sql.raw(`ARRAY[${Array.from(companyIds).map((id) => `'${id}'`).join(",")}]::uuid[]`)})`,
+              )
+          : [];
+      const companyMap = Object.fromEntries(companies.map((c) => [c.id, c.name]));
+
+      const results = allItems
+        .map((item) => {
+          const isSeller = item.contract.seller_company_id === company.id;
+          const role = isSeller ? "seller" : "buyer";
+          const action = isSeller ? "dispatch_shipment" : "receive_shipment";
+
+          return {
+            id: item.shipment.id,
+            reference: item.shipment.reference,
+            status: item.shipment.status,
+            contract_id: item.contract.id,
+            contract_reference: item.contract.reference,
+            seller_name: companyMap[item.contract.seller_company_id] ?? "",
+            buyer_name: companyMap[item.contract.buyer_company_id] ?? "",
+            material_label: item.material.material_label,
+            unit_label: item.material.unit_label,
+            planned_at: item.shipment.planned_at.toISOString(),
+            dispatched_at: item.shipment.dispatched_at?.toISOString() ?? null,
+            received_at: item.shipment.received_at?.toISOString() ?? null,
+            role,
+            action_needed: action,
+            updated_at: item.shipment.updated_at.toISOString(),
+          };
+        })
+        .sort((a, b) => a.updated_at.localeCompare(b.updated_at));
+
+      res.json({ shipments: results });
     } catch (err) {
       next(err);
     }

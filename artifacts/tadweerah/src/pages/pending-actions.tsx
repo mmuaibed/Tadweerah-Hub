@@ -95,6 +95,41 @@ function usePendingDeals() {
   });
 }
 
+export interface PendingShipment {
+  id: string;
+  reference: string;
+  status: string;
+  contract_id: string;
+  contract_reference: string;
+  seller_name: string;
+  buyer_name: string;
+  material_label: string;
+  unit_label: string;
+  planned_at: string;
+  dispatched_at: string | null;
+  received_at: string | null;
+  role: "seller" | "buyer";
+  action_needed: "dispatch_shipment" | "receive_shipment";
+  updated_at: string;
+}
+
+export function usePendingShipments() {
+  const { getToken } = useAuth();
+  return useQuery<{ shipments: PendingShipment[] }>({
+    queryKey: ["pending-shipments"],
+    queryFn: async () => {
+      const token = await getToken();
+      const res = await fetch("/api/shipments/pending", {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("pending shipments fetch failed");
+      return res.json();
+    },
+    staleTime: 30_000,
+  });
+}
+
 const ACTION_COLOR: Record<string, { badge: string; border: string; dot: string }> = {
   submit_payment: {
     badge: "bg-amber-100 text-amber-700 border-amber-200",
@@ -140,10 +175,12 @@ export function PendingActionsPage() {
   const deals = data?.deals ?? [];
   const { data: contractsData, isLoading: contractsLoading } = usePendingContracts();
   const contracts = contractsData?.contracts ?? [];
+  const { data: shipmentsData, isLoading: shipmentsLoading } = usePendingShipments();
+  const shipments = shipmentsData?.shipments ?? [];
   const { data: allCategories = [] } = useGetMaterialCategories();
   const nameKey = lang === "ar" ? "name_ar" : "name_en";
 
-  const totalPending = deals.length + contracts.length;
+  const totalPending = deals.length + contracts.length + shipments.length;
 
   return (
     <AppLayout>
@@ -179,14 +216,14 @@ export function PendingActionsPage() {
       </div>
 
       {/* ── Loading ── */}
-      {(isLoading || contractsLoading) && (
+      {(isLoading || contractsLoading || shipmentsLoading) && (
         <div className="flex h-48 items-center justify-center">
           <Loader2 className="h-6 w-6 animate-spin text-primary" />
         </div>
       )}
 
       {/* ── Empty ── */}
-      {!(isLoading || contractsLoading) && totalPending === 0 && (
+      {!(isLoading || contractsLoading || shipmentsLoading) && totalPending === 0 && (
         <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-border bg-muted/20 py-16">
           <CheckCircle2 className="h-10 w-10 text-secondary" />
           <p className="text-sm font-semibold text-foreground">
@@ -201,7 +238,7 @@ export function PendingActionsPage() {
       )}
 
       {/* ── Deal list ── */}
-      {!(isLoading || contractsLoading) && totalPending > 0 && (
+      {!(isLoading || contractsLoading || shipmentsLoading) && totalPending > 0 && (
         <div className="space-y-3">
           {contracts.map((contract) => (
             <div
@@ -254,6 +291,67 @@ export function PendingActionsPage() {
                   >
                     <ExternalLink className="h-3.5 w-3.5" />
                     {lang === "ar" ? "مراجعة وتأكيد العقد" : "Review & Confirm Contract"}
+                    <Arrow className="h-3.5 w-3.5" />
+                  </button>
+                </Link>
+              </div>
+            </div>
+          ))}
+          {shipments.map((shipment) => (
+            <div
+              key={shipment.id}
+              className={`rounded-xl border border-s-4 bg-card shadow-sm border-s-amber-400`}
+            >
+              <div className="flex flex-col gap-3 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted">
+                      <Package className="h-4 w-4 text-muted-foreground" />
+                    </span>
+                    <div>
+                      <p className="text-sm font-bold text-foreground">
+                        {shipment.material_label}
+                        {shipment.seller_name && ` · ${shipment.seller_name} / ${shipment.buyer_name}`}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">
+                        <span dir="ltr">{shipment.reference}</span> · <span dir="ltr">{shipment.contract_reference}</span>
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-1.5 shrink-0">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[9px] font-bold text-amber-700">
+                      <AlertCircle className="h-2.5 w-2.5 shrink-0" />
+                      {t("deal.role.your_turn")}
+                    </span>
+                    <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold bg-amber-100 text-amber-700 border-amber-200">
+                      <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                      {shipment.action_needed === "dispatch_shipment"
+                        ? (lang === "ar" ? "تأكيد الشحن وإدخال وزن موقع البائع" : "Dispatch shipment and enter seller-site weight")
+                        : (lang === "ar" ? "استلام الشحنة وإدخال وزن موقع المشتري" : "Receive shipment and enter buyer-site weight")}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-3 w-3 shrink-0" />
+                    {fmtDate(shipment.updated_at, lang)}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />
+                    {shipment.status === "planned"
+                      ? (lang === "ar" ? "مجدولة" : "Planned")
+                      : (lang === "ar" ? "مشحونة" : "Dispatched")}
+                  </span>
+                </div>
+
+                <Link to={`/contracts/${shipment.contract_id}`}>
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-center gap-2 rounded-lg bg-foreground px-4 py-2 text-xs font-semibold text-background transition-opacity hover:opacity-80"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    {lang === "ar" ? "فتح العقد" : "Open Contract"}
                     <Arrow className="h-3.5 w-3.5" />
                   </button>
                 </Link>
