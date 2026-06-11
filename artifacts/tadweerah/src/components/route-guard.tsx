@@ -18,14 +18,14 @@ function getAdminAllowlist(): string[] {
 
 export function RouteGuard({ requireCompany, children }: RouteGuardProps) {
   const { data: me, isLoading, isError } = useGetMe();
-  const { user } = useUser();
+  const { user, isLoaded } = useUser();
 
   const adminAllowlist = getAdminAllowlist();
   const userEmail = user?.primaryEmailAddress?.emailAddress?.toLowerCase() ?? "";
   const isAdmin = adminAllowlist.length > 0 && adminAllowlist.includes(userEmail);
 
   // Show spinner while loading OR on API error (don't make routing decisions on stale/failed data)
-  if (isLoading || isError) {
+  if (isLoading || isError || !isLoaded) {
     return (
       <div className="flex min-h-[100dvh] items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
