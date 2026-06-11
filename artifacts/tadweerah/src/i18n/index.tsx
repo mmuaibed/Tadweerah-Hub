@@ -1328,6 +1328,13 @@ const translations: Record<string, Record<Language, string>> = {
   "shipment.status.closed": { ar: "مغلقة", en: "Closed" },
   "shipment.status.cancelled": { ar: "ملغاة", en: "Cancelled" },
 
+  "contract.shipment.status.planned": { ar: "مخططة", en: "Planned" },
+  "contract.shipment.status.dispatched": { ar: "تم الشحن", en: "Dispatched" },
+  "contract.shipment.status.received": { ar: "تم الاستلام", en: "Received" },
+  "contract.shipment.status.closed": { ar: "مغلقة", en: "Closed" },
+  "contract.shipment.status.cancelled": { ar: "ملغاة", en: "Cancelled" },
+
+
   "shipment.action.dispatch": { ar: "تأكيد الشحن", en: "Confirm Dispatch" },
   "shipment.action.receive": { ar: "تأكيد الاستلام", en: "Confirm Receipt" },
   "shipment.action.close": { ar: "إغلاق الشحنة", en: "Close Shipment" },

@@ -683,6 +683,34 @@ export function AdminPage() {
     }
   }
 
+  async function navigateToDeal(id: string) {
+    setTab("deals");
+    setExpandedDealId(id);
+    setExpandedDealDetails(null);
+    setDealDetailsLoading(true);
+    setDealDetailsError(null);
+    void fetchDeals();
+    try {
+      const res = await callAdmin(`/deals/${id}/details?t=${Date.now()}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setExpandedDealDetails(await res.json() as AdminDealDetails);
+    } catch (e) {
+      setDealDetailsError(e instanceof Error ? e.message : t("admin.error.generic"));
+    } finally {
+      setDealDetailsLoading(false);
+    }
+  }
+
+  function navigateToContract() {
+    setTab("contracts");
+    void fetchContracts();
+  }
+
+  function navigateToShipment() {
+    setTab("shipments");
+    void fetchShipments();
+  }
+
   async function requestPaymentResubmission(id: string) {
     if (!confirm(lang === "ar" ? "هل أنت متأكد من إعادة طلب إثبات الدفع من المشتري؟ سيؤدي هذا إلى مسح بيانات الدفع الحالية." : "Are you sure you want to request payment resubmission? This will clear current payment data.")) return;
     setResubmittingId(id);
@@ -1264,7 +1292,7 @@ export function AdminPage() {
                   <p className="text-sm font-semibold text-foreground">
                     {t("admin.deal.count").replace("{n}", String(deals.length))}
                   </p>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <div className="flex items-center gap-3 text-xs text-muted-foreground">
                     <span className="flex items-center gap-1">
                       <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
                       {deals.filter((d) => d.is_mwan_ready).length} {t("admin.mwan.ready")}
@@ -1287,12 +1315,12 @@ export function AdminPage() {
                           <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{t("admin.deal.manifest_ref")}</th>
                           <th 
                             className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground cursor-help"
-                            title={lang === "ar" ? "يوضح عدد الحقول المكتملة من إجمالي الحقول المطلوبة للمتابعة التشغيلية." : "Shows the number of completed fields out of total fields required for operational monitoring."}
+                            title={lang === "ar" ? "يوضح عدد المتطلبات المكتملة من إجمالي متطلبات المتابعة التشغيلية." : "Shows the number of completed requirements out of total requirements required for operational monitoring."}
                           >
-                            {lang === "ar" ? "اكتمال بيانات الصفقة" : "Deal Data Completion"} <span className="text-[10px] text-primary/70">ⓘ</span>
+                            {lang === "ar" ? "اكتمال متطلبات الصفقة" : "Deal Requirements Completion"} <span className="text-[10px] text-primary/70">ⓘ</span>
                           </th>
                           <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">
-                            {lang === "ar" ? "حقول ناقصة" : "Missing Fields"}
+                            {lang === "ar" ? "متطلبات متبقية" : "Remaining Requirements"}
                           </th>
                           <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{t("admin.deal.created_at")}</th>
                           <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground"></th>
@@ -1323,13 +1351,13 @@ export function AdminPage() {
                                     : <AlertCircle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
                                   }
                                   <span className={`text-xs font-mono font-semibold ${d.is_mwan_ready ? "text-green-700" : "text-amber-700"}`} dir="ltr">
-                                    {d.mwan_score} {lang === "ar" ? "حقل مكتمل" : "fields completed"}
+                                    {d.mwan_score} {lang === "ar" ? "متطلب مكتمل" : "requirements completed"}
                                   </span>
                                 </div>
                               </td>
                               <td className="px-4 py-2.5">
                                 {d.missing_count > 0
-                                  ? <span className="inline-flex items-center rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5">{d.missing_count} {lang === "ar" ? "حقول ناقصة" : "missing fields"}</span>
+                                  ? <span className="inline-flex items-center rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5">{d.missing_count} {lang === "ar" ? "متطلبات متبقية" : "remaining requirements"}</span>
                                   : <span className="text-[11px] text-green-700 font-semibold">✓</span>
                                 }
                               </td>
@@ -1624,7 +1652,7 @@ export function AdminPage() {
                                   <p><span className="text-muted-foreground">رقم طلب النقل:</span> <span className="font-mono" dir="ltr">{tr.id}</span></p>
                                   <p><span className="text-muted-foreground">رقم الصفقة:</span> <span className="font-mono" dir="ltr">{tr.deal_id}</span></p>
                                   <p><span className="text-muted-foreground">رقم الإعلان:</span> <span className="font-mono" dir="ltr">{tr.listing_id || "—"}</span></p>
-                                  <p><span className="text-muted-foreground">الحالة:</span> {tr.status}</p>
+                                  <p><span className="text-muted-foreground">الحالة:</span> {t(`transport.status.${tr.status}`) || tr.status}</p>
                                   <p><span className="text-muted-foreground">تاريخ الطلب:</span> {fmtDate(tr.created_at, lang)}</p>
                                 </div>
                               </div>
@@ -2404,7 +2432,14 @@ export function AdminPage() {
                         <tbody className="divide-y divide-border text-xs">
                           {overdueData.deals.map((d) => (
                             <tr key={d.id} className="hover:bg-muted/10">
-                              <td className="px-4 py-2.5 font-mono">{d.id.slice(0, 8)}…</td>
+                              <td className="px-4 py-2.5 font-mono">
+                                <button
+                                  onClick={() => void navigateToDeal(d.id)}
+                                  className="hover:underline text-primary text-start font-semibold focus:outline-none"
+                                >
+                                  {d.id.slice(0, 8)}…
+                                </button>
+                              </td>
                               <td className="px-4 py-2.5">{d.seller_name}</td>
                               <td className="px-4 py-2.5">{d.buyer_name}</td>
                               <td className="px-4 py-2.5">
@@ -2451,8 +2486,22 @@ export function AdminPage() {
                         <tbody className="divide-y divide-border text-xs">
                           {overdueData.shipments.map((s) => (
                             <tr key={s.id} className="hover:bg-muted/10">
-                              <td className="px-4 py-2.5 font-mono">{s.reference}</td>
-                              <td className="px-4 py-2.5 text-muted-foreground">{s.contract_reference}</td>
+                              <td className="px-4 py-2.5 font-mono">
+                                <button
+                                  onClick={navigateToShipment}
+                                  className="hover:underline text-primary text-start font-semibold focus:outline-none"
+                                >
+                                  {s.reference}
+                                </button>
+                              </td>
+                              <td className="px-4 py-2.5 text-muted-foreground font-mono">
+                                <button
+                                  onClick={navigateToContract}
+                                  className="hover:underline text-primary text-start font-semibold focus:outline-none"
+                                >
+                                  {s.contract_reference}
+                                </button>
+                              </td>
                               <td className="px-4 py-2.5">{s.material_label}</td>
                               <td className="px-4 py-2.5">{s.seller_name}</td>
                               <td className="px-4 py-2.5">{s.buyer_name}</td>
@@ -2492,7 +2541,14 @@ export function AdminPage() {
                         <tbody className="divide-y divide-border text-xs">
                           {overdueData.contracts.map((c) => (
                             <tr key={c.id} className="hover:bg-muted/10">
-                              <td className="px-4 py-2.5 font-mono">{c.reference}</td>
+                              <td className="px-4 py-2.5 font-mono">
+                                <button
+                                  onClick={navigateToContract}
+                                  className="hover:underline text-primary text-start font-semibold focus:outline-none"
+                                >
+                                  {c.reference}
+                                </button>
+                              </td>
                               <td className="px-4 py-2.5">{c.seller_name}</td>
                               <td className="px-4 py-2.5">{c.buyer_name}</td>
                               <td className="px-4 py-2.5 text-destructive font-semibold">{c.end_date ? fmtDate(c.end_date, lang) : "—"}</td>
