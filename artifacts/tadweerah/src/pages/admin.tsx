@@ -241,11 +241,49 @@ function renderDetailsSummary(details: any, lang: string): string {
   if (typeof details === "string") return details;
   try {
     const obj = typeof details === "object" ? details : JSON.parse(details);
-    if (obj.reason) return `${lang === "ar" ? "السبب: " : "Reason: "}${obj.reason}`;
-    if (obj.license_status) return `${lang === "ar" ? "حالة الترخيص: " : "License status: "}${obj.license_status}`;
-    const keys = Object.keys(obj).filter(k => typeof obj[k] !== "object" && obj[k] != null);
-    if (keys.length > 0) {
-      return keys.map(k => `${k}: ${obj[k]}`).join(", ");
+    const parts: string[] = [];
+
+    // 1. Reason / note
+    if (obj.reason) {
+      parts.push(`${lang === "ar" ? "السبب" : "Reason"}: ${obj.reason}`);
+    }
+    if (obj.admin_note) {
+      parts.push(`${lang === "ar" ? "ملاحظة المسؤول" : "Admin Note"}: ${obj.admin_note}`);
+    }
+
+    // 2. Status / license
+    if (obj.status) {
+      parts.push(`${lang === "ar" ? "الحالة" : "Status"}: ${obj.status}`);
+    }
+    if (obj.license_status) {
+      parts.push(`${lang === "ar" ? "حالة الترخيص" : "License Status"}: ${obj.license_status}`);
+    }
+
+    // 3. Notification Sent
+    if (obj.notificationSent !== undefined) {
+      const sentText = obj.notificationSent
+        ? (lang === "ar" ? "تم إرسال إشعار" : "Notification Sent")
+        : (lang === "ar" ? "لم يُرسل إشعار" : "Notification Not Sent");
+      parts.push(sentText);
+    }
+
+    // 4. Other scalar fields
+    const skipKeys = ["reason", "admin_note", "status", "license_status", "notificationSent"];
+    for (const key of Object.keys(obj)) {
+      if (skipKeys.includes(key)) continue;
+      const val = obj[key];
+      if (val != null && typeof val !== "object") {
+        const keyName = key === "unblocked_by" && lang === "ar" ? "إلغاء الحظر بواسطة" :
+                        key === "actual_quantity" && lang === "ar" ? "الكمية الفعلية" :
+                        key === "vehicle_plate" && lang === "ar" ? "لوحة المركبة" :
+                        key === "transporter_name" && lang === "ar" ? "اسم الناقل" :
+                        key;
+        parts.push(`${keyName}: ${val}`);
+      }
+    }
+
+    if (parts.length > 0) {
+      return parts.join(" | ");
     }
     return JSON.stringify(obj);
   } catch {
@@ -1193,8 +1231,15 @@ export function AdminPage() {
                           <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{t("admin.deal.id")}</th>
                           <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{t("admin.deal.status")}</th>
                           <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{t("admin.deal.manifest_ref")}</th>
-                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{t("admin.deal.mwan_score")}</th>
-                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{t("admin.deal.missing")}</th>
+                          <th 
+                            className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground cursor-help"
+                            title={lang === "ar" ? "يوضح عدد الحقول المكتملة من إجمالي الحقول المطلوبة للمتابعة التشغيلية." : "Shows the number of completed fields out of total fields required for operational monitoring."}
+                          >
+                            {lang === "ar" ? "اكتمال بيانات الصفقة" : "Deal Data Completion"} <span className="text-[10px] text-primary/70">ⓘ</span>
+                          </th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">
+                            {lang === "ar" ? "حقول ناقصة" : "Missing Fields"}
+                          </th>
                           <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{t("admin.deal.created_at")}</th>
                           <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground"></th>
                         </tr>
@@ -1224,13 +1269,13 @@ export function AdminPage() {
                                     : <AlertCircle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
                                   }
                                   <span className={`text-xs font-mono font-semibold ${d.is_mwan_ready ? "text-green-700" : "text-amber-700"}`} dir="ltr">
-                                    {d.mwan_score}
+                                    {d.mwan_score} {lang === "ar" ? "حقل مكتمل" : "fields completed"}
                                   </span>
                                 </div>
                               </td>
                               <td className="px-4 py-2.5">
                                 {d.missing_count > 0
-                                  ? <span className="inline-flex items-center rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5">{d.missing_count}</span>
+                                  ? <span className="inline-flex items-center rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5">{d.missing_count} {lang === "ar" ? "حقول ناقصة" : "missing fields"}</span>
                                   : <span className="text-[11px] text-green-700 font-semibold">✓</span>
                                 }
                               </td>
@@ -1359,14 +1404,14 @@ export function AdminPage() {
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-border bg-muted/30">
-                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{t("contract.field.reference")}</th>
-                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{t("contract.field.weight_policy")}</th>
-                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{t("contract.field.seller")}</th>
-                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{t("contract.field.buyer")}</th>
-                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{t("contract.field.start_date")}</th>
-                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{t("contract.field.end_date")}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "رقم العقد" : "Contract Ref"}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "سياسة الوزن" : "Weight Policy"}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "البائع" : "Seller"}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "المشتري" : "Buyer"}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "تاريخ البداية" : "Start Date"}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "تاريخ النهاية" : "End Date"}</th>
                           <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "الحالة" : "Status"}</th>
-                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground"></th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "الإجراء" : "Action"}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border">
@@ -2103,8 +2148,8 @@ export function AdminPage() {
                           <th className="px-3 py-2.5 text-start font-semibold text-muted-foreground">{lang === "ar" ? "نوع الكيان" : "Entity Type"}</th>
                           <th className="px-3 py-2.5 text-start font-semibold text-muted-foreground">{lang === "ar" ? "معرف الكيان" : "Entity ID"}</th>
                           <th className="px-3 py-2.5 text-start font-semibold text-muted-foreground">{lang === "ar" ? "دور الفاعل" : "Actor Role"}</th>
-                          <th className="px-3 py-2.5 text-start font-semibold text-muted-foreground">{lang === "ar" ? "التغيير" : "Transition"}</th>
-                          <th className="px-3 py-2.5 text-start font-semibold text-muted-foreground">{lang === "ar" ? "التفاصيل" : "Details"}</th>
+                          <th className="px-3 py-2.5 text-start font-semibold text-muted-foreground">{lang === "ar" ? "تغيير الحالة (من ← إلى)" : "Transition (Before → After)"}</th>
+                          <th className="px-3 py-2.5 text-start font-semibold text-muted-foreground">{lang === "ar" ? "تفاصيل العملية" : "Details"}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border">
