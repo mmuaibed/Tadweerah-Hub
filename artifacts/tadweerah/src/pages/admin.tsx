@@ -1,4 +1,4 @@
-import { useState, Fragment } from "react";
+import { useState, useEffect, Fragment } from "react";
 import { useUser, useClerk } from "@clerk/react";
 import {
   CheckCircle2,
@@ -23,6 +23,16 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useT } from "@/i18n";
 import { fmtSAR, fmtDate } from "@/lib/format";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 /* ─── Types ──────────────────────────────────────────────────────────────── */
 
@@ -172,6 +182,37 @@ interface AdminIssue {
   created_at: string;
 }
 
+interface AdminContract {
+  id: string;
+  reference: string;
+  external_reference: string | null;
+  seller_company_id: string;
+  buyer_company_id: string;
+  status: "draft" | "pending_confirmation" | "active" | "completed" | "cancelled";
+  seller_name: string;
+  buyer_name: string;
+  start_date: string | null;
+  end_date: string | null;
+  weight_policy: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface AuditLogEntry {
+  id: string;
+  user_id: string | null;
+  company_id: string | null;
+  action: string;
+  entity_type: string | null;
+  entity_id: string | null;
+  actor_role: "admin" | "user" | "system" | "transporter";
+  status_before: string | null;
+  status_after: string | null;
+  details: any;
+  created_at: string;
+  severity: string;
+}
+
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 
 const DEAL_STATUS_VARIANTS: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
@@ -195,6 +236,24 @@ function licenseLabel(status: string | null, lang: string): { label: string; cls
   return map[status] ?? { label: status, cls: "bg-gray-100 text-gray-600" };
 }
 
+function renderDetailsSummary(details: any, lang: string): string {
+  if (!details) return "—";
+  if (typeof details === "string") return details;
+  try {
+    const obj = typeof details === "object" ? details : JSON.parse(details);
+    if (obj.reason) return `${lang === "ar" ? "السبب: " : "Reason: "}${obj.reason}`;
+    if (obj.license_status) return `${lang === "ar" ? "حالة الترخيص: " : "License status: "}${obj.license_status}`;
+    const keys = Object.keys(obj).filter(k => typeof obj[k] !== "object" && obj[k] != null);
+    if (keys.length > 0) {
+      return keys.map(k => `${k}: ${obj[k]}`).join(", ");
+    }
+    return JSON.stringify(obj);
+  } catch {
+    return String(details);
+  }
+}
+
+
 /* ─── Component ──────────────────────────────────────────────────────────── */
 
 export function AdminPage() {
@@ -204,7 +263,7 @@ export function AdminPage() {
   const dir = lang === "ar" ? "rtl" : "ltr";
 
   const [adminKey, setAdminKey] = useState(() => sessionStorage.getItem("tdw_admin_key") ?? "");
-  const [tab, setTab] = useState<"deals" | "companies" | "transport" | "reports" | "issues">("companies");
+  const [tab, setTab] = useState<"deals" | "companies" | "transport" | "reports" | "issues" | "contracts" | "auditlog">("companies");
 
   /* Deals state */
   const [deals, setDeals] = useState<AdminDeal[] | null>(null);
@@ -262,6 +321,135 @@ export function AdminPage() {
   const [reportCity, setReportCity] = useState("");
   const [reportCompanyId, setReportCompanyId] = useState("");
   const [reportExporting, setReportExporting] = useState(false);
+
+  /* Contracts state */
+  const [contracts, setContracts] = useState<AdminContract[] | null>(null);
+  const [contractsLoading, setContractsLoading] = useState(false);
+  const [contractsError, setContractsError] = useState<string | null>(null);
+  const [contractsStatusFilter, setContractsStatusFilter] = useState("");
+  const [contractCancelTarget, setContractCancelTarget] = useState<string | null>(null);
+  const [contractCancelLoading, setContractCancelLoading] = useState(false);
+
+  /* Audit Log state */
+  const [auditRows, setAuditRows] = useState<AuditLogEntry[] | null>(null);
+  const [auditLoading, setAuditLoading] = useState(false);
+  const [auditError, setAuditError] = useState<string | null>(null);
+  const [auditEntityTypeFilter, setAuditEntityTypeFilter] = useState("");
+  const [auditActionFilter, setAuditActionFilter] = useState("");
+
+  /* Reusable Modal triggers */
+  const [dealCancelTarget, setDealCancelTarget] = useState<string | null>(null);
+  const [dealCancelLoading, setDealCancelLoading] = useState(false);
+
+  const [paymentResubmitTarget, setPaymentResubmitTarget] = useState<string | null>(null);
+
+  async function fetchContracts() {
+    setContractsLoading(true);
+    setContractsError(null);
+    try {
+      const params = contractsStatusFilter ? `?status=${encodeURIComponent(contractsStatusFilter)}` : "";
+      const res = await callAdmin(`/contracts${params}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json() as AdminContract[];
+      sessionStorage.setItem("tdw_admin_key", adminKey.trim());
+      setContracts(data);
+    } catch (e) {
+      setContractsError(e instanceof Error ? e.message : t("admin.error.generic"));
+    } finally {
+      setContractsLoading(false);
+    }
+  }
+
+  async function cancelContract(id: string, reason: string) {
+    setContractCancelLoading(true);
+    try {
+      const res = await callAdmin(`/contracts/${id}/cancel`, {
+        method: "POST",
+        body: JSON.stringify({ reason }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      
+      // Update local state
+      setContracts((prev) => prev ? prev.map(c => c.id === id ? { ...c, status: "cancelled" as const } : c) : prev);
+      setContractCancelTarget(null);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Error cancelling contract");
+    } finally {
+      setContractCancelLoading(false);
+    }
+  }
+
+  async function fetchAuditLog() {
+    setAuditLoading(true);
+    setAuditError(null);
+    try {
+      const p = new URLSearchParams();
+      if (auditEntityTypeFilter.trim()) p.set("entityType", auditEntityTypeFilter.trim());
+      if (auditActionFilter.trim()) p.set("action", auditActionFilter.trim());
+      p.set("limit", "150"); // Fetch more rows for better audit visibility
+      const res = await callAdmin(`/audit-log?${p.toString()}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json() as AuditLogEntry[];
+      sessionStorage.setItem("tdw_admin_key", adminKey.trim());
+      setAuditRows(data);
+    } catch (e) {
+      setAuditError(e instanceof Error ? e.message : t("admin.error.generic"));
+    } finally {
+      setAuditLoading(false);
+    }
+  }
+
+  async function cancelDeal(id: string, reason: string) {
+    setDealCancelLoading(true);
+    try {
+      const res = await callAdmin(`/deals/${id}/cancel`, {
+        method: "POST",
+        body: JSON.stringify({ reason }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      // Update local state
+      setDeals((prev) => prev ? prev.map(d => d.deal_id === id ? { ...d, status: "cancelled" } : d) : prev);
+      if (expandedDealId === id && expandedDealDetails) {
+        setExpandedDealDetails({
+          ...expandedDealDetails,
+          status: "cancelled",
+        });
+      }
+      setDealCancelTarget(null);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Error cancelling deal");
+    } finally {
+      setDealCancelLoading(false);
+    }
+  }
+
+  async function executePaymentResubmission(id: string) {
+    setResubmittingId(id);
+    try {
+      const res = await callAdmin(`/deals/${id}/request-payment-resubmission`, { method: "PATCH" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      
+      // Update local state
+      setDeals((prev) => prev ? prev.map(d => d.deal_id === id ? { ...d, status: "active" } : d) : prev);
+      if (expandedDealId === id && expandedDealDetails) {
+        setExpandedDealDetails({
+          ...expandedDealDetails,
+          status: "active",
+          payment_reference: null,
+          payment_proof_url: null,
+          payment_submitted_at: null,
+          payment_confirmed_at: null,
+          has_payment_proof: false
+        });
+      }
+      setPaymentResubmitTarget(null);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Error");
+    } finally {
+      setResubmittingId(null);
+    }
+  }
 
   // Email allowlist guard
   if (!userLoaded) {
@@ -666,7 +854,10 @@ export function AdminPage() {
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   void fetchStats();
-                  void (tab === "companies" ? fetchCompanies() : fetchDeals());
+                  if (tab === "companies") void fetchCompanies();
+                  else if (tab === "deals") void fetchDeals();
+                  else if (tab === "contracts") void fetchContracts();
+                  else if (tab === "auditlog") void fetchAuditLog();
                 }
               }}
             />
@@ -675,7 +866,7 @@ export function AdminPage() {
 
         {/* Tabs */}
         <div className="flex flex-wrap gap-1 border-b border-border">
-          {(["companies", "deals", "transport", "reports", "issues"] as const).map((t2) => (
+          {(["companies", "deals", "contracts", "transport", "reports", "issues", "auditlog"] as const).map((t2) => (
             <button
               key={t2}
               onClick={() => setTab(t2)}
@@ -689,11 +880,15 @@ export function AdminPage() {
                 ? <><Building2 className="h-4 w-4" />{t("admin.tab.companies")}</>
                 : t2 === "deals"
                   ? <><FileText className="h-4 w-4" />{t("admin.tab.deals")}</>
-                  : t2 === "transport"
-                    ? <><Truck className="h-4 w-4" />{t("admin.tab.transport")}</>
-                    : t2 === "reports"
-                      ? <><BarChart3 className="h-4 w-4" />{t("admin.tab.reports")}</>
-                      : <><MessageSquare className="h-4 w-4" />{t("admin.tab.issues")}</>
+                  : t2 === "contracts"
+                    ? <><FileText className="h-4 w-4" />{lang === "ar" ? "العقود" : "Contracts"}</>
+                    : t2 === "transport"
+                      ? <><Truck className="h-4 w-4" />{t("admin.tab.transport")}</>
+                      : t2 === "reports"
+                        ? <><BarChart3 className="h-4 w-4" />{t("admin.tab.reports")}</>
+                        : t2 === "issues"
+                          ? <><MessageSquare className="h-4 w-4" />{t("admin.tab.issues")}</>
+                          : <><Clock className="h-4 w-4" />{lang === "ar" ? "سجل العمليات" : "Audit Log"}</>
               }
             </button>
           ))}
@@ -1070,17 +1265,28 @@ export function AdminPage() {
                                           <p className="text-muted-foreground text-xs"><span className="text-foreground">{lang === "ar" ? "إيصال الدفع:" : "Payment Proof:"}</span> {expandedDealDetails.has_payment_proof ? (lang === "ar" ? "مرفق" : "Attached") : (lang === "ar" ? "غير مرفق" : "Not Attached")}</p>
                                           <p className="text-muted-foreground text-xs"><span className="text-foreground">{lang === "ar" ? "تاريخ إرسال الدفع:" : "Submitted At:"}</span> <span dir="ltr">{expandedDealDetails.payment_submitted_at ? fmtDate(expandedDealDetails.payment_submitted_at, lang) : "—"}</span></p>
                                           
-                                          {["active", "payment_submitted"].includes(expandedDealDetails.status) && (
-                                            <div className="mt-4 border-t pt-3">
+                                          {["active", "payment_submitted", "payment_confirmed"].includes(expandedDealDetails.status) && (
+                                            <div className="mt-4 border-t pt-3 space-y-2">
+                                              {["active", "payment_submitted"].includes(expandedDealDetails.status) && (
+                                                <Button 
+                                                  variant="outline" 
+                                                  size="sm" 
+                                                  className="w-full text-amber-600 border-amber-200 hover:bg-amber-50 hover:text-amber-700 font-medium"
+                                                  disabled={resubmittingId === d.deal_id}
+                                                  onClick={() => setPaymentResubmitTarget(d.deal_id)}
+                                                >
+                                                  <RefreshCw className="h-4 w-4 me-2" />
+                                                  {lang === "ar" ? "إعادة طلب إثبات الدفع من المشتري" : "Request payment proof resubmission"}
+                                                </Button>
+                                              )}
                                               <Button 
                                                 variant="outline" 
                                                 size="sm" 
-                                                className="w-full text-amber-600 border-amber-200 hover:bg-amber-50 hover:text-amber-700"
-                                                disabled={resubmittingId === d.deal_id}
-                                                onClick={() => void requestPaymentResubmission(d.deal_id)}
+                                                className="w-full text-destructive border-destructive/20 hover:bg-destructive/10 hover:text-destructive font-medium"
+                                                onClick={() => setDealCancelTarget(d.deal_id)}
                                               >
-                                                {resubmittingId === d.deal_id ? <Loader2 className="h-4 w-4 animate-spin me-2" /> : <RefreshCw className="h-4 w-4 me-2" />}
-                                                {lang === "ar" ? "إعادة طلب إثبات الدفع من المشتري" : "Request payment proof resubmission"}
+                                                <AlertCircle className="h-4 w-4 me-2" />
+                                                {lang === "ar" ? "إلغاء الصفقة" : "Cancel Deal"}
                                               </Button>
                                             </div>
                                           )}
@@ -1093,6 +1299,121 @@ export function AdminPage() {
                             )}
                           </Fragment>
                         ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Contracts Tab ─────────────────────────────────────────────────── */}
+        {tab === "contracts" && (
+          <div className="space-y-4">
+            <div className="rounded-xl border border-border bg-white p-4 flex flex-wrap gap-3 items-end">
+              <div>
+                <label className="text-xs font-medium text-foreground mb-1 block">
+                  {lang === "ar" ? "حالة العقد" : "Contract Status"}
+                </label>
+                <select
+                  value={contractsStatusFilter}
+                  onChange={(e) => setContractsStatusFilter(e.target.value)}
+                  className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                >
+                  <option value="">{t("admin.filter.all_statuses")}</option>
+                  {["draft", "pending_confirmation", "active", "completed", "cancelled"].map((s) => (
+                    <option key={s} value={s}>
+                      {t(`contract.status.${s}`) || s}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <Button onClick={() => void fetchContracts()} disabled={contractsLoading}>
+                {contractsLoading
+                  ? <><Loader2 className="h-4 w-4 me-2 animate-spin" />{t("admin.loading")}</>
+                  : <><RefreshCw className="h-4 w-4 me-2" />{t("admin.fetch_button")}</>
+                }
+              </Button>
+            </div>
+
+            {contractsError && (
+              <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                <AlertCircle className="h-4 w-4 shrink-0" />{contractsError}
+              </div>
+            )}
+
+            {contracts !== null && (
+              <div className="rounded-xl border border-border bg-white overflow-hidden">
+                <div className="px-4 py-3 border-b border-border">
+                  <p className="text-sm font-semibold text-foreground">
+                    {lang === "ar" ? `إجمالي العقود: ${contracts.length}` : `Total Contracts: ${contracts.length}`}
+                  </p>
+                </div>
+                {contracts.length === 0 ? (
+                  <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+                    {lang === "ar" ? "لا توجد عقود مطابقة" : "No contracts match this filter"}
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-border bg-muted/30">
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{t("contract.field.reference")}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{t("contract.field.weight_policy")}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{t("contract.field.seller")}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{t("contract.field.buyer")}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{t("contract.field.start_date")}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{t("contract.field.end_date")}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "الحالة" : "Status"}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground"></th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {contracts.map((c) => {
+                          const statusStyle: Record<string, string> = {
+                            draft: "bg-gray-100 text-gray-700",
+                            pending_confirmation: "bg-amber-100 text-amber-800",
+                            active: "bg-green-100 text-green-800",
+                            completed: "bg-blue-100 text-blue-800",
+                            cancelled: "bg-red-100 text-red-700",
+                          };
+                          const isTerminal = ["completed", "cancelled"].includes(c.status);
+                          return (
+                            <tr key={c.id} className="hover:bg-muted/20 transition-colors">
+                              <td className="px-4 py-3">
+                                <p className="font-semibold text-foreground text-xs">{c.reference}</p>
+                                {c.external_reference && (
+                                  <p className="text-[10px] text-muted-foreground font-mono">ext: {c.external_reference}</p>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 text-xs text-muted-foreground">
+                                {t(`contract.policy.${c.weight_policy}`) || c.weight_policy}
+                              </td>
+                              <td className="px-4 py-3 text-xs font-medium text-foreground">{c.seller_name || "—"}</td>
+                              <td className="px-4 py-3 text-xs font-medium text-foreground">{c.buyer_name || "—"}</td>
+                              <td className="px-4 py-3 text-xs text-muted-foreground">{c.start_date ? fmtDate(c.start_date, lang) : "—"}</td>
+                              <td className="px-4 py-3 text-xs text-muted-foreground">{c.end_date ? fmtDate(c.end_date, lang) : "—"}</td>
+                              <td className="px-4 py-3">
+                                <span className={`inline-flex items-center rounded-full text-[10px] font-bold px-2 py-0.5 ${statusStyle[c.status] ?? "bg-gray-100 text-gray-600"}`}>
+                                  {t(`contract.status.${c.status}`) || c.status}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-end">
+                                {!isTerminal && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-7 text-[11px] px-2 text-destructive border-destructive/20 hover:bg-destructive/10 font-medium"
+                                    onClick={() => setContractCancelTarget(c.id)}
+                                  >
+                                    {lang === "ar" ? "إلغاء" : "Cancel"}
+                                  </Button>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -1717,8 +2038,259 @@ export function AdminPage() {
           </div>
         )}
 
+        {/* ── Audit Log Tab ─────────────────────────────────────────────────── */}
+        {tab === "auditlog" && (
+          <div className="space-y-4">
+            <div className="rounded-xl border border-border bg-white p-4 flex flex-wrap gap-3 items-end">
+              <div>
+                <label className="text-xs font-medium text-foreground mb-1 block">
+                  {lang === "ar" ? "البحث بالعملية" : "Search Action"}
+                </label>
+                <Input
+                  type="text"
+                  value={auditActionFilter}
+                  onChange={(e) => setAuditActionFilter(e.target.value)}
+                  placeholder={lang === "ar" ? "مثال: cancel" : "e.g. cancel"}
+                  className="h-9 w-44 text-sm"
+                  dir="ltr"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-foreground mb-1 block">
+                  {lang === "ar" ? "نوع الكيان" : "Entity Type"}
+                </label>
+                <Input
+                  type="text"
+                  value={auditEntityTypeFilter}
+                  onChange={(e) => setAuditEntityTypeFilter(e.target.value)}
+                  placeholder={lang === "ar" ? "مثال: deal" : "e.g. deal"}
+                  className="h-9 w-44 text-sm"
+                  dir="ltr"
+                />
+              </div>
+              <Button onClick={() => void fetchAuditLog()} disabled={auditLoading}>
+                {auditLoading
+                  ? <><Loader2 className="h-4 w-4 me-2 animate-spin" />{t("admin.loading")}</>
+                  : <><RefreshCw className="h-4 w-4 me-2" />{lang === "ar" ? "عرض السجل" : "Fetch Log"}</>
+                }
+              </Button>
+            </div>
+
+            {auditError && (
+              <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                <AlertCircle className="h-4 w-4 shrink-0" />{auditError}
+              </div>
+            )}
+
+            {auditRows !== null && (
+              <div className="rounded-xl border border-border bg-white overflow-hidden">
+                <div className="px-4 py-3 border-b border-border">
+                  <p className="text-sm font-semibold text-foreground">
+                    {lang === "ar" ? `العمليات المسجلة: ${auditRows.length}` : `Audit Rows: ${auditRows.length}`}
+                  </p>
+                </div>
+                {auditRows.length === 0 ? (
+                  <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+                    {lang === "ar" ? "لا توجد عمليات مسجلة تطابق التصفية" : "No audit entries found"}
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="border-b border-border bg-muted/30">
+                          <th className="px-3 py-2.5 text-start font-semibold text-muted-foreground">{lang === "ar" ? "التاريخ" : "Date"}</th>
+                          <th className="px-3 py-2.5 text-start font-semibold text-muted-foreground">{lang === "ar" ? "العملية" : "Action"}</th>
+                          <th className="px-3 py-2.5 text-start font-semibold text-muted-foreground">{lang === "ar" ? "نوع الكيان" : "Entity Type"}</th>
+                          <th className="px-3 py-2.5 text-start font-semibold text-muted-foreground">{lang === "ar" ? "معرف الكيان" : "Entity ID"}</th>
+                          <th className="px-3 py-2.5 text-start font-semibold text-muted-foreground">{lang === "ar" ? "دور الفاعل" : "Actor Role"}</th>
+                          <th className="px-3 py-2.5 text-start font-semibold text-muted-foreground">{lang === "ar" ? "التغيير" : "Transition"}</th>
+                          <th className="px-3 py-2.5 text-start font-semibold text-muted-foreground">{lang === "ar" ? "التفاصيل" : "Details"}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {auditRows.map((row) => {
+                          const severityStyle: Record<string, string> = {
+                            info: "text-muted-foreground",
+                            warn: "text-amber-700 bg-amber-50 px-1 py-0.5 rounded",
+                            error: "text-destructive bg-destructive/10 px-1 py-0.5 rounded font-bold",
+                          };
+                          return (
+                            <tr key={row.id} className="hover:bg-muted/10 transition-colors">
+                              <td className="px-3 py-2.5 whitespace-nowrap text-muted-foreground">{fmtDate(row.created_at, lang)}</td>
+                              <td className="px-3 py-2.5 font-medium whitespace-nowrap">
+                                <span className={severityStyle[row.severity] ?? ""}>{row.action}</span>
+                              </td>
+                              <td className="px-3 py-2.5 whitespace-nowrap text-muted-foreground">{row.entity_type || "—"}</td>
+                              <td className="px-3 py-2.5 whitespace-nowrap font-mono text-[10px] text-muted-foreground" dir="ltr">
+                                {row.entity_id ? `${row.entity_id.slice(0, 8)}…` : "—"}
+                              </td>
+                              <td className="px-3 py-2.5 whitespace-nowrap">
+                                <Badge variant="outline" className="text-[9px] h-4 uppercase">
+                                  {row.actor_role}
+                                </Badge>
+                              </td>
+                              <td className="px-3 py-2.5 whitespace-nowrap">
+                                {row.status_before || row.status_after ? (
+                                  <span className="font-mono text-[10px]" dir="ltr">
+                                    {row.status_before || "—"} → {row.status_after || "—"}
+                                  </span>
+                                ) : "—"}
+                              </td>
+                              <td className="px-3 py-2.5 max-w-[280px] truncate" title={JSON.stringify(row.details)}>
+                                {renderDetailsSummary(row.details, lang)}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
       </div>
+
+      {/* Confirmation Modals */}
+      <AdminConfirmModal
+        open={contractCancelTarget !== null}
+        onOpenChange={(open) => { if (!open) setContractCancelTarget(null); }}
+        title={lang === "ar" ? "إلغاء العقد" : "Cancel Contract"}
+        description={lang === "ar" ? "هل أنت متأكد من إلغاء هذا العقد؟ سيتم إيقاف العمل به فوراً." : "Are you sure you want to cancel this contract? It will be deactivated immediately."}
+        reasonLabel={lang === "ar" ? "سبب الإلغاء" : "Cancellation Reason"}
+        confirmLabel={lang === "ar" ? "إلغاء العقد" : "Cancel Contract"}
+        requireReason={true}
+        onConfirm={(reason) => {
+          if (contractCancelTarget) {
+            void cancelContract(contractCancelTarget, reason);
+          }
+        }}
+        isPending={contractCancelLoading}
+        destructive={true}
+      />
+
+      <AdminConfirmModal
+        open={dealCancelTarget !== null}
+        onOpenChange={(open) => { if (!open) setDealCancelTarget(null); }}
+        title={lang === "ar" ? "إلغاء الصفقة" : "Cancel Deal"}
+        description={lang === "ar" ? "هل أنت متأكد من إلغاء هذه الصفقة؟ سيتم تعيين حالتها كملغاة." : "Are you sure you want to cancel this deal? Its status will be set to cancelled."}
+        reasonLabel={lang === "ar" ? "سبب الإلغاء" : "Cancellation Reason"}
+        confirmLabel={lang === "ar" ? "إلغاء الصفقة" : "Cancel Deal"}
+        requireReason={true}
+        onConfirm={(reason) => {
+          if (dealCancelTarget) {
+            void cancelDeal(dealCancelTarget, reason);
+          }
+        }}
+        isPending={dealCancelLoading}
+        destructive={true}
+      />
+
+      <AdminConfirmModal
+        open={paymentResubmitTarget !== null}
+        onOpenChange={(open) => { if (!open) setPaymentResubmitTarget(null); }}
+        title={lang === "ar" ? "إعادة طلب إثبات الدفع" : "Request Payment Resubmission"}
+        description={lang === "ar" ? "هل أنت متأكد من إعادة طلب إثبات الدفع من المشتري؟ سيؤدي هذا إلى مسح بيانات الدفع الحالية وتعيين حالة الصفقة كـ 'نشطة'." : "Are you sure you want to request payment resubmission from the buyer? This will clear current payment data and set the deal status back to 'active'."}
+        reasonLabel=""
+        confirmLabel={lang === "ar" ? "تأكيد الطلب" : "Confirm Request"}
+        requireReason={false}
+        onConfirm={() => {
+          if (paymentResubmitTarget) {
+            void executePaymentResubmission(paymentResubmitTarget);
+          }
+        }}
+        isPending={resubmittingId !== null}
+        destructive={false}
+      />
+
     </div>
+  );
+}
+
+/* ─── AdminConfirmModal Component ────────────────────────────────────────── */
+interface AdminConfirmModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  title: string;
+  description: string;
+  reasonLabel: string;
+  confirmLabel: string;
+  requireReason: boolean;
+  onConfirm: (reason: string) => void;
+  isPending?: boolean;
+  destructive?: boolean;
+}
+
+function AdminConfirmModal({
+  open,
+  onOpenChange,
+  title,
+  description,
+  reasonLabel,
+  confirmLabel,
+  requireReason,
+  onConfirm,
+  isPending = false,
+  destructive = false,
+}: AdminConfirmModalProps) {
+  const { t, lang } = useT();
+  const [reason, setReason] = useState("");
+
+  useEffect(() => {
+    if (open) {
+      setReason("");
+    }
+  }, [open]);
+
+  const isValid = !requireReason || reason.trim().length > 0;
+
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
+          <AlertDialogDescription>{description}</AlertDialogDescription>
+        </AlertDialogHeader>
+        {requireReason && (
+          <div className="my-4 space-y-1.5">
+            <label className="text-xs font-semibold text-foreground block">
+              {reasonLabel} <span className="text-destructive">*</span>
+            </label>
+            <textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder={lang === "ar" ? "أدخل السبب هنا..." : "Enter reason here..."}
+              className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+              disabled={isPending}
+            />
+          </div>
+        )}
+        <AlertDialogFooter className="gap-2">
+          <AlertDialogCancel disabled={isPending}>
+            {t("action.cancel")}
+          </AlertDialogCancel>
+          <AlertDialogAction
+            disabled={isPending || !isValid}
+            onClick={(e) => {
+              e.preventDefault();
+              if (isValid) {
+                onConfirm(reason);
+              }
+            }}
+            className={
+              destructive
+                ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                : undefined
+            }
+          >
+            {isPending && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
+            {confirmLabel}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 
