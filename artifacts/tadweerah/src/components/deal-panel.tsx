@@ -2231,9 +2231,20 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
                   <div className="mt-4 rounded-xl border border-border bg-muted/10 p-3 flex items-start gap-2.5">
                     <Truck className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0 mt-0.5" />
                     <p className="text-xs text-muted-foreground leading-relaxed">
-                      {deal.transport_responsibility === "seller"
-                        ? t("deal.transport.not_responsible_seller")
-                        : t("deal.transport.not_responsible_buyer")}
+                      {(() => {
+                        if (mwanHeaderData?.transport?.transport_mode === "platform") {
+                          return t("deal.transport.platform_selected_seller");
+                        }
+                        if (
+                          mwanHeaderData?.transport_decision === "not_required" ||
+                          mwanHeaderData?.transport?.transport_mode === "self_managed"
+                        ) {
+                          return t("deal.transport.buyer_self_managed_seller");
+                        }
+                        return deal.transport_responsibility === "seller"
+                          ? t("deal.transport.not_responsible_seller")
+                          : t("deal.transport.not_responsible_buyer");
+                      })()}
                     </p>
                   </div>
                 );

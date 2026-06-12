@@ -708,6 +708,8 @@ const translations: Record<string, Record<Language, string>> = {
   "deal.transport.not_your_responsibility": { ar: "الطرف الآخر مسؤول بالكامل عن ترتيب النقل في هذه الصفقة.", en: "The other party is solely responsible for arranging transport for this deal." },
   "deal.transport.not_responsible_buyer": { ar: "النقل مسؤولية المشتري. بانتظار المشتري لاختيار طريقة النقل.", en: "Transport is the buyer's responsibility. Waiting for the buyer to choose a transport method." },
   "deal.transport.not_responsible_seller": { ar: "النقل مسؤولية البائع. بانتظار البائع لاختيار طريقة النقل.", en: "Transport is the seller's responsibility. Waiting for the seller to choose a transport method." },
+  "deal.transport.platform_selected_seller": { ar: "تم اختيار ترتيب النقل عبر تدويرة. يمكنك الآن تأكيد إرسال البضاعة بعد التنسيق التشغيلي.", en: "Tadweerah transport has been selected. You can now confirm dispatch after operational coordination." },
+  "deal.transport.buyer_self_managed_seller": { ar: "المشتري سيتولى ترتيب النقل. يمكنك الآن تأكيد إرسال البضاعة عند التسليم للناقل أو المشتري.", en: "The buyer will arrange transport. You can confirm dispatch upon handover to the carrier or buyer." },
   "deal.action.confirm_handover": { ar: "تأكيد تسليم البضاعة للمشتري / الناقل", en: "Confirm Handover to Buyer / Carrier" },
   "deal.dispatch.buyer_transport_hint": { ar: "النقل مسؤولية المشتري. لا تؤكد التسليم إلا بعد حضور المشتري أو الناقل.", en: "Transport is the buyer's responsibility. Only confirm handover after the buyer or carrier arrives." },
   "deal.step_current.active.buyer": { ar: "الخطوة الحالية: إرسال مرجع الدفع", en: "Current step: Submit Payment" },
