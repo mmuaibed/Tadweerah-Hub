@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { useT } from "@/i18n";
 import { fmtSAR, fmtDate, fmtNumber } from "@/lib/format";
+import { dealRef } from "@/lib/listing-ref";
 
 /* ─── Types ──────────────────────────────────────────────────────────────── */
 
@@ -363,11 +364,17 @@ export function ReportsPage() {
                       return (
                         <tr key={row.deal_id} className="hover:bg-muted/20 transition-colors">
                           <Td mono>{fmtDate(row.created_at, lang)}</Td>
-                          <Td mono dim>
-                            {row.tr_manifest_ref
-                              ? <span dir="ltr">{row.tr_manifest_ref}</span>
-                              : <span dir="ltr">{row.deal_id.slice(0, 8)}…</span>
-                            }
+                          <Td>
+                            <div className="flex flex-col items-start gap-1">
+                              <Link href={`/deals/${row.deal_id}`} className="text-primary font-mono font-semibold hover:underline" dir="ltr">
+                                {dealRef(row.deal_id, row.created_at)}
+                              </Link>
+                              {row.tr_manifest_ref && (
+                                <span className="text-[10px] text-muted-foreground font-mono bg-muted px-1 rounded" dir="ltr">
+                                  {row.tr_manifest_ref}
+                                </span>
+                              )}
+                            </div>
                           </Td>
                           <Td>
                             <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${
@@ -385,9 +392,13 @@ export function ReportsPage() {
                               {t(`deal.status.${row.status}`) || row.status}
                             </span>
                           </Td>
-                          <Td mono>{fmtSAR(row.estimated_amount, lang)}</Td>
-                          <Td mono dim>{fmtSAR(row.vat_amount, lang)}</Td>
-                          <Td mono bold>{fmtSAR(row.total_amount, lang)}</Td>
+                          <Td mono><span className="text-foreground/80">{fmtSAR(row.estimated_amount, lang)}</span></Td>
+                          <Td mono dim><span className="text-[11px]">{fmtSAR(row.vat_amount, lang)}</span></Td>
+                          <Td mono bold>
+                            <span className="text-green-800 bg-green-100/50 px-2 py-1 rounded text-sm">
+                              {fmtSAR(row.total_amount, lang)}
+                            </span>
+                          </Td>
                           <Td dim>{transportLabel(row, t)}</Td>
                           <Td>
                             <Link
