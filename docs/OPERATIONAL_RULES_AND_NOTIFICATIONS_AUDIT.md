@@ -84,14 +84,16 @@ dispatched (no buyer confirmation within 48h)
   → System should NOT auto-complete blindly during pilot
 ```
 
-### 2.3 Gap Analysis
-| Dimension | Current | Target |
+### 2.3 Gap Analysis (RESOLVED Phase 2-A)
+| Dimension | 🟢 Current (Phase 2-A) | 🎯 Target |
 |-----------|---------|--------|
-| Buyer confirms receipt | → receipt_pending (waits 48h) | → completed immediately |
-| 48h no receipt | → auto-complete (blind) | → admin escalation flag |
-| Admin review step | None | Required before auto-complete |
-| `producer-confirm-receipt` endpoint | ❌ Does not exist | May not be needed if buyer receipt = complete |
-| 🚫 Fix requires | `routes/deals.ts` + `jobs/expire-deals.ts` | Backend deploy |
+| Buyer confirms receipt | → completed immediately | → completed immediately |
+| 48h no receipt | → logs admin escalation flag | → admin escalation flag |
+| Admin review step | Escalated to logs | Required before complete |
+| `producer-confirm-receipt` endpoint | ❌ Does not exist | May not be needed |
+| 🚫 Fix requires | — (Fixed in Phase 2-A) | — |
+
+**Note (Phase 2-A):** Deal completion notifications currently lack a reliable `reference` ID and a direct `/deals/:dealId` deep link because the `dealsTable` schema does not support native deal references (unlike Contract Lite). Injecting this requires a DB migration. This is an accepted gap intentionally deferred to **Phase 2-B** (Notification reference standardization).
 
 ---
 

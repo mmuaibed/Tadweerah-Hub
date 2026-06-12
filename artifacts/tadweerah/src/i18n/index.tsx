@@ -654,8 +654,8 @@ const translations: Record<string, Record<Language, string>> = {
   "deal.waiting.payment_submitted": { ar: "بانتظار المنتج لتأكيد استلام الدفع", en: "Waiting for producer to confirm payment receipt" },
   "deal.waiting.payment_confirmed": { ar: "بانتظار المنتج لتأكيد إرسال البضاعة", en: "Waiting for producer to confirm dispatch" },
   "deal.waiting.dispatched": { ar: "بانتظار المشتري لتأكيد استلام البضاعة", en: "Waiting for buyer to confirm receipt" },
-  "deal.waiting.receipt_pending.producer": { ar: "تم تأكيد الاستلام من المشتري — ستكتمل الصفقة تلقائياً خلال 48 ساعة. تواصل مع الدعم إذا كنت ترغب في الاعتراض", en: "Buyer confirmed receipt — deal auto-completes in 48 hours. Contact support to dispute." },
-  "deal.waiting.receipt_pending.buyer": { ar: "شكراً! تم تأكيد الاستلام وستكتمل الصفقة تلقائياً خلال 48 ساعة", en: "Thank you! Receipt confirmed — deal auto-completes within 48 hours." },
+  "deal.waiting.receipt_pending.producer": { ar: "بانتظار مراجعة الإدارة وتأكيد الاستلام — يرجى التواصل مع الدعم إذا لزم الأمر", en: "Awaiting admin review and receipt confirmation — contact support if needed." },
+  "deal.waiting.receipt_pending.buyer": { ar: "بانتظار مراجعة الإدارة لاعتماد الاستلام", en: "Awaiting admin review for receipt confirmation." },
 
   // Confirmation dialogs
   "deal.confirm.payment.title": { ar: "تأكيد الدفع (حوالة بنكية)", en: "Confirm Payment (Bank Transfer)" },
@@ -1019,12 +1019,12 @@ const translations: Record<string, Record<Language, string>> = {
     en: "Waiting for the buyer to confirm receipt of goods",
   },
   "deal.stage.action.receipt_pending.producer": {
-    ar: "مراجعة الاستلام — ستكتمل الصفقة تلقائياً خلال 48 ساعة",
-    en: "Receipt under review — deal auto-completes in 48 hours",
+    ar: "الاستلام قيد مراجعة الإدارة",
+    en: "Receipt under admin review",
   },
   "deal.stage.action.receipt_pending.buyer": {
-    ar: "تم تأكيد الاستلام — الصفقة ستكتمل تلقائياً قريباً",
-    en: "Receipt confirmed — deal will auto-complete shortly",
+    ar: "تم تأكيد الاستلام — بانتظار الاعتماد النهائي",
+    en: "Receipt confirmed — awaiting final admin review",
   },
 
   // P5 — Company search for direct-sale targeting

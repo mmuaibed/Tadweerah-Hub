@@ -299,63 +299,27 @@ export async function expireStaleDeals(): Promise<void> {
       }
     }
     /* ------------------------------------------------------------------ */
-    /* Step 5: Auto-complete receipt_pending deals after 48h              */
+    /* Step 5: Flag receipt_pending deals after 48h (Pilot safety)        */
     /* ------------------------------------------------------------------ */
     const receiptPendingThreshold = new Date(now.getTime() - RECEIPT_PENDING_MS);
 
-    const autoCompleted = await db
-      .update(dealsTable)
-      .set({ status: "completed", updated_at: now })
+    const pendingEscalations = await db
+      .select({
+        id: dealsTable.id,
+      })
+      .from(dealsTable)
       .where(
         and(
           eq(dealsTable.status, "receipt_pending"),
           sql`${dealsTable.receipt_pending_since} IS NOT NULL AND ${dealsTable.receipt_pending_since} < ${receiptPendingThreshold.toISOString()}`,
         ),
-      )
-      .returning({
-        id: dealsTable.id,
-        listing_id: dealsTable.listing_id,
-        producer_company_id: dealsTable.producer_company_id,
-        buyer_company_id: dealsTable.buyer_company_id,
-      });
+      );
 
-    if (autoCompleted.length > 0) {
-      logger.info({ count: autoCompleted.length }, "[expire-deals] auto-completed receipt_pending deals");
-
-      for (const deal of autoCompleted) {
-        void logAudit({
-          action: "deal.auto_completed",
-          entityType: "deal",
-          entityId: deal.id,
-          actorRole: "system",
-          statusBefore: "receipt_pending",
-          statusAfter: "completed",
-          severity: "info",
-          details: { reason: "receipt_pending_48h_elapsed" },
-        });
-
-        void notifyDealStageChange({
-          companyId: deal.producer_company_id,
-          dealId: deal.id,
-          listingId: deal.listing_id,
-          type: "deal_completed",
-          title_ar: "اكتملت الصفقة",
-          title_en: "Deal Completed",
-          body_ar: "انقضت مدة المراجعة ولم يُرفع أي اعتراض. تم إتمام الصفقة بنجاح",
-          body_en: "The review window passed with no dispute. The deal has been completed successfully.",
-        });
-
-        void notifyDealStageChange({
-          companyId: deal.buyer_company_id,
-          dealId: deal.id,
-          listingId: deal.listing_id,
-          type: "deal_completed",
-          title_ar: "اكتملت الصفقة",
-          title_en: "Deal Completed",
-          body_ar: "تم إتمام الصفقة بنجاح بعد تأكيد الاستلام",
-          body_en: "The deal has been completed successfully after receipt confirmation.",
-        });
-      }
+    if (pendingEscalations.length > 0) {
+      logger.warn(
+        { count: pendingEscalations.length, deals: pendingEscalations.map((d) => d.id) },
+        "[expire-deals] deals stuck in receipt_pending >48h requiring admin verification",
+      );
     }
   } catch (err) {
     logger.error({ err }, "[expire-deals] job failed");

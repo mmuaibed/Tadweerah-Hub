@@ -727,10 +727,9 @@ router.post(
     const [updated] = await db
       .update(dealsTable)
       .set({
-        status: "receipt_pending",
+        status: "completed",
         received_at: now,
         received_by: company.id,
-        receipt_pending_since: now,
         updated_at: now,
       })
       .where(eq(dealsTable.id, dealId))
@@ -750,17 +749,27 @@ router.post(
       entityId: dealId,
       actorRole: "buyer",
       statusBefore: "dispatched",
-      statusAfter: "receipt_pending",
+      statusAfter: "completed",
     });
     void notifyDealStageChange({
       companyId: updated.producer_company_id,
       dealId,
       listingId: updated.listing_id,
-      type: "deal_receipt_pending",
-      title_ar: "المشتري أكّد استلام البضاعة",
-      title_en: "Buyer Confirmed Receipt",
-      body_ar: "أكّد المشتري استلام البضاعة. ستكتمل الصفقة تلقائياً خلال 48 ساعة ما لم يُرفع تقرير خلاف",
-      body_en: "The buyer confirmed receipt. The deal will auto-complete in 48 hours unless a dispute is filed.",
+      type: "deal_completed",
+      title_ar: "اكتملت الصفقة",
+      title_en: "Deal Completed",
+      body_ar: "أكّد المشتري استلام البضاعة. تم إتمام الصفقة بنجاح",
+      body_en: "The buyer confirmed receipt. The deal has been completed successfully.",
+    });
+    void notifyDealStageChange({
+      companyId: updated.buyer_company_id,
+      dealId,
+      listingId: updated.listing_id,
+      type: "deal_completed",
+      title_ar: "اكتملت الصفقة",
+      title_en: "Deal Completed",
+      body_ar: "تم إتمام الصفقة بنجاح بعد تأكيد الاستلام",
+      body_en: "The deal has been completed successfully after receipt confirmation.",
     });
 
     return res.json(serializeDeal(updated, counterparty!));

@@ -174,8 +174,7 @@ active
   → payment_submitted   (buyer submits payment reference)
   → payment_confirmed   (producer confirms payment)
   → dispatched          (producer confirms dispatch: vehicle_plate + transporter_name required)
-  → receipt_pending     (buyer confirms receipt — starts 48h auto-complete window)
-  → completed           (hourly job: 48h elapsed from receipt_pending_since)
+  → completed           (buyer confirms receipt — completes immediately)
 
 cancelled              (producer only: from active/payment_submitted/payment_confirmed)
 expired                (hourly job: deadline elapsed — see §8 for thresholds)
@@ -194,13 +193,13 @@ active → payment_submitted → payment_confirmed → dispatched
        → System should NOT auto-complete blindly during pilot
 ```
 
-### ⚠️ Gap: Current vs Target
+### 🟢 Current Deal Behavior (Updated Phase 2-A)
 | Step | 🟢 Current behavior | 🎯 Target behavior |
 |------|---------------------|-------------------|
-| Buyer confirms receipt | dispatched → receipt_pending (48h wait starts) | dispatched → completed immediately |
-| No buyer receipt after 48h | Auto-completes (hourly job, no human review) | Escalate to admin for verification |
+| Buyer confirms receipt | dispatched → completed immediately | dispatched → completed immediately |
+| No buyer receipt after 48h | Escalate to admin for verification (auto-complete disabled) | Escalate to admin for verification |
 | `producer-confirm-receipt` endpoint | ❌ Does not exist in `deals.ts` | May not be needed if buyer receipt = complete |
-| 🚫 Fix requires | `routes/deals.ts` + `jobs/expire-deals.ts` | Cloud Run deploy |
+| 🚫 Fix requires | — (Fixed in Phase 2-A) | — |
 
 ### User-Triggered Transitions (confirmed from `routes/deals.ts`)
 | Endpoint | Who | From → To | Key requirements |

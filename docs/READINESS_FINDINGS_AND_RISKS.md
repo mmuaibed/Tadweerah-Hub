@@ -34,28 +34,16 @@ However, three critical issues prevent a 9.5+ readiness rating:
 
 ## Section 1: High-Priority Findings (🔴)
 
-### H1 — Deal Receipt Lifecycle Mismatch (CRITICAL)
-**Severity: 🔴 High | Deploy: 🚫 Yes | Phase: Deal Lifecycle Correction**
+### H1 — Deal Receipt Lifecycle Mismatch (RESOLVED Phase 2-A)
+**Severity: ✅ Resolved | Deploy: 🚫 Required | Phase: Deal Lifecycle Correction**
 
-🟢 **Current:** Buyer calling `confirm-receipt` moves the deal to `receipt_pending`.
-48 hours later, the hourly job auto-completes it. No admin review occurs.
+🟢 **Updated Behavior (Phase 2-A):** Buyer confirming receipt directly completes the deal.
+The 48h blind auto-complete job was disabled. Deals stuck in `receipt_pending` >48h are now escalated to logs for admin verification.
 
-🎯 **Target:** Buyer confirms receipt → deal completes **immediately**.
-If no receipt confirmed within 48h → escalate to admin, do NOT auto-complete.
+~~🎯 **Target:** Buyer confirms receipt → deal completes **immediately**.~~
+~~If no receipt confirmed within 48h → escalate to admin, do NOT auto-complete.~~
 
-**Why this matters:**
-- A buyer may confirm receipt of an incorrect/partial shipment, completing the deal
-  when it should be disputed
-- Conversely, the 48h wait is unnecessary friction when both parties agree
-- Auto-completing sensitive real-world transactions without a human review step
-  violates the pilot principle
-
-**Code locations:** `routes/deals.ts` L693–767 + `jobs/expire-deals.ts` L304–358
-
-**Recommended fix:**
-1. Change `confirm-receipt` endpoint: `dispatched → completed` directly
-2. Change hourly job: after 48h without receipt, flag as "needs admin review" instead of auto-complete
-3. Add admin endpoint or UI view for "receipt not confirmed / needs verification"
+**Status:** Fixed in `routes/deals.ts` L693–767 + `jobs/expire-deals.ts` L304–358.
 
 ---
 
