@@ -128,6 +128,7 @@ router.get(
     const rows = await db
       .select({
         deal_id: dealsTable.id,
+        listing_id: dealsTable.listing_id,
         created_at: dealsTable.created_at,
         status: dealsTable.status,
         settlement_type: dealsTable.settlement_type,
@@ -169,6 +170,7 @@ router.get(
 
     const serialized = rows.map((r) => ({
       deal_id: r.deal_id,
+      listing_id: r.listing_id,
       created_at: r.created_at.toISOString(),
       status: r.status,
       settlement_type: r.settlement_type,

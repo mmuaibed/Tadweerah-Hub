@@ -36,6 +36,7 @@ interface ReportSummary {
 
 interface DealReportRow {
   deal_id: string;
+  listing_id: string;
   created_at: string;
   status: string;
   settlement_type: string;
@@ -349,8 +350,6 @@ export function ReportsPage() {
                       <Th>{t("reports.col.amount")}</Th>
                       <Th>{t("reports.col.vat")}</Th>
                       <Th>{t("reports.col.total")}</Th>
-                      <Th>{t("reports.col.transport")}</Th>
-                      <Th>{t("reports.col.action")}</Th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -366,7 +365,7 @@ export function ReportsPage() {
                           <Td mono>{fmtDate(row.created_at, lang)}</Td>
                           <Td>
                             <div className="flex flex-col items-start gap-1">
-                              <Link href={`/deals/${row.deal_id}`} className="text-primary font-mono font-semibold hover:underline" dir="ltr">
+                              <Link href={`/listings/${row.listing_id}?deal=${row.deal_id}&from=reports`} className="text-primary font-mono font-semibold hover:underline" dir="ltr">
                                 {dealRef(row.deal_id, row.created_at)}
                               </Link>
                               {row.tr_manifest_ref && (
@@ -398,15 +397,6 @@ export function ReportsPage() {
                             <span className="text-green-800 bg-green-100/50 px-2 py-1 rounded text-sm">
                               {fmtSAR(row.total_amount, lang)}
                             </span>
-                          </Td>
-                          <Td dim>{transportLabel(row, t)}</Td>
-                          <Td>
-                            <Link
-                              href={`/deals/${row.deal_id}`}
-                              className="text-xs text-primary hover:underline font-medium"
-                            >
-                              {t("reports.action.open_deal")}
-                            </Link>
                           </Td>
                         </tr>
                       );
