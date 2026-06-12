@@ -2141,6 +2141,7 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
                   {(() => {
                     const isBuyerTransportReady = deal.transport_responsibility !== "buyer" || 
                       mwanHeaderData?.transport_decision === "not_required" || 
+                      mwanHeaderData?.transport?.transport_mode === "platform" ||
                       (mwanHeaderData?.transport?.transporter_name && mwanHeaderData?.transport?.vehicle_plate);
 
                     if (!isBuyerTransportReady) {

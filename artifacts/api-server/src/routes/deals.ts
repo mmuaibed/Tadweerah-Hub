@@ -210,33 +210,6 @@ router.get(
       )
       .orderBy(dealsTable.updated_at);
 
-    // ── 4. Pending transport requests (both roles) on non-terminal deals
-    const pendingTRs = await db
-      .select({
-        tr_id: transportRequestsTable.id,
-        id: dealsTable.id,
-        listing_id: dealsTable.listing_id,
-        status: dealsTable.status,
-        transport_decision: dealsTable.transport_decision,
-        ...listingExtraFields,
-        updated_at: transportRequestsTable.updated_at,
-        producer_company_id: dealsTable.producer_company_id,
-        buyer_company_id: dealsTable.buyer_company_id,
-      })
-      .from(transportRequestsTable)
-      .innerJoin(dealsTable, eq(dealsTable.id, transportRequestsTable.deal_id))
-      .leftJoin(wasteListingsTable, eq(wasteListingsTable.id, dealsTable.listing_id))
-      .where(
-        and(
-          eq(transportRequestsTable.status, "pending"),
-          notInArray(dealsTable.status, ["completed", "cancelled"]),
-          or(
-            eq(dealsTable.producer_company_id, company.id),
-            eq(dealsTable.buyer_company_id, company.id),
-          ),
-        ),
-      );
-
     // ── Build response ────────────────────────────────────────────────────────
 
     const actionMap: Record<string, string> = {
@@ -276,27 +249,6 @@ router.get(
           action_needed: "choose_transport",
           updated_at: d.updated_at.toISOString(),
         })),
-
-      // Pending transport requests (both roles)
-      ...pendingTRs.map((tr) => {
-        const role: "producer" | "buyer" =
-          tr.producer_company_id === company.id ? "producer" : "buyer";
-        return {
-          id: tr.id,          // use deal id for linking
-          listing_id: tr.listing_id,
-          status: tr.status,
-          material: tr.material,
-          city: tr.city,
-          quantity: tr.quantity,
-          unit: tr.unit,
-          material_subcategory_id: tr.material_subcategory_id,
-          transport_decision: tr.transport_decision,
-          transport_responsibility: tr.transport_responsibility,
-          role,
-          action_needed: `transport_pending_${role}` as const,
-          updated_at: tr.updated_at.toISOString(),
-        };
-      }),
     ].sort((a, b) => a.updated_at.localeCompare(b.updated_at));
 
     res.json({ deals });
@@ -557,7 +509,8 @@ router.post(
           .where(eq(transportRequestsTable.deal_id, dealId))
           .limit(1);
 
-        if (!tr || !tr.transporter_name || !tr.vehicle_plate) {
+        const isPlatform = tr && tr.transport_mode === "platform";
+        if (!tr || (!isPlatform && (!tr.transporter_name || !tr.vehicle_plate))) {
           throw new HttpError(
             403,
             "TransportNotReady",

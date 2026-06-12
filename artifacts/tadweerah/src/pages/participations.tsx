@@ -322,7 +322,7 @@ export function ParticipationsPage() {
   const offers = allData as AugOffer[];
   const data = tab === "all" ? offers : offers.filter((o) => o.status === tab);
 
-  const statPending   = offers.filter(o => o.status === "pending").length;
+  const statPending   = offers.filter(o => o.status === "pending" && o.listing_status === "open").length;
   const statActive    = offers.filter(o => o.status === "accepted" && o.deal_status && ["active","payment_confirmed","dispatched"].includes(o.deal_status)).length;
   const statMyTurn    = offers.filter(o => o.status === "accepted" && o.deal_status === "dispatched").length;
   const statCompleted = offers.filter(o => o.status === "accepted" && o.deal_status === "completed").length;
