@@ -1281,11 +1281,13 @@ export function ListingDetailPage() {
 
   const fromParam = new URLSearchParams(search).get("from");
   const backPath =
-    fromParam === "participations"
-      ? "/participations"
-      : isOwner
-        ? "/listings/mine"
-        : "/marketplace";
+    fromParam === "reports"
+      ? "/reports"
+      : fromParam === "participations"
+        ? "/participations"
+        : isOwner
+          ? "/listings/mine"
+          : "/marketplace";
 
   const dateStr = listing
     ? new Date(listing.created_at).toLocaleDateString(
