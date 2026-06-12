@@ -1873,15 +1873,7 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
                   </div>
                 );
               })()}
-              {deal.counterparty?.contact_phone && (
-                <a
-                  href={`tel:${deal.counterparty.contact_phone}`}
-                  dir="ltr"
-                  className="inline-flex items-center gap-1.5 text-primary text-sm font-medium hover:underline"
-                >
-                  <Phone className="h-3.5 w-3.5" />{deal.counterparty.contact_phone}
-                </a>
-              )}
+
             </div>
           )}
 
