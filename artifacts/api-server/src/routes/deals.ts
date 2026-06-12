@@ -201,11 +201,13 @@ router.get(
       })
       .from(dealsTable)
       .leftJoin(wasteListingsTable, eq(dealsTable.listing_id, wasteListingsTable.id))
+      .leftJoin(transportRequestsTable, eq(dealsTable.id, transportRequestsTable.deal_id))
       .where(
         and(
           eq(dealsTable.buyer_company_id, company.id),
           eq(dealsTable.status, "payment_confirmed"),
           isNull(dealsTable.transport_decision),
+          isNull(transportRequestsTable.id)
         ),
       )
       .orderBy(dealsTable.updated_at);
