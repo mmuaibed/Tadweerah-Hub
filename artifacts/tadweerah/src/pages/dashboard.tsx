@@ -31,6 +31,7 @@ interface DashboardStats {
   listings_count: number;
   offers_received_count: number;
   offers_made_count: number;
+  pending_offers_count: number;
   completed_deals_count: number;
   total_deal_value: number;
 }
@@ -253,7 +254,7 @@ function NextActionBanner({ stats, t, Arrow }: NextBannerProps) {
     );
   }
 
-  if (stats.offers_made_count > 0) {
+  if (stats.pending_offers_count > 0) {
     return (
       <div className="mb-4">
         <Link to="/participations">
@@ -261,7 +262,7 @@ function NextActionBanner({ stats, t, Arrow }: NextBannerProps) {
             <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
               <Package className="h-5 w-5" />
               <span className="absolute -top-1 -end-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground">
-                {stats.offers_made_count}
+                {stats.pending_offers_count}
               </span>
             </span>
             <div className="flex-1 min-w-0">

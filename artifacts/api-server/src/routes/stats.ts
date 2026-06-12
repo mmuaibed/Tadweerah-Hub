@@ -44,6 +44,21 @@ router.get(
       .from(listingOffersTable)
       .where(eq(listingOffersTable.buyer_company_id, cid));
 
+    const [pendingOffersRow] = await db
+      .select({ total: count() })
+      .from(listingOffersTable)
+      .innerJoin(
+        wasteListingsTable,
+        eq(listingOffersTable.waste_listing_id, wasteListingsTable.id),
+      )
+      .where(
+        and(
+          eq(listingOffersTable.buyer_company_id, cid),
+          eq(listingOffersTable.status, "pending"),
+          eq(wasteListingsTable.status, "open")
+        )
+      );
+
     const [completedDealsRow] = await db
       .select({ total: count() })
       .from(dealsTable)
@@ -74,6 +89,7 @@ router.get(
       listings_count: Number(listingsRow?.total ?? 0),
       offers_received_count: Number(offersReceivedRow?.total ?? 0),
       offers_made_count: Number(offersMadeRow?.total ?? 0),
+      pending_offers_count: Number(pendingOffersRow?.total ?? 0),
       completed_deals_count: Number(completedDealsRow?.total ?? 0),
       total_deal_value: Number(dealValueRow?.total ?? 0),
     });
