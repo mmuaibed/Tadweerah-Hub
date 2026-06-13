@@ -113,18 +113,32 @@ export async function notifyListingPublishedSuccess({
   sellerCompanyId,
   listingId,
   listingRef,
+  city,
+  categoryAr,
+  categoryEn,
+  subcategoryAr,
+  subcategoryEn,
+  quantityAr,
+  quantityEn,
 }: {
   sellerCompanyId: string;
   listingId: string;
   listingRef: string;
+  city: string;
+  categoryAr: string;
+  categoryEn: string;
+  subcategoryAr: string;
+  subcategoryEn: string;
+  quantityAr: string;
+  quantityEn: string;
 }): Promise<void> {
   await createNotification({
     companyId: sellerCompanyId,
     type: "new_listing_published",
     title_ar: `تم نشر الإعلان ${listingRef} بنجاح`,
     title_en: `Listing ${listingRef} published successfully`,
-    body_ar: "إعلانك متاح الآن للشركات المؤهلة لاستقبال العروض.",
-    body_en: "Your listing is now live for qualified companies to submit offers.",
+    body_ar: `تم نشر إعلانك بنجاح وهو متاح الآن للشركات المؤهلة لاستقبال العروض.\n\nرقم الإعلان: ${listingRef}\nالمدينة: ${city}\nالتصنيف الرئيسي: ${categoryAr}\nالتصنيف الفرعي: ${subcategoryAr}\nالكمية: ${quantityAr}`,
+    body_en: `Your listing has been published successfully and is now live for qualified companies to submit offers.\n\nListing reference: ${listingRef}\nCity: ${city}\nMain category: ${categoryEn}\nSubcategory: ${subcategoryEn}\nQuantity: ${quantityEn}`,
     relatedEntityType: "listing",
     relatedEntityId: listingId,
     sendMail: true,
@@ -262,29 +276,32 @@ export async function notifyNewListingPublished({
   buyerCompanyId,
   listingId,
   listingRef,
-  material,
   city,
-  quantity,
-  priceHintText,
+  categoryAr,
+  categoryEn,
+  subcategoryAr,
+  subcategoryEn,
+  quantityAr,
+  quantityEn,
 }: {
   buyerCompanyId: string;
   listingId: string;
   listingRef: string;
-  material: string;
   city: string;
-  quantity: string;
-  priceHintText?: string;
+  categoryAr: string;
+  categoryEn: string;
+  subcategoryAr: string;
+  subcategoryEn: string;
+  quantityAr: string;
+  quantityEn: string;
 }): Promise<void> {
-  const pHintAr = priceHintText || "غير محدد";
-  const pHintEn = priceHintText || "Not specified";
-
   await createNotification({
     companyId: buyerCompanyId,
     type: "new_listing_published",
-    title_ar: `إعلان جديد متاح للمزايدة: ${material} في ${city}`,
-    title_en: `New Listing Available for Bidding: ${material} in ${city}`,
-    body_ar: `تم نشر إعلان جديد في منصة تدويرة متاح للمزايدة.\n\nرقم الإعلان: ${listingRef}\nالمادة: ${material}\nالكمية: ${quantity}\nالمدينة: ${city}\nالسعر الإرشادي: ${pHintAr}\n\nيمكنك مراجعة الإعلان وتقديم عرضك من خلال منصة تدويرة.`,
-    body_en: `A new listing is now available for bidding on Tadweerah.\n\nListing ID: ${listingRef}\nMaterial: ${material}\nQuantity: ${quantity}\nCity: ${city}\nIndicative price: ${pHintEn}\n\nYou can review the listing and submit your offer through Tadweerah.`,
+    title_ar: `إعلان جديد متاح للمزايدة: ${categoryAr} في ${city}`,
+    title_en: `New Listing Available for Bidding: ${categoryEn} in ${city}`,
+    body_ar: `تم نشر إعلان جديد قد يناسب نشاطكم.\n\nرقم الإعلان: ${listingRef}\nالمدينة: ${city}\nالتصنيف الرئيسي: ${categoryAr}\nالتصنيف الفرعي: ${subcategoryAr}\nالكمية: ${quantityAr}\n\nيمكنكم فتح الإعلان للاطلاع على التفاصيل وتقديم عرضكم.`,
+    body_en: `A new listing may match your company activity.\n\nListing reference: ${listingRef}\nCity: ${city}\nMain category: ${categoryEn}\nSubcategory: ${subcategoryEn}\nQuantity: ${quantityEn}\n\nOpen the listing to review details and submit your offer.`,
     relatedEntityType: "listing",
     relatedEntityId: listingId,
     sendMail: true,

@@ -711,6 +711,44 @@ router.post(
       ).onConflictDoNothing();
     }
 
+    let categoryNameAr: string = data.material;
+    let categoryNameEn: string = data.material;
+    let subcategoryNameAr = "غير محدد";
+    let subcategoryNameEn = "Not specified";
+    let unitSymbolAr: string = data.unit || "";
+    let unitSymbolEn: string = data.unit || "";
+
+    try {
+      const [catResult, subcatResult, uoptResult] = await Promise.all([
+        data.material_category_id
+          ? db.select().from(materialCategoriesTable).where(eq(materialCategoriesTable.id, data.material_category_id)).limit(1)
+          : Promise.resolve([]),
+        data.material_subcategory_id
+          ? db.select().from(materialCategoriesTable).where(eq(materialCategoriesTable.id, data.material_subcategory_id)).limit(1)
+          : Promise.resolve([]),
+        unitOptionId
+          ? db.select().from(unitOptionsTable).where(eq(unitOptionsTable.id, unitOptionId)).limit(1)
+          : Promise.resolve([]),
+      ]);
+      if (catResult[0]) {
+        categoryNameAr = catResult[0].name_ar;
+        categoryNameEn = catResult[0].name_en;
+      }
+      if (subcatResult[0]) {
+        subcategoryNameAr = subcatResult[0].name_ar;
+        subcategoryNameEn = subcatResult[0].name_en;
+      }
+      if (uoptResult[0]) {
+        unitSymbolAr = uoptResult[0].name_ar;
+        unitSymbolEn = uoptResult[0].name_en;
+      }
+    } catch (err) {
+      console.error("[listings] Failed to fetch localized names for notification", err);
+    }
+
+    const quantityAr = `${data.quantity} ${unitSymbolAr}`.trim();
+    const quantityEn = `${data.quantity} ${unitSymbolEn}`.trim();
+
     // Notify the target company when a specific_company listing is created
     if (targetingType === "specific_company" && targetCompanyId) {
       void notifyPrivateDealInvitation({
@@ -760,10 +798,13 @@ router.post(
               buyerCompanyId: b.id,
               listingId: created.id,
               listingRef: makeListingRef(created.id),
-              material: data.material,
               city: data.city,
-              quantity: `${data.quantity} ${data.unit || ""}`.trim(),
-              priceHintText: data.price_hint != null ? String(data.price_hint) : undefined,
+              categoryAr: categoryNameAr,
+              categoryEn: categoryNameEn,
+              subcategoryAr: subcategoryNameAr,
+              subcategoryEn: subcategoryNameEn,
+              quantityAr: quantityAr,
+              quantityEn: quantityEn,
             })
           );
 
@@ -791,6 +832,13 @@ router.post(
       sellerCompanyId: company.id,
       listingId: created.id,
       listingRef: makeListingRef(created.id),
+      city: data.city,
+      categoryAr: categoryNameAr,
+      categoryEn: categoryNameEn,
+      subcategoryAr: subcategoryNameAr,
+      subcategoryEn: subcategoryNameEn,
+      quantityAr: quantityAr,
+      quantityEn: quantityEn,
     }).catch((err) => console.error("[listings] Failed to notify seller", err));
 
     void logAudit({
