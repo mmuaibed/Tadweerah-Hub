@@ -58,3 +58,12 @@ Thumbs.db
 
 # Uploaded files (local dev only)
 public/uploads/
+
+# Local deployment/cache/debug artifacts
+.firebase/
+cloud-sql-proxy*.exe
+ERROR
+logs*.json
+implementation_plan.md
+task.md
+walkthrough.md
