@@ -724,6 +724,13 @@ router.post(
     if (targetingType === "open") {
       void (async () => {
         try {
+          console.info("[listings] open listing notification broadcast start", {
+            listingId: created.id,
+            listingRef: makeListingRef(created.id),
+            companyId: company.id,
+            targetingType,
+          });
+
           const eligibleBuyers = await db
             .select({ id: companiesTable.id })
             .from(companiesTable)
@@ -735,21 +742,34 @@ router.post(
               )
             );
 
-          const promises = eligibleBuyers
-            .filter((b) => b.id !== company.id)
-            .map((b) =>
-              notifyNewListingPublished({
-                buyerCompanyId: b.id,
-                listingId: created.id,
-                listingRef: makeListingRef(created.id),
-                material: data.material,
-                city: data.city,
-                quantity: `${data.quantity} ${data.unit || ""}`.trim(),
-                priceHintText: data.price_hint != null ? String(data.price_hint) : undefined,
-              })
-            );
+          const finalBuyers = eligibleBuyers.filter((b) => b.id !== company.id);
 
-          await Promise.allSettled(promises);
+          console.info("[listings] open listing eligible buyer count", {
+            listingId: created.id,
+            listingRef: makeListingRef(created.id),
+            eligibleBuyerCount: finalBuyers.length,
+          });
+
+          const promises = finalBuyers.map((b) =>
+            notifyNewListingPublished({
+              buyerCompanyId: b.id,
+              listingId: created.id,
+              listingRef: makeListingRef(created.id),
+              material: data.material,
+              city: data.city,
+              quantity: `${data.quantity} ${data.unit || ""}`.trim(),
+              priceHintText: data.price_hint != null ? String(data.price_hint) : undefined,
+            })
+          );
+
+          const results = await Promise.allSettled(promises);
+
+          console.info("[listings] open listing notification broadcast done", {
+            listingId: created.id,
+            listingRef: makeListingRef(created.id),
+            fulfilled: results.filter((r) => r.status === "fulfilled").length,
+            rejected: results.filter((r) => r.status === "rejected").length,
+          });
         } catch (err) {
           console.error("[listings] Failed to broadcast new listing", err);
         }
