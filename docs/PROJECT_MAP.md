@@ -411,14 +411,12 @@ Event occurs (route handler or hourly job)
   * Firebase Hosting target: `tadweerah-staging`
   * Official helper: `scripts/deploy-frontend.ps1`
   * The script builds `@workspace/tadweerah` and deploys Firebase Hosting.
-  * Frontend was deployed for commit `d646b33`.
+  * Frontend was deployed for commit `e5722e7`.
 * **Backend**:
   * Service name: `tadweerah-api`
-  * Latest accepted backend revision from product state: `tadweerah-api-00078-vzg`
-  * Backend deploy for commit `d646b33` is still pending.
-  * Backend deployment path is not yet safely documented in repo.
-  * Do not run manual `gcloud run deploy` until project ID, region, image build process, and secret binding strategy are confirmed and documented.
-  * Note there is documentation drift if `PROJECT_MAP.md` currently lists an older backend revision such as `00046-pnj`.
+  * Latest accepted backend revision from product state: `tadweerah-api-00082-lc2`
+  * Backend deploy for Phase 2-B is complete.
+  * Backend deployment path: `gcloud run deploy tadweerah-api --project=tadweerah-staging --region=europe-west1 --source=.`
 
 | Service | Platform | Config | Notes |
 |---------|---------|--------|-------|
@@ -459,14 +457,14 @@ See `READINESS_FINDINGS_AND_RISKS.md` for full risk classification, scoring, and
 
 | # | Area | Current vs Target | Deploy needed | Priority |
 |---|------|------------------|---------------|----------|
-| 1 | Deal receipt flow (buyer confirms → immediate complete) | ⚠️ Current: 48h wait. Target: immediate | 🚫 Yes | 🔴 High |
-| 2 | Receipt_pending without buyer receipt (48h blindly auto-completes) | ⚠️ Target: admin escalation | 🚫 Yes | 🔴 High |
+| 1 | Deal receipt flow | ✅ Resolved in Phase 2-A. | — | — |
+| 2 | Receipt_pending auto-complete | ✅ Resolved in Phase 2-A. | — | — |
 | 3 | Buyer not warned before deal expires | ⚠️ One `notifyDealStageChange` call needed | 🚫 Yes | 🔴 High |
-| 4 | No notification sent after admin override (cancel/force-complete) | ⚠️ Parties unaware | 🚫 Yes | 🔴 High |
-| 5 | Admin panel has no deal cancel/force-complete buttons | ⚠️ Frontend-only gap; backend API ready | 🖥️ No | 🔴 High (demo risk) |
-| 6 | Transport quote "select" is label-only, not transporter assignment | ⚠️ Ops may misunderstand | 🚫 Yes (if fixed) | 🟡 Medium |
-| 7 | Admin cannot cancel dispatched or receipt_pending deals | ⚠️ Workaround: force-complete | 🚫 Yes (if expanded) | 🟡 Medium |
-| 8 | Contract Lite not fully audited (Phase-CLT required) | ⚠️ Deep audit needed | TBD | 🟡 Medium |
+| 4 | No notification sent after admin override | ⚠️ Parties unaware of override | 🚫 Yes | 🔴 High |
+| 5 | Admin panel has no `force-complete` deal button | ⚠️ `cancel` exists, but `force-complete` missing from UI | 🖥️ Frontend only | 🔴 High (demo risk) |
+| 6 | Transport quote "select" is label-only | ⚠️ Ops may misunderstand | 🚫 Yes (if fixed) | 🟡 Medium |
+| 7 | Admin cannot cancel dispatched deals directly | ⚠️ Workaround: `force-complete` | 🚫 Yes (if expanded) | 🟡 Medium |
+| 8 | Contract Lite | ✅ Flow, notifications, and reports implemented | — | — |
 | 9 | `sendDealCompletionEmail` defined but not wired | ⚠️ Rich completion email never sent | 🚫 Yes (to wire) | 🟡 Medium |
-| 10 | Master data CRUD is API-only; no admin UI for categories/units | ⚠️ UI gap | 🖥️ Frontend only | 🟡 Medium |
-| 11 | All timer durations hard-coded; should be admin-configurable | ⚠️ Post-pilot improvement | 🚫 Yes (if changed) | 🟢 Low (post-pilot) |
+| 10 | Master data UI | ⚠️ Need UI for capability CRUD | 🚫 Yes | 🟡 Medium |
+| 11 | Timer durations hard-coded | ⚠️ Should be admin-configurable | 🚫 Yes (if changed) | 🟢 Low (post-pilot) |
