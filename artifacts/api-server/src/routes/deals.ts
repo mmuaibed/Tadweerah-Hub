@@ -15,6 +15,7 @@ import {
 import { HttpError, assertUuid } from "../middlewares/errorHandler";
 import { logAudit } from "../lib/audit";
 import { notifyDealStageChange } from "../lib/notify";
+import { dealRef } from "../lib/listing-ref";
 
 const router: IRouter = Router();
 
@@ -367,8 +368,8 @@ router.post(
       dealId,
       listingId: updated.listing_id,
       type: "deal_payment_submitted",
-      title_ar: "المشتري أرسل مرجع الدفع",
-      title_en: "Buyer Submitted Payment Reference",
+      title_ar: "المشتري أرسل مرجع الدفع للصفقة " + dealRef(dealId, deal.created_at.toISOString()),
+      title_en: "Buyer submitted payment reference for deal " + dealRef(dealId, deal.created_at.toISOString()),
       body_ar: "أرسل المشتري مرجع الحوالة البنكية. يرجى التحقق منه وتأكيد استلام الدفع",
       body_en: "The buyer submitted a bank transfer reference. Please verify and confirm payment receipt.",
     });
@@ -453,8 +454,8 @@ router.post(
       dealId,
       listingId: updated.listing_id,
       type: "deal_payment_confirmed",
-      title_ar: "تم تأكيد الدفع",
-      title_en: "Payment Confirmed",
+      title_ar: "تم تأكيد الدفع للصفقة " + dealRef(dealId, deal.created_at.toISOString()),
+      title_en: "Payment confirmed for deal " + dealRef(dealId, deal.created_at.toISOString()),
       body_ar: "أكّد المنتج استلام الدفع، يرجى انتظار شحن البضاعة",
       body_en: "The producer confirmed payment receipt. Awaiting dispatch.",
     });
@@ -634,8 +635,8 @@ router.post(
       dealId,
       listingId: updated.listing_id,
       type: "deal_dispatched",
-      title_ar: "تم شحن البضاعة",
-      title_en: "Goods Dispatched",
+      title_ar: "تم شحن البضاعة للصفقة " + dealRef(dealId, deal.created_at.toISOString()),
+      title_en: "Goods dispatched for deal " + dealRef(dealId, deal.created_at.toISOString()),
       body_ar: "قام المنتج بتأكيد شحن البضاعة، يرجى تأكيد الاستلام عند وصولها",
       body_en: "The producer confirmed dispatch. Please confirm receipt when goods arrive.",
     });
@@ -711,8 +712,8 @@ router.post(
       dealId,
       listingId: updated.listing_id,
       type: "deal_completed",
-      title_ar: "اكتملت الصفقة",
-      title_en: "Deal Completed",
+      title_ar: "اكتملت الصفقة " + dealRef(dealId, deal.created_at.toISOString()),
+      title_en: "Deal completed " + dealRef(dealId, deal.created_at.toISOString()),
       body_ar: "أكّد المشتري استلام البضاعة. تم إتمام الصفقة بنجاح",
       body_en: "The buyer confirmed receipt. The deal has been completed successfully.",
     });
@@ -721,8 +722,8 @@ router.post(
       dealId,
       listingId: updated.listing_id,
       type: "deal_completed",
-      title_ar: "اكتملت الصفقة",
-      title_en: "Deal Completed",
+      title_ar: "اكتملت الصفقة " + dealRef(dealId, deal.created_at.toISOString()),
+      title_en: "Deal completed " + dealRef(dealId, deal.created_at.toISOString()),
       body_ar: "تم إتمام الصفقة بنجاح بعد تأكيد الاستلام",
       body_en: "The deal has been completed successfully after receipt confirmation.",
     });
@@ -797,8 +798,8 @@ router.post(
       dealId,
       listingId: updated.listing_id,
       type: "deal_cancelled",
-      title_ar: "تم إلغاء الصفقة",
-      title_en: "Deal Cancelled",
+      title_ar: "تم إلغاء الصفقة " + dealRef(dealId, deal.created_at.toISOString()),
+      title_en: "Deal cancelled " + dealRef(dealId, deal.created_at.toISOString()),
       body_ar: "قام المنتج بإلغاء الصفقة. يمكنك رفع تقرير إذا كنت تعتقد أن هذا خطأ",
       body_en: "The producer has cancelled this deal. You may file an issue report if you believe this is an error.",
     });
@@ -880,8 +881,8 @@ router.post(
       dealId,
       listingId: updated.listing_id,
       type: "deal_extended",
-      title_ar: "تم تمديد الصفقة",
-      title_en: "Deal Extended",
+      title_ar: "تم تمديد الصفقة " + dealRef(dealId, deal.created_at.toISOString()),
+      title_en: "Deal extended " + dealRef(dealId, deal.created_at.toISOString()),
       body_ar: `قام المنتج بتمديد الصفقة حتى ${extendedUntil.toLocaleDateString("ar-SA")}`,
       body_en: `The producer extended the deal deadline to ${extendedUntil.toLocaleDateString("en-US")}.`,
     });

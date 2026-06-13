@@ -204,6 +204,12 @@ Full audit log created. 🔍 Verify this endpoint is accessible from the admin U
 
 ### 6.1 Full Notification Inventory
 
+> **Phase 2-B Reference Rules:**
+> - Pre-deal notifications (offers, broadcasts) use `LIST-...` references and route to `/listings/:id`.
+> - Post-deal lifecycle notifications use `TDW-...` references.
+> - Contract Lite in-app notifications correctly route to `/contracts/:id`.
+> - **Deferred:** Dual-role/new-listing recipient eligibility relies strictly on `type="buyer"` and requires model review.
+
 | Event | Type key | Recipient(s) | Email? | Admin control needed? | Timing configurable? | Implies state change? | Pilot recommendation |
 |-------|----------|-------------|--------|----------------------|---------------------|----------------------|---------------------|
 | New offer on listing | `offer_received` | Producer | ✅ Yes | No | No | No | ✅ Keep as-is |

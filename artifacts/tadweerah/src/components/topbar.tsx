@@ -55,6 +55,9 @@ function NotificationBell() {
     if (n.related_entity_type === "listing" && n.related_entity_id) {
       setOpen(false);
       navigate(`/listings/${n.related_entity_id}`);
+    } else if (n.related_entity_type === "contract" && n.related_entity_id) {
+      setOpen(false);
+      navigate(`/contracts/${n.related_entity_id}`);
     }
   }
 
@@ -107,7 +110,7 @@ function NotificationBell() {
           ) : (
             <ul className="divide-y divide-border">
               {notifications.map((n) => {
-                const isNavigable = n.related_entity_type === "listing" && !!n.related_entity_id;
+                const isNavigable = (n.related_entity_type === "listing" || n.related_entity_type === "contract") && !!n.related_entity_id;
                 return (
                   <li key={n.id}>
                     <button

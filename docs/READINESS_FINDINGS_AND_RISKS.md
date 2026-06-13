@@ -189,7 +189,16 @@ This is a post-pilot improvement, but must be acknowledged before launch.
 
 ---
 
-## Section 3: Single Source of Truth Audit
+## Section 3: Phase 2-B Minor Fixes (✅ Completed)
+
+> **Phase 2-B Notification Reference Standard**
+> - **Fixed:** Contract notification dead-click (in-app notifications now properly route to `/contracts/:id`).
+> - **Fixed:** Missing deal references in active lifecycle notifications (all deal stage notifications now show `TDW-...`).
+> - **Deferred:** Dual-role/new-listing recipient eligibility model review (relies on strict `type="buyer"` with no `"both"` type available).
+
+---
+
+## Section 4: Single Source of Truth Audit
 
 > This section identifies places where logic, values, or behavior is
 > duplicated, inconsistent, or has unclear ownership.
