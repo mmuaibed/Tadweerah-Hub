@@ -109,6 +109,28 @@ export async function notifyOfferReceived({
   });
 }
 
+export async function notifyListingPublishedSuccess({
+  sellerCompanyId,
+  listingId,
+  listingRef,
+}: {
+  sellerCompanyId: string;
+  listingId: string;
+  listingRef: string;
+}): Promise<void> {
+  await createNotification({
+    companyId: sellerCompanyId,
+    type: "new_listing_published",
+    title_ar: `تم نشر الإعلان ${listingRef} بنجاح`,
+    title_en: `Listing ${listingRef} published successfully`,
+    body_ar: "إعلانك متاح الآن للشركات المؤهلة لاستقبال العروض.",
+    body_en: "Your listing is now live for qualified companies to submit offers.",
+    relatedEntityType: "listing",
+    relatedEntityId: listingId,
+    sendMail: true,
+  });
+}
+
 export async function notifyOutbid({
   buyerCompanyId,
   listingId,

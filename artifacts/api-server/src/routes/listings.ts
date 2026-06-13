@@ -6,6 +6,7 @@ import multer from "multer";
 import {
   db,
   companiesTable,
+  companyRolesTable,
   wasteListingsTable,
   listingOffersTable,
   listingRequiredServicesTable,
@@ -28,7 +29,7 @@ import {
   assertUuid,
 } from "../middlewares/errorHandler";
 import { logAudit } from "../lib/audit";
-import { notifyPrivateDealInvitation, notifyOfferRejected, notifyNewListingPublished } from "../lib/notify";
+import { notifyPrivateDealInvitation, notifyOfferRejected, notifyNewListingPublished, notifyListingPublishedSuccess } from "../lib/notify";
 import { listingRef as makeListingRef } from "../lib/listing-ref";
 
 import { Storage } from "@google-cloud/storage";
@@ -732,13 +733,17 @@ router.post(
           });
 
           const eligibleBuyers = await db
-            .select({ id: companiesTable.id })
+            .selectDistinct({ id: companiesTable.id })
             .from(companiesTable)
+            .leftJoin(companyRolesTable, eq(companiesTable.id, companyRolesTable.company_id))
             .where(
               and(
-                eq(companiesTable.type, "buyer"),
                 eq(companiesTable.license_status, "approved"),
-                eq(companiesTable.offer_submission_blocked, false)
+                eq(companiesTable.offer_submission_blocked, false),
+                or(
+                  eq(companiesTable.type, "buyer"),
+                  eq(companyRolesTable.role, "receiver")
+                )
               )
             );
 
@@ -781,6 +786,12 @@ router.post(
       fetchRequiredServicesMap([created.id]),
       fetchTargetCategoryIdsMap([created.id]),
     ]);
+
+    void notifyListingPublishedSuccess({
+      sellerCompanyId: company.id,
+      listingId: created.id,
+      listingRef: makeListingRef(created.id),
+    }).catch((err) => console.error("[listings] Failed to notify seller", err));
 
     void logAudit({
       userId: (req as AuthedCompanyRequest).userId,
