@@ -26,7 +26,7 @@ import { useT } from "@/i18n";
 import { fmtNumber } from "@/lib/format";
 import { listingRef } from "@/lib/listing-ref";
 import { LocationLink } from "@/components/location-link";
-import type { WasteListing } from "@workspace/api-client-react";
+import { type WasteListing, useGetMaterialCategories } from "@workspace/api-client-react";
 
 interface ListingCardProps {
   listing: WasteListing;
@@ -60,6 +60,11 @@ export function ListingCard({
   const materialCategoryNameEn = (listing as WasteListing & { material_category_name_en?: string | null }).material_category_name_en;
   const materialCategoryName = lang === "ar" ? materialCategoryNameAr : materialCategoryNameEn;
   const offersCount = (listing as WasteListing & { offer_count?: number }).offer_count ?? 0;
+
+  const { data: materialCategories } = useGetMaterialCategories();
+  const subcategoryId = (listing as WasteListing & { material_subcategory_id?: string | null }).material_subcategory_id;
+  const subcat = materialCategories?.find((c) => c.id === subcategoryId);
+  const subcategoryName = lang === "ar" ? subcat?.name_ar : subcat?.name_en;
 
   const isFixed = listing.pricing_model === "fixed";
   const qty = Number(listing.quantity);
@@ -107,7 +112,7 @@ export function ListingCard({
             </span>
             <div className="flex flex-col">
               <h3 className="text-base font-semibold text-card-foreground">
-                {t(`material.${listing.material}`)}
+                {materialCategoryName || t(`material.${listing.material}`)}
               </h3>
               <span className="text-xs text-muted-foreground">
                 {listingRef(listing.id)}
@@ -144,11 +149,11 @@ export function ListingCard({
 
         {/* Details grid */}
         <div className="grid gap-2 text-sm text-muted-foreground">
-          {materialCategoryName && (
+          {subcategoryName && (
             <div className="flex items-center gap-2">
               <Recycle className="h-4 w-4 shrink-0 text-secondary/70" />
               <span className="text-xs font-medium text-secondary/80 bg-secondary/10 px-2 py-0.5 rounded-full">
-                {materialCategoryName}
+                {subcategoryName}
               </span>
             </div>
           )}
