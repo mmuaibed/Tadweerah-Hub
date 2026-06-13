@@ -189,12 +189,19 @@ This is a post-pilot improvement, but must be acknowledged before launch.
 
 ---
 
-## Section 3: Phase 2-B Minor Fixes (✅ Completed)
+## Section 3: Phase 2-B Minor Fixes (⏳ Pending Backend Deploy & UAT)
 
 > **Phase 2-B Notification Reference Standard**
 > - **Fixed:** Contract notification dead-click (in-app notifications now properly route to `/contracts/:id`).
 > - **Fixed:** Missing deal references in active lifecycle notifications (all deal stage notifications now show `TDW-...`).
 > - **Deferred:** Dual-role/new-listing recipient eligibility model review (relies on strict `type="buyer"` with no `"both"` type available).
+
+> **Deployment Hygiene (Open Item)**
+> - Phase 2-B code is committed as `d646b33`.
+> - Frontend deployed successfully.
+> - Backend deploy still pending due to undocumented backend deployment path.
+> - Repo has untracked local artifacts that need separate cleanup/classification.
+> - Phase 2-B cannot close until backend deploy and UAT pass.
 
 ---
 

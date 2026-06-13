@@ -406,10 +406,24 @@ Event occurs (route handler or hourly job)
 
 ## 10. Deployment / Environment Map
 
+### Deployment Status & Helpers
+* **Frontend**:
+  * Firebase Hosting target: `tadweerah-staging`
+  * Official helper: `scripts/deploy-frontend.ps1`
+  * The script builds `@workspace/tadweerah` and deploys Firebase Hosting.
+  * Frontend was deployed for commit `d646b33`.
+* **Backend**:
+  * Service name: `tadweerah-api`
+  * Latest accepted backend revision from product state: `tadweerah-api-00078-vzg`
+  * Backend deploy for commit `d646b33` is still pending.
+  * Backend deployment path is not yet safely documented in repo.
+  * Do not run manual `gcloud run deploy` until project ID, region, image build process, and secret binding strategy are confirmed and documented.
+  * Note there is documentation drift if `PROJECT_MAP.md` currently lists an older backend revision such as `00046-pnj`.
+
 | Service | Platform | Config | Notes |
 |---------|---------|--------|-------|
-| API backend | Google Cloud Run | `tadweerah-api` service; latest known revision: `00046-pnj` | 🔍 Verify current revision before any deploy |
-| Frontend | Firebase Hosting | `tadweerah-staging` project; also serves `tadweerah.com` | — |
+| API backend | Google Cloud Run | `tadweerah-api` service | ⚠️ See pending status above |
+| Frontend | Firebase Hosting | `tadweerah-staging` project; also serves `tadweerah.com` | ✅ Deployed via `scripts/deploy-frontend.ps1` |
 | Database | PostgreSQL via `DATABASE_URL` — verify current provider/environment before deployment or DB changes | `DATABASE_URL` env var | 🔍 Confirm provider before schema changes |
 | Auth | Clerk | `CLERK_SECRET_KEY`, `VITE_CLERK_PUBLISHABLE_KEY` | — |
 | Email | Resend | `RESEND_API_KEY` | 🔍 Verify active in Cloud Run env |
