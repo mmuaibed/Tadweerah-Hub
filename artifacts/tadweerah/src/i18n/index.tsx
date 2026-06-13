@@ -376,6 +376,7 @@ const translations: Record<string, Record<Language, string>> = {
   "offer.form.improving": { ar: "جاري التحسين...", en: "Improving..." },
   "offer.form.newPrice": { ar: "السعر الجديد (ر.س/وحدة)", en: "New price (SAR/unit)" },
   "offer.form.mustExceed": { ar: "يجب أن يتجاوز أعلى عرض حالي", en: "Must exceed the current highest offer" },
+  "offer.form.mustExceed.fixed": { ar: "يجب أن يكون إجمالي عرضك الجديد أعلى من العرض الإجمالي الحالي", en: "Your new total offer must be higher than the current total offer" },
 
   "offer.mine.title": { ar: "عرضي الحالي", en: "My Current Offer" },
   "offer.mine.submitted_confirmation": { ar: "تم إرسال عرضك", en: "Your offer has been submitted" },
@@ -738,6 +739,10 @@ const translations: Record<string, Record<Language, string>> = {
     ar: "أنت حالياً أعلى مزايد على هذا الإعلان. يمكنك رفع عرضك إذا رأيت مناسبًا.",
     en: "You are currently the top bidder on this listing. You may raise your offer if you wish.",
   },
+  "offer.warning.already_top.fixed": {
+    ar: "أنت حالياً صاحب أعلى عرض إجمالي لهذا الإعلان. يمكنك تحسين عرضك إذا رأيت ذلك مناسباً.",
+    en: "You currently hold the highest total offer for this listing. You may improve your offer if you wish.",
+  },
 
   // Targeting type (private deal / category-targeted)
   "listing.targeting.label": { ar: "نطاق الإعلان", en: "Listing Access" },
@@ -958,9 +963,17 @@ const translations: Record<string, Record<Language, string>> = {
     ar: "أنت الأعلى مزايدة حالياً",
     en: "You are currently the top bidder",
   },
+  "offer.confirm.alreadyTop.popup.title.fixed": {
+    ar: "أنت صاحب أعلى عرض إجمالي حالياً",
+    en: "You currently hold the highest total offer",
+  },
   "offer.confirm.alreadyTop.popup.desc": {
     ar: "عرضك الحالي هو الأعلى على هذا الإعلان. هل تريد رفع عرضك؟ هذا لن يلغي الصفقة الحالية، لكنه سيزيد من التزامك.",
     en: "Your offer is currently the highest on this listing. Do you want to raise it anyway? This won't cancel anything, but your committed price will increase.",
+  },
+  "offer.confirm.alreadyTop.popup.desc.fixed": {
+    ar: "عرضك الإجمالي هو الأعلى حالياً. هل تريد رفعه لتحسين عرضك؟",
+    en: "Your total offer is currently the highest. Do you want to raise it to improve your offer?",
   },
   "offer.confirm.alreadyTop.popup.confirm": {
     ar: "نعم، أرفع عرضي",

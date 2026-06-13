@@ -572,6 +572,10 @@ function BuyerOfferSection({
 
   const myOffer = offers[0] as ListingOffer | undefined;
   const highestPrice = summary?.highest_price ?? 0;
+  const thresholdPrice =
+    pricingModel === "fixed" && listingQuantity > 0
+      ? highestPrice * listingQuantity
+      : highestPrice;
 
   function mapOfferError(err: unknown): string {
     // The API returns { error: <message>, code: <machine code> }.
@@ -788,16 +792,16 @@ function BuyerOfferSection({
               <div className="px-5 pt-3">
                 <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-4 py-3">
                   <AlertCircle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
-                  <p className="text-xs text-amber-800">{t("offer.warning.already_top")}</p>
+                  <p className="text-xs text-amber-800">{pricingModel === "fixed" ? t("offer.warning.already_top.fixed") : t("offer.warning.already_top")}</p>
                 </div>
               </div>
             )}
             {showImproveForm && (
               <form onSubmit={handleImprove} className="px-5 pb-5 pt-2 space-y-3 border-t border-border">
                 <p className="text-xs text-muted-foreground">
-                  {t("offer.form.mustExceed")}:{" "}
+                  {pricingModel === "fixed" ? t("offer.form.mustExceed.fixed") : t("offer.form.mustExceed")}:{" "}
                   <span className="font-semibold">
-                    {fmtNumber(highestPrice)} {t("listing.sar")}
+                    {fmtNumber(thresholdPrice)} {t("listing.sar")}
                   </span>
                 </p>
 
@@ -813,7 +817,7 @@ function BuyerOfferSection({
                     value={newPrice}
                     onChange={(e) => setNewPrice(e.target.value)}
                     className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                    placeholder={`> ${fmtNumber(highestPrice)}`}
+                    placeholder={`> ${fmtNumber(thresholdPrice)}`}
                   />
                   {newPrice && parseFloat(newPrice) > 0 && (() => {
                     const entered = parseFloat(newPrice);
@@ -871,8 +875,8 @@ function BuyerOfferSection({
       <ConfirmDialog
         open={showSelfImprovePopup}
         onOpenChange={(open) => { if (!open) { setShowSelfImprovePopup(false); setPendingImproveData(null); } }}
-        title={t("offer.confirm.alreadyTop.popup.title")}
-        description={t("offer.confirm.alreadyTop.popup.desc")}
+        title={pricingModel === "fixed" ? t("offer.confirm.alreadyTop.popup.title.fixed") : t("offer.confirm.alreadyTop.popup.title")}
+        description={pricingModel === "fixed" ? t("offer.confirm.alreadyTop.popup.desc.fixed") : t("offer.confirm.alreadyTop.popup.desc")}
         confirmLabel={t("offer.confirm.alreadyTop.popup.confirm")}
         onConfirm={handleConfirmedSelfImprove}
         isPending={isImproving}
@@ -893,11 +897,11 @@ function BuyerOfferSection({
         </span>
       </div>
       <p className="text-xs text-muted-foreground -mt-1">{t("offer.form.intro")}</p>
-      {highestPrice > 0 && (
+      {thresholdPrice > 0 && (
         <p className="text-xs text-muted-foreground">
-          {t("offer.form.mustExceed")}:{" "}
+          {pricingModel === "fixed" ? t("offer.form.mustExceed.fixed") : t("offer.form.mustExceed")}:{" "}
           <span className="font-semibold">
-            {fmtNumber(highestPrice)} {t("listing.sar")}
+            {fmtNumber(thresholdPrice)} {t("listing.sar")}
           </span>
         </p>
       )}
@@ -914,7 +918,7 @@ function BuyerOfferSection({
             value={price}
             onChange={(e) => setPrice(e.target.value)}
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-            placeholder={highestPrice > 0 ? `> ${fmtNumber(highestPrice)}` : "0.000"}
+            placeholder={thresholdPrice > 0 ? `> ${fmtNumber(thresholdPrice)}` : "0.000"}
           />
           {price && parseFloat(price) > 0 && (() => {
             const entered = parseFloat(price);
