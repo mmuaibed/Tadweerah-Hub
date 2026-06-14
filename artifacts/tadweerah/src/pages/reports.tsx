@@ -639,7 +639,10 @@ export function ReportsPage() {
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
                 <SummaryCard
                   icon={FileText}
-                  label={lang === "ar" ? "عدد الشحنات" : "Number of Shipments"}
+                  label={status === "closed"
+                    ? (lang === "ar" ? "عدد الشحنات المغلقة" : "Closed Shipments")
+                    : (lang === "ar" ? "عدد الشحنات المعروضة" : "Displayed Shipments")
+                  }
                   value={String(contractReport.summary.number_of_shipments)}
                   colorClass="bg-blue-100 text-blue-700"
                 />
@@ -724,7 +727,17 @@ export function ReportsPage() {
                                     : row.status.charAt(0).toUpperCase() + row.status.slice(1)}
                                 </span>
                               </Td>
-                              <Td>{row.weight_policy.replace("_final", "").replace("_only", "").replace("dual_", "")}</Td>
+                              <Td>
+                                {lang === "ar"
+                                  ? ({
+                                      source_weight_only: "وزن المصدر",
+                                      destination_weight_only: "وزن الاستلام",
+                                      dual_source_final: "مزدوج — يعتمد وزن المصدر",
+                                      dual_destination_final: "مزدوج — يعتمد وزن الاستلام",
+                                      dual_higher_final: "مزدوج — يعتمد الأعلى",
+                                    } as Record<string, string>)[row.weight_policy] || row.weight_policy
+                                  : row.weight_policy.replace("_final", "").replace("_only", "").replace("dual_", "")}
+                              </Td>
                               <Td mono>{row.source_weight}</Td>
                               <Td mono>{row.destination_weight}</Td>
                               <Td mono>{row.variance}</Td>
