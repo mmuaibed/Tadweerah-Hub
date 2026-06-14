@@ -212,12 +212,15 @@ Example UAT scenario to verify the Al Qaryan `dual_source_final` policy:
 **Report UAT Items:**
 - Reports page default remains marketplace deals.
 - Contracts tab appears and loads correctly via `GET /reports/contract-shipments`.
-- Default status is closed.
+- Contracts tab default visibly shows `مغلقة`.
 - Dispatched/cancelled rows do not appear by default.
 - Date filters act strictly on `closed_at`.
 - Contract ref filter supports visible `TDW-CTR-...`.
 - Company route restricts data strictly to seller/buyer participation. Admin route sees all.
+- Count card label is clear (`عدد الشحنات المغلقة` for closed, `عدد الشحنات المعروضة` for all).
 - Financial totals match closed rows.
+- Weight policy labels show Arabic values, not raw `source/destination/higher`.
+- Export button says `تصدير ملف`.
 - CSV export works and respects filters and includes VAT columns.
 - No invoice/settlement/payment-claim wording appears.
 
@@ -317,7 +320,7 @@ A simple admin-panel "Master Data" tab could expose:
 ### 2. Phase 2-E — Contract Lite Pilot UAT & Al Qaryan Readiness
 - **Priority:** Must do before pilot if Al Qaryan/contract workflow is the target path.
 - **Scope:** Includes Contract Lite audit, Al Qaryan UAT script, weight/final quantity policy confirmation, and contract notification decision.
-- **Status:** Contract Lite notification patch deployed. Contract Lite Shipment Report MVP implemented locally (commit: `894d679`), polished locally (commit: `cbb6859`), pending deploy, pending manual UAT.
+- **Status:** Contract Lite notification patch deployed. Contract Lite Shipment Report MVP implemented (commit: `894d679`), polished (commit: `cbb6859`), final UI clarity patch committed (`3a88e7e`), pending frontend deploy, pending manual UAT.
 
 ### 3. Phase 2-F — Pilot Smoke Test & Demo Readiness
 - **Priority:** Must do before external pilot/demo.

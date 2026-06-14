@@ -346,7 +346,7 @@ As of commit `283270e`, the notification behavior is as follows:
 - `final_value` follows `final_weight` × price.
 
 ### 8.3 Contract Lite Shipment Report (MVP)
-The operational report for Contract Lite Shipments (commit: `894d679`, polished locally in `cbb6859`) has the following rules:
+The operational report for Contract Lite Shipments (commit: `894d679`, polished in `cbb6859`, final UI clarity patch in `3a88e7e`) has the following rules:
 
 **Routes:**
 - `GET /reports/contract-shipments` (Seller/Buyer scoped)
@@ -366,7 +366,10 @@ The operational report for Contract Lite Shipments (commit: `894d679`, polished 
 - It is explicitly an operational report, not an official tax invoice. 
 
 **Terminology & UI Rules:**
-- Arabic status labels and report table/card labels are localized.
+- Shipment status label remains `مغلقة` for closed/finalized shipments. `مكتملة` is not used for shipment rows.
+- Shipment count label changes based on selected status (`عدد الشحنات المغلقة` for closed, `عدد الشحنات المعروضة` for all statuses).
+- Financial totals note remains visible (`يتم احتساب الإجماليات المالية للشحنات المغلقة فقط.`).
+- Weight policy labels are localized in Arabic UI.
 - Export button wording is `تصدير ملف` / `Export File`.
 - Arabic: `تقرير الشحنات للفترة من ... إلى ...` / `تقرير شحنات العقد ...` / `تقرير شحنات العقود ...`
 - English: `Shipment Report for the period from ... to ...` / `Contract Shipment Report ...` / `Contract Shipments Report ...`
