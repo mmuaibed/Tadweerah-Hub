@@ -38,6 +38,7 @@ import { and, eq, gt, gte, inArray, isNotNull, isNull, lt, ne, or, sql } from "d
 import { logger } from "../lib/logger";
 import { logAudit } from "../lib/audit";
 import { notifyDealStageChange } from "../lib/notify";
+import { dealRef } from "../lib/listing-ref";
 
 const MS = {
   active:            31 * 24 * 60 * 60 * 1000,
@@ -125,17 +126,30 @@ export async function expireStaleDeals(): Promise<void> {
       for (const deal of dealsToNotify) {
         const deadline = effectiveDeadline(deal)!;
         const daysLeft = Math.ceil((deadline.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
+        const ref = dealRef(deal.id, deal.created_at?.toISOString());
 
-        void notifyDealStageChange({
-          companyId: deal.producer_company_id,
-          dealId: deal.id,
-          listingId: deal.listing_id,
-          type: "deal_expiry_warning",
-          title_ar: "تنبيه: صفقتك على وشك الانتهاء",
-          title_en: "Warning: Your deal is about to expire",
-          body_ar: `تبقّى ${daysLeft} يوم/أيام قبل انتهاء مدة الصفقة. يمكنك إلغاؤها أو تمديدها (مرة واحدة) إذا لزم الأمر`,
-          body_en: `${daysLeft} day(s) remaining before this deal expires. You can cancel or extend it (once) if needed.`,
-        });
+        void Promise.all([
+          notifyDealStageChange({
+            companyId: deal.producer_company_id,
+            dealId: deal.id,
+            listingId: deal.listing_id,
+            type: "deal_expiry_warning",
+            title_ar: "تنبيه: صفقتك على وشك الانتهاء",
+            title_en: "Warning: Your deal is about to expire",
+            body_ar: `تبقّى ${daysLeft} يوم/أيام قبل انتهاء مدة الصفقة ${ref}. يمكنك إلغاؤها أو تمديدها (مرة واحدة) إذا لزم الأمر`,
+            body_en: `${daysLeft} day(s) remaining before deal ${ref} expires. You can cancel or extend it (once) if needed.`,
+          }),
+          notifyDealStageChange({
+            companyId: deal.buyer_company_id,
+            dealId: deal.id,
+            listingId: deal.listing_id,
+            type: "deal_expiry_warning",
+            title_ar: "تنبيه قرب انتهاء الصفقة",
+            title_en: "Deal expiry approaching",
+            body_ar: `تبقى حوالي ${daysLeft} أيام على انتهاء الصفقة ${ref}. يرجى استكمال الإجراءات المطلوبة قبل انتهاء المهلة.`,
+            body_en: `Approximately ${daysLeft} days remain before deal ${ref} expires. Please complete the required actions before the deadline.`,
+          })
+        ]).catch(err => logger.error({ err, dealId: deal.id }, "[expire-deals] Failed to send expiry warnings"));
       }
     }
 
