@@ -406,6 +406,9 @@ export function AdminPage() {
   const [dealCompleteTarget, setDealCompleteTarget] = useState<string | null>(null);
   const [dealCompleteLoading, setDealCompleteLoading] = useState(false);
 
+  const [dealReopenTarget, setDealReopenTarget] = useState<string | null>(null);
+  const [dealReopenLoading, setDealReopenLoading] = useState(false);
+
   const [paymentResubmitTarget, setPaymentResubmitTarget] = useState<string | null>(null);
 
   useEffect(() => {
@@ -604,6 +607,35 @@ export function AdminPage() {
       alert(e instanceof Error ? e.message : "Error force-completing deal");
     } finally {
       setDealCompleteLoading(false);
+    }
+  }
+
+  async function reopenDeal(id: string, reason: string) {
+    setDealReopenLoading(true);
+    try {
+      const res = await callAdmin(`/deals/${id}/reopen`, {
+        method: "POST",
+        body: JSON.stringify({ reason }),
+      });
+      if (!res.ok) {
+        const errObj = await res.json().catch(() => null);
+        throw new Error(errObj?.message || `HTTP ${res.status}`);
+      }
+      const updated = await res.json();
+
+      // Update local state
+      setDeals((prev) => prev ? prev.map(d => d.deal_id === id ? { ...d, status: updated.status } : d) : prev);
+      if (expandedDealId === id && expandedDealDetails) {
+        setExpandedDealDetails({
+          ...expandedDealDetails,
+          status: updated.status,
+        });
+      }
+      setDealReopenTarget(null);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Error reopening deal");
+    } finally {
+      setDealReopenLoading(false);
     }
   }
 
@@ -1469,8 +1501,7 @@ export function AdminPage() {
                                           <p className="text-muted-foreground text-xs"><span className="text-foreground">{lang === "ar" ? "مرجع الدفع:" : "Payment Ref:"}</span> <span dir="ltr">{expandedDealDetails.payment_reference || "—"}</span></p>
                                           <p className="text-muted-foreground text-xs"><span className="text-foreground">{lang === "ar" ? "إيصال الدفع:" : "Payment Proof:"}</span> {expandedDealDetails.has_payment_proof ? (lang === "ar" ? "مرفق" : "Attached") : (lang === "ar" ? "غير مرفق" : "Not Attached")}</p>
                                           <p className="text-muted-foreground text-xs"><span className="text-foreground">{lang === "ar" ? "تاريخ إرسال الدفع:" : "Submitted At:"}</span> <span dir="ltr">{expandedDealDetails.payment_submitted_at ? fmtDate(expandedDealDetails.payment_submitted_at, lang) : "—"}</span></p>
-                                          
-                                          {!["completed", "cancelled"].includes(expandedDealDetails.status) && (
+                                          {!["completed", "cancelled"].includes(expandedDealDetails.status) ? (
                                             <div className="mt-4 border-t pt-3 space-y-2">
                                               {["active", "payment_submitted"].includes(expandedDealDetails.status) && (
                                                 <Button 
@@ -1503,6 +1534,18 @@ export function AdminPage() {
                                               >
                                                 <CheckCircle2 className="h-4 w-4 me-2" />
                                                 {lang === "ar" ? "إكمال إداري" : "Force Complete"}
+                                              </Button>
+                                            </div>
+                                          ) : (
+                                            <div className="mt-4 border-t pt-3 space-y-2">
+                                              <Button 
+                                                variant="outline" 
+                                                size="sm" 
+                                                className="w-full text-blue-600 border-blue-200 hover:bg-blue-50 hover:text-blue-700 font-medium"
+                                                onClick={() => setDealReopenTarget(d.deal_id)}
+                                              >
+                                                <RefreshCw className="h-4 w-4 me-2" />
+                                                {lang === "ar" ? "إعادة فتح الصفقة" : "Reopen Deal"}
                                               </Button>
                                             </div>
                                           )}
@@ -3299,6 +3342,23 @@ export function AdminPage() {
           }
         }}
         isPending={dealCompleteLoading}
+        destructive={false}
+      />
+
+      <AdminConfirmModal
+        open={dealReopenTarget !== null}
+        onOpenChange={(open) => { if (!open) setDealReopenTarget(null); }}
+        title={lang === "ar" ? "تأكيد إعادة فتح الصفقة إداريًا" : "Reopen Deal"}
+        description={lang === "ar" ? "سيتم إعادة الصفقة من حالة نهائية إلى حالة تشغيلية بواسطة الأدمن. استخدم هذا الإجراء فقط إذا تم الإكمال أو الإلغاء بالخطأ." : "This deal will be moved from a terminal state back to its previous operational state by an admin. Use this only if the deal was completed or cancelled by mistake."}
+        reasonLabel={lang === "ar" ? "سبب إعادة فتح الصفقة" : "Reason for reopening"}
+        confirmLabel={lang === "ar" ? "نعم، أعد فتح الصفقة" : "Reopen Deal"}
+        requireReason={true}
+        onConfirm={(reason) => {
+          if (dealReopenTarget) {
+            void reopenDeal(dealReopenTarget, reason);
+          }
+        }}
+        isPending={dealReopenLoading}
         destructive={false}
       />
 

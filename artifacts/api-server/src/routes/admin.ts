@@ -583,6 +583,127 @@ router.post("/admin/deals/:id/force-complete", requireAdminKey, async (req, res)
   res.json(updated);
 });
 
+/**
+ * POST /admin/deals/:id/reopen
+ * Admin reopens a terminal deal (completed or cancelled) back to its previous operational state.
+ * Validates against audit_log to determine target status.
+ * Body: { reason: string }
+ */
+router.post("/admin/deals/:id/reopen", requireAdminKey, async (req, res) => {
+  const id = String(req.params["id"]);
+  const { reason } = (req.body ?? {}) as { reason?: string };
+
+  if (!reason || !reason.trim()) {
+    res.status(400).json({ error: "ValidationError", message: "Reason is required to reopen a deal" });
+    return;
+  }
+
+  const [deal] = await db
+    .select()
+    .from(dealsTable)
+    .where(eq(dealsTable.id, id))
+    .limit(1);
+
+  if (!deal) {
+    res.status(404).json({ error: "NotFound", message: "Deal not found" });
+    return;
+  }
+
+  if (!["completed", "cancelled"].includes(deal.status)) {
+    res.status(409).json({
+      error: "NotTerminal",
+      message: `Deal cannot be reopened from status '${deal.status}'. Only terminal deals can be reopened.`,
+    });
+    return;
+  }
+
+  // Find the last relevant audit log where status_before is available
+  const auditLogs = await db
+    .select()
+    .from(auditLogTable)
+    .where(and(eq(auditLogTable.entity_id, id), isNotNull(auditLogTable.status_before)))
+    .orderBy(desc(auditLogTable.created_at))
+    .limit(1);
+
+  const lastAudit = auditLogs[0];
+  if (!lastAudit || !lastAudit.status_before) {
+    res.status(409).json({
+      error: "NoPreviousStatus",
+      message: "Could not safely determine previous status from audit log.",
+    });
+    return;
+  }
+
+  const targetStatus = lastAudit.status_before as typeof deal.status;
+  
+  const allowedRestoreStatuses = ["active", "payment_submitted", "payment_confirmed", "dispatched", "receipt_pending"];
+  if (!allowedRestoreStatuses.includes(targetStatus)) {
+    res.status(409).json({
+      error: "InvalidTargetStatus",
+      message: `Cannot safely restore deal to status '${targetStatus}'.`,
+    });
+    return;
+  }
+
+  const now = new Date();
+  const extendedUntil = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // +7 days
+
+  const updates: Record<string, any> = {
+    status: targetStatus,
+    cancelled_at: null,
+    received_at: null,
+    extended_until: extendedUntil,
+    pre_expiry_notified: false,
+    updated_at: now,
+  };
+
+  const [updated] = await db
+    .update(dealsTable)
+    .set(updates)
+    .where(eq(dealsTable.id, id))
+    .returning();
+
+  void logAudit({
+    action: "deal.reopened_by_admin",
+    entityType: "deal",
+    entityId: id,
+    actorRole: "admin",
+    statusBefore: deal.status,
+    statusAfter: targetStatus,
+    details: { 
+      reason: reason.trim(),
+      grace_period: "extended_until set to +7 days"
+    },
+    severity: "warn",
+  });
+
+  const ref = dealRef(deal.id, deal.created_at?.toISOString());
+  void Promise.all([
+    notifyDealStageChange({
+      companyId: deal.producer_company_id,
+      dealId: deal.id,
+      listingId: deal.listing_id,
+      type: "admin_deal_reopened",
+      title_ar: "تمت إعادة فتح الصفقة إداريًا",
+      title_en: "Deal administratively reopened",
+      body_ar: `تمت إعادة فتح الصفقة ${ref} بواسطة الأدمن. السبب: ${reason.trim()}`,
+      body_en: `The deal ${ref} has been reopened by an admin. Reason: ${reason.trim()}`,
+    }),
+    notifyDealStageChange({
+      companyId: deal.buyer_company_id,
+      dealId: deal.id,
+      listingId: deal.listing_id,
+      type: "admin_deal_reopened",
+      title_ar: "تمت إعادة فتح الصفقة إداريًا",
+      title_en: "Deal administratively reopened",
+      body_ar: `تمت إعادة فتح الصفقة ${ref} بواسطة الأدمن. السبب: ${reason.trim()}`,
+      body_en: `The deal ${ref} has been reopened by an admin. Reason: ${reason.trim()}`,
+    })
+  ]).catch(err => req.log.error({ err, dealId: deal.id }, "Failed to send admin deal reopen notifications"));
+
+  res.json(updated);
+});
+
 /* -------------------------------------------------------------------------- */
 /* Contracts (admin)                                                           */
 /* -------------------------------------------------------------------------- */
