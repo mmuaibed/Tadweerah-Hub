@@ -508,7 +508,7 @@ router.post(
       let sourceWeightVal: string | null = shipment.source_weight;
       if (source_weight != null) {
         const n = Number(source_weight);
-        if (isNaN(n) || n < 0) throw new HttpError(400, "ValidationError", "source_weight must be a non-negative number");
+        if (isNaN(n) || n <= 0) throw new HttpError(400, "ValidationError", "source_weight must be strictly greater than zero");
         sourceWeightVal = String(n);
       } else if (sourceWeightRequired && shipment.source_weight == null) {
         throw new HttpError(
@@ -604,7 +604,7 @@ router.post(
       let destWeightVal: string | null = shipment.destination_weight;
       if (destination_weight != null) {
         const n = Number(destination_weight);
-        if (isNaN(n) || n < 0) throw new HttpError(400, "ValidationError", "destination_weight must be a non-negative number");
+        if (isNaN(n) || n <= 0) throw new HttpError(400, "ValidationError", "destination_weight must be strictly greater than zero");
         destWeightVal = String(n);
       } else if (destWeightRequired && shipment.destination_weight == null) {
         throw new HttpError(
@@ -695,11 +695,11 @@ router.post(
         shipment.destination_weight,
       );
 
-      if (finalWeight == null) {
+      if (finalWeight == null || finalWeight <= 0) {
         throw new HttpError(
           409,
           "MissingWeightData",
-          `Cannot compute final_weight: required weights are missing for policy ${contract.weight_policy}`,
+          `Cannot compute a valid final_weight greater than zero for policy ${contract.weight_policy}`,
         );
       }
 

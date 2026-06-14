@@ -787,7 +787,7 @@ function ShipmentMiniTimeline({
   const baseSteps: MiniStep[] = [
     {
       id: "planned",
-      label: ar ? "مخطط" : "Planned",
+      label: ar ? "مخططة" : "Planned",
       party: bothLbl,
       isDone: true,
       isCurrent: shipment.status === "planned",
@@ -795,7 +795,7 @@ function ShipmentMiniTimeline({
     },
     {
       id: "dispatched",
-      label: ar ? "مُشحون" : "Dispatched",
+      label: ar ? "مرسلة" : "Dispatched",
       party: sellerLbl,
       isDone: shipment.dispatched_at != null,
       isCurrent: shipment.status === "planned",
@@ -808,7 +808,7 @@ function ShipmentMiniTimeline({
     },
     {
       id: "received",
-      label: ar ? "مُستلم" : "Received",
+      label: ar ? "مستلمة" : "Received",
       party: buyerLbl,
       isDone: shipment.received_at != null,
       isCurrent: shipment.status === "dispatched",
@@ -822,8 +822,8 @@ function ShipmentMiniTimeline({
   ];
 
   const lastStep: MiniStep = isCancelled
-    ? { id: "cancelled", label: ar ? "ملغى" : "Cancelled", party: "", isDone: true, isCancelled: true, isCurrent: false, ts: shipment.cancelled_at }
-    : { id: "closed",    label: ar ? "مغلق"  : "Closed",    party: bothLbl, isDone: shipment.closed_at != null, isCurrent: shipment.status === "received", ts: shipment.closed_at };
+    ? { id: "cancelled", label: ar ? "ملغاة" : "Cancelled", party: "", isDone: true, isCancelled: true, isCurrent: false, ts: shipment.cancelled_at }
+    : { id: "closed",    label: ar ? "مغلقة"  : "Closed",    party: bothLbl, isDone: shipment.closed_at != null, isCurrent: shipment.status === "received", ts: shipment.closed_at };
 
   const steps: MiniStep[] = [...baseSteps, lastStep];
 
@@ -949,6 +949,17 @@ function ShipmentRow({
 
   async function handleInlineActionSubmit() {
     try {
+      const w = Number(weight);
+      if (isNaN(w) || w <= 0) {
+        toast({
+          variant: "destructive",
+          title: lang === "ar" ? "وزن غير صالح" : "Invalid Weight",
+          description: inlineAction === "dispatch"
+            ? (lang === "ar" ? "يرجى إدخال وزن صحيح أكبر من صفر قبل إرسال الشحنة." : "Please enter a valid weight greater than zero before dispatching the shipment.")
+            : (lang === "ar" ? "يرجى إدخال وزن صحيح أكبر من صفر قبل تأكيد الاستلام." : "Please enter a valid weight greater than zero before confirming receipt.")
+        });
+        return;
+      }
       setLoading(true);
       let evidenceUrl: string | undefined;
 
@@ -1000,6 +1011,32 @@ function ShipmentRow({
   const canClose = shipment.status === "received";
   const canCancel = ["planned", "dispatched"].includes(shipment.status);
 
+  function handleCloseClick() {
+    const src = Number(shipment.source_weight);
+    const dst = Number(shipment.destination_weight);
+    const pol = contract.weight_policy;
+
+    let valid = true;
+    if (["source_weight_only", "dual_source_final", "dual_higher_final"].includes(pol) && (isNaN(src) || src <= 0)) valid = false;
+    if (["destination_weight_only", "dual_destination_final", "dual_higher_final"].includes(pol) && (isNaN(dst) || dst <= 0)) valid = false;
+
+    if (!valid) {
+      const msg = ["source_weight_only", "dual_source_final"].includes(pol)
+        ? (lang === "ar" ? "لا يمكن اعتماد الشحنة نهائياً قبل إدخال وزن المصدر الصحيح." : "Cannot finalize shipment before entering a valid source weight.")
+        : ["destination_weight_only", "dual_destination_final"].includes(pol)
+          ? (lang === "ar" ? "لا يمكن اعتماد الشحنة نهائياً قبل إدخال وزن الاستلام الصحيح." : "Cannot finalize shipment before entering a valid destination weight.")
+          : (lang === "ar" ? "لا يمكن اعتماد الشحنة نهائياً قبل اكتمال الأوزان المطلوبة حسب سياسة العقد." : "Cannot finalize shipment before entering all required weights.");
+
+      toast({
+        variant: "destructive",
+        title: lang === "ar" ? "إجراء غير مكتمل" : "Incomplete Action",
+        description: msg,
+      });
+      return;
+    }
+    setConfirmAction("close");
+  }
+
   return (
     <>
       {confirmAction && (
@@ -1007,7 +1044,11 @@ function ShipmentRow({
           open={!!confirmAction}
           onOpenChange={(o) => { if (!o) setConfirmAction(null); }}
           title={t(`shipment.action.${confirmAction}`)}
-          description={`${t(`shipment.action.${confirmAction}`)}?`}
+          description={
+            confirmAction === "close" && contract.weight_policy === "dual_source_final"
+              ? (lang === "ar" ? "سيتم اعتماد وزن المصدر كأساس للقيمة النهائية حسب سياسة العقد." : "The source weight will be used as the final value basis according to the contract policy.")
+              : `${t(`shipment.action.${confirmAction}`)}?`
+          }
           confirmLabel={t(`shipment.action.${confirmAction}`)}
           onConfirm={() => doAction(confirmAction)}
           isPending={loading}
@@ -1101,7 +1142,7 @@ function ShipmentRow({
               </Button>
             )}
             {canClose && (
-              <Button size="sm" variant="outline" className="h-7 text-xs border-gray-400 hover:border-green-400" onClick={() => setConfirmAction("close")}>
+              <Button size="sm" variant="outline" className="h-7 text-xs border-gray-400 hover:border-green-400" onClick={handleCloseClick}>
                 {lang === "ar" ? "اعتماد الشحنة نهائياً" : "Finalize Shipment"}
               </Button>
             )}
