@@ -31,6 +31,8 @@ import {
 } from "@workspace/db";
 import { buildCsv } from "../lib/csv";
 import { logAudit } from "../lib/audit";
+import { notifyDealStageChange } from "../lib/notify";
+import { dealRef } from "../lib/listing-ref";
 
 const router = Router();
 
@@ -408,6 +410,30 @@ router.post("/admin/deals/:id/cancel", requireAdminKey, async (req, res) => {
     severity: "warn",
   });
 
+  const ref = dealRef(deal.id, deal.created_at?.toISOString());
+  void Promise.all([
+    notifyDealStageChange({
+      companyId: deal.producer_company_id,
+      dealId: deal.id,
+      listingId: deal.listing_id,
+      type: "admin_deal_cancelled",
+      title_ar: "تم إلغاء الصفقة إداريًا",
+      title_en: "Deal administratively cancelled",
+      body_ar: `تم إلغاء الصفقة ${ref} بواسطة الأدمن.${reason ? " السبب: " + reason : ""}`,
+      body_en: `The deal ${ref} has been cancelled by an admin.${reason ? " Reason: " + reason : ""}`,
+    }),
+    notifyDealStageChange({
+      companyId: deal.buyer_company_id,
+      dealId: deal.id,
+      listingId: deal.listing_id,
+      type: "admin_deal_cancelled",
+      title_ar: "تم إلغاء الصفقة إداريًا",
+      title_en: "Deal administratively cancelled",
+      body_ar: `تم إلغاء الصفقة ${ref} بواسطة الأدمن.${reason ? " السبب: " + reason : ""}`,
+      body_en: `The deal ${ref} has been cancelled by an admin.${reason ? " Reason: " + reason : ""}`,
+    })
+  ]).catch(err => req.log.error({ err, dealId: deal.id }, "Failed to send admin deal cancel notifications"));
+
   res.json(updated);
 });
 
@@ -462,8 +488,17 @@ router.patch("/admin/deals/:id/request-payment-resubmission", requireAdminKey, a
     statusAfter: "active",
   });
 
-  // We skip formal Resend email here for brevity, but we log the intent.
-  // The frontend will show it as 'active' again, prompting the user.
+  const ref = dealRef(deal.id, deal.created_at?.toISOString());
+  void notifyDealStageChange({
+    companyId: deal.buyer_company_id,
+    dealId: deal.id,
+    listingId: deal.listing_id,
+    type: "admin_payment_resubmit",
+    title_ar: "مطلوب إعادة تقديم إثبات الدفع",
+    title_en: "Payment proof resubmission required",
+    body_ar: `طلب الأدمن إعادة تقديم إثبات الدفع للصفقة ${ref}. يرجى تقديم الإثبات الصحيح لمتابعة الصفقة.`,
+    body_en: `An admin has requested resubmission of payment proof for deal ${ref}. Please submit the correct proof to continue the deal.`,
+  }).catch(err => req.log.error({ err, dealId: deal.id }, "Failed to send payment resubmit notification"));
 
   res.json(updated);
 });
@@ -520,6 +555,30 @@ router.post("/admin/deals/:id/force-complete", requireAdminKey, async (req, res)
     details: { reason: reason ?? null },
     severity: "warn",
   });
+
+  const ref = dealRef(deal.id, deal.created_at?.toISOString());
+  void Promise.all([
+    notifyDealStageChange({
+      companyId: deal.producer_company_id,
+      dealId: deal.id,
+      listingId: deal.listing_id,
+      type: "admin_deal_completed",
+      title_ar: "تم إكمال الصفقة إداريًا",
+      title_en: "Deal administratively completed",
+      body_ar: `تم نقل الصفقة ${ref} إلى حالة مكتملة بواسطة الأدمن بعد التحقق من اكتمال العملية.${reason ? " السبب: " + reason : ""}`,
+      body_en: `The deal ${ref} has been marked as completed by an admin.${reason ? " Reason: " + reason : ""}`,
+    }),
+    notifyDealStageChange({
+      companyId: deal.buyer_company_id,
+      dealId: deal.id,
+      listingId: deal.listing_id,
+      type: "admin_deal_completed",
+      title_ar: "تم إكمال الصفقة إداريًا",
+      title_en: "Deal administratively completed",
+      body_ar: `تم نقل الصفقة ${ref} إلى حالة مكتملة بواسطة الأدمن بعد التحقق من اكتمال العملية.${reason ? " السبب: " + reason : ""}`,
+      body_en: `The deal ${ref} has been marked as completed by an admin.${reason ? " Reason: " + reason : ""}`,
+    })
+  ]).catch(err => req.log.error({ err, dealId: deal.id }, "Failed to send admin deal complete notifications"));
 
   res.json(updated);
 });
