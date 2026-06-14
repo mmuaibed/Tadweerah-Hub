@@ -66,6 +66,42 @@ interface ReportResponse {
   count: number;
 }
 
+
+interface ContractReportSummary {
+  total_final_weight: string;
+  total_value_excluding_vat: string;
+  total_vat_amount: string;
+  grand_total_including_vat: string;
+  number_of_shipments: number;
+}
+
+interface ContractShipmentRow {
+  contract_ref: string;
+  shipment_ref: string;
+  status: string;
+  closed_at: string | null;
+  my_role?: string;
+  seller_name: string | null;
+  buyer_name: string | null;
+  material: string;
+  unit: string;
+  weight_policy: string;
+  source_weight: string;
+  destination_weight: string;
+  variance: string;
+  final_weight: string;
+  price_per_unit: string;
+  value_excluding_vat: string;
+  vat_amount: string;
+  total_including_vat: string;
+}
+
+interface ContractReportResponse {
+  summary: ContractReportSummary;
+  rows: ContractShipmentRow[];
+  count: number;
+}
+
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 
 const ALL_STATUSES = [
@@ -104,6 +140,9 @@ export function ReportsPage() {
   const { getToken } = useAuth();
   const dir = lang === "ar" ? "rtl" : "ltr";
 
+  /* ── Tab State ── */
+  const [tab, setTab] = useState<"deals" | "contracts">("deals");
+
   /* Filters */
   const [role, setRole] = useState<"all" | "seller" | "buyer">("all");
   const [dateFrom, setDateFrom] = useState("");
@@ -116,6 +155,16 @@ export function ReportsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+
+
+  /* Contract Filters */
+  const [contractId, setContractId] = useState("");
+
+  /* Contract Data state */
+  const [contractReport, setContractReport] = useState<ContractReportResponse | null>(null);
+  const [contractLoading, setContractLoading] = useState(false);
+  const [contractError, setContractError] = useState<string | null>(null);
+  const [contractExporting, setContractExporting] = useState(false);
 
   /* ── Build query string ── */
   function buildParams(extraFormat?: string): string {
@@ -173,6 +222,61 @@ export function ReportsPage() {
     }
   }
 
+  /* ── Build query string for contracts ── */
+  function buildContractParams(extraFormat?: string): string {
+    const p = new URLSearchParams();
+    if (dateFrom) p.set("date_from", dateFrom);
+    if (dateTo) p.set("date_to", dateTo);
+    if (status) p.set("status", status);
+    if (contractId) p.set("contract_id", contractId);
+    if (extraFormat) p.set("format", extraFormat);
+    return p.toString();
+  }
+
+  /* ── Load contract report ── */
+  async function loadContractReport() {
+    setContractLoading(true);
+    setContractError(null);
+    try {
+      const token = await getToken();
+      const res = await fetch(`/api/reports/contract-shipments?${buildContractParams()}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = (await res.json()) as ContractReportResponse;
+      setContractReport(data);
+    } catch (e) {
+      setContractError(e instanceof Error ? e.message : t("admin.error.generic"));
+    } finally {
+      setContractLoading(false);
+    }
+  }
+
+  /* ── Export CSV for contracts ── */
+  async function exportContractCsv() {
+    setContractExporting(true);
+    try {
+      const token = await getToken();
+      const res = await fetch(`/api/reports/contract-shipments?${buildContractParams("csv")}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `contract-shipments-report-${dateFrom || "all"}-${dateTo || "all"}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      /* silent */
+    } finally {
+      setContractExporting(false);
+    }
+  }
+
   const summary = report?.summary;
   const rows = report?.rows ?? [];
 
@@ -181,23 +285,63 @@ export function ReportsPage() {
       title={t("reports.deals.title")}
       subtitle={t("reports.deals.subtitle")}
       actions={
-        report && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => void exportCsv()}
-            disabled={exporting}
-          >
-            {exporting
-              ? <><Loader2 className="h-4 w-4 me-2 animate-spin" />{t("reports.action.exporting")}</>
-              : <><Download className="h-4 w-4 me-2" />{t("reports.action.export_csv")}</>
-            }
-          </Button>
+        tab === "deals" ? (
+          report && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void exportCsv()}
+              disabled={exporting}
+            >
+              {exporting
+                ? <><Loader2 className="h-4 w-4 me-2 animate-spin" />{t("reports.action.exporting")}</>
+                : <><Download className="h-4 w-4 me-2" />{t("reports.action.export_csv")}</>
+              }
+            </Button>
+          )
+        ) : (
+          contractReport && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void exportContractCsv()}
+              disabled={contractExporting}
+            >
+              {contractExporting
+                ? <><Loader2 className="h-4 w-4 me-2 animate-spin" />{t("reports.action.exporting")}</>
+                : <><Download className="h-4 w-4 me-2" />{t("reports.action.export_csv")}</>
+              }
+            </Button>
+          )
         )
       }
     >
       <div className="space-y-5" dir={dir}>
 
+        {/* ── Top Level Tabs ── */}
+        <div className="flex gap-1 border-b border-border">
+          {(["deals", "contracts"] as const).map((tName) => (
+            <button
+              key={tName}
+              onClick={() => {
+                setTab(tName);
+                setStatus("");
+                setDateFrom("");
+                setDateTo("");
+              }}
+              className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                tab === tName
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {tName === "deals" ? (lang === "ar" ? "الصفقات" : "Marketplace Deals") : (lang === "ar" ? "العقود" : "Contracts")}
+            </button>
+          ))}
+        </div>
+
+        {tab === "deals" ? (
+          <>
         {/* ── Role tabs ── */}
         <div className="flex gap-1 border-b border-border">
           {(["all", "seller", "buyer"] as const).map((r) => (
@@ -407,8 +551,197 @@ export function ReportsPage() {
             )}
           </div>
         )}
+
+          </>
+        ) : (
+          <>
+            {/* ── Contracts Tab Content ── */}
+            <div className="mb-2">
+              <h2 className="text-lg font-bold text-foreground">
+                {contractId
+                  ? (lang === "ar" ? `تقرير شحنات العقد للفترة من ${dateFrom || "..."} إلى ${dateTo || "..."}` : `Contract Shipment Report for the period from ${dateFrom || "..."} to ${dateTo || "..."}`)
+                  : (lang === "ar" ? `تقرير شحنات العقود للفترة من ${dateFrom || "..."} إلى ${dateTo || "..."}` : `Contract Shipments Report for the period from ${dateFrom || "..."} to ${dateTo || "..."}`)
+                }
+              </h2>
+            </div>
+            {/* ── Filters ── */}
+            <div className="rounded-xl border border-border bg-card p-4 flex flex-wrap gap-3 items-end">
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-foreground">{t("reports.filter.date_from")}</label>
+                <Input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="h-9 w-36 text-sm"
+                  dir="ltr"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-foreground">{t("reports.filter.date_to")}</label>
+                <Input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="h-9 w-36 text-sm"
+                  dir="ltr"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-foreground">{t("reports.filter.status")}</label>
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                  className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                >
+                  <option value="">{t("reports.filter.all_statuses")}</option>
+                  {["planned", "dispatched", "received", "closed", "cancelled"].map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-foreground">
+                  {lang === "ar" ? "رقم العقد" : "Contract Ref"}
+                </label>
+                <Input
+                  type="text"
+                  value={contractId}
+                  onChange={(e) => setContractId(e.target.value)}
+                  className="h-9 w-36 text-sm"
+                  placeholder="TDW-CTR-..."
+                  dir="ltr"
+                />
+              </div>
+              <Button onClick={() => void loadContractReport()} disabled={contractLoading}>
+                {contractLoading
+                  ? <><Loader2 className="h-4 w-4 me-2 animate-spin" />{t("reports.loading")}</>
+                  : <><RefreshCw className="h-4 w-4 me-2" />{t("reports.action.load")}</>
+                }
+              </Button>
+            </div>
+
+            {/* ── Error ── */}
+            {contractError && (
+              <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                <AlertCircle className="h-4 w-4 shrink-0" />{contractError}
+              </div>
+            )}
+
+            {/* ── Summary cards ── */}
+            {contractReport?.summary && (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                <SummaryCard
+                  icon={FileText}
+                  label="Number of Shipments"
+                  value={String(contractReport.summary.number_of_shipments)}
+                  colorClass="bg-blue-100 text-blue-700"
+                />
+                <SummaryCard
+                  icon={TrendingUp}
+                  label="Total Final Weight"
+                  value={contractReport.summary.total_final_weight}
+                  colorClass="bg-indigo-100 text-indigo-700"
+                />
+                <SummaryCard
+                  icon={BarChart3}
+                  label="Value Excl. VAT"
+                  value={fmtSAR(contractReport.summary.total_value_excluding_vat, lang)}
+                  colorClass="bg-primary/10 text-primary"
+                />
+                <SummaryCard
+                  icon={Banknote}
+                  label="VAT Amount"
+                  value={fmtSAR(contractReport.summary.total_vat_amount, lang)}
+                  colorClass="bg-orange-100 text-orange-700"
+                />
+                <SummaryCard
+                  icon={CheckCircle2}
+                  label="Total Incl. VAT"
+                  value={fmtSAR(contractReport.summary.grand_total_including_vat, lang)}
+                  colorClass="bg-green-100 text-green-700"
+                />
+              </div>
+            )}
+
+            {/* ── Table ── */}
+            {contractReport !== null && (
+              <div className="rounded-xl border border-border bg-card overflow-hidden">
+                <div className="px-4 py-3 border-b border-border flex items-center justify-between gap-2">
+                  <p className="text-sm font-semibold text-foreground">
+                    {contractReport.rows.length} {lang === "ar" ? "شحنة" : "shipments"}
+                  </p>
+                </div>
+
+                {contractReport.rows.length === 0 ? (
+                  <div className="px-4 py-10 text-center text-sm text-muted-foreground">
+                    {t("reports.empty")}
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-border bg-muted/30">
+                          <Th>Closed Date</Th>
+                          <Th>Contract Ref</Th>
+                          <Th>Shipment Ref</Th>
+                          <Th>Seller</Th>
+                          <Th>Buyer</Th>
+                          <Th>Material</Th>
+                          <Th>Status</Th>
+                          <Th>Policy</Th>
+                          <Th>Source Wt</Th>
+                          <Th>Dest Wt</Th>
+                          <Th>Variance</Th>
+                          <Th>Final Wt</Th>
+                          <Th>Price</Th>
+                          <Th>Value (Excl)</Th>
+                          <Th>VAT</Th>
+                          <Th>Total (Incl)</Th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {contractReport.rows.map((row, i) => {
+                          const statusStyle = DEAL_STATUS_STYLE[row.status] ?? "bg-gray-100 text-gray-600";
+                          return (
+                            <tr key={i} className="hover:bg-muted/20 transition-colors">
+                              <Td mono>{row.closed_at ? fmtDate(row.closed_at, lang) : "—"}</Td>
+                              <Td mono>{row.contract_ref}</Td>
+                              <Td mono>{row.shipment_ref}</Td>
+                              <Td>{row.seller_name ?? "—"}</Td>
+                              <Td>{row.buyer_name ?? "—"}</Td>
+                              <Td>{row.material}</Td>
+                              <Td>
+                                <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${statusStyle}`}>
+                                  {row.status}
+                                </span>
+                              </Td>
+                              <Td>{row.weight_policy.replace("_final", "").replace("_only", "").replace("dual_", "")}</Td>
+                              <Td mono>{row.source_weight}</Td>
+                              <Td mono>{row.destination_weight}</Td>
+                              <Td mono>{row.variance}</Td>
+                              <Td mono bold><span className="text-primary">{row.final_weight}</span></Td>
+                              <Td mono>{row.price_per_unit}</Td>
+                              <Td mono><span className="text-foreground/80">{fmtSAR(row.value_excluding_vat, lang)}</span></Td>
+                              <Td mono dim><span className="text-[11px]">{fmtSAR(row.vat_amount, lang)}</span></Td>
+                              <Td mono bold>
+                                <span className="text-green-800 bg-green-100/50 px-2 py-1 rounded text-sm">
+                                  {fmtSAR(row.total_including_vat, lang)}
+                                </span>
+                              </Td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        )}
       </div>
     </AppLayout>
+
   );
 }
 

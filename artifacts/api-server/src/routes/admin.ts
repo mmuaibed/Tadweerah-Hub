@@ -124,7 +124,7 @@ router.get("/admin/stats", requireAdminKey, async (req, res) => {
   const [{ totalOffers }] = await db.select({ totalOffers: count() }).from(listingOffersTable);
   const [{ totalDeals }] = await db.select({ totalDeals: count() }).from(dealsTable);
   const [{ totalTRs }] = await db.select({ totalTRs: count() }).from(transportRequestsTable);
-  
+
   const statusCounts = await db
     .select({ status: companiesTable.license_status, c: count() })
     .from(companiesTable)
@@ -635,7 +635,7 @@ router.post("/admin/deals/:id/reopen", requireAdminKey, async (req, res) => {
   }
 
   const targetStatus = lastAudit.status_before as typeof deal.status;
-  
+
   const allowedRestoreStatuses = ["active", "payment_submitted", "payment_confirmed", "dispatched", "receipt_pending"];
   if (!allowedRestoreStatuses.includes(targetStatus)) {
     res.status(409).json({
@@ -670,7 +670,7 @@ router.post("/admin/deals/:id/reopen", requireAdminKey, async (req, res) => {
     actorRole: "admin",
     statusBefore: deal.status,
     statusAfter: targetStatus,
-    details: { 
+    details: {
       reason: reason.trim(),
       grace_period: "extended_until set to +7 days"
     },
@@ -1790,6 +1790,173 @@ router.get("/admin/overdue-operations", requireAdminKey, async (req, res) => {
     shipments: formattedShipments,
     contracts: formattedContracts,
   });
+});
+
+/* ── GET /admin/reports/contract-shipments ──────────────────────────────── */
+
+const CONTRACT_CSV_HEADERS = [
+  "Closed Date",
+  "Contract Ref",
+  "Shipment Ref",
+  "Seller",
+  "Buyer",
+  "Material",
+  "Unit",
+  "Weight Policy",
+  "Source Weight",
+  "Destination Weight",
+  "Weight Variance",
+  "Final Weight",
+  "Unit Price (Excl VAT)",
+  "Value (Excl VAT)",
+  "VAT Amount (15%)",
+  "Total (Incl VAT)",
+  "Status"
+];
+
+const VAT_RATE = 0.15;
+
+router.get("/admin/reports/contract-shipments", requireAdminKey, async (req, res) => {
+  const dateFromRaw = typeof req.query.date_from === "string" ? req.query.date_from : null;
+  const dateToRaw = typeof req.query.date_to === "string" ? req.query.date_to : null;
+  const contractId = typeof req.query.contract_id === "string" && req.query.contract_id ? req.query.contract_id : null;
+  const statusFilter = typeof req.query.status === "string" && req.query.status ? req.query.status : null;
+  const format = typeof req.query.format === "string" ? req.query.format : "json";
+
+  const limit = Math.min(Number(req.query.limit) || 1000, 5000);
+  const offset = Number(req.query.offset) || 0;
+
+  const dateFrom = dateFromRaw ? new Date(dateFromRaw + "T00:00:00.000Z") : null;
+  const dateTo = dateToRaw ? new Date(dateToRaw + "T23:59:59.999Z") : null;
+
+  /* ── Build WHERE conditions ── */
+  const conditions = [];
+
+  if (contractId) {
+    if (contractId.toUpperCase().startsWith("TDW-CTR-")) {
+      conditions.push(eq(contractsTable.reference, contractId.toUpperCase()));
+    } else {
+      conditions.push(eq(contractShipmentsTable.contract_id, contractId));
+    }
+  }
+  if (statusFilter) conditions.push(eq(contractShipmentsTable.status, statusFilter as any));
+  if (dateFrom) conditions.push(gte(contractShipmentsTable.closed_at, dateFrom));
+  if (dateTo) conditions.push(lte(contractShipmentsTable.closed_at, dateTo));
+
+  const where = conditions.length > 0 ? and(...conditions) : undefined;
+
+  const rows = await db
+    .select({
+      shipment_id: contractShipmentsTable.id,
+      shipment_ref: contractShipmentsTable.reference,
+      status: contractShipmentsTable.status,
+      closed_at: contractShipmentsTable.closed_at,
+      source_weight: contractShipmentsTable.source_weight,
+      destination_weight: contractShipmentsTable.destination_weight,
+      final_weight: contractShipmentsTable.final_weight,
+      final_value: contractShipmentsTable.final_value,
+
+      contract_id: contractsTable.id,
+      contract_ref: contractsTable.reference,
+      weight_policy: contractsTable.weight_policy,
+
+      material_label: contractMaterialsTable.material_label,
+      unit_label: contractMaterialsTable.unit_label,
+      price_per_unit: contractMaterialsTable.price_per_unit,
+
+      seller_name: sql<string | null>`seller.name`,
+      buyer_name: sql<string | null>`buyer.name`,
+    })
+    .from(contractShipmentsTable)
+    .innerJoin(contractsTable, eq(contractsTable.id, contractShipmentsTable.contract_id))
+    .innerJoin(contractMaterialsTable, eq(contractMaterialsTable.id, contractShipmentsTable.material_line_id))
+    .leftJoin(sql`companies seller`, sql`seller.id = ${contractsTable.seller_company_id}`)
+    .leftJoin(sql`companies buyer`, sql`buyer.id = ${contractsTable.buyer_company_id}`)
+    .where(where)
+    .orderBy(desc(contractShipmentsTable.closed_at), desc(contractShipmentsTable.created_at))
+    .limit(format === "csv" ? 5000 : limit)
+    .offset(format === "csv" ? 0 : offset);
+
+  let total_final_weight = 0;
+  let total_value_excluding_vat = 0;
+
+  const serialized = rows.map((r) => {
+    const sw = r.source_weight ? Number(r.source_weight) : 0;
+    const dw = r.destination_weight ? Number(r.destination_weight) : 0;
+    const fw = r.final_weight ? Number(r.final_weight) : 0;
+    const fv = r.final_value ? Number(r.final_value) : 0;
+
+    const variance = Math.abs(sw - dw);
+    const vat_amount = fv * VAT_RATE;
+    const total_including_vat = fv + vat_amount;
+
+    total_final_weight += fw;
+    total_value_excluding_vat += fv;
+
+    return {
+      contract_ref: r.contract_ref,
+      shipment_ref: r.shipment_ref,
+      status: r.status,
+      closed_at: r.closed_at ? r.closed_at.toISOString() : null,
+      seller_name: r.seller_name,
+      buyer_name: r.buyer_name,
+      material: r.material_label,
+      unit: r.unit_label,
+      weight_policy: r.weight_policy,
+      source_weight: sw.toFixed(3),
+      destination_weight: dw.toFixed(3),
+      variance: variance.toFixed(3),
+      final_weight: fw.toFixed(3),
+      price_per_unit: Number(r.price_per_unit).toFixed(3),
+      value_excluding_vat: fv.toFixed(3),
+      vat_amount: vat_amount.toFixed(3),
+      total_including_vat: total_including_vat.toFixed(3),
+    };
+  });
+
+  const summary = {
+    total_final_weight: total_final_weight.toFixed(3),
+    total_value_excluding_vat: total_value_excluding_vat.toFixed(3),
+    total_vat_amount: (total_value_excluding_vat * VAT_RATE).toFixed(3),
+    grand_total_including_vat: (total_value_excluding_vat * (1 + VAT_RATE)).toFixed(3),
+    number_of_shipments: serialized.length
+  };
+
+  if (format === "csv") {
+    const csvRows = serialized.map((r) => [
+      r.closed_at ? new Date(r.closed_at).toLocaleDateString("en-GB") : "",
+      r.contract_ref,
+      r.shipment_ref,
+      r.seller_name || "",
+      r.buyer_name || "",
+      r.material,
+      r.unit,
+      r.weight_policy,
+      r.source_weight,
+      r.destination_weight,
+      r.variance,
+      r.final_weight,
+      r.price_per_unit,
+      r.value_excluding_vat,
+      r.vat_amount,
+      r.total_including_vat,
+      r.status
+    ]);
+
+    const csv = buildCsv(CONTRACT_CSV_HEADERS, csvRows);
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+
+    const df = dateFromRaw || "all";
+    const dt = dateToRaw || "all";
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="admin-contract-shipments-report-${df}-${dt}.csv"`
+    );
+    res.send(csv);
+    return;
+  }
+
+  res.json({ summary, rows: serialized, count: serialized.length });
 });
 
 export default router;
