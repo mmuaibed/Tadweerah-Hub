@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
 import { useAuth } from "@clerk/react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -1175,6 +1175,24 @@ function ShipmentsSection({
   const [showAdd, setShowAdd] = useState(false);
   const [addForm, setAddForm] = useState({ materialLineId: "", plannedAt: "", notes: "" });
   const [adding, setAdding] = useState(false);
+  const [pendingScrollId, setPendingScrollId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (pendingScrollId && shipments.some((s) => s.id === pendingScrollId)) {
+      setTimeout(() => {
+        const el = document.getElementById(`shipment-${pendingScrollId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          const inner = el.firstElementChild;
+          if (inner) {
+            inner.classList.add("ring-2", "ring-primary", "bg-primary/5", "transition-all", "duration-1000");
+            setTimeout(() => inner.classList.remove("ring-2", "ring-primary", "bg-primary/5"), 2500);
+          }
+        }
+      }, 50);
+      setPendingScrollId(null);
+    }
+  }, [shipments, pendingScrollId]);
 
   const canAddShipments = contract.status === "active";
 
@@ -1201,19 +1219,8 @@ function ShipmentsSection({
       const newShipment = await res.json() as ContractShipment;
       setAddForm({ materialLineId: "", plannedAt: "", notes: "" });
       setShowAdd(false);
+      setPendingScrollId(newShipment.id);
       onRefresh();
-
-      setTimeout(() => {
-        const el = document.getElementById(`shipment-${newShipment.id}`);
-        if (el) {
-          el.scrollIntoView({ behavior: "smooth", block: "center" });
-          const inner = el.firstElementChild;
-          if (inner) {
-            inner.classList.add("ring-2", "ring-primary", "bg-primary/5", "transition-all", "duration-1000");
-            setTimeout(() => inner.classList.remove("ring-2", "ring-primary", "bg-primary/5"), 2500);
-          }
-        }
-      }, 300);
     } catch (e) {
       toast({ title: t("error.generic"), description: e instanceof Error ? e.message : undefined, variant: "destructive" });
     } finally {
