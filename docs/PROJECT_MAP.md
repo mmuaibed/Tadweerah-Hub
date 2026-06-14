@@ -465,7 +465,7 @@ VITE_API_URL                   # backend API base URL
 - Current docs-only phase.
 
 ### 2. Phase 2-E — Contract Lite Pilot UAT & Al Qaryan Readiness
-- **Status:** Started. First controlled backend patch (`283270e fix(notifications): reduce contract shipment emails`) committed locally, deployed to staging (`tadweerah-api-00085-rg9`). Contract Lite Shipment Report MVP implemented locally (commit: `894d679 feat(reports): add contract shipment period report`), pending deploy, pending manual UAT. No frontend lifecycle or weight-policy changes made yet.
+- **Status:** Started. First controlled backend patch (`283270e fix(notifications): reduce contract shipment emails`) committed locally, deployed to staging (`tadweerah-api-00085-rg9`). Contract Lite Shipment Report MVP implemented locally (commit: `894d679 feat(reports): add contract shipment period report`), polished locally (commit: `cbb6859 fix(reports): polish contract shipment report`), pending deploy, pending manual UAT. No frontend lifecycle or weight-policy changes made yet.
 - **Scope:** Must do before pilot if Al Qaryan/contract workflow is the target path. Includes Contract Lite audit, Al Qaryan UAT script, weight/final quantity policy confirmation, and contract notification decision.
 
 ### 3. Phase 2-F — Pilot Smoke Test & Demo Readiness

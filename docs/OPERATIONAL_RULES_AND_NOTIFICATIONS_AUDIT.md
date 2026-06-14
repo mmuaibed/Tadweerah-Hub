@@ -346,26 +346,32 @@ As of commit `283270e`, the notification behavior is as follows:
 - `final_value` follows `final_weight` × price.
 
 ### 8.3 Contract Lite Shipment Report (MVP)
-The operational report for Contract Lite Shipments (commit: `894d679`) has the following rules:
+The operational report for Contract Lite Shipments (commit: `894d679`, polished locally in `cbb6859`) has the following rules:
 
 **Routes:**
 - `GET /reports/contract-shipments` (Seller/Buyer scoped)
 - `GET /admin/reports/contract-shipments` (Admin scoped)
 
-**Filters:**
+**Filters & Defaults:**
+- Contracts report defaults to `closed` shipments.
+- Dispatched/cancelled rows do not appear by default. Users can manually select other statuses if needed.
 - Date filters (`date_from`, `date_to`) act strictly on the `closed_at` timestamp.
 - Contract filter accepts visible `TDW-CTR-...` references and internal UUIDs.
 
 **VAT & Financial Rules:**
+- Financial totals are calculated for closed shipments only, regardless of status filters.
 - `final_value` represents the Value Excluding VAT.
 - VAT Amount (15%) is dynamically calculated for report display.
 - Total Including VAT is dynamically calculated.
 - It is explicitly an operational report, not an official tax invoice. 
 
-**Terminology Rules:**
+**Terminology & UI Rules:**
+- Arabic status labels and report table/card labels are localized.
+- Export button wording is `تصدير ملف` / `Export File`.
 - Arabic: `تقرير الشحنات للفترة من ... إلى ...` / `تقرير شحنات العقد ...` / `تقرير شحنات العقود ...`
 - English: `Shipment Report for the period from ... to ...` / `Contract Shipment Report ...` / `Contract Shipments Report ...`
 - Banned terminology: Invoice, Settlement, Payment Claim.
+- CSV remains the current export format. No PDF/XLSX dependency added. True Excel export and PDF/print layout are deferred enhancements.
 
 ### 8.4 dYY Current State Machine
 | Transition | Who | Conditions | Notification |
