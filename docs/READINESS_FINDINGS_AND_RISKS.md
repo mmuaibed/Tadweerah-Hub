@@ -66,7 +66,7 @@ The final steps to achieve full pilot launch readiness involve:
 
 ### M4 — Contract Lite Notifications
 **Severity: 🟡 Medium | Phase: Phase 2-E**
-- **Current:** Contract Lite notification architecture patched (`283270e`); pending backend deploy and UAT verification.
+- **Current:** Contract Lite notification architecture patched (`283270e`) and deployed to staging (`tadweerah-api-00085-rg9`); pending manual Contract Lite UAT.
   - Contract notification documentation aligned.
   - Contract completed notification added.
   - Shipment email noise mitigated.
@@ -196,6 +196,12 @@ Example UAT scenario to verify the Al Qaryan `dual_source_final` policy:
 3. `policy` = `dual_source_final`
 4. **Expected `final_weight`** = 10.5
 5. **Expected `final_value`** = price_per_ton × 10.5
+
+**UAT must verify:**
+- Selected policy is visible before counterparty confirmation.
+- Source and destination weights are visible.
+- `final_weight` follows selected policy.
+- `final_value` follows `final_weight` × price.
 
 **Screenshots to capture:**
 - Contract policy selected.

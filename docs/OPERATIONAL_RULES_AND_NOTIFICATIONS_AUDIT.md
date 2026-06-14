@@ -337,7 +337,13 @@ As of commit `283270e`, the notification behavior is as follows:
 - Destination/receiver weight is captured for audit/variance visibility.
 - *Why:* Al Qaryan is the strategic supplier/recycler, and their source dispatch scale should align with their operational records. Tadweerah still captures destination variance for trust and review.
 
-*Note: This is a founder/product decision for pilot confirmation. UAT must explicitly verify final_weight and final_value behavior.*
+*Note: Contract Lite financial calculation is governed by the selected weight policy inside the contract. This does not need to be separately negotiated with Al Qaryan if the selected policy is visible and accepted as part of contract confirmation. Founder/product can still choose a different policy during contract creation, but UAT scenario should use `dual_source_final`.*
+
+**UAT must verify:**
+- Selected policy is visible before counterparty confirmation.
+- Source and destination weights are visible.
+- `final_weight` follows selected policy.
+- `final_value` follows `final_weight` × price.
 
 ### 8.3 🟢 Current State Machine
 | Transition | Who | Conditions | Notification |

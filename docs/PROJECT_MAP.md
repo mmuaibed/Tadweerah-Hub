@@ -416,7 +416,7 @@ Event occurs (route handler or hourly job)
   * Frontend was deployed for commit `7422819`.
 * **Backend**:
   * Service name: `tadweerah-api`
-  * Latest accepted backend revision from live staging baseline: `tadweerah-api-00084-bnw`
+  * Latest accepted backend revision from live staging baseline: `tadweerah-api-00085-rg9`
   * Backend deploy for Phase 2-C is complete.
   * Backend deployment path: `gcloud run deploy tadweerah-api --project=tadweerah-staging --region=europe-west1 --source=.`
 
@@ -456,7 +456,7 @@ VITE_API_URL                   # backend API base URL
 ## 11. Known Gaps & Remaining Phase Roadmap
 
 > **Live Staging Baseline:**
-> - **Backend:** `tadweerah-api-00084-bnw`
+> - **Backend:** `tadweerah-api-00085-rg9`
 > - **Frontend:** Firebase Hosting staging
 > - **Closure commit:** `0ea3e63 docs: close phase 2c pilot readiness`
 > - **Phase 2-C:** ✅ Completed
@@ -465,7 +465,7 @@ VITE_API_URL                   # backend API base URL
 - Current docs-only phase.
 
 ### 2. Phase 2-E — Contract Lite Pilot UAT & Al Qaryan Readiness
-- **Status:** Started. First controlled backend patch (`283270e fix(notifications): reduce contract shipment emails`) committed locally, pending backend deploy and UAT. No frontend or lifecycle/weight-policy changes made.
+- **Status:** Started. First controlled backend patch (`283270e fix(notifications): reduce contract shipment emails`) committed locally, deployed to staging (`tadweerah-api-00085-rg9`), pending manual Contract Lite UAT. No frontend or lifecycle/weight-policy changes made.
 - **Scope:** Must do before pilot if Al Qaryan/contract workflow is the target path. Includes Contract Lite audit, Al Qaryan UAT script, weight/final quantity policy confirmation, and contract notification decision.
 
 ### 3. Phase 2-F — Pilot Smoke Test & Demo Readiness
@@ -491,7 +491,7 @@ VITE_API_URL                   # backend API base URL
 | Area | Issue | Priority / Phase |
 |------|-------|------------------|
 | Transport quote | "Select" is label-only; ops may misunderstand | Low (Polish later) |
-| Contract Lite notifications | Patched in `283270e`; pending deploy and UAT | Resolved locally |
+| Contract Lite notifications | Deployed in `tadweerah-api-00085-rg9`; pending UAT | Resolved |
 | `sendDealCompletionEmail` | Defined but not wired | Medium (Phase 2-F) |
 | Master data UI | Need UI for capability CRUD | Medium (Phase 3-A) |
 | Timer durations | Hard-coded; should be configurable | Low (Phase 3-B) |
