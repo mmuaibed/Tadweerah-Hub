@@ -216,8 +216,9 @@ active → payment_submitted → payment_confirmed → dispatched
 ### Admin Overrides (`routes/admin.ts`)
 | Endpoint | Allowed from | Notes |
 |----------|-------------|-------|
-| `POST /admin/deals/:id/cancel` | active, payment_submitted, payment_confirmed | ❌ Cannot cancel dispatched or receipt_pending |
+| `POST /admin/deals/:id/cancel` | Any non-terminal status | Cancel deal directly |
 | `POST /admin/deals/:id/force-complete` | Any non-terminal status | Sets `received_at` if unset; audit log severity=warn |
+| `POST /admin/deals/:id/reopen` | completed, cancelled | Restores to previous non-terminal status; resets `pre_expiry_notified` |
 | `PATCH /admin/deals/:id/request-payment-resubmission` | active, payment_submitted | Resets to active; clears all payment fields |
 | `PATCH /admin/companies/:id/unblock-offers` | — | Clears `offer_submission_blocked`; resets `receipt_failures_count` |
 | `GET /admin/shipments`<br>`POST /admin/shipments/:id/cancel`<br>`POST /admin/shipments/:id/restore` | — | Returns all contract shipments with metadata for admin panel |
@@ -411,16 +412,16 @@ Event occurs (route handler or hourly job)
   * Firebase Hosting target: `tadweerah-staging`
   * Official helper: `scripts/deploy-frontend.ps1`
   * The script builds `@workspace/tadweerah` and deploys Firebase Hosting.
-  * Frontend was deployed for commit `e5722e7`.
+  * Frontend was deployed for commit `7422819`.
 * **Backend**:
   * Service name: `tadweerah-api`
-  * Latest accepted backend revision from product state: `tadweerah-api-00082-lc2`
-  * Backend deploy for Phase 2-B is complete.
+  * Latest accepted backend revision from live staging baseline: `tadweerah-api-00084-bnw`
+  * Backend deploy for Phase 2-C is complete.
   * Backend deployment path: `gcloud run deploy tadweerah-api --project=tadweerah-staging --region=europe-west1 --source=.`
 
 | Service | Platform | Config | Notes |
 |---------|---------|--------|-------|
-| API backend | Google Cloud Run | `tadweerah-api` service | ⚠️ See pending status above |
+| API backend | Google Cloud Run | `tadweerah-api` service | ✅ Deployed |
 | Frontend | Firebase Hosting | `tadweerah-staging` project; also serves `tadweerah.com` | ✅ Deployed via `scripts/deploy-frontend.ps1` |
 | Database | PostgreSQL via `DATABASE_URL` — verify current provider/environment before deployment or DB changes | `DATABASE_URL` env var | 🔍 Confirm provider before schema changes |
 | Auth | Clerk | `CLERK_SECRET_KEY`, `VITE_CLERK_PUBLISHABLE_KEY` | — |
@@ -459,11 +460,11 @@ See `READINESS_FINDINGS_AND_RISKS.md` for full risk classification, scoring, and
 |---|------|------------------|---------------|----------|
 | 1 | Deal receipt flow | ✅ Resolved in Phase 2-A. | — | — |
 | 2 | Receipt_pending auto-complete | ✅ Resolved in Phase 2-A. | — | — |
-| 3 | Buyer not warned before deal expires | ⚠️ One `notifyDealStageChange` call needed | 🚫 Yes | 🔴 High |
-| 4 | No notification sent after admin override | ⚠️ Parties unaware of override | 🚫 Yes | 🔴 High |
-| 5 | Admin panel has no `force-complete` deal button | ⚠️ `cancel` exists, but `force-complete` missing from UI | 🖥️ Frontend only | 🔴 High (demo risk) |
+| 3 | Buyer not warned before deal expires | ✅ Reused `deal_expiry_warning` notification | — | — |
+| 4 | No notification sent after admin override | ✅ Added for cancel, force-complete, reopen, payment resubmit | — | — |
+| 5 | Admin panel has no `force-complete` deal button | ✅ Added UI with mandatory reason modal | — | — |
 | 6 | Transport quote "select" is label-only | ⚠️ Ops may misunderstand | 🚫 Yes (if fixed) | 🟡 Medium |
-| 7 | Admin cannot cancel dispatched deals directly | ⚠️ Workaround: `force-complete` | 🚫 Yes (if expanded) | 🟡 Medium |
+| 7 | Admin cannot cancel dispatched deals directly | ✅ Resolved via `force-complete`, `cancel`, and `reopen` overhaul | — | — |
 | 8 | Contract Lite | ✅ Flow, notifications, and reports implemented | — | — |
 | 9 | `sendDealCompletionEmail` defined but not wired | ⚠️ Rich completion email never sent | 🚫 Yes (to wire) | 🟡 Medium |
 | 10 | Master data UI | ⚠️ Need UI for capability CRUD | 🚫 Yes | 🟡 Medium |

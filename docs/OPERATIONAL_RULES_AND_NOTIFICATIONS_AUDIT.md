@@ -108,17 +108,13 @@ dispatched (no buyer confirmation within 48h)
 | Party | Receives warning? | Risk |
 |-------|-----------------|------|
 | Producer | ✅ Yes | — |
-| Buyer | ❌ No | 🔴 High — buyer unaware deal may expire |
+| Buyer | ✅ Yes (Fixed in Phase 2-C) | — |
 
 ### 3.3 🎯 Target Behavior
-Both buyer and producer receive the 3-day pre-expiry warning.
+Both buyer and producer receive the 3-day pre-expiry warning. (✅ Implemented)
 
 ### 3.4 ⚠️ Risk Classification
-Classified **HIGH** because:
-- If deal expires, buyer loses money already submitted for payment
-- Buyer has no warning this is coming
-- Fix is trivial (one `notifyDealStageChange` call for buyer_company_id)
-- 🚫 Requires backend deploy to `jobs/expire-deals.ts`
+✅ **Resolved in Phase 2-C.** The `expire-deals.ts` job now alerts both the buyer and producer.
 
 ### 3.5 Admin Control Needed?
 🎯 Target: Admin should be able to view deals within 3 days of expiry without
@@ -220,7 +216,7 @@ Full audit log created. 🔍 Verify this endpoint is accessible from the admin U
 | Offer accepted | `offer_accepted` | Buyer | ✅ Yes | No | No | No | ✅ Keep as-is |
 | Offer rejected | `offer_rejected` | Buyer | ✅ Yes | No | No | No | ✅ Keep as-is |
 | Private deal invitation | `private_deal_invitation` | Target buyer | ✅ Yes | No | No | No | ✅ Keep as-is |
-| Deal expiry warning | `deal_expiry_warning` | **Producer only** | ✅ Yes | 🎯 Needs admin view | 🎯 Should be configurable | 🔴 YES — precedes expiry | 🔴 Fix to include buyer; add admin "expiring soon" view |
+| Deal expiry warning | `deal_expiry_warning` | **Producer + Buyer** | ✅ Yes | 🎯 Needs admin view | 🎯 Should be configurable | 🔴 YES — precedes expiry | ✅ Fixed in Phase 2-C |
 | Deal expired | `deal_expired` | Producer + Buyer | ✅ Yes | 🎯 Admin should review | 🎯 Should be configurable | 🔴 YES — terminal state | ⚠️ Monitor; avoid auto-expiry if possible |
 | Deal auto-completed (48h) | `deal_completed` | Producer + Buyer | ✅ Yes | 🎯 Admin should review | 🎯 Should be configurable | 🔴 YES — terminal state | 🔴 Change to escalation, not auto-complete |
 | Buyer receipt confirmed | `deal_receipt_pending` | Producer | ✅ Yes | No | No | 🟡 Yes — starts 48h timer | 🎯 Should become → immediate completion |
@@ -228,6 +224,9 @@ Full audit log created. 🔍 Verify this endpoint is accessible from the admin U
 | Payment submitted | (deal stage) | Producer | ✅ Yes | No | No | No | ✅ Keep as-is |
 | Payment confirmed | (deal stage) | Buyer | ✅ Yes | No | No | No | ✅ Keep as-is |
 | Deal cancelled (producer) | `deal_cancelled` | Buyer | ✅ Yes | No | No | 🔴 Yes — terminal | ✅ Keep as-is |
+| Deal cancelled (admin) | `deal_cancelled` | Producer + Buyer | ✅ Yes | — | — | 🔴 Yes — terminal | ✅ Added in Phase 2-C |
+| Deal force-completed (admin) | `deal_completed` | Producer + Buyer | ✅ Yes | — | — | 🔴 Yes — terminal | ✅ Added in Phase 2-C |
+| Deal reopened (admin) | `deal_reopened` | Producer + Buyer | ✅ Yes | — | — | 🔴 Yes — operational | ✅ Added in Phase 2-C |
 | Deal extended | `deal_extended` | Buyer | ✅ Yes | No | No | No | ✅ Keep as-is |
 | New listing published | `new_listing_published` | Eligible buyers | ✅ Yes | No | No | No | ✅ Keep as-is |
 

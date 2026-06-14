@@ -215,16 +215,19 @@ This is a post-pilot improvement, but must be acknowledged before launch.
 > - Frontend deployed after listing-card fix: `e5722e7`.
 > 
 > **Phase 2-C — Final Pilot Readiness & UAT Hardening:**
-> Reports/admin dashboards/contracts are implemented; Phase 2-C should verify them through final UAT and close any minor gaps.
-> Candidate scope for Phase 2-C:
-> 1. Final end-to-end UAT across seller, receiver/factory/buyer, transporter, and admin.
-> 2. Verify reports across admin dashboard, deals/auction, contracts, shipment/transport, and company/user reports.
-> 3. Verify contract flow and contract notifications end-to-end.
-> 4. Add or verify Admin force-complete UI if it is still missing.
-> 5. Add admin override notifications if still missing.
-> 6. Add buyer 3-day expiry warning if still missing.
-> 7. Clean remaining UI/i18n polish issues.
-> 8. Produce final pilot readiness report.
+> **Status:** ✅ Completed
+> Admin override hardening successfully deployed and verified via UAT.
+> - **Deployed Backend Revision:** `tadweerah-api-00084-bnw`
+> - **Deployed Frontend Commit:** `7422819`
+>
+> **Implemented Admin Controls:**
+> - Force-complete deal (reason required, notifies parties)
+> - Admin cancel deal (reason required, notifies parties)
+> - Reopen terminal deals (from completed/cancelled, clears `received_at` / `cancelled_at`, notifies parties)
+> - Payment proof resubmission request
+> - Buyer 3-day expiry warning
+>
+> **UAT Outcome:** PASSED (Force-Complete, Reopen, Cancel verified manually).
 >
 > **Deferred beyond Phase 2-C:**
 > 1. Category-targeted listing notifications.
@@ -232,6 +235,10 @@ This is a post-pilot improvement, but must be acknowledged before launch.
 > 3. Dedicated notification type for seller publish confirmation.
 > 4. Parent-level frontend taxonomy optimization.
 > 5. Broader branded email template redesign.
+> 6. Buyer expiry warning live verification (deferred unless safe DB strategy is approved).
+> 7. i18n dictionary refactor for admin action strings.
+> 8. Checklist wording `متطلبات متبقية` improvement to `متطلبات تشغيلية متبقية`.
+> 9. Shipment cancel modal destructive styling improvement.
 
 ---
 
