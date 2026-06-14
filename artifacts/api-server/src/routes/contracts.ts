@@ -21,6 +21,7 @@ import {
   notifyContractSubmitted,
   notifyContractConfirmed,
   notifyContractCancelled,
+  notifyContractCompleted,
 } from "../lib/notify";
 
 const router: IRouter = Router();
@@ -645,6 +646,14 @@ router.post(
         statusBefore: "active",
         statusAfter: "completed",
       });
+
+      const counterpartyId =
+        updated.seller_company_id === company.id
+          ? updated.buyer_company_id
+          : updated.seller_company_id;
+      void notifyContractCompleted(counterpartyId, contract.id, updated.reference).catch((err) =>
+        console.error("[notify] Contract complete error:", err),
+      );
 
       const { seller, buyer } = await fetchPartyNames(
         updated.seller_company_id,
