@@ -750,6 +750,12 @@ router.post(
         console.error("[notify] Shipment finalize error:", err),
       );
 
+      if (company.id !== counterpartyId) {
+        void notifyContractShipmentFinalized(company.id, shipment.id, contract.id, shipment.reference || contract.reference).catch((err) =>
+          console.error("[notify] Shipment finalize error:", err),
+        );
+      }
+
       res.json(serializeShipment(updated));
     } catch (err) {
       next(err);

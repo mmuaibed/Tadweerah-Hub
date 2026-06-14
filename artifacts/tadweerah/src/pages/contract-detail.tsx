@@ -1198,9 +1198,22 @@ function ShipmentsSection({
         const err = (await res.json().catch(() => ({}))) as { message?: string };
         throw new Error(err.message ?? `HTTP ${res.status}`);
       }
+      const newShipment = await res.json() as ContractShipment;
       setAddForm({ materialLineId: "", plannedAt: "", notes: "" });
       setShowAdd(false);
       onRefresh();
+
+      setTimeout(() => {
+        const el = document.getElementById(`shipment-${newShipment.id}`);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          const inner = el.firstElementChild;
+          if (inner) {
+            inner.classList.add("ring-2", "ring-primary", "bg-primary/5", "transition-all", "duration-1000");
+            setTimeout(() => inner.classList.remove("ring-2", "ring-primary", "bg-primary/5"), 2500);
+          }
+        }
+      }, 300);
     } catch (e) {
       toast({ title: t("error.generic"), description: e instanceof Error ? e.message : undefined, variant: "destructive" });
     } finally {
@@ -1235,13 +1248,14 @@ function ShipmentsSection({
         )}
 
         {shipments.map((s) => (
-          <ShipmentRow
-            key={s.id}
-            shipment={s}
-            materials={contract.materials}
-            contract={contract}
-            onRefresh={onRefresh}
-          />
+          <div key={s.id} id={`shipment-${s.id}`}>
+            <ShipmentRow
+              shipment={s}
+              materials={contract.materials}
+              contract={contract}
+              onRefresh={onRefresh}
+            />
+          </div>
         ))}
 
         {/* Add shipment form */}
