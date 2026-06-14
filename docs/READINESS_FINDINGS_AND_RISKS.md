@@ -320,7 +320,7 @@ A simple admin-panel "Master Data" tab could expose:
 ### 2. Phase 2-E — Contract Lite Pilot UAT & Al Qaryan Readiness
 - **Priority:** Must do before pilot if Al Qaryan/contract workflow is the target path.
 - **Scope:** Includes Contract Lite audit, Al Qaryan UAT script, weight/final quantity policy confirmation, and contract notification decision.
-- **Status:** Contract Lite notification patch deployed. Contract Lite Shipment Report MVP implemented, deployed to backend (`tadweerah-api-00087-87m`) and frontend staging (`https://tadweerah-staging.web.app`), manual UAT passed, ready for pilot use.
+- **Status:** Contract Lite notification patch deployed. Contract Lite Shipment Report MVP implemented. Contract Detail operational UX (zero-weight block, notification handoffs, scroll/focus, list filters) implemented. Deployed to backend (`tadweerah-api-00089-jnt`) and frontend staging (`https://tadweerah-staging.web.app`), manual UAT passed, ready for pilot use.
 
 ### 3. Phase 2-F — Pilot Smoke Test & Demo Readiness
 - **Priority:** Must do before external pilot/demo.

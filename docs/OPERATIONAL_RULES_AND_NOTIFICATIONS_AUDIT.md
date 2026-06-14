@@ -479,3 +479,30 @@ This is a **high operational risk** during pilot logistics coordination.
 - **Hard deletion:** Not supported. `DELETE` HTTP methods have been safely routed to perform soft-deactivations and enforce reference checks.
 - **Visibility:** Deactivated records disappear from public endpoints. Dedicated admin read endpoints expose active and inactive records to admins for governance.
 
+
+## 12. Phase 3 Company Governance Roadmap (Not Implemented)
+
+> **Status:** Documented for future Phase 3 implementation only. The current Phase 2-E / Al Qaryan pilot remains strictly on the owner-only email notification routing model.
+
+### 12.1 Separation of Concepts
+The platform will eventually distinguish between:
+* `مالك حساب الشركة` / `Company Account Owner`
+* `مستلم تنبيهات البريد` / `Email Notification Recipient`
+
+### 12.2 Admin Visibility
+The admin company detail/profile page will eventually show:
+* Current company owner name/email/status
+* Current email notification recipient name/email/status
+* Whether the recipient is the same as the owner or different
+
+### 12.3 Change Email Notification Recipient
+* Platform admin may later change the operational email recipient without transferring ownership.
+* **Scope**: Affects email delivery only. Must not change ownership or permissions.
+* **Recipient**: Should preferably be an existing verified company team member. (External email recipients require a separate governance decision).
+* **Audit**: Must be strictly audit logged.
+* **Notification**: Notify both old and new recipients when changed.
+
+### 12.4 Transfer Company Ownership
+* Platform admin, and possibly later the current owner, may transfer ownership to another verified company team member.
+* **Use Cases**: Owner left the company, owner was assigned incorrectly, customer requests a new official owner.
+* **Rules**: Highly sensitive action. The company must never be left without an owner. Must be strictly audit logged. Notify both old and new owners. Consider requiring confirmation text before applying.
