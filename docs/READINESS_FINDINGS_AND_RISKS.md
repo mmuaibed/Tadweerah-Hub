@@ -64,10 +64,13 @@ The final steps to achieve full pilot launch readiness involve:
 
 ---
 
-### M4 — Contract Lite Has No Notifications
+### M4 — Contract Lite Notifications
 **Severity: 🟡 Medium | Phase: Phase 2-E**
-- **Current:** No contract notifications exist.
-- **Recommended:** Move to Phase 2-E decision/audit. Founder decision required on whether notifications are needed for pilot.
+- **Current:** Contract Lite notification architecture patched (`283270e`); pending backend deploy and UAT verification.
+  - Contract notification documentation aligned.
+  - Contract completed notification added.
+  - Shipment email noise mitigated.
+- **Still Pending:** Final Contract Lite UAT, Al Qaryan weight policy founder confirmation, and Contract UX manual UAT.
 
 ---
 
@@ -184,6 +187,21 @@ The final steps to achieve full pilot launch readiness involve:
 | Admin/report visibility for contract shipments | Can admin see individual shipment weights? |
 | Step-by-step Al Qaryan Contract Lite UAT scenario | No test script exists |
 | What happens when closing a shipment with zero weight | Edge case not verified |
+
+
+### Contract Lite UAT Scenario (Phase 2-E)
+Example UAT scenario to verify the Al Qaryan `dual_source_final` policy:
+1. `source_weight` = 10.5 tons
+2. `destination_weight` = 10.4 tons
+3. `policy` = `dual_source_final`
+4. **Expected `final_weight`** = 10.5
+5. **Expected `final_value`** = price_per_ton × 10.5
+
+**Screenshots to capture:**
+- Contract policy selected.
+- Shipment source/destination weights.
+- `final_weight` and `final_value`.
+- Expected notifications.
 
 ### Phase-CLT Deliverables
 - Exact user steps (seller role, buyer role) for full contract + shipment flow

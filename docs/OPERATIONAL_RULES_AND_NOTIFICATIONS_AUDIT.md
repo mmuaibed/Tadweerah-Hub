@@ -310,9 +310,36 @@ All actions now implement the safeguards (reason, audit, notification).
 
 ## 8. Contract Lite Rules
 
-> ⚠️ See §Contract Lite gap in PROJECT_MAP.md and §Phase-CLT in READINESS_FINDINGS_AND_RISKS.md
+### 8.1 Contract Lite Notification Architecture
+As of commit `283270e`, the notification behavior is as follows:
 
-### 8.1 🟢 Current State Machine
+**Email + in-app:**
+- `contract_submitted`
+- `contract_confirmed`
+- `contract_cancelled`
+- `contract_completed`
+- `contract_shipment_cancelled`
+
+**In-app only, no email:**
+- `contract_shipment_created`
+- `contract_shipment_dispatched`
+- `contract_shipment_received`
+- `contract_shipment_finalized`
+
+**Reasoning:** Normal shipment transitions may happen frequently and should not flood pilot users with emails. In-app notifications preserve operational visibility. Contract-level events and exceptional shipment cancellations remain email-worthy.
+
+### 8.2 Recommended Al Qaryan Pilot Weight Policy
+**Recommended:** `dual_source_final`
+
+**Operational explanation:**
+- Both parties enter weights.
+- Source/Al Qaryan dispatch weight determines the final financial value.
+- Destination/receiver weight is captured for audit/variance visibility.
+- *Why:* Al Qaryan is the strategic supplier/recycler, and their source dispatch scale should align with their operational records. Tadweerah still captures destination variance for trust and review.
+
+*Note: This is a founder/product decision for pilot confirmation. UAT must explicitly verify final_weight and final_value behavior.*
+
+### 8.3 🟢 Current State Machine
 | Transition | Who | Conditions | Notification |
 |------------|-----|-----------|-------------|
 | draft → pending_confirmation | Creator (seller or buyer) | ≥1 material line | ❌ None |

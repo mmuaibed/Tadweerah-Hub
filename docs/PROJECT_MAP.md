@@ -465,8 +465,8 @@ VITE_API_URL                   # backend API base URL
 - Current docs-only phase.
 
 ### 2. Phase 2-E — Contract Lite Pilot UAT & Al Qaryan Readiness
-- Must do before pilot if Al Qaryan/contract workflow is the target path.
-- Includes Contract Lite audit, Al Qaryan UAT script, weight/final quantity policy confirmation, and contract notification decision.
+- **Status:** Started. First controlled backend patch (`283270e fix(notifications): reduce contract shipment emails`) committed locally, pending backend deploy and UAT. No frontend or lifecycle/weight-policy changes made.
+- **Scope:** Must do before pilot if Al Qaryan/contract workflow is the target path. Includes Contract Lite audit, Al Qaryan UAT script, weight/final quantity policy confirmation, and contract notification decision.
 
 ### 3. Phase 2-F — Pilot Smoke Test & Demo Readiness
 - Must do before external pilot/demo.
@@ -491,7 +491,7 @@ VITE_API_URL                   # backend API base URL
 | Area | Issue | Priority / Phase |
 |------|-------|------------------|
 | Transport quote | "Select" is label-only; ops may misunderstand | Low (Polish later) |
-| Contract Lite notifications | Needs decision on pilot behavior | Medium (Phase 2-E) |
+| Contract Lite notifications | Patched in `283270e`; pending deploy and UAT | Resolved locally |
 | `sendDealCompletionEmail` | Defined but not wired | Medium (Phase 2-F) |
 | Master data UI | Need UI for capability CRUD | Medium (Phase 3-A) |
 | Timer durations | Hard-coded; should be configurable | Low (Phase 3-B) |
