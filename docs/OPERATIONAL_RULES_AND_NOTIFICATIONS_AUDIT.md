@@ -114,7 +114,8 @@ dispatched (no buyer confirmation within 48h)
 Both buyer and producer receive the 3-day pre-expiry warning. (✅ Implemented)
 
 ### 3.4 ⚠️ Risk Classification
-✅ **Resolved in Phase 2-C.** The `expire-deals.ts` job now alerts both the buyer and producer.
+✅ **Implemented/deployed in Phase 2-C.** 
+Note: Live verification is deferred unless a safe DB strategy is approved.
 
 ### 3.5 Admin Control Needed?
 🎯 Target: Admin should be able to view deals within 3 days of expiry without
@@ -263,28 +264,24 @@ Event (route or job)
 > - Clear semantic distinction between cancel, force-complete, reopen, and step-back
 
 ### 7.1 Admin Cancel
-| Dimension | Current | Target |
-|-----------|---------|--------|
-| Allowed from | active, payment_submitted, payment_confirmed | Same + guidance on use |
-| Blocked from | dispatched, receipt_pending, expired | See recommended MVP below |
-| Reason field | ✅ Optional body param, logged in audit | 🎯 Should be required |
-| Notification to parties | ❌ None | 🎯 Should notify both parties |
-
-**For dispatched or receipt_pending deals — Recommended MVP (no reckless expand):**
-- Do NOT simply expand cancel permissions
-- Add a "flag as disputed / operational hold" status or admin note field
-- Admin can apply `force-complete` after physical verification
-- If cancellation is truly needed post-dispatch, it must have: mandatory reason, CTO approval, audit log, party notification
-- 🚫 Any change requires backend deploy
+| Dimension | Deployed Behavior |
+|-----------|-------------------|
+| Allowed from | Any non-terminal status |
+| Reason field | ✅ Required |
+| Status change | Changes to `cancelled` |
+| Audit log | ✅ Logged |
+| Notification to parties | ✅ Seller and buyer notified |
+| UAT | ✅ Passed (Phase 2-C) |
 
 ### 7.2 Admin Force Complete
-| Dimension | Current | Target |
-|-----------|---------|--------|
-| Allowed from | Any non-terminal | Same |
-| Audit log | ✅ severity=warn | ✅ Keep |
-| Notification to parties | ❌ None | 🎯 Should notify both |
-| `received_at` set if missing | ✅ Yes | ✅ Keep |
-| Reason required | Optional | 🎯 Should be required |
+| Dimension | Deployed Behavior |
+|-----------|-------------------|
+| Allowed from | Any non-terminal status |
+| Reason field | ✅ Required |
+| Status change | Changes to `completed` |
+| Audit log | ✅ Logged |
+| Notification to parties | ✅ Seller and buyer notified |
+| UAT | ✅ Passed (Phase 2-C) |
 
 ### 7.3 Payment Resubmission
 | Dimension | Current | Target |
@@ -293,17 +290,23 @@ Event (route or job)
 | Fields cleared | payment_reference, payment_proof_url, payment_submitted_at, payment_confirmed_at | ✅ Appropriate |
 | Buyer notification | ❌ None — buyer sees `active` in UI | 🎯 Should send "please resubmit" notification |
 
-### 7.4 Recommended Admin Override Safeguards (all require backend deploy)
-```
-For ANY admin status change:
-  1. reason (string) — required, not optional
-  2. Audit log (already implemented ✅)
-  3. notifyDealStageChange to both parties (missing ⚠️)
-  4. UI confirmation dialog (frontend only, no deploy)
-  5. Display previous + new status in confirmation dialog
-```
+### 7.4 Admin Override Safeguards
+All actions now implement the safeguards (reason, audit, notification).
+
+### 7.5 Admin Reopen Deal
+| Dimension | Deployed Behavior |
+|-----------|-------------------|
+| Route | `POST /admin/deals/:id/reopen` |
+| Allowed from | Terminal deals only (`completed`, `cancelled`) |
+| Status change | Restores validated previous non-terminal status from audit log |
+| Field resets | Clears `cancelled_at`, clears `received_at`, resets `pre_expiry_notified = false` |
+| Field updates | Sets `extended_until = now + 7 days` |
+| Preservation | Preserves payment, transport, and shipment data |
+| Notification to parties | ✅ Seller and buyer notified |
+| UAT | ✅ Passed (Phase 2-C) |
 
 ---
+
 
 ## 8. Contract Lite Rules
 
@@ -378,16 +381,16 @@ This is a **high operational risk** during pilot logistics coordination.
 - [ ] 🔍 Al Qaryan company is onboarded with `license_status = 'approved'`
 - [ ] 🔍 Transport quote "select" behavior understood by ops team (label-only, not assignment)
 - [ ] Decide whether to wire `sendDealCompletionEmail` into the completion flow
-- [ ] 🔍 Test full deal lifecycle in staging with safe test data before live demo
+- [x] Test full deal lifecycle in staging with safe test data before live demo (✅ Passed Phase 2-C UAT)
+- [x] Admin notifications reach parties after override (✅ Passed Phase 2-C UAT)
+- [x] Buyer receipt completion behavior correct after fix (✅ Passed Phase 2-C UAT)
 
 ### Decisions Needed Before Pilot (Founder/CTO)
 - [ ] Accept or fix receipt confirmation flow (immediate complete vs 48h wait)?
-- [ ] Accept or fix auto-complete without admin review?
+- [ ] Accept or change auto-complete without admin review?
 - [ ] Should contracts send notifications during pilot?
 - [ ] Is 72h dispatch window sufficient for Al Qaryan logistics?
 - [ ] Should buyer-blocking require admin review before triggering?
-
-
 
 
 ## Admin Shipment Actions

@@ -21,6 +21,7 @@ Tadweerah-Hub/
 ├── lib/
 │   └── db/                  # Shared Drizzle ORM schema + client (@workspace/db)
 ├── docs/                    # This directory — documentation only
+├── tadweerah-user-guide-source.md # Untracked local reference (not part of committed source of truth yet)
 ├── pnpm-workspace.yaml      # Workspace root (use pnpm.cmd on Windows)
 └── turbo.json               # Turborepo build pipeline
 ```
@@ -452,20 +453,45 @@ VITE_API_URL                   # backend API base URL
 
 ---
 
-## 11. Known Gaps & Next Phase Priorities
+## 11. Known Gaps & Remaining Phase Roadmap
 
-See `READINESS_FINDINGS_AND_RISKS.md` for full risk classification, scoring, and the 6-phase execution plan.
+> **Live Staging Baseline:**
+> - **Backend:** `tadweerah-api-00084-bnw`
+> - **Frontend:** Firebase Hosting staging
+> - **Closure commit:** `0ea3e63 docs: close phase 2c pilot readiness`
+> - **Phase 2-C:** ✅ Completed
 
-| # | Area | Current vs Target | Deploy needed | Priority |
-|---|------|------------------|---------------|----------|
-| 1 | Deal receipt flow | ✅ Resolved in Phase 2-A. | — | — |
-| 2 | Receipt_pending auto-complete | ✅ Resolved in Phase 2-A. | — | — |
-| 3 | Buyer not warned before deal expires | ✅ Reused `deal_expiry_warning` notification | — | — |
-| 4 | No notification sent after admin override | ✅ Added for cancel, force-complete, reopen, payment resubmit | — | — |
-| 5 | Admin panel has no `force-complete` deal button | ✅ Added UI with mandatory reason modal | — | — |
-| 6 | Transport quote "select" is label-only | ⚠️ Ops may misunderstand | 🚫 Yes (if fixed) | 🟡 Medium |
-| 7 | Admin cannot cancel dispatched deals directly | ✅ Resolved via `force-complete`, `cancel`, and `reopen` overhaul | — | — |
-| 8 | Contract Lite | ✅ Flow, notifications, and reports implemented | — | — |
-| 9 | `sendDealCompletionEmail` defined but not wired | ⚠️ Rich completion email never sent | 🚫 Yes (to wire) | 🟡 Medium |
-| 10 | Master data UI | ⚠️ Need UI for capability CRUD | 🚫 Yes | 🟡 Medium |
-| 11 | Timer durations hard-coded | ⚠️ Should be admin-configurable | 🚫 Yes (if changed) | 🟢 Low (post-pilot) |
+### 1. Phase 2-D — Readiness Risk Burn-down & Remaining Roadmap Alignment
+- Current docs-only phase.
+
+### 2. Phase 2-E — Contract Lite Pilot UAT & Al Qaryan Readiness
+- Must do before pilot if Al Qaryan/contract workflow is the target path.
+- Includes Contract Lite audit, Al Qaryan UAT script, weight/final quantity policy confirmation, and contract notification decision.
+
+### 3. Phase 2-F — Pilot Smoke Test & Demo Readiness
+- Must do before external pilot/demo.
+- End-to-end smoke across seller, buyer/receiver, admin, notifications, reports, and operational recovery tools.
+
+### 4. Phase 3-A — Admin Master Data MVP
+- Should do before broader operations if pilot requires frequent taxonomy/unit edits.
+- Can defer if pilot taxonomy is stable.
+
+### 5. Phase 3-B — Post-Pilot Workflow Configurability & Polish
+- Configurable timers, category-targeted notifications, i18n refactor, checklist wording polish, etc.
+
+### Resolved / Closed Items
+- **Deal receipt flow**: ✅ Resolved in Phase 2-A.
+- **Receipt_pending auto-complete**: ✅ Resolved in Phase 2-A.
+- **Buyer not warned before deal expires**: ✅ Resolved in Phase 2-C.
+- **No notification sent after admin override**: ✅ Resolved in Phase 2-C.
+- **Admin panel has no `force-complete` deal button**: ✅ Resolved in Phase 2-C.
+- **Admin cannot cancel dispatched deals directly**: ✅ Resolved via admin override overhaul in Phase 2-C.
+
+### Remaining Active Known Gaps
+| Area | Issue | Priority / Phase |
+|------|-------|------------------|
+| Transport quote | "Select" is label-only; ops may misunderstand | Low (Polish later) |
+| Contract Lite notifications | Needs decision on pilot behavior | Medium (Phase 2-E) |
+| `sendDealCompletionEmail` | Defined but not wired | Medium (Phase 2-F) |
+| Master data UI | Need UI for capability CRUD | Medium (Phase 3-A) |
+| Timer durations | Hard-coded; should be configurable | Low (Phase 3-B) |
