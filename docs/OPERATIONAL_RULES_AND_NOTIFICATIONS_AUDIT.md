@@ -345,7 +345,29 @@ As of commit `283270e`, the notification behavior is as follows:
 - `final_weight` follows selected policy.
 - `final_value` follows `final_weight` × price.
 
-### 8.3 🟢 Current State Machine
+### 8.3 Contract Lite Shipment Report (MVP)
+The operational report for Contract Lite Shipments (commit: `894d679`) has the following rules:
+
+**Routes:**
+- `GET /reports/contract-shipments` (Seller/Buyer scoped)
+- `GET /admin/reports/contract-shipments` (Admin scoped)
+
+**Filters:**
+- Date filters (`date_from`, `date_to`) act strictly on the `closed_at` timestamp.
+- Contract filter accepts visible `TDW-CTR-...` references and internal UUIDs.
+
+**VAT & Financial Rules:**
+- `final_value` represents the Value Excluding VAT.
+- VAT Amount (15%) is dynamically calculated for report display.
+- Total Including VAT is dynamically calculated.
+- It is explicitly an operational report, not an official tax invoice. 
+
+**Terminology Rules:**
+- Arabic: `تقرير الشحنات للفترة من ... إلى ...` / `تقرير شحنات العقد ...` / `تقرير شحنات العقود ...`
+- English: `Shipment Report for the period from ... to ...` / `Contract Shipment Report ...` / `Contract Shipments Report ...`
+- Banned terminology: Invoice, Settlement, Payment Claim.
+
+### 8.4 dYY Current State Machine
 | Transition | Who | Conditions | Notification |
 |------------|-----|-----------|-------------|
 | draft → pending_confirmation | Creator (seller or buyer) | ≥1 material line | ❌ None |

@@ -203,6 +203,21 @@ Example UAT scenario to verify the Al Qaryan `dual_source_final` policy:
 - `final_weight` follows selected policy.
 - `final_value` follows `final_weight` × price.
 
+**Report Terminology & VAT rules (MVP):**
+- Arabic: `تقرير الشحنات للفترة من ... إلى ...` / `تقرير شحنات العقد للفترة من [date] إلى [date]` / `تقرير شحنات العقود للفترة من [date] إلى [date]`
+- English: `Shipment Report for the period from ... to ...` / `Contract Shipment Report for the period from [date] to [date]` / `Contract Shipments Report for the period from [date] to [date]`
+- Must never use "invoice", "settlement", or "payment claim" terminology. It is an operational report.
+- VAT Behavior: `final_value` is treated as value excluding VAT. VAT (15%) and Total (incl VAT) are calculated dynamically for the report only.
+
+**Report UAT Items:**
+- Reports page default remains marketplace deals.
+- Contracts tab appears and loads correctly via `GET /reports/contract-shipments`.
+- Date filters act strictly on `closed_at`.
+- Contract ref filter supports visible `TDW-CTR-...` input.
+- Company route restricts data strictly to seller/buyer participation. Admin route sees all.
+- Summary totals accurately aggregate table rows.
+- CSV export matches applied filters and includes VAT columns without invoice terminology.
+
 **Screenshots to capture:**
 - Contract policy selected.
 - Shipment source/destination weights.
@@ -299,6 +314,7 @@ A simple admin-panel "Master Data" tab could expose:
 ### 2. Phase 2-E — Contract Lite Pilot UAT & Al Qaryan Readiness
 - **Priority:** Must do before pilot if Al Qaryan/contract workflow is the target path.
 - **Scope:** Includes Contract Lite audit, Al Qaryan UAT script, weight/final quantity policy confirmation, and contract notification decision.
+- **Status:** Contract Lite notification patch deployed. Contract Lite Shipment Report MVP implemented locally (commit: `894d679`), pending deploy, pending manual UAT.
 
 ### 3. Phase 2-F — Pilot Smoke Test & Demo Readiness
 - **Priority:** Must do before external pilot/demo.
