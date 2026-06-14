@@ -1228,12 +1228,26 @@ function ShipmentsSection({
     }
   }
 
+  function handleOpenAddForm() {
+    setShowAdd(true);
+    setTimeout(() => {
+      const el = document.getElementById("add-shipment-form");
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        el.classList.add("ring-2", "ring-primary", "transition-all", "duration-1000");
+        setTimeout(() => el.classList.remove("ring-2", "ring-primary"), 2500);
+        const select = el.querySelector("select");
+        if (select) select.focus({ preventScroll: true });
+      }
+    }, 50);
+  }
+
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30">
         <h3 className="text-sm font-semibold text-foreground">{t("contract.shipments.title")}</h3>
         {canAddShipments && (
-          <Button size="sm" variant="outline" onClick={() => setShowAdd(!showAdd)} className="gap-1.5 border-gray-400 hover:border-primary/60 h-7 text-xs">
+          <Button size="sm" variant="outline" onClick={handleOpenAddForm} className="gap-1.5 border-gray-400 hover:border-primary/60 h-7 text-xs">
             <Plus className="h-3 w-3" />
             {t("contract.shipments.add")}
           </Button>
@@ -1267,7 +1281,7 @@ function ShipmentsSection({
 
         {/* Add shipment form */}
         {showAdd && (
-          <form onSubmit={handleAddShipment} className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-3">
+          <form id="add-shipment-form" onSubmit={handleAddShipment} className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-3">
             <p className="text-xs font-semibold text-primary">{t("contract.shipments.add")}</p>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <div className="space-y-1">
