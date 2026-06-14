@@ -403,6 +403,9 @@ export function AdminPage() {
   const [dealCancelTarget, setDealCancelTarget] = useState<string | null>(null);
   const [dealCancelLoading, setDealCancelLoading] = useState(false);
 
+  const [dealCompleteTarget, setDealCompleteTarget] = useState<string | null>(null);
+  const [dealCompleteLoading, setDealCompleteLoading] = useState(false);
+
   const [paymentResubmitTarget, setPaymentResubmitTarget] = useState<string | null>(null);
 
   useEffect(() => {
@@ -576,6 +579,31 @@ export function AdminPage() {
       alert(e instanceof Error ? e.message : "Error");
     } finally {
       setResubmittingId(null);
+    }
+  }
+
+  async function forceCompleteDeal(id: string, reason: string) {
+    setDealCompleteLoading(true);
+    try {
+      const res = await callAdmin(`/deals/${id}/force-complete`, {
+        method: "POST",
+        body: JSON.stringify({ reason }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      // Update local state
+      setDeals((prev) => prev ? prev.map(d => d.deal_id === id ? { ...d, status: "completed" } : d) : prev);
+      if (expandedDealId === id && expandedDealDetails) {
+        setExpandedDealDetails({
+          ...expandedDealDetails,
+          status: "completed",
+        });
+      }
+      setDealCompleteTarget(null);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Error force-completing deal");
+    } finally {
+      setDealCompleteLoading(false);
     }
   }
 
@@ -1442,7 +1470,7 @@ export function AdminPage() {
                                           <p className="text-muted-foreground text-xs"><span className="text-foreground">{lang === "ar" ? "إيصال الدفع:" : "Payment Proof:"}</span> {expandedDealDetails.has_payment_proof ? (lang === "ar" ? "مرفق" : "Attached") : (lang === "ar" ? "غير مرفق" : "Not Attached")}</p>
                                           <p className="text-muted-foreground text-xs"><span className="text-foreground">{lang === "ar" ? "تاريخ إرسال الدفع:" : "Submitted At:"}</span> <span dir="ltr">{expandedDealDetails.payment_submitted_at ? fmtDate(expandedDealDetails.payment_submitted_at, lang) : "—"}</span></p>
                                           
-                                          {["active", "payment_submitted", "payment_confirmed"].includes(expandedDealDetails.status) && (
+                                          {!["completed", "cancelled"].includes(expandedDealDetails.status) && (
                                             <div className="mt-4 border-t pt-3 space-y-2">
                                               {["active", "payment_submitted"].includes(expandedDealDetails.status) && (
                                                 <Button 
@@ -1456,14 +1484,25 @@ export function AdminPage() {
                                                   {lang === "ar" ? "إعادة طلب إثبات الدفع من المشتري" : "Request payment proof resubmission"}
                                                 </Button>
                                               )}
+                                              {["active", "payment_submitted", "payment_confirmed"].includes(expandedDealDetails.status) && (
+                                                <Button 
+                                                  variant="outline" 
+                                                  size="sm" 
+                                                  className="w-full text-destructive border-destructive/20 hover:bg-destructive/10 hover:text-destructive font-medium"
+                                                  onClick={() => setDealCancelTarget(d.deal_id)}
+                                                >
+                                                  <AlertCircle className="h-4 w-4 me-2" />
+                                                  {lang === "ar" ? "إلغاء الصفقة" : "Cancel Deal"}
+                                                </Button>
+                                              )}
                                               <Button 
                                                 variant="outline" 
                                                 size="sm" 
-                                                className="w-full text-destructive border-destructive/20 hover:bg-destructive/10 hover:text-destructive font-medium"
-                                                onClick={() => setDealCancelTarget(d.deal_id)}
+                                                className="w-full text-primary border-primary/20 hover:bg-primary/10 hover:text-primary font-medium"
+                                                onClick={() => setDealCompleteTarget(d.deal_id)}
                                               >
-                                                <AlertCircle className="h-4 w-4 me-2" />
-                                                {lang === "ar" ? "إلغاء الصفقة" : "Cancel Deal"}
+                                                <CheckCircle2 className="h-4 w-4 me-2" />
+                                                {lang === "ar" ? "إكمال إداري" : "Force Complete"}
                                               </Button>
                                             </div>
                                           )}
@@ -3244,6 +3283,23 @@ export function AdminPage() {
         }}
         isPending={dealCancelLoading}
         destructive={true}
+      />
+
+      <AdminConfirmModal
+        open={dealCompleteTarget !== null}
+        onOpenChange={(open) => { if (!open) setDealCompleteTarget(null); }}
+        title={lang === "ar" ? "تأكيد إكمال الصفقة إداريًا" : "Force Complete Deal"}
+        description={lang === "ar" ? "سيتم نقل الصفقة إلى حالة مكتملة بواسطة الأدمن. استخدم هذا الإجراء فقط بعد التحقق من اكتمال العملية خارج النظام." : "This deal will be marked as completed by an admin. Use this only if the physical transaction is verified complete."}
+        reasonLabel={lang === "ar" ? "سبب الإكمال الإداري" : "Reason for override"}
+        confirmLabel={lang === "ar" ? "نعم، أكمل الصفقة" : "Force Complete"}
+        requireReason={true}
+        onConfirm={(reason) => {
+          if (dealCompleteTarget) {
+            void forceCompleteDeal(dealCompleteTarget, reason);
+          }
+        }}
+        isPending={dealCompleteLoading}
+        destructive={false}
       />
 
       <AdminConfirmModal
