@@ -1176,6 +1176,22 @@ function ShipmentsSection({
   const [addForm, setAddForm] = useState({ materialLineId: "", plannedAt: "", notes: "" });
   const [adding, setAdding] = useState(false);
   const [pendingScrollId, setPendingScrollId] = useState<string | null>(null);
+  const [tab, setTab] = useState<"all" | "in-progress" | "closed">(() => {
+    return shipments.some(s => s.status !== "closed" && s.status !== "cancelled") ? "in-progress" : "all";
+  });
+
+  const sortedShipments = [...shipments].sort((a, b) => {
+    const timeA = new Date(a.created_at).getTime();
+    const timeB = new Date(b.created_at).getTime();
+    return timeA - timeB;
+  });
+
+  const filteredShipments = sortedShipments.filter(s => {
+    if (tab === "all") return true;
+    if (tab === "closed") return s.status === "closed";
+    if (tab === "in-progress") return s.status !== "closed" && s.status !== "cancelled";
+    return true;
+  });
 
   useEffect(() => {
     if (pendingScrollId && shipments.some((s) => s.id === pendingScrollId)) {
@@ -1219,6 +1235,7 @@ function ShipmentsSection({
       const newShipment = await res.json() as ContractShipment;
       setAddForm({ materialLineId: "", plannedAt: "", notes: "" });
       setShowAdd(false);
+      setTab("in-progress");
       setPendingScrollId(newShipment.id);
       onRefresh();
     } catch (e) {
@@ -1263,12 +1280,42 @@ function ShipmentsSection({
         </div>
       )}
 
+      {/* Tabs */}
+      {shipments.length > 0 && (
+        <div className="px-4 py-2 border-b border-border/50 bg-muted/10 flex gap-2 overflow-x-auto">
+          <Button 
+            variant={tab === "all" ? "default" : "outline"} 
+            size="sm" 
+            className={`h-7 text-xs rounded-full ${tab !== "all" ? "bg-background text-muted-foreground hover:bg-muted" : ""}`}
+            onClick={() => setTab("all")}
+          >
+            {lang === "ar" ? "الكل" : "All"}
+          </Button>
+          <Button 
+            variant={tab === "in-progress" ? "default" : "outline"} 
+            size="sm" 
+            className={`h-7 text-xs rounded-full ${tab !== "in-progress" ? "bg-background text-muted-foreground hover:bg-muted" : ""}`}
+            onClick={() => setTab("in-progress")}
+          >
+            {lang === "ar" ? "قيد الإجراء" : "In Progress"}
+          </Button>
+          <Button 
+            variant={tab === "closed" ? "default" : "outline"} 
+            size="sm" 
+            className={`h-7 text-xs rounded-full ${tab !== "closed" ? "bg-background text-muted-foreground hover:bg-muted" : ""}`}
+            onClick={() => setTab("closed")}
+          >
+            {lang === "ar" ? "مغلقة" : "Closed"}
+          </Button>
+        </div>
+      )}
+
       <div className="p-4 space-y-3">
-        {shipments.length === 0 && !showAdd && (
+        {filteredShipments.length === 0 && !showAdd && (
           <p className="py-4 text-center text-sm text-muted-foreground">{t("contract.shipments.empty")}</p>
         )}
 
-        {shipments.map((s) => (
+        {filteredShipments.map((s) => (
           <div key={s.id} id={`shipment-${s.id}`}>
             <ShipmentRow
               shipment={s}
