@@ -1890,8 +1890,10 @@ router.get("/admin/reports/contract-shipments", requireAdminKey, async (req, res
     const vat_amount = fv * VAT_RATE;
     const total_including_vat = fv + vat_amount;
 
-    total_final_weight += fw;
-    total_value_excluding_vat += fv;
+    if (r.status === "closed") {
+      total_final_weight += fw;
+      total_value_excluding_vat += fv;
+    }
 
     return {
       contract_ref: r.contract_ref,

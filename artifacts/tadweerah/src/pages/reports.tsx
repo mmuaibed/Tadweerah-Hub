@@ -309,7 +309,7 @@ export function ReportsPage() {
             >
               {contractExporting
                 ? <><Loader2 className="h-4 w-4 me-2 animate-spin" />{t("reports.action.exporting")}</>
-                : <><Download className="h-4 w-4 me-2" />{t("reports.action.export_csv")}</>
+                : <><Download className="h-4 w-4 me-2" />{lang === "ar" ? "تصدير ملف" : "Export File"}</>
               }
             </Button>
           )
@@ -325,7 +325,7 @@ export function ReportsPage() {
               key={tName}
               onClick={() => {
                 setTab(tName);
-                setStatus("");
+                setStatus(tName === "contracts" ? "closed" : "");
                 setDateFrom("");
                 setDateTo("");
               }}
@@ -594,9 +594,10 @@ export function ReportsPage() {
                   className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
                 >
                   <option value="">{t("reports.filter.all_statuses")}</option>
-                  {["planned", "dispatched", "received", "closed", "cancelled"].map((s) => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
+                  {["planned", "dispatched", "received", "closed", "cancelled"].map((s) => {
+                    const statusMapAr: Record<string, string> = { planned: "مخططة", dispatched: "مرسلة", received: "مستلمة", closed: "مغلقة", cancelled: "ملغاة" };
+                    return <option key={s} value={s}>{lang === "ar" ? (statusMapAr[s] || s) : (s.charAt(0).toUpperCase() + s.slice(1))}</option>;
+                  })}
                 </select>
               </div>
               <div className="space-y-1">
@@ -618,6 +619,12 @@ export function ReportsPage() {
                   : <><RefreshCw className="h-4 w-4 me-2" />{t("reports.action.load")}</>
                 }
               </Button>
+              <div className="w-full mt-1">
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  {lang === "ar" ? "يتم احتساب الإجماليات المالية للشحنات المغلقة فقط." : "Financial totals are calculated for closed shipments only."}
+                </p>
+              </div>
             </div>
 
             {/* ── Error ── */}
@@ -632,31 +639,31 @@ export function ReportsPage() {
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
                 <SummaryCard
                   icon={FileText}
-                  label="Number of Shipments"
+                  label={lang === "ar" ? "عدد الشحنات" : "Number of Shipments"}
                   value={String(contractReport.summary.number_of_shipments)}
                   colorClass="bg-blue-100 text-blue-700"
                 />
                 <SummaryCard
                   icon={TrendingUp}
-                  label="Total Final Weight"
+                  label={lang === "ar" ? "إجمالي الوزن المعتمد" : "Total Final Weight"}
                   value={contractReport.summary.total_final_weight}
                   colorClass="bg-indigo-100 text-indigo-700"
                 />
                 <SummaryCard
                   icon={BarChart3}
-                  label="Value Excl. VAT"
+                  label={lang === "ar" ? "القيمة قبل الضريبة" : "Value Excl. VAT"}
                   value={fmtSAR(contractReport.summary.total_value_excluding_vat, lang)}
                   colorClass="bg-primary/10 text-primary"
                 />
                 <SummaryCard
                   icon={Banknote}
-                  label="VAT Amount"
+                  label={lang === "ar" ? "ضريبة القيمة المضافة" : "VAT Amount"}
                   value={fmtSAR(contractReport.summary.total_vat_amount, lang)}
                   colorClass="bg-orange-100 text-orange-700"
                 />
                 <SummaryCard
                   icon={CheckCircle2}
-                  label="Total Incl. VAT"
+                  label={lang === "ar" ? "الإجمالي شامل الضريبة" : "Total Incl. VAT"}
                   value={fmtSAR(contractReport.summary.grand_total_including_vat, lang)}
                   colorClass="bg-green-100 text-green-700"
                 />
@@ -681,22 +688,22 @@ export function ReportsPage() {
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-border bg-muted/30">
-                          <Th>Closed Date</Th>
-                          <Th>Contract Ref</Th>
-                          <Th>Shipment Ref</Th>
-                          <Th>Seller</Th>
-                          <Th>Buyer</Th>
-                          <Th>Material</Th>
-                          <Th>Status</Th>
-                          <Th>Policy</Th>
-                          <Th>Source Wt</Th>
-                          <Th>Dest Wt</Th>
-                          <Th>Variance</Th>
-                          <Th>Final Wt</Th>
-                          <Th>Price</Th>
-                          <Th>Value (Excl)</Th>
-                          <Th>VAT</Th>
-                          <Th>Total (Incl)</Th>
+                          <Th>{lang === "ar" ? "تاريخ الإغلاق" : "Closed Date"}</Th>
+                          <Th>{lang === "ar" ? "رقم العقد" : "Contract Ref"}</Th>
+                          <Th>{lang === "ar" ? "رقم الشحنة" : "Shipment Ref"}</Th>
+                          <Th>{lang === "ar" ? "البائع" : "Seller"}</Th>
+                          <Th>{lang === "ar" ? "المشتري" : "Buyer"}</Th>
+                          <Th>{lang === "ar" ? "المادة" : "Material"}</Th>
+                          <Th>{lang === "ar" ? "الحالة" : "Status"}</Th>
+                          <Th>{lang === "ar" ? "سياسة الوزن" : "Policy"}</Th>
+                          <Th>{lang === "ar" ? "وزن المصدر" : "Source Wt"}</Th>
+                          <Th>{lang === "ar" ? "وزن الاستلام" : "Dest Wt"}</Th>
+                          <Th>{lang === "ar" ? "فرق الوزن" : "Variance"}</Th>
+                          <Th>{lang === "ar" ? "الوزن المعتمد" : "Final Wt"}</Th>
+                          <Th>{lang === "ar" ? "السعر" : "Price"}</Th>
+                          <Th>{lang === "ar" ? "القيمة قبل الضريبة" : "Value (Excl)"}</Th>
+                          <Th>{lang === "ar" ? "الضريبة" : "VAT"}</Th>
+                          <Th>{lang === "ar" ? "الإجمالي شامل الضريبة" : "Total (Incl)"}</Th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border">
@@ -712,7 +719,9 @@ export function ReportsPage() {
                               <Td>{row.material}</Td>
                               <Td>
                                 <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${statusStyle}`}>
-                                  {row.status}
+                                  {lang === "ar"
+                                    ? ({ planned: "مخططة", dispatched: "مرسلة", received: "مستلمة", closed: "مغلقة", cancelled: "ملغاة" } as any)[row.status] || row.status
+                                    : row.status.charAt(0).toUpperCase() + row.status.slice(1)}
                                 </span>
                               </Td>
                               <Td>{row.weight_policy.replace("_final", "").replace("_only", "").replace("dual_", "")}</Td>
