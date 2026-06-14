@@ -322,9 +322,10 @@ A simple admin-panel "Master Data" tab could expose:
 - **Scope:** Includes Contract Lite audit, Al Qaryan UAT script, weight/final quantity policy confirmation, and contract notification decision.
 - **Status:** Contract Lite notification patch deployed. Contract Lite Shipment Report MVP implemented. Contract Detail operational UX (zero-weight block, notification handoffs, scroll/focus, list filters) implemented. Deployed to backend (`tadweerah-api-00089-jnt`) and frontend staging (`https://tadweerah-staging.web.app`), manual UAT passed, ready for pilot use.
 
-### 3. Phase 2-F — Pilot Smoke Test & Demo Readiness
-- **Priority:** Must do before external pilot/demo.
-- **Scope:** End-to-end smoke across seller, buyer/receiver, admin, notifications, reports, and operational recovery tools.
+### 3. Phase 2-F — Admin Email Notification Recipient Override
+- **Priority:** Must do before external pilot/demo to handle owner separation requests.
+- **Status:** ✅ Implemented, deployed, and UAT passed.
+- **Scope:** Allows platform admin to specify an existing company member as the operational email notification recipient (`مستلم تنبيهات البريد`) without changing the company owner (`مالك حساب الشركة`). Includes fallback logic to the default owner if the custom recipient is invalid or unset.
 
 ### 4. Phase 3-A — Admin Master Data MVP
 - **Priority:** Should do before broader operations if pilot requires frequent taxonomy/unit edits. Can defer if pilot taxonomy is stable.
@@ -333,6 +334,12 @@ A simple admin-panel "Master Data" tab could expose:
 ### 5. Phase 3-B — Post-Pilot Workflow Configurability & Polish
 - **Priority:** Post-pilot.
 - **Scope:** Configurable timers, category-targeted notifications, i18n refactor, checklist wording polish, etc.
+
+### 6. Phase 3-C — Multi-Branch / Multi-Site Operational Routing
+- **Priority:** Post-pilot.
+- **Scope:** Support for multiple operational sites/branches per company (`المواقع التشغيلية / الفروع`). Each site can have its own notification recipient or team. Contracts, shipments, and listings may be associated with a specific site.
+- **Routing Order:** Site/branch-level recipient (if linked) → company-level `مستلم تنبيهات البريد` → company owner fallback.
+- **Rules:** Routing remains role/site-based, not hardcoded by company name or city. Supports cases where the same company may be buyer in one transaction and seller in another.
 
 ## Section 9: Go / No-Go Framing
 

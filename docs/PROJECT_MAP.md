@@ -456,10 +456,10 @@ VITE_API_URL                   # backend API base URL
 ## 11. Known Gaps & Remaining Phase Roadmap
 
 > **Live Staging Baseline:**
-> - **Backend:** `tadweerah-api-00085-rg9`
-> - **Frontend:** Firebase Hosting staging
-> - **Closure commit:** `0ea3e63 docs: close phase 2c pilot readiness`
-> - **Phase 2-C:** ✅ Completed
+> - **Backend:** `tadweerah-api-00090-b5v`
+> - **Frontend:** `https://tadweerah-staging.web.app`
+> - **Closure commit:** `1d4562f feat(admin): configure notification recipient`
+> - **Phase 2-F:** ✅ Completed
 
 ### 1. Phase 2-D — Readiness Risk Burn-down & Remaining Roadmap Alignment
 - Current docs-only phase.
@@ -474,9 +474,15 @@ VITE_API_URL                   # backend API base URL
   Ready for pilot use.
 - **Scope:** Must do before pilot if Al Qaryan/contract workflow is the target path. Includes Contract Lite audit, Al Qaryan UAT script, weight/final quantity policy confirmation, and contract notification decision.
 
-### 3. Phase 2-F — Pilot Smoke Test & Demo Readiness
-- Must do before external pilot/demo.
-- End-to-end smoke across seller, buyer/receiver, admin, notifications, reports, and operational recovery tools.
+### 3. Phase 2-F — Admin Email Notification Recipient Override
+- **Status:** ✅ Implemented, deployed, and UAT passed.
+- **Scope:** Admin-managed override for operational email routing (`مستلم تنبيهات البريد`).
+- **Current Model:**
+  - `مالك حساب الشركة` remains the ownership/permission source.
+  - `مستلم تنبيهات البريد` controls operational email routing only.
+- **Capabilities:** Admin can select an existing company member as custom notification recipient, or reset to the default owner.
+- **Fallback behavior:** If no custom recipient is set, or if the custom recipient is invalid/no longer a member, the backend automatically falls back to routing emails to the owner.
+- **Not implemented (deferred to Phase 3):** Ownership transfer, permission transfer, role changes, and all-member notification preferences.
 
 ### 4. Phase 3-A — Admin Master Data MVP
 - Should do before broader operations if pilot requires frequent taxonomy/unit edits.
@@ -484,6 +490,13 @@ VITE_API_URL                   # backend API base URL
 
 ### 5. Phase 3-B — Post-Pilot Workflow Configurability & Polish
 - Configurable timers, category-targeted notifications, i18n refactor, checklist wording polish, etc.
+
+### 6. Phase 3-C — Multi-Branch / Multi-Site Operational Routing
+- **Status:** Not implemented (deferred to Phase 3).
+- **Scope:** Support for multiple operational sites/branches per company (`المواقع التشغيلية / الفروع`).
+- **Target Model:** Each site can have its own notification recipient or team. Contracts, shipments, and listings may be associated with a specific site.
+- **Routing Order:** Site/branch-level recipient (if linked) → company-level `مستلم تنبيهات البريد` → company owner fallback.
+- **Rules:** Routing remains role/site-based, not hardcoded by company name or city. Supports cases where the same company may be buyer in one transaction and seller in another.
 
 ### Resolved / Closed Items
 - **Deal receipt flow**: ✅ Resolved in Phase 2-A.

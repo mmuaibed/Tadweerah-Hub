@@ -480,29 +480,35 @@ This is a **high operational risk** during pilot logistics coordination.
 - **Visibility:** Deactivated records disappear from public endpoints. Dedicated admin read endpoints expose active and inactive records to admins for governance.
 
 
-## 12. Phase 3 Company Governance Roadmap (Not Implemented)
+## 12. Phase 3 Company Governance Roadmap
 
-> **Status:** Documented for future Phase 3 implementation only. The current Phase 2-E / Al Qaryan pilot remains strictly on the owner-only email notification routing model.
+> **Status:** Phase 2-F successfully implemented the Email Notification Recipient override. The remaining items below (like full Ownership Transfer) remain strictly on the Phase 3 roadmap.
 
 ### 12.1 Separation of Concepts
-The platform will eventually distinguish between:
+The platform distinguishes between:
 * `مالك حساب الشركة` / `Company Account Owner`
 * `مستلم تنبيهات البريد` / `Email Notification Recipient`
 
 ### 12.2 Admin Visibility
-The admin company detail/profile page will eventually show:
+The admin company detail/profile page now shows:
 * Current company owner name/email/status
 * Current email notification recipient name/email/status
-* Whether the recipient is the same as the owner or different
+* Whether the recipient is the default owner or custom
 
 ### 12.3 Change Email Notification Recipient
-* Platform admin may later change the operational email recipient without transferring ownership.
-* **Scope**: Affects email delivery only. Must not change ownership or permissions.
-* **Recipient**: Should preferably be an existing verified company team member. (External email recipients require a separate governance decision).
-* **Audit**: Must be strictly audit logged.
-* **Notification**: Notify both old and new recipients when changed.
+> **Status:** ✅ Implemented and UAT Passed in Phase 2-F.
+* Platform admin can now change the operational email recipient without transferring ownership.
+* **Scope**: Affects email delivery only. Ownership (`مالك حساب الشركة`) and permissions are not changed.
+* **Recipient**: Enforced to be an existing verified company team member.
+* **Fallback**: Automatic fallback to the default owner if no custom recipient is set or if the member leaves.
+* **Audit**: Admin override actions are logged.
 
-### 12.4 Transfer Company Ownership
+### 12.4 Transfer Company Ownership (Deferred to Phase 3)
 * Platform admin, and possibly later the current owner, may transfer ownership to another verified company team member.
 * **Use Cases**: Owner left the company, owner was assigned incorrectly, customer requests a new official owner.
 * **Rules**: Highly sensitive action. The company must never be left without an owner. Must be strictly audit logged. Notify both old and new owners. Consider requiring confirmation text before applying.
+
+### 12.5 Multi-Branch / Multi-Site Operational Routing (Deferred to Phase 3)
+* **Concept**: A company can have multiple operational sites/branches (`المواقع التشغيلية / الفروع`).
+* **Routing Order**: Email routing can eventually use the site/branch-level recipient (if the operation is linked to a site) → company-level `مستلم تنبيهات البريد` → company owner fallback.
+* **Rules**: Routing remains role/site-based, not hardcoded by company name or city. This ensures proper segregation of notifications if a company has multiple branches or operates as both a buyer and seller in different regions.
