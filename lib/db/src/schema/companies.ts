@@ -74,6 +74,9 @@ export const companiesTable = pgTable("companies", {
    */
   offer_submission_blocked: boolean("offer_submission_blocked").notNull().default(false),
 
+  /** Optional override for email notification routing instead of defaulting to the owner. */
+  notification_recipient_user_id: text("notification_recipient_user_id"),
+
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

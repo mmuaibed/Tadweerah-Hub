@@ -118,6 +118,8 @@ interface AdminStats {
 
 interface AdminCompanyDetails extends AdminCompany {
   owner_email: string | null;
+  notification_recipient_email?: string | null;
+  notification_recipient_user_id?: string | null;
   roles: string[];
   capabilities: string[];
   members: { user_id: string; role: string; email: string | null; created_at: string }[];
@@ -331,6 +333,7 @@ export function AdminPage() {
   const [expandedDetails, setExpandedDetails] = useState<AdminCompanyDetails | null>(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [detailsError, setDetailsError] = useState<string | null>(null);
+  const [recipientUpdateLoading, setRecipientUpdateLoading] = useState(false);
 
   /* Transport requests state */
   const [transportReqs, setTransportReqs] = useState<PendingTransportRequest[] | null>(null);
@@ -761,6 +764,27 @@ export function AdminPage() {
       setDetailsError(e instanceof Error ? e.message : t("admin.error.generic"));
     } finally {
       setDetailsLoading(false);
+    }
+  }
+
+  async function updateNotificationRecipient(companyId: string, userId: string | null) {
+    setRecipientUpdateLoading(true);
+    try {
+      const res = await callAdmin(`/companies/${companyId}/notification-recipient`, {
+        method: "PATCH",
+        body: JSON.stringify({ user_id: userId }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      // Refresh details
+      const detailsRes = await callAdmin(`/companies/${companyId}/details?t=${Date.now()}`);
+      if (detailsRes.ok) {
+        setExpandedDetails(await detailsRes.json() as AdminCompanyDetails);
+      }
+    } catch (e) {
+      alert(lang === "ar" ? "??  ????? ?3?,? ?,?+??" : "Failed to update notification recipient");
+      console.error(e);
+    } finally {
+      setRecipientUpdateLoading(false);
     }
   }
 
@@ -1316,7 +1340,44 @@ export function AdminPage() {
                                           <p className="text-muted-foreground text-xs"><span className="text-foreground">تاريخ التسجيل:</span> <span dir="ltr">{fmtDate(expandedDetails.created_at, lang)}</span></p>
                                         </div>
                                         <div>
-                                          <p className="font-semibold text-foreground border-b pb-1 mb-2">الأدوار والقدرات</p>
+                                          <p className="font-semibold text-foreground border-b pb-1 mb-2">{lang === "ar" ? "مالك الحساب وتنبيهات البريد" : "Owner & Email Alerts"}</p>
+                                          
+                                          <div className="bg-muted/30 p-2 rounded border space-y-3 mb-3">
+                                            <div className="flex flex-col gap-1">
+                                              <span className="text-foreground text-xs font-semibold">{lang === "ar" ? "مالك حساب الشركة" : "Company Account Owner"}</span>
+                                              <span dir="ltr" className="font-mono text-xs text-muted-foreground bg-white p-1 rounded border inline-block w-fit">{expandedDetails.owner_email || "غير متوفر"}</span>
+                                            </div>
+                                            
+                                            <div className="flex flex-col gap-1 border-t pt-2">
+                                              <div className="flex justify-between items-center">
+                                                <span className="text-foreground text-xs font-semibold">{lang === "ar" ? "مستلم تنبيهات البريد" : "Email Notification Recipient"}</span>
+                                                <Badge variant={expandedDetails.notification_recipient_user_id ? "default" : "outline"} className="text-[10px]">
+                                                  {expandedDetails.notification_recipient_user_id 
+                                                    ? (lang === "ar" ? "مخصص" : "Custom") 
+                                                    : (lang === "ar" ? "الافتراضي (المالك)" : "Default (Owner)")}
+                                                </Badge>
+                                              </div>
+                                              
+                                              <div className="flex gap-2 items-center mt-1">
+                                                <select
+                                                  className="text-xs border rounded p-1 flex-1 bg-white h-7"
+                                                  value={expandedDetails.notification_recipient_user_id || ""}
+                                                  onChange={(e) => void updateNotificationRecipient(c.id, e.target.value || null)}
+                                                  disabled={recipientUpdateLoading}
+                                                >
+                                                  <option value="">{lang === "ar" ? "الافتراضي: مالك حساب الشركة" : "Default: Company Account Owner"}</option>
+                                                  {expandedDetails.members.map(m => (
+                                                    <option key={m.user_id} value={m.user_id}>
+                                                      {m.email} ({m.role})
+                                                    </option>
+                                                  ))}
+                                                </select>
+                                                {recipientUpdateLoading && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
+                                              </div>
+                                            </div>
+                                          </div>
+
+                                          <p className="font-semibold text-foreground border-b pb-1 mb-2 mt-4">{lang === "ar" ? "الأدوار والقدرات" : "Roles & Capabilities"}</p>
                                           <div className="flex flex-wrap gap-1 mt-1">
                                             {expandedDetails.roles.map(r => <Badge key={r} variant="outline" className="text-[10px]">{r}</Badge>)}
                                             {expandedDetails.capabilities.map(cap => <Badge key={cap} variant="secondary" className="text-[10px]">{cap}</Badge>)}

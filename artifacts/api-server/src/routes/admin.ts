@@ -187,6 +187,7 @@ router.get("/admin/companies/:id/details", requireAdminKey, async (req, res) => 
   res.json({
     ...company,
     owner_email: company.ownerUserId ? emailMap.get(company.ownerUserId) || null : null,
+    notification_recipient_email: company.notification_recipient_user_id ? emailMap.get(company.notification_recipient_user_id) || null : null,
     roles: rolesRows.map(r => r.role),
     capabilities: capsRows.map(c => c.capability_id),
     members: membersRows.map(m => ({
@@ -243,6 +244,51 @@ router.patch("/admin/companies/:id/license", requireAdminKey, async (req, res) =
     entityId: id,
     actorRole: "admin",
     details: { license_status, reason: reason ?? null },
+  });
+
+  res.json(updated);
+});
+
+/**
+ * PATCH /admin/companies/:id/notification-recipient
+ * Body: { user_id: string | null }
+ */
+router.patch("/admin/companies/:id/notification-recipient", requireAdminKey, async (req, res) => {
+  const id = String(req.params["id"]);
+  const { user_id } = req.body ?? {};
+
+  const [company] = await db.select().from(companiesTable).where(eq(companiesTable.id, id)).limit(1);
+  if (!company) { res.status(404).json({ error: "NotFound", message: "Company not found" }); return; }
+
+  // Validate user is a member if provided
+  if (user_id) {
+    const [member] = await db
+      .select()
+      .from(companyMembersTable)
+      .where(and(eq(companyMembersTable.company_id, id), eq(companyMembersTable.user_id, user_id)))
+      .limit(1);
+    
+    if (!member) {
+      res.status(400).json({ error: "ValidationError", message: "User is not a member of this company" });
+      return;
+    }
+  }
+
+  const [updated] = await db
+    .update(companiesTable)
+    .set({ notification_recipient_user_id: user_id || null })
+    .where(eq(companiesTable.id, id))
+    .returning();
+
+  void logAudit({
+    action: "company.notification_recipient_updated",
+    entityType: "company",
+    entityId: id,
+    actorRole: "admin",
+    details: { 
+      old_recipient_user_id: company.notification_recipient_user_id ?? null,
+      new_recipient_user_id: user_id || null 
+    },
   });
 
   res.json(updated);

@@ -8,7 +8,7 @@
  */
 import { eq, and } from "drizzle-orm";
 import { clerkClient } from "@clerk/express";
-import { db, notificationsTable, companyMembersTable } from "@workspace/db";
+import { db, notificationsTable, companyMembersTable, companiesTable } from "@workspace/db";
 import { sendEmail } from "./email";
 
 interface NotifyParams {
@@ -29,6 +29,33 @@ interface NotifyParams {
 
 async function lookupOwnerEmail(companyId: string): Promise<string | null> {
   try {
+    // Check if there is an overridden notification recipient
+    const [company] = await db
+      .select({ notification_recipient_user_id: companiesTable.notification_recipient_user_id })
+      .from(companiesTable)
+      .where(eq(companiesTable.id, companyId))
+      .limit(1);
+
+    if (company?.notification_recipient_user_id) {
+      // Verify the overridden user is still a valid member of the company
+      const [overrideMember] = await db
+        .select({ user_id: companyMembersTable.user_id })
+        .from(companyMembersTable)
+        .where(
+          and(
+            eq(companyMembersTable.company_id, companyId),
+            eq(companyMembersTable.user_id, company.notification_recipient_user_id),
+          ),
+        )
+        .limit(1);
+
+      if (overrideMember) {
+        const user = await clerkClient.users.getUser(overrideMember.user_id);
+        return user.emailAddresses[0]?.emailAddress ?? null;
+      }
+    }
+
+    // Fallback: use the default owner
     const rows = await db
       .select({ user_id: companyMembersTable.user_id })
       .from(companyMembersTable)
