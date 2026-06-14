@@ -346,7 +346,7 @@ As of commit `283270e`, the notification behavior is as follows:
 - `final_value` follows `final_weight` × price.
 
 ### 8.3 Contract Lite Shipment Report (MVP)
-The operational report for Contract Lite Shipments (commit: `894d679`, polished in `cbb6859`, final UI clarity patch in `3a88e7e`) has the following rules:
+The operational report for Contract Lite Shipments (commit: `894d679`, polished in `cbb6859`, final UI clarity patch in `3a88e7e`) is deployed to backend (`tadweerah-api-00087-87m`) and frontend staging (`https://tadweerah-staging.web.app`), has passed manual UAT, and follows these rules:
 
 **Routes:**
 - `GET /reports/contract-shipments` (Seller/Buyer scoped)
@@ -375,6 +375,12 @@ The operational report for Contract Lite Shipments (commit: `894d679`, polished 
 - English: `Shipment Report for the period from ... to ...` / `Contract Shipment Report ...` / `Contract Shipments Report ...`
 - Banned terminology: Invoice, Settlement, Payment Claim.
 - CSV remains the current export format. No PDF/XLSX dependency added. True Excel export and PDF/print layout are deferred enhancements.
+
+**Future Enhancement: Branded Print/Export Reports**
+- Printed/exported reports (PDF, formal Excel-style layouts) must carry Tadweerah’s brand identity (logo, color scheme).
+- Branded reports are important for trust, professionalism, customer confidence, and indirect brand marketing when reports circulate internally with clients.
+- The logo is currently subject to minor refinement. When an updated logo is provided, it should be reflected across the platform and reporting outputs.
+- This is a documented future roadmap requirement and is NOT currently implemented to avoid adding PDF/XLSX generation complexity during the pilot phase.
 
 ### 8.4 dYY Current State Machine
 | Transition | Who | Conditions | Notification |
