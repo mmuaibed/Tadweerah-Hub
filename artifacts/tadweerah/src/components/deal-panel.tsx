@@ -1073,7 +1073,6 @@ function printDealReport(
     <tr><td>${lang === "ar" ? "ضريبة القيمة المضافة (15%)" : "VAT (15%)"}</td><td>${vatValue} ${sarLabel}</td></tr>
     <tr><td style="font-weight:700">${lang === "ar" ? "الإجمالي شامل الضريبة" : "Total (incl. VAT)"}</td><td style="font-weight:700;color:#16a34a;font-size:15px">${grandTotalValue} ${sarLabel}</td></tr>
     ${deal.actual_quantity != null ? `<tr><td>${lang === "ar" ? "الكمية الفعلية" : "Actual Quantity"}</td><td>${fmtNumber(deal.actual_quantity)} ${unit}</td></tr>` : ""}
-    ${deal.final_amount != null ? `<tr><td>${lang === "ar" ? "الإجمالي النهائي" : "Final Amount"}</td><td style="font-weight:700;color:#16a34a">${fmtNumber(deal.final_amount)} ${sarLabel}</td></tr>` : ""}
     ${transportResp ? `<tr><td>${lang === "ar" ? "مسؤولية النقل" : "Transport Responsibility"}</td><td>${transportResp}</td></tr>` : ""}
     ${opts.listingLocationAddress ? `<tr><td>${lang === "ar" ? "موقع المواد" : "Material Location"}</td><td>${opts.listingLocationAddress}</td></tr>` : ""}
     ${opts.listingMapsUrl && opts.listingMapsUrl.startsWith("https://") ? `<tr><td>${lang === "ar" ? "رابط الموقع" : "Map Link"}</td><td><a href="${opts.listingMapsUrl}" target="_blank" rel="noopener noreferrer" style="color:#1e40af">${opts.listingMapsUrl}</a></td></tr>` : ""}

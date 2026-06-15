@@ -202,15 +202,15 @@ interface SupportNotificationParams {
   userEmail?: string | null;
 }
 
-export async function sendSupportNotification(p: SupportNotificationParams): Promise<void> {
+export async function sendSupportNotification(p: SupportNotificationParams): Promise<boolean> {
   const supportEmail = process.env.SUPPORT_EMAIL;
   if (!resend) {
     console.info("[email] RESEND_API_KEY not set — skipping support notification for report:", p.reportId);
-    return;
+    return true; // Return true in dev so frontend succeeds
   }
   if (!supportEmail) {
     console.info("[email] SUPPORT_EMAIL not set — skipping support notification for report:", p.reportId);
-    return;
+    return true; // Return true in dev so frontend succeeds
   }
   const subjectLine = p.subject
     ? `[تدويرة] ${p.subject} — Issue Report ${p.reportId}`
@@ -252,11 +252,14 @@ export async function sendSupportNotification(p: SupportNotificationParams): Pro
     });
     if (error) {
       console.error("[email:support] Resend API error — name:", error.name, "| message:", error.message, "| report:", p.reportId);
+      return false;
     } else {
       console.info("[email:support] Resend accepted — message id:", data?.id, "| report:", p.reportId);
+      return true;
     }
   } catch (err) {
     console.error("[email:support] unexpected exception — report:", p.reportId, err);
+    return false;
   }
 }
 

@@ -83,8 +83,8 @@ router.post(
       })
       .returning({ id: issueReportsTable.id, status: issueReportsTable.status });
 
-    // Fire-and-forget support notification email
-    void sendSupportNotification({
+    // Await support notification email
+    const success = await sendSupportNotification({
       reportId: report.id,
       userId,
       companyId,
@@ -94,6 +94,11 @@ router.post(
       userName,
       userEmail,
     });
+
+    if (!success) {
+      res.status(500).json({ error: "EmailDeliveryFailed", message: "Failed to send support email" });
+      return;
+    }
 
     res.status(201).json({ id: report.id, status: report.status });
   },
