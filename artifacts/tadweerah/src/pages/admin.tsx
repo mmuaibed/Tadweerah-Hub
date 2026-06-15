@@ -18,6 +18,7 @@ import {
   Clock,
   MessageSquare,
   Database,
+  Lightbulb,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,6 +38,21 @@ import {
 import { MasterDataTab } from "./MasterDataTab";
 
 /* ─── Types ──────────────────────────────────────────────────────────────── */
+
+
+interface AdminFinding {
+  id: string;
+  title: string;
+  type: string;
+  area: string;
+  priority: string;
+  status: string;
+  source_label: string | null;
+  description: string | null;
+  internal_notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
 
 interface AdminReportSummary {
   total: number;
@@ -305,7 +321,7 @@ export function AdminPage() {
   const dir = lang === "ar" ? "rtl" : "ltr";
 
   const [adminKey, setAdminKey] = useState(() => sessionStorage.getItem("tdw_admin_key") ?? "");
-  const [tab, setTab] = useState<"deals" | "companies" | "transport" | "reports" | "issues" | "contracts" | "auditlog" | "shipments" | "overdue" | "masterdata">("companies");
+  const [tab, setTab] = useState<"deals" | "companies" | "transport" | "reports" | "issues" | "contracts" | "auditlog" | "shipments" | "overdue" | "masterdata" | "findings">("companies");
 
   /* Deals state */
   const [deals, setDeals] = useState<AdminDeal[] | null>(null);
@@ -327,6 +343,32 @@ export function AdminPage() {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [pendingStatus, setPendingStatus] = useState<Record<string, string>>({});
   
+
+  const [findings, setFindings] = useState<AdminFinding[] | null>(null);
+  const [findingsLoading, setFindingsLoading] = useState(false);
+
+  async function fetchFindings() {
+    if (!adminKey) return;
+    setFindingsLoading(true);
+    try {
+      const res = await fetch("/api/admin/findings", {
+        headers: { "X-Admin-Key": adminKey },
+      });
+      if (!res.ok) throw new Error("Failed to fetch findings");
+      setFindings(await res.json());
+    } catch (e: any) {
+      alert(e.message);
+    } finally {
+      setFindingsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (adminKey && tab === "findings" && !findings) {
+      void fetchFindings();
+    }
+  }, [tab, adminKey]);
+
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
   const [expandedCompanyId, setExpandedCompanyId] = useState<string | null>(null);
@@ -1114,7 +1156,7 @@ export function AdminPage() {
 
         {/* Tabs */}
         <div className="flex flex-wrap gap-1 border-b border-border">
-          {(["companies", "deals", "contracts", "shipments", "transport", "reports", "issues", "auditlog", "overdue", "masterdata"] as const).map((t2) => (
+          {(["companies", "deals", "contracts", "shipments", "transport", "reports", "issues", "auditlog", "overdue", "masterdata", "findings"] as const).map((t2) => (
             <button
               key={t2}
               onClick={() => setTab(t2)}
@@ -1142,7 +1184,7 @@ export function AdminPage() {
                               ? <><Clock className="h-4 w-4" />{lang === "ar" ? "سجل العمليات" : "Audit Log"}</>
                               : t2 === "overdue"
                                 ? <><Clock className="h-4 w-4" />{lang === "ar" ? "عمليات تحتاج مراجعة" : "Awaiting Review"}</>
-                                : <><Database className="h-4 w-4" />{lang === "ar" ? "إدارة القوائم" : "Master Data"}</>
+                                : t2 === "findings" ? <><Lightbulb className="h-4 w-4" />{lang === "ar" ? "ملاحظات وتطوير" : "Findings"}</> : <><Database className="h-4 w-4" />{lang === "ar" ? "إدارة القوائم" : "Master Data"}</>
               }
             </button>
           ))}
@@ -3350,6 +3392,17 @@ export function AdminPage() {
       </div>
 
         {/* ── Master Data Tab ────────────────────────────────────────────────── */}
+
+        {tab === "findings" && (
+          <AdminFindingsTab 
+            adminKey={adminKey} 
+            findings={findings} 
+            loading={findingsLoading} 
+            onRefresh={() => void fetchFindings()} 
+            lang={lang}
+            t={t}
+          />
+        )}
         {tab === "masterdata" && (
           <MasterDataTab adminKey={adminKey} callAdmin={callAdmin} />
         )}
@@ -3542,3 +3595,290 @@ function AdminConfirmModal({
   );
 }
 
+
+/* -------------------------------------------------------------------------- */
+/* Admin Findings Tab                                                         */
+/* -------------------------------------------------------------------------- */
+
+function AdminFindingsTab({
+  adminKey,
+  findings,
+  loading,
+  onRefresh,
+  lang,
+  t
+}: {
+  adminKey: string;
+  findings: AdminFinding[] | null;
+  loading: boolean;
+  onRefresh: () => void;
+  lang: string;
+  t: (key: string) => string;
+}) {
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingFinding, setEditingFinding] = useState<AdminFinding | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  // Form state
+  const [title, setTitle] = useState("");
+  const [type, setType] = useState("issue");
+  const [area, setArea] = useState("general");
+  const [priority, setPriority] = useState("medium");
+  const [status, setStatus] = useState("new");
+  const [sourceLabel, setSourceLabel] = useState("internal");
+  const [description, setDescription] = useState("");
+  const [internalNotes, setInternalNotes] = useState("");
+
+  const [filterType, setFilterType] = useState("");
+  const [filterArea, setFilterArea] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
+  const [filterPriority, setFilterPriority] = useState("");
+
+  const openNew = () => {
+    setEditingFinding(null);
+    setTitle("");
+    setType("issue");
+    setArea("general");
+    setPriority("medium");
+    setStatus("new");
+    setSourceLabel("internal");
+    setDescription("");
+    setInternalNotes("");
+    setModalOpen(true);
+  };
+
+  const openEdit = (f: AdminFinding) => {
+    setEditingFinding(f);
+    setTitle(f.title);
+    setType(f.type);
+    setArea(f.area);
+    setPriority(f.priority);
+    setStatus(f.status);
+    setSourceLabel(f.source_label || "internal");
+    setDescription(f.description || "");
+    setInternalNotes(f.internal_notes || "");
+    setModalOpen(true);
+  };
+
+  const saveFinding = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const isEdit = !!editingFinding;
+      const url = isEdit ? `/api/admin/findings/${editingFinding.id}` : "/api/admin/findings";
+      const method = isEdit ? "PATCH" : "POST";
+
+      const res = await fetch(url, {
+        method,
+        headers: { "X-Admin-Key": adminKey, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title, type, area, priority, status, source_label: sourceLabel, description, internal_notes: internalNotes
+        })
+      });
+      if (!res.ok) throw new Error("Failed to save finding");
+      setModalOpen(false);
+      onRefresh();
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const filtered = (findings || []).filter(f => {
+    if (filterType && f.type !== filterType) return false;
+    if (filterArea && f.area !== filterArea) return false;
+    if (filterStatus && f.status !== filterStatus) return false;
+    if (filterPriority && f.priority !== filterPriority) return false;
+    return true;
+  });
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h2 className="text-xl font-semibold">{lang === "ar" ? "الملاحظات والتطوير" : "Findings & Wishlist"}</h2>
+        <div className="flex gap-2">
+          <Button onClick={onRefresh} disabled={loading} variant="outline" size="sm">
+            <RefreshCw className={`h-4 w-4 me-2 ${loading ? "animate-spin" : ""}`} />
+            {t("admin.fetch_button") || "Refresh"}
+          </Button>
+          <Button onClick={openNew} size="sm">
+            {lang === "ar" ? "إضافة ملاحظة" : "New Finding"}
+          </Button>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap gap-3 bg-muted/50 p-3 rounded-lg border">
+        <select className="border rounded p-1.5 text-sm" value={filterType} onChange={(e) => setFilterType(e.target.value)}>
+          <option value="">{lang === "ar" ? "كل الأنواع" : "All Types"}</option>
+          <option value="issue">Issue</option>
+          <option value="improvement">Improvement</option>
+          <option value="customer_request">Customer Request</option>
+          <option value="idea">Idea</option>
+          <option value="operational_note">Operational Note</option>
+        </select>
+        <select className="border rounded p-1.5 text-sm" value={filterArea} onChange={(e) => setFilterArea(e.target.value)}>
+          <option value="">{lang === "ar" ? "كل المسارات" : "All Areas"}</option>
+          <option value="marketplace">Marketplace</option>
+          <option value="deals">Deals</option>
+          <option value="contracts">Contracts</option>
+          <option value="shipments">Shipments</option>
+          <option value="reports">Reports</option>
+          <option value="admin">Admin</option>
+          <option value="general">General</option>
+        </select>
+        <select className="border rounded p-1.5 text-sm" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+          <option value="">{lang === "ar" ? "كل الحالات" : "All Statuses"}</option>
+          <option value="new">New</option>
+          <option value="under_review">Under Review</option>
+          <option value="accepted">Accepted</option>
+          <option value="deferred">Deferred</option>
+          <option value="closed">Closed</option>
+        </select>
+        <select className="border rounded p-1.5 text-sm" value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)}>
+          <option value="">{lang === "ar" ? "كل الأولويات" : "All Priorities"}</option>
+          <option value="high">High</option>
+          <option value="medium">Medium</option>
+          <option value="low">Low</option>
+        </select>
+      </div>
+
+      <div className="border rounded-xl bg-white overflow-hidden">
+        <table className="w-full text-sm text-left">
+          <thead className="bg-muted/50 text-muted-foreground">
+            <tr>
+              <th className="p-3 font-medium">{lang === "ar" ? "العنوان" : "Title"}</th>
+              <th className="p-3 font-medium">{lang === "ar" ? "النوع" : "Type"}</th>
+              <th className="p-3 font-medium">{lang === "ar" ? "المسار" : "Area"}</th>
+              <th className="p-3 font-medium">{lang === "ar" ? "الأولوية" : "Priority"}</th>
+              <th className="p-3 font-medium">{lang === "ar" ? "الحالة" : "Status"}</th>
+              <th className="p-3 font-medium">{lang === "ar" ? "المصدر" : "Source"}</th>
+              <th className="p-3 font-medium">{lang === "ar" ? "التاريخ" : "Date"}</th>
+              <th className="p-3 font-medium"></th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {filtered.length === 0 ? (
+              <tr><td colSpan={8} className="p-6 text-center text-muted-foreground">No findings.</td></tr>
+            ) : filtered.map(f => (
+              <tr key={f.id} className="hover:bg-muted/30">
+                <td className="p-3 font-medium">{f.title}</td>
+                <td className="p-3 capitalize">{f.type.replace("_", " ")}</td>
+                <td className="p-3 capitalize">{f.area}</td>
+                <td className="p-3">
+                  <Badge variant={f.priority === "high" ? "destructive" : f.priority === "medium" ? "default" : "secondary"}>
+                    {f.priority}
+                  </Badge>
+                </td>
+                <td className="p-3">
+                  <Badge variant="outline">{f.status.replace("_", " ")}</Badge>
+                </td>
+                <td className="p-3 text-muted-foreground">{f.source_label || "-"}</td>
+                <td className="p-3 text-muted-foreground">{new Date(f.created_at).toLocaleDateString()}</td>
+                <td className="p-3 text-end">
+                  <Button variant="ghost" size="sm" onClick={() => openEdit(f)}>
+                    {lang === "ar" ? "تعديل" : "Edit"}
+                  </Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-xl shadow-lg max-w-2xl w-full max-h-[90vh] overflow-auto">
+            <div className="p-4 border-b flex justify-between items-center">
+              <h3 className="font-semibold text-lg">{editingFinding ? (lang === "ar" ? "تعديل ملاحظة" : "Edit Finding") : (lang === "ar" ? "إضافة ملاحظة" : "New Finding")}</h3>
+              <button onClick={() => setModalOpen(false)} className="text-muted-foreground hover:text-foreground">X</button>
+            </div>
+            <form onSubmit={saveFinding} className="p-4 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2 space-y-1">
+                  <label className="text-sm font-medium">{lang === "ar" ? "العنوان" : "Title"}</label>
+                  <Input required value={title} onChange={e => setTitle(e.target.value)} />
+                </div>
+                
+                <div className="space-y-1">
+                  <label className="text-sm font-medium">{lang === "ar" ? "النوع" : "Type"}</label>
+                  <select className="w-full border rounded-md h-9 px-3 text-sm" value={type} onChange={e => setType(e.target.value)}>
+                    <option value="issue">Issue</option>
+                    <option value="improvement">Improvement</option>
+                    <option value="customer_request">Customer Request</option>
+                    <option value="idea">Idea</option>
+                    <option value="operational_note">Operational Note</option>
+                  </select>
+                </div>
+                
+                <div className="space-y-1">
+                  <label className="text-sm font-medium">{lang === "ar" ? "المسار" : "Area"}</label>
+                  <select className="w-full border rounded-md h-9 px-3 text-sm" value={area} onChange={e => setArea(e.target.value)}>
+                    <option value="marketplace">Marketplace</option>
+                    <option value="deals">Deals</option>
+                    <option value="contracts">Contracts</option>
+                    <option value="shipments">Shipments</option>
+                    <option value="reports">Reports</option>
+                    <option value="admin">Admin</option>
+                    <option value="general">General</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-sm font-medium">{lang === "ar" ? "الأولوية" : "Priority"}</label>
+                  <select className="w-full border rounded-md h-9 px-3 text-sm" value={priority} onChange={e => setPriority(e.target.value)}>
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-sm font-medium">{lang === "ar" ? "الحالة" : "Status"}</label>
+                  <select className="w-full border rounded-md h-9 px-3 text-sm" value={status} onChange={e => setStatus(e.target.value)}>
+                    <option value="new">New</option>
+                    <option value="under_review">Under Review</option>
+                    <option value="accepted">Accepted</option>
+                    <option value="deferred">Deferred</option>
+                    <option value="closed">Closed</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1 md:col-span-2">
+                  <label className="text-sm font-medium">{lang === "ar" ? "المصدر" : "Source"}</label>
+                  <select className="w-full border rounded-md h-9 px-3 text-sm" value={sourceLabel} onChange={e => setSourceLabel(e.target.value)}>
+                    <option value="internal">Internal</option>
+                    <option value="uat">UAT</option>
+                    <option value="al_qaryan">Al Qaryan</option>
+                    <option value="customer">Customer</option>
+                    <option value="support">Support</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+
+                <div className="md:col-span-2 space-y-1">
+                  <label className="text-sm font-medium">{lang === "ar" ? "الوصف" : "Description"}</label>
+                  <textarea className="w-full border rounded-md p-2 text-sm min-h-[80px]" value={description} onChange={e => setDescription(e.target.value)} />
+                </div>
+
+                <div className="md:col-span-2 space-y-1">
+                  <label className="text-sm font-medium">{lang === "ar" ? "ملاحظات داخلية" : "Internal Notes"}</label>
+                  <textarea className="w-full border rounded-md p-2 text-sm min-h-[80px] bg-yellow-50/50" value={internalNotes} onChange={e => setInternalNotes(e.target.value)} />
+                </div>
+              </div>
+              
+              <div className="pt-4 flex justify-end gap-2 border-t mt-4">
+                <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>{lang === "ar" ? "إلغاء" : "Cancel"}</Button>
+                <Button type="submit" disabled={saving}>
+                  {saving && <Loader2 className="h-4 w-4 me-2 animate-spin" />}
+                  {lang === "ar" ? "حفظ الملاحظة" : "Save"}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

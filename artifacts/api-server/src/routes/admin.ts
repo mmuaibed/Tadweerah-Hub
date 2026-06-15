@@ -28,6 +28,7 @@ import {
   wasteListingsTable,
   materialCategoriesTable,
   listingOffersTable,
+  adminFindingsTable,
 } from "@workspace/db";
 import { buildCsv } from "../lib/csv";
 import { logAudit } from "../lib/audit";
@@ -2005,6 +2006,114 @@ router.get("/admin/reports/contract-shipments", requireAdminKey, async (req, res
   }
 
   res.json({ summary, rows: serialized, count: serialized.length });
+});
+
+/* -------------------------------------------------------------------------- */
+/* Admin Findings & Wishlist                                                  */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * GET /admin/findings
+ */
+router.get("/admin/findings", requireAdminKey, async (req, res) => {
+  const type = typeof req.query.type === "string" ? req.query.type : null;
+  const area = typeof req.query.area === "string" ? req.query.area : null;
+  const status = typeof req.query.status === "string" ? req.query.status : null;
+  const priority = typeof req.query.priority === "string" ? req.query.priority : null;
+  const limit = Math.min(Number(req.query.limit) || 50, 200);
+  const offset = Number(req.query.offset) || 0;
+
+  const conditions = [];
+  if (type) conditions.push(eq(adminFindingsTable.type, type));
+  if (area) conditions.push(eq(adminFindingsTable.area, area));
+  if (status) conditions.push(eq(adminFindingsTable.status, status));
+  if (priority) conditions.push(eq(adminFindingsTable.priority, priority));
+
+  const rows = await db
+    .select()
+    .from(adminFindingsTable)
+    .where(conditions.length ? and(...conditions) : undefined)
+    .orderBy(desc(adminFindingsTable.created_at))
+    .limit(limit)
+    .offset(offset);
+
+  res.json(rows);
+});
+
+/**
+ * GET /admin/findings/:id
+ */
+router.get("/admin/findings/:id", requireAdminKey, async (req, res) => {
+  const id = String(req.params["id"]);
+  const [row] = await db.select().from(adminFindingsTable).where(eq(adminFindingsTable.id, id));
+  if (!row) {
+    res.status(404).json({ error: "NotFound", message: "Finding not found" });
+    return;
+  }
+  res.json(row);
+});
+
+/**
+ * POST /admin/findings
+ */
+router.post("/admin/findings", requireAdminKey, async (req, res) => {
+  const { title, type, area, priority, status, source_label, description, internal_notes } = req.body;
+  if (!title || !type || !area || !priority || !status) {
+    res.status(400).json({ error: "ValidationError", message: "Missing required fields" });
+    return;
+  }
+
+  const [created] = await db
+    .insert(adminFindingsTable)
+    .values({
+      title,
+      type,
+      area,
+      priority,
+      status,
+      source_label: source_label || null,
+      description: description || null,
+      internal_notes: internal_notes || null,
+    })
+    .returning();
+
+  res.status(201).json(created);
+});
+
+/**
+ * PATCH /admin/findings/:id
+ */
+router.patch("/admin/findings/:id", requireAdminKey, async (req, res) => {
+  const id = String(req.params["id"]);
+  const { title, type, area, priority, status, source_label, description, internal_notes } = req.body ?? {};
+
+  const updates: Record<string, any> = { updated_at: new Date() };
+  if (title !== undefined) updates.title = title;
+  if (type !== undefined) updates.type = type;
+  if (area !== undefined) updates.area = area;
+  if (priority !== undefined) updates.priority = priority;
+  if (status !== undefined) updates.status = status;
+  if (source_label !== undefined) updates.source_label = source_label;
+  if (description !== undefined) updates.description = description;
+  if (internal_notes !== undefined) updates.internal_notes = internal_notes;
+
+  if (Object.keys(updates).length === 1) {
+    res.status(400).json({ error: "ValidationError", message: "No fields to update" });
+    return;
+  }
+
+  const [updated] = await db
+    .update(adminFindingsTable)
+    .set(updates)
+    .where(eq(adminFindingsTable.id, id))
+    .returning();
+
+  if (!updated) {
+    res.status(404).json({ error: "NotFound", message: "Finding not found" });
+    return;
+  }
+
+  res.json(updated);
 });
 
 export default router;

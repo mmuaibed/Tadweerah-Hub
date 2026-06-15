@@ -381,3 +381,13 @@ A simple admin-panel "Master Data" tab could expose:
 
 ## Risk Note: Admin Shipment Restore
 Admin restore of shipments without DB migration relies on timestamps + audit log and is acceptable only for pilot. Long-term implementation should include cancelled_from_status and cancelled_reason columns in the database.
+
+
+## Phase 3-A2 — Admin Wishlist & Findings Register
+**Status:** ✅ Implemented
+**Goal:** Establish an internal tracking system within the Admin Panel to log operational findings, UAT issues, customer requests, and improvements (specifically for partners like Al Qaryan).
+**Details:**
+- Completely isolated feature using the `admin_findings` table.
+- Has zero database relations to active deals, shipments, or users.
+- Does not replace `issue_reports` (which remains for customer-facing support).
+**Risks:** **Low Operational Risk** (completely decoupled from marketplace logic; UI changes confined to Admin Panel).

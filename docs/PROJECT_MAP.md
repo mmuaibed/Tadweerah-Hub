@@ -99,6 +99,7 @@ Tadweerah-Hub/
 | `notifications` | `company_id`, `type`, `read_at` | In-app notifications |
 | `audit_log` | `action`, `entity_type`, `entity_id`, `actor_role`, `severity` | Immutable audit trail |
 | `issue_reports` | `status`, `admin_note` | User-submitted issues |
+| `admin_findings` | `type`, `area`, `status`, `priority` | Internal admin wishlist and operational findings (Zero relations) |
 | `material_categories` | `key`, `name_ar`, `name_en`, `parent_id`, `is_sensitive`, `regulatory_code`, `hazard_level`, `physical_state` | Admin-managed taxonomy |
 | `unit_options` | `key`, `name_ar`, `name_en`, `symbol` | Admin-managed units |
 | `company_categories` | `key`, `name_ar`, `name_en` | Admin-managed company types |
@@ -224,6 +225,7 @@ active → payment_submitted → payment_confirmed → dispatched
 | `PATCH /admin/companies/:id/unblock-offers` | — | Clears `offer_submission_blocked`; resets `receipt_failures_count` |
 | `GET /admin/shipments`<br>`POST /admin/shipments/:id/cancel`<br>`POST /admin/shipments/:id/restore` | — | Returns all contract shipments with metadata for admin panel |
 | `GET /admin/overdue-operations` | — | Returns lists of overdue deals, shipments, and contracts for review |
+| `GET, POST, PATCH /admin/findings` | Any Admin | Isolated CRUD for Admin Wishlist & Findings |
 
 ---
 
