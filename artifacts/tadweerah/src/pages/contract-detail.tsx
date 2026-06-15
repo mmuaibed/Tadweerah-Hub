@@ -1441,22 +1441,31 @@ export function ContractDetailPage() {
   }
 
   return (
-    <AppLayout
-      showSignOut
-      title={contract.reference}
-      subtitle={`${fmtDate(contract.start_date)}${contract.end_date ? ` → ${fmtDate(contract.end_date)}` : ""}`}
-      actions={
-        <div className="flex items-center gap-2">
+    <AppLayout showSignOut>
+      <div className="mb-5 flex flex-col items-start gap-3">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={() => navigate("/contracts")} 
+          className="-ms-2 gap-1.5 h-8 text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
+          {lang === "ar" ? "العودة إلى العقود" : "Back to Contracts"}
+        </Button>
+        <div className="flex w-full flex-col sm:flex-row sm:items-end justify-between gap-2">
+          <div>
+            <h1 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+              {contract.reference}
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {`${fmtDate(contract.start_date)}${contract.end_date ? ` → ${fmtDate(contract.end_date)}` : ""}`}
+            </p>
+          </div>
           <Badge variant="outline" className={`text-xs border ${statusBadgeClass(contract.status)}`}>
             {t(`contract.status.${contract.status}`)}
           </Badge>
-          <Button variant="outline" size="sm" onClick={() => navigate("/contracts")} className="gap-1.5 border-gray-400 h-8 text-xs">
-            <ArrowLeft className="h-3.5 w-3.5" />
-            {t("contracts.nav")}
-          </Button>
         </div>
-      }
-    >
+      </div>
       <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
         {/* Left column: main content */}
         <div className="space-y-4">

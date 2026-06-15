@@ -1,6 +1,6 @@
 import { useClerk, Show, useUser } from "@clerk/react";
 import { Link, useLocation } from "wouter";
-import { LogOut, Bell, MessageSquareWarning, ShieldCheck } from "lucide-react";
+import { LogOut, Bell, MessageSquareWarning, ShieldCheck, Home } from "lucide-react";
 import { useState } from "react";
 import { ReportIssueModal } from "@/components/report-issue-modal";
 import { Button } from "@/components/ui/button";
@@ -165,6 +165,7 @@ export function Topbar({ showSignOut = false }: { showSignOut?: boolean }) {
           to="/"
           className="-mx-2 flex items-center rounded-xl px-2 py-1.5 transition-opacity hover:opacity-70 active:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
           aria-label={t("app.name")}
+          title={lang === "ar" ? "العودة إلى الصفحة الرئيسية" : "Return to Home"}
         >
           <img
             src={`${basePath}/logo.png`}
@@ -194,6 +195,17 @@ export function Topbar({ showSignOut = false }: { showSignOut?: boolean }) {
           <Show when="signed-in">
             {!isPublicPage && (
               <>
+                <Link to="/">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="flex gap-1.5 text-muted-foreground hover:text-foreground px-2 h-9 mr-1" 
+                    title={lang === "ar" ? "العودة إلى الصفحة الرئيسية" : "Return to Home"}
+                  >
+                    <Home className="h-4 w-4" />
+                    <span className="hidden sm:inline">{lang === "ar" ? "الرئيسية" : "Home"}</span>
+                  </Button>
+                </Link>
                 {isAdmin && (
                   <Link to="/admin">
                     <Button variant="outline" size="sm" className="hidden sm:flex gap-1.5 text-primary border-primary/20 hover:bg-primary/5 mr-2">
