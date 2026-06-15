@@ -327,7 +327,13 @@ A simple admin-panel "Master Data" tab could expose:
 - **Status:** ✅ Implemented, deployed, and UAT passed.
 - **Scope:** Allows platform admin to specify an existing company member as the operational email notification recipient (`مستلم تنبيهات البريد`) without changing the company owner (`مالك حساب الشركة`). Includes fallback logic to the default owner if the custom recipient is invalid or unset.
 
-### 4. Phase 3-A — Admin Master Data MVP
+### 4. Phase 3-A1 — Admin Backup Allowlist
+- **Priority:** Done.
+- **Status:** ✅ Implemented and UAT passed.
+- **Scope:** Fast, secure fallback for adding backup admin team members by leveraging the `VITE_TADWEERAH_ADMIN_EMAILS` environment variable to bypass onboarding, combined with the company invite flow for initial user record creation. Admin roles and `admin_invitations` tables deferred to future.
+- **Note:** `info@tadweerah.com` is reserved for support routing. Backend remains protected by `ADMIN_API_KEY`.
+
+### 5. Phase 3-A — Admin Master Data MVP
 - **Priority:** Should do before broader operations if pilot requires frequent taxonomy/unit edits. Can defer if pilot taxonomy is stable.
 - **Scope:** Admin CRUD UI for material categories and unit options.
 

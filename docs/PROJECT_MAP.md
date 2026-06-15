@@ -484,7 +484,14 @@ VITE_API_URL                   # backend API base URL
 - **Fallback behavior:** If no custom recipient is set, or if the custom recipient is invalid/no longer a member, the backend automatically falls back to routing emails to the owner.
 - **Not implemented (deferred to Phase 3):** Ownership transfer, permission transfer, role changes, and all-member notification preferences.
 
-### 4. Phase 3-A — Admin Master Data MVP
+### 4. Phase 3-A1 — Admin Backup Allowlist
+- **Status:** ✅ Implemented and UAT passed.
+- **Scope:** Fast, secure fallback for adding backup admin team members without requiring full RBAC or Admin UI overhaul.
+- **Implementation:** Admins are added to the frontend `VITE_TADWEERAH_ADMIN_EMAILS` allowlist environment variable. This safely bypasses forced company onboarding (`/onboarding/company`).
+- **Deferred to future (Admin Team Invitations/Roles):** Creating a dedicated admin team member invitation flow via DB (`admin_invitations` / `admin_members`). The allowlist strategy is used as a temporary MVP.
+- **Note:** `info@tadweerah.com` is reserved for support routing, not used for direct admin access. The backend `/admin` routes remain protected by `ADMIN_API_KEY` as a strong second layer of defense.
+
+### 5. Phase 3-A — Admin Master Data MVP
 - Should do before broader operations if pilot requires frequent taxonomy/unit edits.
 - Can defer if pilot taxonomy is stable.
 
