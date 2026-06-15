@@ -484,6 +484,11 @@ VITE_API_URL                   # backend API base URL
 - **Fallback behavior:** If no custom recipient is set, or if the custom recipient is invalid/no longer a member, the backend automatically falls back to routing emails to the owner.
 - **Not implemented (deferred to Phase 3):** Ownership transfer, permission transfer, role changes, and all-member notification preferences.
 
+### 4. Phase 2-G & 2-H — Billing & Admin Reports Design Notes
+- **Status:** ✅ Design Approved (No Implementation Yet).
+- **Scope:** Defines the billing model (Tadweerah fees) and the dynamic, period-based admin reporting system.
+- **Documentation:** See `docs/PHASE_2_G_H_DESIGN_NOTES.md` for full details.
+
 ### 4. Phase 3-A1 — Admin Backup Allowlist
 - **Status:** ✅ Implemented and UAT passed.
 - **Scope:** Fast, secure fallback for adding backup admin team members without requiring full RBAC or Admin UI overhaul.

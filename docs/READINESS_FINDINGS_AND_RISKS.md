@@ -327,6 +327,12 @@ A simple admin-panel "Master Data" tab could expose:
 - **Status:** ✅ Implemented, deployed, and UAT passed.
 - **Scope:** Allows platform admin to specify an existing company member as the operational email notification recipient (`مستلم تنبيهات البريد`) without changing the company owner (`مالك حساب الشركة`). Includes fallback logic to the default owner if the custom recipient is invalid or unset.
 
+### 4. Phase 2-G & 2-H — Billing & Admin Reports Design Notes
+- **Priority:** Done.
+- **Status:** ✅ Design Approved (No Implementation Yet).
+- **Scope:** Strategic design note establishing the billing/fee separation model and the architecture for dynamic, period-based management reports.
+- **Documentation:** Logged in `docs/PHASE_2_G_H_DESIGN_NOTES.md`.
+
 ### 4. Phase 3-A1 — Admin Backup Allowlist
 - **Priority:** Done.
 - **Status:** ✅ Implemented and UAT passed.
