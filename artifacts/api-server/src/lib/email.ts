@@ -203,7 +203,7 @@ interface SupportNotificationParams {
 }
 
 export async function sendSupportNotification(p: SupportNotificationParams): Promise<boolean> {
-  const supportEmail = process.env.SUPPORT_EMAIL;
+  const supportEmail = process.env.SUPPORT_EMAIL ?? "info@tadweerah.com";
   if (!resend) {
     console.info("[email] RESEND_API_KEY not set — skipping support notification for report:", p.reportId);
     return true; // Return true in dev so frontend succeeds
