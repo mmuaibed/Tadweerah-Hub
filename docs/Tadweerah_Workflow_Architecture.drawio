@@ -1,0 +1,123 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile version="24.4.0">
+	<diagram id="page1" name="1. Overview &amp; Scope">
+		<mxGraphModel dx="1422" dy="798" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+			<root>
+				<mxCell id="0" />
+				<mxCell id="1" parent="0" />
+				<mxCell id="p1_1" value="&lt;div style=&quot;font-family: Arial, sans-serif; padding: 10px;&quot;&gt;&lt;h2&gt;Overview &amp; Scope&lt;/h2&gt;&lt;p style=&quot;white-space: pre-wrap;&quot;&gt;Evolution from Phase 1 MVP to Strategic Operating Model&#10;&#10;- Phase 1 MVP: Onboarding, Spot Deals, Off-platform payments, Audit readiness.&#10;- Current: Operational Contracts, Shipments, Advanced Weights, Reports, Admin Wishlist.&#10;- Future: Transporter Marketplace, Recycled Materials, Advanced KPIs.&lt;/p&gt;&lt;/div&gt;" style="text;html=1;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+					<mxGeometry x="50" y="50" width="400" height="300" as="geometry" />
+				</mxCell>
+				<mxCell id="p1_2" value="&lt;div style=&quot;font-family: Arial, sans-serif; padding: 10px;&quot;&gt;&lt;h2&gt;Current vs Future Scope Map&lt;/h2&gt;&lt;p style=&quot;white-space: pre-wrap;&quot;&gt;🟢 Current Implemented:&#10;- Registration &amp;amp; Auth&#10;- Spot Marketplace&#10;- Offers &amp;amp; Deals&#10;- Operational Contracts&#10;- Shipments &amp;amp; Weights&#10;- Reports &amp;amp; Analytics&#10;- Offline-Assisted Transport&#10;- Admin Ops &amp;amp; Findings&#10;&#10;🔵 Proposed Future:&#10;- Licensed Transporter Marketplace&#10;- Recycled Materials Marketplace&#10;- Advanced KPIs&#10;- Billing / Claims&#10;- Branch Routing&lt;/p&gt;&lt;/div&gt;" style="text;html=1;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+					<mxGeometry x="50" y="400" width="400" height="400" as="geometry" />
+				</mxCell>
+				<mxCell id="p1_3" value="&lt;div style=&quot;font-family: monospace; background: #f4f4f4; padding: 10px; border-radius: 5px; white-space: pre-wrap; font-size: 11px;&quot;&gt;&lt;b&gt;Mermaid Code (Insert -&gt; Advanced -&gt; Mermaid):&lt;/b&gt;&lt;br/&gt;flowchart TD&#10;    Start((Start)) --&amp;gt; Auth[Registration &amp;amp; Auth]&#10;    Auth --&amp;gt; AdminApprove{Admin Approval?}&#10;    AdminApprove -- No --&amp;gt; Hold[Pending/Rejected]&#10;    AdminApprove -- Yes --&amp;gt; Dashboard[Company Dashboard]&#10;    Dashboard --&amp;gt; PathChoice{Choose Operation}&#10;    PathChoice -- Spot Market --&amp;gt; Marketplace[Marketplace &amp;amp; Deals]&#10;    PathChoice -- Long-term --&amp;gt; Contracts[Operational Contracts]&#10;    Marketplace --&amp;gt; Transport[Transport Workflow]&#10;    Contracts --&amp;gt; Shipments[Contract Shipments]&#10;    Shipments --&amp;gt; Transport&#10;    Transport --&amp;gt; Closure[Completion]&#10;    Closure --&amp;gt; Reports[Reports Engine]&#10;    Reports --&amp;gt; End((End))&lt;/div&gt;" style="text;html=1;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+					<mxGeometry x="500" y="50" width="1000" height="750" as="geometry" />
+				</mxCell>
+			</root>
+		</mxGraphModel>
+	</diagram>
+	<diagram id="page2" name="2. Registration &amp; Governance">
+		<mxGraphModel dx="1422" dy="798" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+			<root>
+				<mxCell id="0" />
+				<mxCell id="1" parent="0" />
+				<mxCell id="p2_1" value="&lt;div style=&quot;font-family: Arial, sans-serif; padding: 10px;&quot;&gt;&lt;h2&gt;Company Registration &amp; Onboarding&lt;/h2&gt;&lt;p style=&quot;white-space: pre-wrap;&quot;&gt;Current Implemented&#10;Objective: Vet companies and verify licenses.&#10;Actors: Visitor, Clerk Auth, Admin&#10;Statuses: pending, approved, rejected.&lt;/p&gt;&lt;/div&gt;" style="text;html=1;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" vertex="1" parent="1">
+					<mxGeometry x="50" y="50" width="400" height="200" as="geometry" />
+				</mxCell>
+				<mxCell id="p2_2" value="&lt;div style=&quot;font-family: monospace; background: #f4f4f4; padding: 10px; border-radius: 5px; white-space: pre-wrap; font-size: 11px;&quot;&gt;&lt;b&gt;Mermaid Code (Insert -&gt; Advanced -&gt; Mermaid):&lt;/b&gt;&lt;br/&gt;sequenceDiagram&#10;    participant User&#10;    participant Clerk&#10;    participant App&#10;    participant Admin&#10;    User-&amp;gt;&amp;gt;Clerk: OTP Signup&#10;    Clerk--&amp;gt;&amp;gt;App: JWT Token&#10;    App-&amp;gt;&amp;gt;User: Redirect to Onboarding&#10;    User-&amp;gt;&amp;gt;App: Submit Company Profile&#10;    App-&amp;gt;&amp;gt;Admin: Alert Pending Approval&#10;    Admin-&amp;gt;&amp;gt;App: Approve License&#10;    App-&amp;gt;&amp;gt;User: Platform Access Granted&lt;/div&gt;" style="text;html=1;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+					<mxGeometry x="500" y="50" width="1000" height="350" as="geometry" />
+				</mxCell>
+				<mxCell id="p2_3" value="&lt;div style=&quot;font-family: Arial, sans-serif; padding: 10px;&quot;&gt;&lt;h2&gt;Admin Operations&lt;/h2&gt;&lt;p style=&quot;white-space: pre-wrap;&quot;&gt;Current Implemented&#10;Objective: Platform governance, conflict resolution, master data management.&#10;Actors: Admin&lt;/p&gt;&lt;/div&gt;" style="text;html=1;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" vertex="1" parent="1">
+					<mxGeometry x="50" y="450" width="400" height="200" as="geometry" />
+				</mxCell>
+				<mxCell id="p2_4" value="&lt;div style=&quot;font-family: monospace; background: #f4f4f4; padding: 10px; border-radius: 5px; white-space: pre-wrap; font-size: 11px;&quot;&gt;&lt;b&gt;Mermaid Code (Insert -&gt; Advanced -&gt; Mermaid):&lt;/b&gt;&lt;br/&gt;flowchart TD&#10;    Admin[Admin] --&amp;gt; Intervene[Deal Interventions]&#10;    Admin --&amp;gt; Co[Company Approvals]&#10;    Admin --&amp;gt; Master[Master Data / Taxonomies]&#10;    Intervene --&amp;gt; Audit[Audit Log Record]&lt;/div&gt;" style="text;html=1;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+					<mxGeometry x="500" y="450" width="1000" height="350" as="geometry" />
+				</mxCell>
+			</root>
+		</mxGraphModel>
+	</diagram>
+	<diagram id="page3" name="3. Marketplaces Ecosystem">
+		<mxGraphModel dx="1422" dy="798" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+			<root>
+				<mxCell id="0" />
+				<mxCell id="1" parent="0" />
+				<mxCell id="p3_1" value="&lt;div style=&quot;font-family: Arial, sans-serif; padding: 10px;&quot;&gt;&lt;h2&gt;Current Spot Marketplace&lt;/h2&gt;&lt;p style=&quot;white-space: pre-wrap;&quot;&gt;Source / Generator -&amp;gt; Recycler&#10;&#10;Objective: Spot trading of raw waste/materials.&#10;Statuses: open, filled, expired, cancelled.&lt;/p&gt;&lt;/div&gt;" style="text;html=1;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+					<mxGeometry x="50" y="50" width="400" height="200" as="geometry" />
+				</mxCell>
+				<mxCell id="p3_2" value="&lt;div style=&quot;font-family: monospace; background: #f4f4f4; padding: 10px; border-radius: 5px; white-space: pre-wrap; font-size: 11px;&quot;&gt;&lt;b&gt;Mermaid Code (Insert -&gt; Advanced -&gt; Mermaid):&lt;/b&gt;&lt;br/&gt;stateDiagram-v2&#10;    [*] --&amp;gt; Draft: Create Listing&#10;    Draft --&amp;gt; Open: Publish&#10;    Open --&amp;gt; Filled: Offer Accepted (Deal Active)&#10;    Open --&amp;gt; Expired: Time Limit Reached&#10;    Open --&amp;gt; Cancelled: Creator Cancels&lt;/div&gt;" style="text;html=1;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+					<mxGeometry x="500" y="50" width="1000" height="350" as="geometry" />
+				</mxCell>
+				<mxCell id="p3_3" value="&lt;div style=&quot;font-family: Arial, sans-serif; padding: 10px;&quot;&gt;&lt;h2&gt;Proposed Recycled Materials Marketplace&lt;/h2&gt;&lt;p style=&quot;white-space: pre-wrap;&quot;&gt;FUTURE PROPOSED&#10;Recycler -&amp;gt; Factory / Buyer&#10;&#10;Objective: Marketing of processed recycled materials as raw materials for manufacturing.&#10;Differences: High focus on purity, specs, and lab certificates.&lt;/p&gt;&lt;/div&gt;" style="text;html=1;whiteSpace=wrap;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+					<mxGeometry x="50" y="450" width="400" height="200" as="geometry" />
+				</mxCell>
+				<mxCell id="p3_4" value="&lt;div style=&quot;font-family: monospace; background: #f4f4f4; padding: 10px; border-radius: 5px; white-space: pre-wrap; font-size: 11px;&quot;&gt;&lt;b&gt;Mermaid Code (Insert -&gt; Advanced -&gt; Mermaid):&lt;/b&gt;&lt;br/&gt;sequenceDiagram&#10;    participant Recycler as Recycler (Seller)&#10;    participant Platform as Tadweerah Market&#10;    participant Factory as Factory (Buyer)&#10;    Recycler-&amp;gt;&amp;gt;Platform: Publish Recycled Material &amp;amp; Certs&#10;    Platform--&amp;gt;&amp;gt;Factory: Notify Matching Factories&#10;    Factory-&amp;gt;&amp;gt;Platform: Submit Purchase Offer&#10;    Platform-&amp;gt;&amp;gt;Recycler: Forward Offer&#10;    Recycler-&amp;gt;&amp;gt;Platform: Accept Offer (Deal Active)&#10;    Platform-&amp;gt;&amp;gt;Factory: Confirm Deal&#10;    Note over Recycler,Factory: Logistics and Delivery&#10;    Factory-&amp;gt;&amp;gt;Platform: Confirm Receipt &amp;amp; Quality&lt;/div&gt;" style="text;html=1;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+					<mxGeometry x="500" y="450" width="1000" height="400" as="geometry" />
+				</mxCell>
+			</root>
+		</mxGraphModel>
+	</diagram>
+	<diagram id="page4" name="4. Contractual Operations">
+		<mxGraphModel dx="1422" dy="798" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+			<root>
+				<mxCell id="0" />
+				<mxCell id="1" parent="0" />
+				<mxCell id="p4_1" value="&lt;div style=&quot;font-family: Arial, sans-serif; padding: 10px;&quot;&gt;&lt;h2&gt;Operational Contracts Workflow&lt;/h2&gt;&lt;p style=&quot;white-space: pre-wrap;&quot;&gt;Current Implemented&#10;Objective: B2B scheduled flow of materials outside spot market.&#10;Statuses: draft, pending_confirmation, active, completed, cancelled.&lt;/p&gt;&lt;/div&gt;" style="text;html=1;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+					<mxGeometry x="50" y="50" width="400" height="200" as="geometry" />
+				</mxCell>
+				<mxCell id="p4_2" value="&lt;div style=&quot;font-family: monospace; background: #f4f4f4; padding: 10px; border-radius: 5px; white-space: pre-wrap; font-size: 11px;&quot;&gt;&lt;b&gt;Mermaid Code (Insert -&gt; Advanced -&gt; Mermaid):&lt;/b&gt;&lt;br/&gt;stateDiagram-v2&#10;    [*] --&amp;gt; Draft: Create Contract&#10;    Draft --&amp;gt; Pending_Confirmation: Submit&#10;    Pending_Confirmation --&amp;gt; Active: Counterparty Accepts&#10;    Pending_Confirmation --&amp;gt; Cancelled: Rejected&#10;    Active --&amp;gt; Completed: Terminal Shipments&lt;/div&gt;" style="text;html=1;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+					<mxGeometry x="500" y="50" width="1000" height="350" as="geometry" />
+				</mxCell>
+				<mxCell id="p4_3" value="&lt;div style=&quot;font-family: Arial, sans-serif; padding: 10px;&quot;&gt;&lt;h2&gt;Shipments &amp; Weights Workflow&lt;/h2&gt;&lt;p style=&quot;white-space: pre-wrap;&quot;&gt;Current Implemented&#10;Objective: Track execution of active contracts and apply weight policies.&#10;Statuses: planned, dispatched, received, closed, cancelled.&lt;/p&gt;&lt;/div&gt;" style="text;html=1;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+					<mxGeometry x="50" y="450" width="400" height="200" as="geometry" />
+				</mxCell>
+				<mxCell id="p4_4" value="&lt;div style=&quot;font-family: monospace; background: #f4f4f4; padding: 10px; border-radius: 5px; white-space: pre-wrap; font-size: 11px;&quot;&gt;&lt;b&gt;Mermaid Code (Insert -&gt; Advanced -&gt; Mermaid):&lt;/b&gt;&lt;br/&gt;stateDiagram-v2&#10;    [*] --&amp;gt; Planned: Create Shipment&#10;    Planned --&amp;gt; Dispatched: Source Weight Entered&#10;    Dispatched --&amp;gt; Received: Destination Weight Entered&#10;    Received --&amp;gt; Closed: Auto-calculate Final Weight &amp;amp; Value&lt;/div&gt;" style="text;html=1;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+					<mxGeometry x="500" y="450" width="1000" height="350" as="geometry" />
+				</mxCell>
+			</root>
+		</mxGraphModel>
+	</diagram>
+	<diagram id="page5" name="5. Logistics &amp; Transport">
+		<mxGraphModel dx="1422" dy="798" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+			<root>
+				<mxCell id="0" />
+				<mxCell id="1" parent="0" />
+				<mxCell id="p5_1" value="&lt;div style=&quot;font-family: Arial, sans-serif; padding: 10px;&quot;&gt;&lt;h2&gt;Current Transport Workflow&lt;/h2&gt;&lt;p style=&quot;white-space: pre-wrap;&quot;&gt;Current Implemented&#10;Objective: Basic offline-assisted transport request.&#10;Actors: Requester, Tadweerah Ops.&lt;/p&gt;&lt;/div&gt;" style="text;html=1;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+					<mxGeometry x="50" y="50" width="400" height="200" as="geometry" />
+				</mxCell>
+				<mxCell id="p5_2" value="&lt;div style=&quot;font-family: monospace; background: #f4f4f4; padding: 10px; border-radius: 5px; white-space: pre-wrap; font-size: 11px;&quot;&gt;&lt;b&gt;Mermaid Code (Insert -&gt; Advanced -&gt; Mermaid):&lt;/b&gt;&lt;br/&gt;sequenceDiagram&#10;    participant User&#10;    participant System&#10;    participant OpsTeam&#10;    User-&amp;gt;&amp;gt;System: Submit Transport Request&#10;    System-&amp;gt;&amp;gt;OpsTeam: Email Notification&#10;    OpsTeam-&amp;gt;&amp;gt;OpsTeam: Offline Coordination&#10;    OpsTeam-&amp;gt;&amp;gt;System: Update Status&#10;    System-&amp;gt;&amp;gt;User: Notify Status Change&lt;/div&gt;" style="text;html=1;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+					<mxGeometry x="500" y="50" width="1000" height="350" as="geometry" />
+				</mxCell>
+				<mxCell id="p5_3" value="&lt;div style=&quot;font-family: Arial, sans-serif; padding: 10px;&quot;&gt;&lt;h2&gt;Proposed Licensed Transporter Marketplace&lt;/h2&gt;&lt;p style=&quot;white-space: pre-wrap;&quot;&gt;FUTURE PROPOSED&#10;Objective: Automated bidding, assigning, and tracking of licensed transporters.&#10;Features: Bidding, automated selection, live tracking, automated compliance check.&lt;/p&gt;&lt;/div&gt;" style="text;html=1;whiteSpace=wrap;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+					<mxGeometry x="50" y="450" width="400" height="200" as="geometry" />
+				</mxCell>
+				<mxCell id="p5_4" value="&lt;div style=&quot;font-family: monospace; background: #f4f4f4; padding: 10px; border-radius: 5px; white-space: pre-wrap; font-size: 11px;&quot;&gt;&lt;b&gt;Mermaid Code (Insert -&gt; Advanced -&gt; Mermaid):&lt;/b&gt;&lt;br/&gt;stateDiagram-v2&#10;    [*] --&amp;gt; Request_Created: Shipment requires transport&#10;    Request_Created --&amp;gt; Bidding_Open: Notify Licensed Transporters&#10;    Bidding_Open --&amp;gt; Quotes_Received: Transporters submit bids&#10;    Quotes_Received --&amp;gt; Transporter_Assigned: Requester selects quote&#10;    Transporter_Assigned --&amp;gt; Driver_Details_Provided: Transporter assigns vehicle/driver&#10;    Driver_Details_Provided --&amp;gt; In_Transit: Material picked up&#10;    In_Transit --&amp;gt; Delivered: Material dropped off&#10;    Delivered --&amp;gt; [*]&lt;/div&gt;" style="text;html=1;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+					<mxGeometry x="500" y="450" width="1000" height="400" as="geometry" />
+				</mxCell>
+			</root>
+		</mxGraphModel>
+	</diagram>
+	<diagram id="page6" name="6. Back-office &amp; Analytics">
+		<mxGraphModel dx="1422" dy="798" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+			<root>
+				<mxCell id="0" />
+				<mxCell id="1" parent="0" />
+				<mxCell id="p6_1" value="&lt;div style=&quot;font-family: Arial, sans-serif; padding: 10px;&quot;&gt;&lt;h2&gt;Reports Workflow&lt;/h2&gt;&lt;p style=&quot;white-space: pre-wrap;&quot;&gt;Current Implemented&#10;Objective: Aggregate data for completed deals and shipments.&#10;Output: CSV and Dashboards.&lt;/p&gt;&lt;/div&gt;" style="text;html=1;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+					<mxGeometry x="50" y="50" width="400" height="150" as="geometry" />
+				</mxCell>
+				<mxCell id="p6_2" value="&lt;div style=&quot;font-family: Arial, sans-serif; padding: 10px;&quot;&gt;&lt;h2&gt;Admin Findings &amp; Wishlist&lt;/h2&gt;&lt;p style=&quot;white-space: pre-wrap;&quot;&gt;Current Implemented&#10;Objective: Internal tracking of operational findings for Strategic Partners.&lt;/p&gt;&lt;/div&gt;" style="text;html=1;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" vertex="1" parent="1">
+					<mxGeometry x="50" y="250" width="400" height="150" as="geometry" />
+				</mxCell>
+				<mxCell id="p6_3" value="&lt;div style=&quot;font-family: Arial, sans-serif; padding: 10px;&quot;&gt;&lt;h2&gt;Future Analytical &amp; Gov Capabilities&lt;/h2&gt;&lt;p style=&quot;white-space: pre-wrap;&quot;&gt;FUTURE PROPOSED&#10;&#10;- Advanced KPIs / Analytics: Predictive and macro indicators.&#10;- Payment Claims / Billing Support: Separation of platform fees from transaction values.&#10;- Team Permissions &amp;amp; Branch Routing: Multi-site RBAC routing rules.&lt;/p&gt;&lt;/div&gt;" style="text;html=1;whiteSpace=wrap;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+					<mxGeometry x="50" y="450" width="400" height="200" as="geometry" />
+				</mxCell>
+				<mxCell id="p6_4" value="&lt;div style=&quot;font-family: monospace; background: #f4f4f4; padding: 10px; border-radius: 5px; white-space: pre-wrap; font-size: 11px;&quot;&gt;&lt;b&gt;Mermaid Code (Insert -&gt; Advanced -&gt; Mermaid):&lt;/b&gt;&lt;br/&gt;flowchart LR&#10;    User[User/Admin] --&amp;gt; Select[Select Report]&#10;    Select --&amp;gt; Filter[Filter Dates]&#10;    Filter --&amp;gt; Agg[Aggregate Totals]&#10;    Agg --&amp;gt; UI[Show Dashboard]&#10;    UI --&amp;gt; CSV[Export CSV]&lt;/div&gt;" style="text;html=1;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+					<mxGeometry x="500" y="50" width="1000" height="300" as="geometry" />
+				</mxCell>
+				<mxCell id="p6_5" value="&lt;div style=&quot;font-family: monospace; background: #f4f4f4; padding: 10px; border-radius: 5px; white-space: pre-wrap; font-size: 11px;&quot;&gt;&lt;b&gt;Mermaid Code (Insert -&gt; Advanced -&gt; Mermaid):&lt;/b&gt;&lt;br/&gt;stateDiagram-v2&#10;    [*] --&amp;gt; New: Log Finding&#10;    New --&amp;gt; Under_Review: Analyze&#10;    Under_Review --&amp;gt; Accepted: Approve Dev&#10;    Accepted --&amp;gt; Closed: Implemented&#10;    Under_Review --&amp;gt; Deferred: Postpone&lt;/div&gt;" style="text;html=1;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+					<mxGeometry x="500" y="400" width="1000" height="300" as="geometry" />
+				</mxCell>
+			</root>
+		</mxGraphModel>
+	</diagram>
+</mxfile>
