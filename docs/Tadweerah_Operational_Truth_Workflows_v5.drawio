@@ -1,0 +1,957 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile version="24.4.0">
+	<diagram id="p1" name="1. Company Registration">
+		<mxGraphModel dx="1422" dy="798" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="827" math="0" shadow="1">
+			<root>
+				<mxCell id="0" />
+				<mxCell id="1" parent="0" />
+				<mxCell id="p1_t" value="Company Registration &amp; Approval" style="text;html=0;fontSize=24;fontStyle=1;align=left;fontColor=#1ba1e2;" vertex="1" parent="1">
+					<mxGeometry x="50" y="40" width="1100" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="p1_d" value="Registration sets company to pending. Admin manually reviews documents and overrides license status." style="text;html=0;fontSize=14;align=left;whiteSpace=wrap;fontColor=#444444;" vertex="1" parent="1">
+					<mxGeometry x="50" y="90" width="1100" height="60" as="geometry" />
+				</mxCell>
+				<mxCell id="p1_n1" value="1. Create Profile&#10;(POST /companies)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#001A33;" vertex="1" parent="1">
+					<mxGeometry x="80" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p1_n2" value="2. Status: Pending&#10;(Visitor Access Only)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#1A3300;" vertex="1" parent="1">
+					<mxGeometry x="260" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p1_n3" value="3. Blocked from&#10;Marketplace" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#f8cecc;strokeColor=#b85450;fontColor=#660000;" vertex="1" parent="1">
+					<mxGeometry x="260" y="340" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p1_n4" value="4. Admin Verifies&#10;Offline Documents" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontColor=#4D3300;" vertex="1" parent="1">
+					<mxGeometry x="440" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p1_n5" value="5. Admin Review" style="rhombus;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" vertex="1" parent="1">
+					<mxGeometry x="620" y="190" width="120" height="100" as="geometry" />
+				</mxCell>
+				<mxCell id="p1_n6" value="6a. Status: Approved&#10;(PATCH /license)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#3A2152;" vertex="1" parent="1">
+					<mxGeometry x="800" y="120" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p1_n7" value="6b. Status: Rejected&#10;(PATCH /license)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#f8cecc;strokeColor=#b85450;fontColor=#660000;" vertex="1" parent="1">
+					<mxGeometry x="800" y="280" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p1_n8" value="7. Full Marketplace&#10;Access Granted" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#1A3300;" vertex="1" parent="1">
+					<mxGeometry x="980" y="120" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p1_e1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p1_n1" target="p1_n2">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p1_e2" value="Blocks" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p1_n2" target="p1_n3">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p1_e3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p1_n2" target="p1_n4">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p1_e4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p1_n4" target="p1_n5">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p1_e5" value="Valid" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p1_n5" target="p1_n6">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p1_e6" value="Invalid" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p1_n5" target="p1_n7">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p1_e7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p1_n6" target="p1_n8">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_bg" value="" style="rounded=1;whiteSpace=wrap;html=0;fontSize=12;align=center;shadow=1;fillColor=#fafafa;strokeColor=#e6e6e6;" vertex="1" parent="1">
+					<mxGeometry x="50" y="700" width="1080" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_lbl" value="LEGEND:" style="text;html=0;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+					<mxGeometry x="70" y="730" width="80" height="20" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b1" value="User Action&#10;(Current)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#001A33;" vertex="1" parent="1">
+					<mxGeometry x="150" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b2" value="System Auto&#10;(Current)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#1A3300;" vertex="1" parent="1">
+					<mxGeometry x="310" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b3" value="Manual / Offline" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontColor=#4D3300;" vertex="1" parent="1">
+					<mxGeometry x="470" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b4" value="Admin Override" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#3A2152;" vertex="1" parent="1">
+					<mxGeometry x="630" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b5" value="Blocked / Error&#10;/ Expired" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#f8cecc;strokeColor=#b85450;fontColor=#660000;" vertex="1" parent="1">
+					<mxGeometry x="790" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b6" value="Proposed Future" style="dashed=1;rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#4D3B11;" vertex="1" parent="1">
+					<mxGeometry x="950" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+			</root>
+		</mxGraphModel>
+	</diagram>
+	<diagram id="p2" name="2. Marketplace Listing">
+		<mxGraphModel dx="1422" dy="798" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="827" math="0" shadow="1">
+			<root>
+				<mxCell id="0" />
+				<mxCell id="1" parent="0" />
+				<mxCell id="p2_t" value="Marketplace Listing Flow" style="text;html=0;fontSize=24;fontStyle=1;align=left;fontColor=#1ba1e2;" vertex="1" parent="1">
+					<mxGeometry x="50" y="40" width="1100" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="p2_d" value="Listing moves to 'closed' (not filled) upon offer acceptance. Manual cancel only if no accepted offers." style="text;html=0;fontSize=14;align=left;whiteSpace=wrap;fontColor=#444444;" vertex="1" parent="1">
+					<mxGeometry x="50" y="90" width="1100" height="60" as="geometry" />
+				</mxCell>
+				<mxCell id="p2_n1" value="1. Create Listing&#10;(POST /listings)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#001A33;" vertex="1" parent="1">
+					<mxGeometry x="80" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p2_n2" value="2. Status: Open" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#1A3300;" vertex="1" parent="1">
+					<mxGeometry x="260" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p2_n3" value="3. Eligibility &amp; Target&#10;Check (is_sensitive)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#1A3300;" vertex="1" parent="1">
+					<mxGeometry x="440" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p2_n4" value="4. Listing State" style="rhombus;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" vertex="1" parent="1">
+					<mxGeometry x="620" y="190" width="120" height="100" as="geometry" />
+				</mxCell>
+				<mxCell id="p2_n5" value="5a. Manual Cancel&#10;(POST /cancel)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#001A33;" vertex="1" parent="1">
+					<mxGeometry x="800" y="80" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p2_n6" value="5b. Offer Accepted&#10;(POST /offers/:id/accept)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#001A33;" vertex="1" parent="1">
+					<mxGeometry x="800" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p2_n7" value="5c. 31 Days Expiry&#10;Job" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#1A3300;" vertex="1" parent="1">
+					<mxGeometry x="800" y="320" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p2_n8" value="6. Status: Closed&#10;(Not Filled)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#1A3300;" vertex="1" parent="1">
+					<mxGeometry x="1000" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p2_n9" value="6b. Status: Expired&#10;/ Cancelled" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#f8cecc;strokeColor=#b85450;fontColor=#660000;" vertex="1" parent="1">
+					<mxGeometry x="1000" y="320" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p2_e1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p2_n1" target="p2_n2">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p2_e2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p2_n2" target="p2_n3">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p2_e3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p2_n3" target="p2_n4">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p2_e4" value="User Cancels" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p2_n4" target="p2_n5">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p2_e5" value="Offer Accepted" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p2_n4" target="p2_n6">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p2_e6" value="Timeout" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p2_n4" target="p2_n7">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p2_e7" value="Auto-Close" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p2_n6" target="p2_n8">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p2_e8" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p2_n5" target="p2_n9">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p2_e9" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p2_n7" target="p2_n9">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_bg" value="" style="rounded=1;whiteSpace=wrap;html=0;fontSize=12;align=center;shadow=1;fillColor=#fafafa;strokeColor=#e6e6e6;" vertex="1" parent="1">
+					<mxGeometry x="50" y="700" width="1080" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_lbl" value="LEGEND:" style="text;html=0;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+					<mxGeometry x="70" y="730" width="80" height="20" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b1" value="User Action&#10;(Current)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#001A33;" vertex="1" parent="1">
+					<mxGeometry x="150" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b2" value="System Auto&#10;(Current)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#1A3300;" vertex="1" parent="1">
+					<mxGeometry x="310" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b3" value="Manual / Offline" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontColor=#4D3300;" vertex="1" parent="1">
+					<mxGeometry x="470" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b4" value="Admin Override" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#3A2152;" vertex="1" parent="1">
+					<mxGeometry x="630" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b5" value="Blocked / Error&#10;/ Expired" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#f8cecc;strokeColor=#b85450;fontColor=#660000;" vertex="1" parent="1">
+					<mxGeometry x="790" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b6" value="Proposed Future" style="dashed=1;rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#4D3B11;" vertex="1" parent="1">
+					<mxGeometry x="950" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+			</root>
+		</mxGraphModel>
+	</diagram>
+	<diagram id="p3" name="3. Offers &amp; Deals">
+		<mxGraphModel dx="1422" dy="798" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="827" math="0" shadow="1">
+			<root>
+				<mxCell id="0" />
+				<mxCell id="1" parent="0" />
+				<mxCell id="p3_t" value="Offers &amp; Deals Flow" style="text;html=0;fontSize=24;fontStyle=1;align=left;fontColor=#1ba1e2;" vertex="1" parent="1">
+					<mxGeometry x="50" y="40" width="1100" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="p3_d" value="Offers remain pending until seller accepts. Acceptance creates an 'active' deal and rejects all competing offers." style="text;html=0;fontSize=14;align=left;whiteSpace=wrap;fontColor=#444444;" vertex="1" parent="1">
+					<mxGeometry x="50" y="90" width="1100" height="60" as="geometry" />
+				</mxCell>
+				<mxCell id="p3_n1" value="1. Submit Offer&#10;(POST /offers)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#001A33;" vertex="1" parent="1">
+					<mxGeometry x="80" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p3_n2" value="2. License Check&#10;(Blocked?)" style="rhombus;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" vertex="1" parent="1">
+					<mxGeometry x="260" y="190" width="120" height="100" as="geometry" />
+				</mxCell>
+				<mxCell id="p3_n3" value="Status: Blocked" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#f8cecc;strokeColor=#b85450;fontColor=#660000;" vertex="1" parent="1">
+					<mxGeometry x="260" y="340" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p3_n4" value="3. Status: Pending&#10;(Offer)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#1A3300;" vertex="1" parent="1">
+					<mxGeometry x="440" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p3_n5" value="4. Seller Accepts&#10;(POST /accept)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#001A33;" vertex="1" parent="1">
+					<mxGeometry x="620" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p3_n6" value="5. Reject Other&#10;Offers Automatically" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#1A3300;" vertex="1" parent="1">
+					<mxGeometry x="800" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p3_n7" value="6. Create Deal&#10;(Status: Active)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#1A3300;" vertex="1" parent="1">
+					<mxGeometry x="980" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p3_e1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p3_n1" target="p3_n2">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p3_e2" value="Invalid" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p3_n2" target="p3_n3">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p3_e3" value="Valid" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p3_n2" target="p3_n4">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p3_e4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p3_n4" target="p3_n5">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p3_e5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p3_n5" target="p3_n6">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p3_e6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p3_n6" target="p3_n7">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_bg" value="" style="rounded=1;whiteSpace=wrap;html=0;fontSize=12;align=center;shadow=1;fillColor=#fafafa;strokeColor=#e6e6e6;" vertex="1" parent="1">
+					<mxGeometry x="50" y="700" width="1080" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_lbl" value="LEGEND:" style="text;html=0;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+					<mxGeometry x="70" y="730" width="80" height="20" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b1" value="User Action&#10;(Current)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#001A33;" vertex="1" parent="1">
+					<mxGeometry x="150" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b2" value="System Auto&#10;(Current)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#1A3300;" vertex="1" parent="1">
+					<mxGeometry x="310" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b3" value="Manual / Offline" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontColor=#4D3300;" vertex="1" parent="1">
+					<mxGeometry x="470" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b4" value="Admin Override" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#3A2152;" vertex="1" parent="1">
+					<mxGeometry x="630" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b5" value="Blocked / Error&#10;/ Expired" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#f8cecc;strokeColor=#b85450;fontColor=#660000;" vertex="1" parent="1">
+					<mxGeometry x="790" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b6" value="Proposed Future" style="dashed=1;rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#4D3B11;" vertex="1" parent="1">
+					<mxGeometry x="950" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+			</root>
+		</mxGraphModel>
+	</diagram>
+	<diagram id="p4" name="4. Deal Lifecycle">
+		<mxGraphModel dx="1422" dy="798" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="827" math="0" shadow="1">
+			<root>
+				<mxCell id="0" />
+				<mxCell id="1" parent="0" />
+				<mxCell id="p4_t" value="Deal Lifecycle (Core Flow)" style="text;html=0;fontSize=24;fontStyle=1;align=left;fontColor=#1ba1e2;" vertex="1" parent="1">
+					<mxGeometry x="50" y="40" width="1100" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="p4_d" value="Immediate completion on receipt. No 48h wait. Expiry jobs run on timeouts. Admin can force actions." style="text;html=0;fontSize=14;align=left;whiteSpace=wrap;fontColor=#444444;" vertex="1" parent="1">
+					<mxGeometry x="50" y="90" width="1100" height="60" as="geometry" />
+				</mxCell>
+				<mxCell id="p4_n1" value="Active Deal" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#1A3300;" vertex="1" parent="1">
+					<mxGeometry x="50" y="240" width="100" height="60" as="geometry" />
+				</mxCell>
+				<mxCell id="p4_n2" value="payment_submitted&#10;(Buyer)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#001A33;" vertex="1" parent="1">
+					<mxGeometry x="180" y="240" width="140" height="60" as="geometry" />
+				</mxCell>
+				<mxCell id="p4_n3" value="payment_confirmed&#10;(Seller)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#001A33;" vertex="1" parent="1">
+					<mxGeometry x="350" y="240" width="140" height="60" as="geometry" />
+				</mxCell>
+				<mxCell id="p4_n4" value="dispatched&#10;(Seller requires qty)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#001A33;" vertex="1" parent="1">
+					<mxGeometry x="520" y="240" width="140" height="60" as="geometry" />
+				</mxCell>
+				<mxCell id="p4_n5" value="completed&#10;(Buyer Confirm Receipt)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#001A33;" vertex="1" parent="1">
+					<mxGeometry x="700" y="240" width="160" height="60" as="geometry" />
+				</mxCell>
+				<mxCell id="p4_n6" value="Deal Success" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#1A3300;" vertex="1" parent="1">
+					<mxGeometry x="900" y="240" width="120" height="60" as="geometry" />
+				</mxCell>
+				<mxCell id="p4_a1" value="Admin: force-complete" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#3A2152;" vertex="1" parent="1">
+					<mxGeometry x="700" y="120" width="160" height="60" as="geometry" />
+				</mxCell>
+				<mxCell id="p4_a2" value="Admin: reopen" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#3A2152;" vertex="1" parent="1">
+					<mxGeometry x="900" y="120" width="120" height="60" as="geometry" />
+				</mxCell>
+				<mxCell id="p4_e1" value="3 days Warning" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#1A3300;" vertex="1" parent="1">
+					<mxGeometry x="180" y="360" width="140" height="60" as="geometry" />
+				</mxCell>
+				<mxCell id="p4_e2" value="expired (Cron Job)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#f8cecc;strokeColor=#b85450;fontColor=#660000;" vertex="1" parent="1">
+					<mxGeometry x="350" y="360" width="140" height="60" as="geometry" />
+				</mxCell>
+				<mxCell id="p4_e3" value="cancelled (Seller)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#001A33;" vertex="1" parent="1">
+					<mxGeometry x="520" y="360" width="140" height="60" as="geometry" />
+				</mxCell>
+				<mxCell id="p4_a3" value="Admin: request resub" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#3A2152;" vertex="1" parent="1">
+					<mxGeometry x="180" y="120" width="140" height="60" as="geometry" />
+				</mxCell>
+				<mxCell id="p4_a4" value="Admin: cancel" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#3A2152;" vertex="1" parent="1">
+					<mxGeometry x="520" y="120" width="140" height="60" as="geometry" />
+				</mxCell>
+				<mxCell id="p4_f1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p4_n1" target="p4_n2">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p4_f2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p4_n2" target="p4_n3">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p4_f3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p4_n3" target="p4_n4">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p4_f4" value="Immediate" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p4_n4" target="p4_n5">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p4_f5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p4_n5" target="p4_n6">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p4_f6" value="Overrides" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p4_a1" target="p4_n6">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p4_f7" value="Restore" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p4_n6" target="p4_a2">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p4_f8" value="Timeout" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p4_n1" target="p4_e1">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p4_f9" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p4_e1" target="p4_e2">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p4_f10" value="Cancel" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p4_n1" target="p4_e3">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p4_f11" value="Resets Pmt" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p4_a3" target="p4_n1">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p4_f12" value="Overrides" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p4_a4" target="p4_e3">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_bg" value="" style="rounded=1;whiteSpace=wrap;html=0;fontSize=12;align=center;shadow=1;fillColor=#fafafa;strokeColor=#e6e6e6;" vertex="1" parent="1">
+					<mxGeometry x="50" y="700" width="1080" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_lbl" value="LEGEND:" style="text;html=0;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+					<mxGeometry x="70" y="730" width="80" height="20" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b1" value="User Action&#10;(Current)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#001A33;" vertex="1" parent="1">
+					<mxGeometry x="150" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b2" value="System Auto&#10;(Current)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#1A3300;" vertex="1" parent="1">
+					<mxGeometry x="310" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b3" value="Manual / Offline" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontColor=#4D3300;" vertex="1" parent="1">
+					<mxGeometry x="470" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b4" value="Admin Override" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#3A2152;" vertex="1" parent="1">
+					<mxGeometry x="630" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b5" value="Blocked / Error&#10;/ Expired" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#f8cecc;strokeColor=#b85450;fontColor=#660000;" vertex="1" parent="1">
+					<mxGeometry x="790" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b6" value="Proposed Future" style="dashed=1;rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#4D3B11;" vertex="1" parent="1">
+					<mxGeometry x="950" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+			</root>
+		</mxGraphModel>
+	</diagram>
+	<diagram id="p5" name="5. Operational Contracts">
+		<mxGraphModel dx="1422" dy="798" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="827" math="0" shadow="1">
+			<root>
+				<mxCell id="0" />
+				<mxCell id="1" parent="0" />
+				<mxCell id="p5_t" value="Operational Contracts" style="text;html=0;fontSize=24;fontStyle=1;align=left;fontColor=#1ba1e2;" vertex="1" parent="1">
+					<mxGeometry x="50" y="40" width="1100" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="p5_d" value="Draft to Active contract flow. Policy selection is immutable after creation. Linked to future shipments." style="text;html=0;fontSize=14;align=left;whiteSpace=wrap;fontColor=#444444;" vertex="1" parent="1">
+					<mxGeometry x="50" y="90" width="1100" height="60" as="geometry" />
+				</mxCell>
+				<mxCell id="p5_n1" value="1. Draft Contract" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#001A33;" vertex="1" parent="1">
+					<mxGeometry x="80" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p5_n2" value="2. Define Parties,&#10;Materials, Prices" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#001A33;" vertex="1" parent="1">
+					<mxGeometry x="260" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p5_n3" value="3. Select Weight&#10;Policy (Locked)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#001A33;" vertex="1" parent="1">
+					<mxGeometry x="440" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p5_n4" value="4. pending_confirmation&#10;(Submit to Counter)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#1A3300;" vertex="1" parent="1">
+					<mxGeometry x="620" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p5_n5" value="5. Gate: Accept?" style="rhombus;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" vertex="1" parent="1">
+					<mxGeometry x="800" y="190" width="120" height="100" as="geometry" />
+				</mxCell>
+				<mxCell id="p5_n6" value="6a. Status: active" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#1A3300;" vertex="1" parent="1">
+					<mxGeometry x="980" y="120" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p5_n7" value="6b. Status: cancelled" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#f8cecc;strokeColor=#b85450;fontColor=#660000;" vertex="1" parent="1">
+					<mxGeometry x="980" y="280" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p5_e1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p5_n1" target="p5_n2">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p5_e2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p5_n2" target="p5_n3">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p5_e3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p5_n3" target="p5_n4">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p5_e4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p5_n4" target="p5_n5">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p5_e5" value="Yes" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p5_n5" target="p5_n6">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p5_e6" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p5_n5" target="p5_n7">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_bg" value="" style="rounded=1;whiteSpace=wrap;html=0;fontSize=12;align=center;shadow=1;fillColor=#fafafa;strokeColor=#e6e6e6;" vertex="1" parent="1">
+					<mxGeometry x="50" y="700" width="1080" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_lbl" value="LEGEND:" style="text;html=0;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+					<mxGeometry x="70" y="730" width="80" height="20" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b1" value="User Action&#10;(Current)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#001A33;" vertex="1" parent="1">
+					<mxGeometry x="150" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b2" value="System Auto&#10;(Current)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#1A3300;" vertex="1" parent="1">
+					<mxGeometry x="310" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b3" value="Manual / Offline" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontColor=#4D3300;" vertex="1" parent="1">
+					<mxGeometry x="470" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b4" value="Admin Override" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#3A2152;" vertex="1" parent="1">
+					<mxGeometry x="630" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b5" value="Blocked / Error&#10;/ Expired" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#f8cecc;strokeColor=#b85450;fontColor=#660000;" vertex="1" parent="1">
+					<mxGeometry x="790" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b6" value="Proposed Future" style="dashed=1;rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#4D3B11;" vertex="1" parent="1">
+					<mxGeometry x="950" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+			</root>
+		</mxGraphModel>
+	</diagram>
+	<diagram id="p6" name="6. Shipments &amp; Weights">
+		<mxGraphModel dx="1422" dy="798" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="827" math="0" shadow="1">
+			<root>
+				<mxCell id="0" />
+				<mxCell id="1" parent="0" />
+				<mxCell id="p6_t" value="Shipments &amp; Weights" style="text;html=0;fontSize=24;fontStyle=1;align=left;fontColor=#1ba1e2;" vertex="1" parent="1">
+					<mxGeometry x="50" y="40" width="1100" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="p6_d" value="Shipments are tied to Active Contracts. Explicit Close action freezes values based on Contract policy." style="text;html=0;fontSize=14;align=left;whiteSpace=wrap;fontColor=#444444;" vertex="1" parent="1">
+					<mxGeometry x="50" y="90" width="1100" height="60" as="geometry" />
+				</mxCell>
+				<mxCell id="p6_n1" value="1. Status: planned" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#001A33;" vertex="1" parent="1">
+					<mxGeometry x="50" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p6_n2" value="2. Status: dispatched&#10;(Source Weight)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#001A33;" vertex="1" parent="1">
+					<mxGeometry x="220" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p6_n3" value="3. Status: received&#10;(Dest Weight)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#001A33;" vertex="1" parent="1">
+					<mxGeometry x="390" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p6_n4" value="4. Status: closed&#10;(POST /close)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#001A33;" vertex="1" parent="1">
+					<mxGeometry x="560" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p6_n5" value="5. Auto-Calculate Final&#10;Weight &amp; Value" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#1A3300;" vertex="1" parent="1">
+					<mxGeometry x="730" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p6_n6" value="6. Check Contract Policy&#10;(e.g., dual_higher)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#1A3300;" vertex="1" parent="1">
+					<mxGeometry x="900" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p6_n7" value="7. Values Locked" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#1A3300;" vertex="1" parent="1">
+					<mxGeometry x="1070" y="200" width="120" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p6_e1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p6_n1" target="p6_n2">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p6_e2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p6_n2" target="p6_n3">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p6_e3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p6_n3" target="p6_n4">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p6_e4" value="Triggers" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p6_n4" target="p6_n5">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p6_e5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p6_n5" target="p6_n6">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p6_e6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p6_n6" target="p6_n7">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_bg" value="" style="rounded=1;whiteSpace=wrap;html=0;fontSize=12;align=center;shadow=1;fillColor=#fafafa;strokeColor=#e6e6e6;" vertex="1" parent="1">
+					<mxGeometry x="50" y="700" width="1080" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_lbl" value="LEGEND:" style="text;html=0;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+					<mxGeometry x="70" y="730" width="80" height="20" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b1" value="User Action&#10;(Current)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#001A33;" vertex="1" parent="1">
+					<mxGeometry x="150" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b2" value="System Auto&#10;(Current)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#1A3300;" vertex="1" parent="1">
+					<mxGeometry x="310" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b3" value="Manual / Offline" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontColor=#4D3300;" vertex="1" parent="1">
+					<mxGeometry x="470" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b4" value="Admin Override" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#3A2152;" vertex="1" parent="1">
+					<mxGeometry x="630" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b5" value="Blocked / Error&#10;/ Expired" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#f8cecc;strokeColor=#b85450;fontColor=#660000;" vertex="1" parent="1">
+					<mxGeometry x="790" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b6" value="Proposed Future" style="dashed=1;rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#4D3B11;" vertex="1" parent="1">
+					<mxGeometry x="950" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+			</root>
+		</mxGraphModel>
+	</diagram>
+	<diagram id="p7" name="7. Reports">
+		<mxGraphModel dx="1422" dy="798" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="827" math="0" shadow="1">
+			<root>
+				<mxCell id="0" />
+				<mxCell id="1" parent="0" />
+				<mxCell id="p7_t" value="Reports (Deals &amp; Shipments)" style="text;html=0;fontSize=24;fontStyle=1;align=left;fontColor=#1ba1e2;" vertex="1" parent="1">
+					<mxGeometry x="50" y="40" width="1100" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="p7_d" value="Data strictly from finalized operations. VAT is dynamically calculated for CSV exports, maintaining operational semantics." style="text;html=0;fontSize=14;align=left;whiteSpace=wrap;fontColor=#444444;" vertex="1" parent="1">
+					<mxGeometry x="50" y="90" width="1100" height="60" as="geometry" />
+				</mxCell>
+				<mxCell id="p7_n1" value="1. Select Report&#10;(Deals or Shipments)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#001A33;" vertex="1" parent="1">
+					<mxGeometry x="80" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p7_n2" value="2. Apply Filters&#10;(Role, Date, Status)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#001A33;" vertex="1" parent="1">
+					<mxGeometry x="260" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p7_n3" value="3. Fetch Data&#10;(Closed/Cancelled only)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#1A3300;" vertex="1" parent="1">
+					<mxGeometry x="440" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p7_n4" value="4. Calculate VAT Dynamically&#10;(VAT_RATE=15%)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#1A3300;" vertex="1" parent="1">
+					<mxGeometry x="620" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p7_n5" value="5. Render CSV Data" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#1A3300;" vertex="1" parent="1">
+					<mxGeometry x="800" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p7_n6" value="6. Export CSV File&#10;(No Invoice Wording)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#1A3300;" vertex="1" parent="1">
+					<mxGeometry x="980" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p7_e1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p7_n1" target="p7_n2">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p7_e2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p7_n2" target="p7_n3">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p7_e3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p7_n3" target="p7_n4">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p7_e4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p7_n4" target="p7_n5">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p7_e5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p7_n5" target="p7_n6">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_bg" value="" style="rounded=1;whiteSpace=wrap;html=0;fontSize=12;align=center;shadow=1;fillColor=#fafafa;strokeColor=#e6e6e6;" vertex="1" parent="1">
+					<mxGeometry x="50" y="700" width="1080" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_lbl" value="LEGEND:" style="text;html=0;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+					<mxGeometry x="70" y="730" width="80" height="20" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b1" value="User Action&#10;(Current)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#001A33;" vertex="1" parent="1">
+					<mxGeometry x="150" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b2" value="System Auto&#10;(Current)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#1A3300;" vertex="1" parent="1">
+					<mxGeometry x="310" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b3" value="Manual / Offline" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontColor=#4D3300;" vertex="1" parent="1">
+					<mxGeometry x="470" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b4" value="Admin Override" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#3A2152;" vertex="1" parent="1">
+					<mxGeometry x="630" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b5" value="Blocked / Error&#10;/ Expired" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#f8cecc;strokeColor=#b85450;fontColor=#660000;" vertex="1" parent="1">
+					<mxGeometry x="790" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b6" value="Proposed Future" style="dashed=1;rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#4D3B11;" vertex="1" parent="1">
+					<mxGeometry x="950" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+			</root>
+		</mxGraphModel>
+	</diagram>
+	<diagram id="p8" name="8. Transport Quote Lite">
+		<mxGraphModel dx="1422" dy="798" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="827" math="0" shadow="1">
+			<root>
+				<mxCell id="0" />
+				<mxCell id="1" parent="0" />
+				<mxCell id="p8_t" value="Current Transport Quote Lite" style="text;html=0;fontSize=24;fontStyle=1;align=left;fontColor=#1ba1e2;" vertex="1" parent="1">
+					<mxGeometry x="50" y="40" width="1100" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="p8_d" value="Carriers bid on requests. Admin reviews and selects bids via UI. Final execution remains manual offline." style="text;html=0;fontSize=14;align=left;whiteSpace=wrap;fontColor=#444444;" vertex="1" parent="1">
+					<mxGeometry x="50" y="90" width="1100" height="60" as="geometry" />
+				</mxCell>
+				<mxCell id="p8_n1" value="1. Deal Request Transport&#10;(POST /transport-request)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#001A33;" vertex="1" parent="1">
+					<mxGeometry x="80" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p8_n2" value="2. Carrier Submit Quote&#10;(Status: submitted)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#001A33;" vertex="1" parent="1">
+					<mxGeometry x="260" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p8_n3" value="3. Admin Reviews Bids&#10;(Status: under_review)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#3A2152;" vertex="1" parent="1">
+					<mxGeometry x="440" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p8_n4" value="4. Admin Selects Quote&#10;(Status: selected)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#3A2152;" vertex="1" parent="1">
+					<mxGeometry x="620" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p8_n5" value="4b. Reject Bids&#10;(Status: rejected)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#3A2152;" vertex="1" parent="1">
+					<mxGeometry x="620" y="320" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p8_n6" value="5. Manual Coordination&#10;Phone / Email" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontColor=#4D3300;" vertex="1" parent="1">
+					<mxGeometry x="800" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p8_n7" value="6. Admin Updates Transport&#10;(in_transit -&gt; completed)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#3A2152;" vertex="1" parent="1">
+					<mxGeometry x="980" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p8_e1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p8_n1" target="p8_n2">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p8_e2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p8_n2" target="p8_n3">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p8_e3" value="Select" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p8_n3" target="p8_n4">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p8_e4" value="Reject" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p8_n3" target="p8_n5">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p8_e5" value="Ops" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p8_n4" target="p8_n6">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p8_e6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p8_n6" target="p8_n7">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_bg" value="" style="rounded=1;whiteSpace=wrap;html=0;fontSize=12;align=center;shadow=1;fillColor=#fafafa;strokeColor=#e6e6e6;" vertex="1" parent="1">
+					<mxGeometry x="50" y="700" width="1080" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_lbl" value="LEGEND:" style="text;html=0;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+					<mxGeometry x="70" y="730" width="80" height="20" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b1" value="User Action&#10;(Current)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#001A33;" vertex="1" parent="1">
+					<mxGeometry x="150" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b2" value="System Auto&#10;(Current)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#1A3300;" vertex="1" parent="1">
+					<mxGeometry x="310" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b3" value="Manual / Offline" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontColor=#4D3300;" vertex="1" parent="1">
+					<mxGeometry x="470" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b4" value="Admin Override" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#3A2152;" vertex="1" parent="1">
+					<mxGeometry x="630" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b5" value="Blocked / Error&#10;/ Expired" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#f8cecc;strokeColor=#b85450;fontColor=#660000;" vertex="1" parent="1">
+					<mxGeometry x="790" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b6" value="Proposed Future" style="dashed=1;rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#4D3B11;" vertex="1" parent="1">
+					<mxGeometry x="950" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+			</root>
+		</mxGraphModel>
+	</diagram>
+	<diagram id="p9" name="9. Future Transporters">
+		<mxGraphModel dx="1422" dy="798" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="827" math="0" shadow="1">
+			<root>
+				<mxCell id="0" />
+				<mxCell id="1" parent="0" />
+				<mxCell id="p9_t" value="Future Proposed: Licensed Transporter Marketplace" style="text;html=0;fontSize=24;fontStyle=1;align=left;fontColor=#1ba1e2;" vertex="1" parent="1">
+					<mxGeometry x="50" y="40" width="1100" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="p9_d" value="Fully automated bidding, selection, and tracking. NOT implemented." style="text;html=0;fontSize=14;align=left;whiteSpace=wrap;fontColor=#444444;" vertex="1" parent="1">
+					<mxGeometry x="50" y="90" width="1100" height="60" as="geometry" />
+				</mxCell>
+				<mxCell id="p9_n1" value="1. Auto Broadcast&#10;to Matching Carriers" style="dashed=1;rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#4D3B11;" vertex="1" parent="1">
+					<mxGeometry x="80" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p9_n2" value="2. Dynamic Bidding&#10;Platform" style="dashed=1;rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#4D3B11;" vertex="1" parent="1">
+					<mxGeometry x="260" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p9_n3" value="3. Smart Match&#10;&amp; Auto Select" style="dashed=1;rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#4D3B11;" vertex="1" parent="1">
+					<mxGeometry x="440" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p9_n4" value="4. API Link Driver&#10;&amp; Vehicle Plate" style="dashed=1;rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#4D3B11;" vertex="1" parent="1">
+					<mxGeometry x="620" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p9_n5" value="5. Live GPS Tracking&#10;Integration" style="dashed=1;rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#4D3B11;" vertex="1" parent="1">
+					<mxGeometry x="800" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p9_n6" value="6. Automated Scoring&#10;&amp; Settlement" style="dashed=1;rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#4D3B11;" vertex="1" parent="1">
+					<mxGeometry x="980" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p9_e1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p9_n1" target="p9_n2">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p9_e2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p9_n2" target="p9_n3">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p9_e3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p9_n3" target="p9_n4">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p9_e4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p9_n4" target="p9_n5">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p9_e5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p9_n5" target="p9_n6">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_bg" value="" style="rounded=1;whiteSpace=wrap;html=0;fontSize=12;align=center;shadow=1;fillColor=#fafafa;strokeColor=#e6e6e6;" vertex="1" parent="1">
+					<mxGeometry x="50" y="700" width="1080" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_lbl" value="LEGEND:" style="text;html=0;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+					<mxGeometry x="70" y="730" width="80" height="20" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b1" value="User Action&#10;(Current)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#001A33;" vertex="1" parent="1">
+					<mxGeometry x="150" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b2" value="System Auto&#10;(Current)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#1A3300;" vertex="1" parent="1">
+					<mxGeometry x="310" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b3" value="Manual / Offline" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontColor=#4D3300;" vertex="1" parent="1">
+					<mxGeometry x="470" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b4" value="Admin Override" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#3A2152;" vertex="1" parent="1">
+					<mxGeometry x="630" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b5" value="Blocked / Error&#10;/ Expired" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#f8cecc;strokeColor=#b85450;fontColor=#660000;" vertex="1" parent="1">
+					<mxGeometry x="790" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b6" value="Proposed Future" style="dashed=1;rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#4D3B11;" vertex="1" parent="1">
+					<mxGeometry x="950" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+			</root>
+		</mxGraphModel>
+	</diagram>
+	<diagram id="p10" name="10. Future Recycled">
+		<mxGraphModel dx="1422" dy="798" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="827" math="0" shadow="1">
+			<root>
+				<mxCell id="0" />
+				<mxCell id="1" parent="0" />
+				<mxCell id="p10_t" value="Future Proposed: Recycled Materials Marketplace" style="text;html=0;fontSize=24;fontStyle=1;align=left;fontColor=#1ba1e2;" vertex="1" parent="1">
+					<mxGeometry x="50" y="40" width="1100" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="p10_d" value="A B2B market for processed/recycled goods (Processor -&gt; Factory). NOT implemented." style="text;html=0;fontSize=14;align=left;whiteSpace=wrap;fontColor=#444444;" vertex="1" parent="1">
+					<mxGeometry x="50" y="90" width="1100" height="60" as="geometry" />
+				</mxCell>
+				<mxCell id="p10_n1" value="1. Processor Publishes&#10;Recycled Material" style="dashed=1;rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#4D3B11;" vertex="1" parent="1">
+					<mxGeometry x="80" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p10_n2" value="2. Upload Quality&#10;Specs &amp; Certs" style="dashed=1;rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#4D3B11;" vertex="1" parent="1">
+					<mxGeometry x="260" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p10_n3" value="3. Factories Browse&#10;Processed Goods" style="dashed=1;rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#4D3B11;" vertex="1" parent="1">
+					<mxGeometry x="440" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p10_n4" value="4. Direct Purchase&#10;Order / Offer" style="dashed=1;rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#4D3B11;" vertex="1" parent="1">
+					<mxGeometry x="620" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p10_n5" value="5. Quality Assurance&#10;Verification Step" style="dashed=1;rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#4D3B11;" vertex="1" parent="1">
+					<mxGeometry x="800" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p10_n6" value="6. Delivery &amp; Closure" style="dashed=1;rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#4D3B11;" vertex="1" parent="1">
+					<mxGeometry x="980" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p10_e1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p10_n1" target="p10_n2">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p10_e2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p10_n2" target="p10_n3">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p10_e3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p10_n3" target="p10_n4">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p10_e4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p10_n4" target="p10_n5">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p10_e5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p10_n5" target="p10_n6">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_bg" value="" style="rounded=1;whiteSpace=wrap;html=0;fontSize=12;align=center;shadow=1;fillColor=#fafafa;strokeColor=#e6e6e6;" vertex="1" parent="1">
+					<mxGeometry x="50" y="700" width="1080" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_lbl" value="LEGEND:" style="text;html=0;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+					<mxGeometry x="70" y="730" width="80" height="20" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b1" value="User Action&#10;(Current)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#001A33;" vertex="1" parent="1">
+					<mxGeometry x="150" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b2" value="System Auto&#10;(Current)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#1A3300;" vertex="1" parent="1">
+					<mxGeometry x="310" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b3" value="Manual / Offline" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontColor=#4D3300;" vertex="1" parent="1">
+					<mxGeometry x="470" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b4" value="Admin Override" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#3A2152;" vertex="1" parent="1">
+					<mxGeometry x="630" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b5" value="Blocked / Error&#10;/ Expired" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#f8cecc;strokeColor=#b85450;fontColor=#660000;" vertex="1" parent="1">
+					<mxGeometry x="790" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b6" value="Proposed Future" style="dashed=1;rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#4D3B11;" vertex="1" parent="1">
+					<mxGeometry x="950" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+			</root>
+		</mxGraphModel>
+	</diagram>
+	<diagram id="p11" name="11. Admin Ops">
+		<mxGraphModel dx="1422" dy="798" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="827" math="0" shadow="1">
+			<root>
+				<mxCell id="0" />
+				<mxCell id="1" parent="0" />
+				<mxCell id="p11_t" value="Admin Operations &amp; Lookups" style="text;html=0;fontSize=24;fontStyle=1;align=left;fontColor=#1ba1e2;" vertex="1" parent="1">
+					<mxGeometry x="50" y="40" width="1100" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="p11_d" value="Admin controls exist natively in UI. Master data (Capabilities) lacks a UI endpoint currently." style="text;html=0;fontSize=14;align=left;whiteSpace=wrap;fontColor=#444444;" vertex="1" parent="1">
+					<mxGeometry x="50" y="90" width="1100" height="60" as="geometry" />
+				</mxCell>
+				<mxCell id="p11_n1" value="Admin Panel UI" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#3A2152;" vertex="1" parent="1">
+					<mxGeometry x="80" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p11_n2" value="Company Licenses&#10;(Approve/Reject)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#3A2152;" vertex="1" parent="1">
+					<mxGeometry x="280" y="80" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p11_n3" value="Deal Interventions&#10;(Force/Cancel/Resub)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#3A2152;" vertex="1" parent="1">
+					<mxGeometry x="280" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p11_n4" value="Master Data&#10;(Categories/Units)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#3A2152;" vertex="1" parent="1">
+					<mxGeometry x="280" y="320" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p11_n5" value="API Only Lookup&#10;(Capabilities)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#f8cecc;strokeColor=#b85450;fontColor=#660000;" vertex="1" parent="1">
+					<mxGeometry x="480" y="320" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p11_n6" value="Audit Log&#10;Immutable DB Writes" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#1A3300;" vertex="1" parent="1">
+					<mxGeometry x="540" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p11_e1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p11_n1" target="p11_n2">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p11_e2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p11_n1" target="p11_n3">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p11_e3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p11_n1" target="p11_n4">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p11_e4" value="No UI" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p11_n4" target="p11_n5">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p11_e5" value="Logs" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p11_n2" target="p11_n6">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p11_e6" value="Logs" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p11_n3" target="p11_n6">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_bg" value="" style="rounded=1;whiteSpace=wrap;html=0;fontSize=12;align=center;shadow=1;fillColor=#fafafa;strokeColor=#e6e6e6;" vertex="1" parent="1">
+					<mxGeometry x="50" y="700" width="1080" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_lbl" value="LEGEND:" style="text;html=0;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+					<mxGeometry x="70" y="730" width="80" height="20" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b1" value="User Action&#10;(Current)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#001A33;" vertex="1" parent="1">
+					<mxGeometry x="150" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b2" value="System Auto&#10;(Current)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#1A3300;" vertex="1" parent="1">
+					<mxGeometry x="310" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b3" value="Manual / Offline" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontColor=#4D3300;" vertex="1" parent="1">
+					<mxGeometry x="470" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b4" value="Admin Override" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#3A2152;" vertex="1" parent="1">
+					<mxGeometry x="630" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b5" value="Blocked / Error&#10;/ Expired" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#f8cecc;strokeColor=#b85450;fontColor=#660000;" vertex="1" parent="1">
+					<mxGeometry x="790" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b6" value="Proposed Future" style="dashed=1;rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#4D3B11;" vertex="1" parent="1">
+					<mxGeometry x="950" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+			</root>
+		</mxGraphModel>
+	</diagram>
+	<diagram id="p12" name="12. Admin Findings">
+		<mxGraphModel dx="1422" dy="798" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="827" math="0" shadow="1">
+			<root>
+				<mxCell id="0" />
+				<mxCell id="1" parent="0" />
+				<mxCell id="p12_t" value="Admin Findings &amp; Wishlist (Zero DB Relation)" style="text;html=0;fontSize=24;fontStyle=1;align=left;fontColor=#1ba1e2;" vertex="1" parent="1">
+					<mxGeometry x="50" y="40" width="1100" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="p12_d" value="Completely isolated tracking system for partner requests and internal prioritization." style="text;html=0;fontSize=14;align=left;whiteSpace=wrap;fontColor=#444444;" vertex="1" parent="1">
+					<mxGeometry x="50" y="90" width="1100" height="60" as="geometry" />
+				</mxCell>
+				<mxCell id="p12_n1" value="1. Log Finding&#10;(POST /findings)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#3A2152;" vertex="1" parent="1">
+					<mxGeometry x="80" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p12_n2" value="2. Assign Attributes&#10;(source_label = strategic_partner)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#3A2152;" vertex="1" parent="1">
+					<mxGeometry x="260" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p12_n3" value="3. Reorder Priority&#10;(Drag &amp; Drop / POST)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#3A2152;" vertex="1" parent="1">
+					<mxGeometry x="440" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p12_n4" value="4. Edit Status&#10;(new, accepted, deferred)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#3A2152;" vertex="1" parent="1">
+					<mxGeometry x="620" y="200" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p12_n5" value="5a. Status: closed" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#1A3300;" vertex="1" parent="1">
+					<mxGeometry x="800" y="120" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p12_n6" value="5b. Delete Record&#10;(DELETE /findings)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#3A2152;" vertex="1" parent="1">
+					<mxGeometry x="800" y="280" width="140" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="p12_e1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p12_n1" target="p12_n2">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p12_e2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p12_n2" target="p12_n3">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p12_e3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p12_n3" target="p12_n4">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p12_e4" value="Done" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p12_n4" target="p12_n5">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="p12_e5" value="Remove" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;strokeWidth=2;strokeColor=#4D4D4D;fontSize=12;" edge="1" parent="1" source="p12_n4" target="p12_n6">
+					<mxGeometry relative="1" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_bg" value="" style="rounded=1;whiteSpace=wrap;html=0;fontSize=12;align=center;shadow=1;fillColor=#fafafa;strokeColor=#e6e6e6;" vertex="1" parent="1">
+					<mxGeometry x="50" y="700" width="1080" height="80" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_lbl" value="LEGEND:" style="text;html=0;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+					<mxGeometry x="70" y="730" width="80" height="20" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b1" value="User Action&#10;(Current)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#001A33;" vertex="1" parent="1">
+					<mxGeometry x="150" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b2" value="System Auto&#10;(Current)" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#1A3300;" vertex="1" parent="1">
+					<mxGeometry x="310" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b3" value="Manual / Offline" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontColor=#4D3300;" vertex="1" parent="1">
+					<mxGeometry x="470" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b4" value="Admin Override" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#3A2152;" vertex="1" parent="1">
+					<mxGeometry x="630" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b5" value="Blocked / Error&#10;/ Expired" style="rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#f8cecc;strokeColor=#b85450;fontColor=#660000;" vertex="1" parent="1">
+					<mxGeometry x="790" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+				<mxCell id="leg_b6" value="Proposed Future" style="dashed=1;rounded=1;whiteSpace=wrap;html=0;fontSize=14;fontStyle=1;shadow=1;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#4D3B11;" vertex="1" parent="1">
+					<mxGeometry x="950" y="720" width="140" height="40" as="geometry" />
+				</mxCell>
+			</root>
+		</mxGraphModel>
+	</diagram>
+</mxfile>
