@@ -502,6 +502,11 @@ VITE_API_URL                   # backend API base URL
 - Should do before broader operations if pilot requires frequent taxonomy/unit edits.
 - Can defer if pilot taxonomy is stable.
 
+### 6. Phase 3-A2 — Admin Wishlist & Findings Register
+- **Status:** ✅ Implemented and UAT passed.
+- **Scope:** Internal tracking system within the Admin Panel to log operational findings, UAT issues, customer requests, and improvements.
+- **Implementation:** Completely isolated feature using the `admin_findings` table. Supports creation, editing, manual reordering via arrows, deletion, and Arabic localization. Zero relations to active deals or shipments.
+
 ### 5. Phase 3-B — Post-Pilot Workflow Configurability & Polish
 - Configurable timers, category-targeted notifications, i18n refactor, checklist wording polish, etc.
 

@@ -384,10 +384,12 @@ Admin restore of shipments without DB migration relies on timestamps + audit log
 
 
 ## Phase 3-A2 — Admin Wishlist & Findings Register
-**Status:** ✅ Implemented
+**Status:** ✅ Implemented and UAT Passed
 **Goal:** Establish an internal tracking system within the Admin Panel to log operational findings, UAT issues, customer requests, and improvements (specifically for partners like Al Qaryan).
 **Details:**
 - Completely isolated feature using the `admin_findings` table.
 - Has zero database relations to active deals, shipments, or users.
 - Does not replace `issue_reports` (which remains for customer-facing support).
+- The admin interface fully supports creating, editing, manual reordering via arrows, and hard deletion.
+- Fully localized in Arabic within the Admin UI.
 **Risks:** **Low Operational Risk** (completely decoupled from marketplace logic; UI changes confined to Admin Panel).
