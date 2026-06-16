@@ -8,7 +8,7 @@
  * GET    /admin/audit-log?entityType=&entityId=&action=&limit=100&offset=0
  */
 import { Router, type Request, type Response, type NextFunction } from "express";
-import { and, count, desc, eq, gte, ilike, isNotNull, isNull, lte, or, sql, aliasedTable, inArray, lt } from "drizzle-orm";
+import { and, count, desc, asc, eq, gte, ilike, isNotNull, isNull, lte, or, sql, aliasedTable, inArray, lt } from "drizzle-orm";
 import { clerkClient } from "@clerk/express";
 import {
   db,
@@ -2033,7 +2033,7 @@ router.get("/admin/findings", requireAdminKey, async (req, res) => {
     .select()
     .from(adminFindingsTable)
     .where(conditions.length ? and(...conditions) : undefined)
-    .orderBy(desc(adminFindingsTable.created_at))
+    .orderBy(asc(adminFindingsTable.sortOrder), desc(adminFindingsTable.created_at))
     .limit(limit)
     .offset(offset);
 
@@ -2063,6 +2063,12 @@ router.post("/admin/findings", requireAdminKey, async (req, res) => {
     return;
   }
 
+  const [maxRecord] = await db
+    .select({ maxSort: sql<number>`MAX(${adminFindingsTable.sortOrder})` })
+    .from(adminFindingsTable);
+  
+  const nextSortOrder = (maxRecord?.maxSort ?? 0) + 1;
+
   const [created] = await db
     .insert(adminFindingsTable)
     .values({
@@ -2074,10 +2080,37 @@ router.post("/admin/findings", requireAdminKey, async (req, res) => {
       source_label: source_label || null,
       description: description || null,
       internal_notes: internal_notes || null,
+      sortOrder: nextSortOrder,
     })
     .returning();
 
   res.status(201).json(created);
+});
+
+/**
+ * PATCH /admin/findings/reorder
+ */
+router.patch("/admin/findings/reorder", requireAdminKey, async (req, res) => {
+  const items = req.body;
+  if (!Array.isArray(items)) {
+    res.status(400).json({ error: "ValidationError", message: "Expected array of items" });
+    return;
+  }
+
+  try {
+    // Basic loop for MVP reorder
+    for (const item of items) {
+      if (!item.id || typeof item.sort_order !== 'number') continue;
+      await db
+        .update(adminFindingsTable)
+        .set({ sortOrder: item.sort_order, updated_at: new Date() })
+        .where(eq(adminFindingsTable.id, item.id));
+    }
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Reorder failed", error);
+    res.status(500).json({ error: "ServerError", message: "Failed to reorder" });
+  }
 });
 
 /**
@@ -2114,6 +2147,24 @@ router.patch("/admin/findings/:id", requireAdminKey, async (req, res) => {
   }
 
   res.json(updated);
+});
+
+/**
+ * DELETE /admin/findings/:id
+ */
+router.delete("/admin/findings/:id", requireAdminKey, async (req, res) => {
+  const id = String(req.params["id"]);
+  const [deleted] = await db
+    .delete(adminFindingsTable)
+    .where(eq(adminFindingsTable.id, id))
+    .returning();
+
+  if (!deleted) {
+    res.status(404).json({ error: "NotFound", message: "Finding not found" });
+    return;
+  }
+
+  res.json({ success: true, deleted });
 });
 
 export default router;

@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, integer } from "drizzle-orm/pg-core";
 
 export const adminFindingsTable = pgTable("admin_findings", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -10,6 +10,7 @@ export const adminFindingsTable = pgTable("admin_findings", {
   source_label: text("source_label"),
   description: text("description"),
   internal_notes: text("internal_notes"),
+  sortOrder: integer("sort_order").notNull().default(0),
   created_at: timestamp("created_at").notNull().defaultNow(),
   updated_at: timestamp("updated_at").notNull().defaultNow(),
 });

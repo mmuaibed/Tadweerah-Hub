@@ -19,6 +19,9 @@ import {
   MessageSquare,
   Database,
   Lightbulb,
+  ArrowUp,
+  ArrowDown,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -3600,6 +3603,38 @@ function AdminConfirmModal({
 /* Admin Findings Tab                                                         */
 /* -------------------------------------------------------------------------- */
 
+const typeLabels: Record<string, string> = {
+  improvement: "تحسين",
+  issue: "مشكلة",
+  idea: "فكرة",
+  operational_note: "ملاحظة تشغيلية",
+  customer_request: "طلب عميل",
+};
+const statusLabels: Record<string, string> = {
+  new: "جديدة",
+  under_review: "قيد المراجعة",
+  accepted: "مقبولة",
+  deferred: "مؤجلة",
+  closed: "مغلقة",
+};
+const areaLabels: Record<string, string> = {
+  general: "عام",
+  admin: "الأدمن",
+  marketplace: "السوق",
+  deals: "الصفقات",
+  contracts: "العقود",
+  shipments: "الشحنات",
+  reports: "التقارير",
+};
+const sourceLabels: Record<string, string> = {
+  internal: "داخلي",
+  uat: "اختبار UAT",
+  al_qaryan: "القريان",
+  customer: "عميل",
+  support: "الدعم",
+  other: "أخرى",
+};
+
 function AdminFindingsTab({
   adminKey,
   findings,
@@ -3609,7 +3644,7 @@ function AdminFindingsTab({
   t
 }: {
   adminKey: string;
-  findings: AdminFinding[] | null;
+  findings: any[] | null;
   loading: boolean;
   onRefresh: () => void;
   lang: string;
@@ -3647,7 +3682,7 @@ function AdminFindingsTab({
     setModalOpen(true);
   };
 
-  const openEdit = (f: AdminFinding) => {
+  const openEdit = (f: any) => {
     setEditingFinding(f);
     setTitle(f.title);
     setType(f.type);
@@ -3658,6 +3693,54 @@ function AdminFindingsTab({
     setDescription(f.description || "");
     setInternalNotes(f.internal_notes || "");
     setModalOpen(true);
+  };
+
+  const deleteFinding = async (id: string) => {
+    if (!window.confirm("هل أنت متأكد من حذف هذه الملاحظة؟ لا يمكن التراجع عن هذا الإجراء.")) {
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/admin/findings/${id}`, {
+        method: "DELETE",
+        headers: { "X-Admin-Key": adminKey }
+      });
+      if (!res.ok) throw new Error("Failed to delete finding");
+      onRefresh();
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const swapOrder = async (index: number, direction: 'up' | 'down') => {
+    if (!findings) return;
+    const current = findings[index];
+    const swapWith = direction === 'up' ? findings[index - 1] : findings[index + 1];
+    
+    if (!swapWith) return;
+
+    // Build the payload
+    const payload = [
+      { id: current.id, sort_order: swapWith.sort_order ?? (direction === 'up' ? index - 1 : index + 1) },
+      { id: swapWith.id, sort_order: current.sort_order ?? index }
+    ];
+
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/findings/reorder", {
+        method: "PATCH",
+        headers: { "X-Admin-Key": adminKey, "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error("Failed to reorder findings");
+      onRefresh();
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const saveFinding = async (e: React.FormEvent) => {
@@ -3761,25 +3844,36 @@ function AdminFindingsTab({
           <tbody className="divide-y divide-border">
             {filtered.length === 0 ? (
               <tr><td colSpan={8} className="p-6 text-center text-muted-foreground">No findings.</td></tr>
-            ) : filtered.map(f => (
+            ) : filtered.map((f, i) => (
               <tr key={f.id} className="hover:bg-muted/30">
                 <td className="p-3 font-medium">{f.title}</td>
-                <td className="p-3 capitalize">{f.type.replace("_", " ")}</td>
-                <td className="p-3 capitalize">{f.area}</td>
+                <td className="p-3">{lang === "ar" ? typeLabels[f.type] || f.type : f.type.replace("_", " ")}</td>
+                <td className="p-3">{lang === "ar" ? areaLabels[f.area] || f.area : f.area}</td>
                 <td className="p-3">
                   <Badge variant={f.priority === "high" ? "destructive" : f.priority === "medium" ? "default" : "secondary"}>
                     {f.priority}
                   </Badge>
                 </td>
                 <td className="p-3">
-                  <Badge variant="outline">{f.status.replace("_", " ")}</Badge>
+                  <Badge variant="outline">{lang === "ar" ? statusLabels[f.status] || f.status : f.status.replace("_", " ")}</Badge>
                 </td>
-                <td className="p-3 text-muted-foreground">{f.source_label || "-"}</td>
+                <td className="p-3 text-muted-foreground">{lang === "ar" ? sourceLabels[f.source_label] || f.source_label : f.source_label || "-"}</td>
                 <td className="p-3 text-muted-foreground">{new Date(f.created_at).toLocaleDateString()}</td>
                 <td className="p-3 text-end">
-                  <Button variant="ghost" size="sm" onClick={() => openEdit(f)}>
-                    {lang === "ar" ? "تعديل" : "Edit"}
-                  </Button>
+                  <div className="flex items-center justify-end gap-1">
+                    <Button variant="ghost" size="icon" disabled={i === 0 || saving} onClick={() => swapOrder(i, 'up')} title="Move Up">
+                      <ArrowUp className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" disabled={i === filtered.length - 1 || saving} onClick={() => swapOrder(i, 'down')} title="Move Down">
+                      <ArrowDown className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => openEdit(f)} disabled={saving}>
+                      {lang === "ar" ? "تعديل" : "Edit"}
+                    </Button>
+                    <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => deleteFinding(f.id)} disabled={saving} title="Delete">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </td>
               </tr>
             ))}
