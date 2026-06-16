@@ -1,35 +1,70 @@
-# Tadweerah Hub — Workflow Architecture
+# Tadweerah Operating Model & Workflow Architecture
 
-هذه الوثيقة تمثل المرجع الأساسي لهندسة الإجراءات (Workflow Architecture) في منصة تدويرة. تغطي الوثيقة جميع الخدمات والوحدات، مفصولة بين ما هو منفذ حالياً (Current) وما هو مقترح مستقبلاً (Proposed).
+هذه الوثيقة تمثل المرجع الأساسي لهندسة الإجراءات (Workflow Architecture) والنموذج التشغيلي في منصة تدويرة. 
+تلتزم الوثيقة بالفصل التام بين الإجراءات **المنفذة حالياً (Current Implemented)** وبين الإجراءات **المقترحة مستقبلاً (Proposed Future)**.
+
+## مصطلحات المنصة المعتمدة
+* تدويرة (Tadweerah)
+* الشريك الاستراتيجي (Strategic Partner)
+* المصدر / مولد النفايات (Generator / Source)
+* المعالج / شركة إعادة التدوير (Recycler / Processor)
+* المشتري (Buyer)
+* الناقل المرخص / الناقل المؤهل (Licensed/Qualified Transporter)
+* الأدمن (Admin)
+* فريق الشركة (Company Team)
+* المواد المعاد تدويرها (Recycled Materials)
 
 ---
 
+## Current vs Future Scope Map
+
+### 🟢 Current Implemented Scope
+الإجراءات المتوفرة والمنفذة فعلياً في المنصة:
+1. التسجيل والاعتماد (Registration & Onboarding)
+2. السوق الحالي الفوري (Spot Marketplace)
+3. العروض والصفقات (Offers & Deals)
+4. العقود التشغيلية (Operational Contracts)
+5. الشحنات والأوزان (Shipments & Weight Capture)
+6. التقارير التشغيلية (Operational Reports)
+7. مسار النقل الحالي المساعد (Offline-Assisted Transport)
+8. العمليات الإدارية (Admin Operations)
+9. ملاحظات وتطوير (Admin Findings & Wishlist)
+
+### 🔵 Proposed Future Scope
+ميزات ومسارات مصممة ومقترحة للتطوير المستقبلي:
+1. سوق الناقلين المرخصين المتمت (Licensed Transporter Marketplace)
+2. سوق المواد المعاد تدويرها (Recycled Materials Marketplace)
+3. مؤشرات الأداء المتقدمة والتحليلات (Advanced KPIs / Analytics)
+4. مطالبات السداد والفوترة (Payment Claims / Billing Support)
+5. صلاحيات الفريق التفصيلية وتوجيه الفروع (Team Permissions & Branch Routing)
+
+---
+
+# Part 1: Current Implemented Workflows
+
 ## 1. Platform Master Workflow
-**Service Name:** Platform Master Workflow  
-**Objective:** تقديم خريطة عامة وشاملة لرحلة المستخدم داخل المنصة وتفاعل الأنظمة مع بعضها.  
-**Actors:** زائر (Visitor)، شركة منتجة (Producer)، شركة مشترية/مصنع (Buyer/Factory)، شركة نقل (Transporter)، مدير المنصة (Admin).  
-**Trigger / Starting Point:** وصول المستخدم إلى المنصة وتسجيل الدخول.  
-**Step-by-step process:**
-1. **Onboarding:** التسجيل عبر Clerk، إكمال ملف الشركة (التراخيص والقدرات)، وموافقة الأدمن.
-2. **Operations Choice:** تختار الشركة العمل عبر السوق الفوري (Marketplace) أو عبر العقود التشغيلية (Contracts).
-3. **Execution:** تنفيذ الصفقات أو شحنات العقود.
-4. **Logistics:** طلب النقل وتنفيذه.
-5. **Closure:** اكتمال العملية (إصدار بوالص، تحديث التقارير، التسوية).
-6. **Reporting & Monitoring:** عرض التقارير الدورية (للشركات) ومراقبة العمليات (للأدمن).
-
-**Decision Points:**
-- هل الشركة منتجة أم مصنع أم ناقل؟
-- هل نوع التعامل صفقة فورية أم عقد طويل الأجل؟
-
-**Current Implemented Scope:** Onboarding، Marketplace، Deals، Contract Lite، Admin overview.  
-**Future Proposed Enhancements:** ربط آلي متكامل مع "مِراس" أو الجهات الحكومية للتسجيل الآلي، وتفعيل سوق الناقلين.  
-**Risks / Notes:** تعدد مسارات المستخدم يتطلب واجهة Dashboard ذكية توجه المستخدم للمسار الصحيح.
+**Objective:** تقديم خريطة عامة لرحلة المستخدم وتفاعل الأنظمة ضمن النطاق المنفذ حالياً.  
+**Actors:** مولد النفايات، المعالج، المشتري، الناقل، الأدمن.  
+**Trigger:** وصول المستخدم للمنصة وتسجيل الدخول.  
+**Current Implemented Steps:**
+1. التسجيل واعتماد الحساب من الأدمن.
+2. اختيار العمل عبر مسار السوق الفوري أو العقود التشغيلية.
+3. تنفيذ العملية (صفقة أو شحنة عقد).
+4. تسليم المواد عبر النقل.
+5. إصدار تقارير العمليات.
+**Decision Points:** هل الشركة منتجة أم مصنع أم ناقل؟ مسار العمل فوري أم مجدول؟  
+**Statuses:** N/A (Overview).  
+**Required Data:** التراخيص، الملف التعريفي.  
+**Outputs:** حساب مفعل متصل بمسارات التشغيل.  
+**Current Implemented Scope:** مسارات كاملة من التسجيل وحتى التقارير الأساسية.  
+**Proposed Future Enhancements:** N/A (Overview).  
+**Risks / Notes:** تنوع المسارات يتطلب Dashboard واضحة لتوجيه المستخدم.
 
 ```mermaid
 flowchart TD
-    Start((Start)) --> Auth[Clerk Auth & Onboarding]
+    Start((Start)) --> Auth[Registration & Auth]
     Auth --> AdminApprove{Admin Approval?}
-    AdminApprove -- No --> Hold[Account Pending/Rejected]
+    AdminApprove -- No --> Hold[Pending/Rejected]
     AdminApprove -- Yes --> Dashboard[Company Dashboard]
     
     Dashboard --> PathChoice{Choose Operation}
@@ -40,298 +75,29 @@ flowchart TD
     Contracts --> Shipments[Contract Shipments]
     Shipments --> Transport
     
-    Transport --> Closure[Completion & Weight Capture]
-    Closure --> Reports[Reports & Analytics]
+    Transport --> Closure[Completion]
+    Closure --> Reports[Reports Engine]
     Reports --> End((End))
-    
-    %% Admin Overview
-    Admin([Platform Admin]) -.-> Auth
-    Admin -.-> Marketplace
-    Admin -.-> Contracts
-    Admin -.-> Transport
 ```
 
 ---
 
-## 2. Operational Contracts (Contract Lite)
-**Service Name:** Operational Contracts  
-**Objective:** إدارة العقود التشغيلية المباشرة (B2B) لتبادل المواد على فترات طويلة بدون الحاجة لسوق مفتوح.  
-**Actors:** منشئ العقد (المنتج أو المشتري)، الطرف الآخر (Counterparty).  
-**Trigger / Starting Point:** اتفاق خارجي بين شركتين على توريد كميات متكررة.  
-**Step-by-step process:**
-1. يقوم أحد الطرفين بإنشاء مسودة العقد (Draft) وتحديد سياسة الوزن.
-2. إضافة بنود المواد (Material Lines) بالأسعار والنسب.
-3. إرسال العقد للطرف الآخر للموافقة (Pending Confirmation).
-4. يوافق الطرف الآخر فيصبح العقد فعالاً (Active).
-5. يتم تنفيذ الشحنات على العقد.
-6. يُغلق العقد يدوياً عند الانتهاء (Completed).
-
-**Decision Points:**
-- سياسة الوزن المعتمدة (Source vs Destination vs Higher).
-- من هو البائع ومن هو المشتري؟
-
-**Statuses:** `draft`, `pending_confirmation`, `active`, `completed`, `cancelled`.  
-**Required Data:** الشركة المقابلة، المواد، سياسة الوزن، تاريخ الانتهاء (اختياري)، السعر.  
-**Outputs:** Contract Reference (e.g. `TDW-CTR-YYYY-NNNN`).  
-**Current Implemented Scope:** مسار العقد بالكامل (Draft to Active)، إضافة المواد، إلغاء العقد.  
-**Future Proposed Enhancements:** تجديد العقد تلقائياً، تنبيهات قرب انتهاء العقد.  
-**Risks / Notes:** لا يتم إغلاق العقد تلقائياً.
-
-```mermaid
-stateDiagram-v2
-    [*] --> Draft: Create Contract
-    Draft --> Pending_Confirmation: Submit
-    Pending_Confirmation --> Active: Counterparty Accepts
-    Pending_Confirmation --> Cancelled: Counterparty Rejects / Creator Cancels
-    Active --> Completed: All shipments terminal & Creator closes
-    Active --> Cancelled: Cancelled by user/admin
-    Draft --> Cancelled: Creator deletes
-```
-
----
-
-## 3. Shipments and Weight Capture
-**Service Name:** Contract Shipments  
-**Objective:** إدارة حركة الشحنات الفردية داخل العقد واحتساب الوزن النهائي والقيمة المالية بناءً على سياسة العقد.  
-**Actors:** البائع (Seller)، المشتري (Buyer).  
-**Trigger / Starting Point:** وجود عقد فعال (Active Contract).  
-**Step-by-step process:**
-1. إنشاء شحنة مجدولة (Planned).
-2. البائع يضيف "وزن المصدر" ويؤكد الإرسال (Dispatched).
-3. المشتري يضيف "وزن الوجهة" ويؤكد الاستلام (Received).
-4. إغلاق الشحنة (Closed)، حيث يقوم النظام آلياً باحتساب `final_weight` و `final_value` بناءً على سياسة وزن العقد.
-
-**Decision Points:**
-- هل تم إدخال الأوزان المطلوبة قبل إغلاق الشحنة؟
-
-**Statuses:** `planned`, `dispatched`, `received`, `closed`, `cancelled`.  
-**Required Data:** وزن المصدر، وزن الوجهة، رقم البوليصة.  
-**Outputs:** Final Weight, Final Value.  
-**Current Implemented Scope:** دورة الشحنة بالكامل مدعومة بـ 5 سياسات وزن مختلفة.  
-**Future Proposed Enhancements:** ربط الأوزان مع حساسات الميزان (IoT Scale Integration)، أو الربط مع أنظمة ERP الخاصة بالشركات.  
-**Risks / Notes:** بمجرد تحول الشحنة إلى `closed`، تصبح الأوزان والقيمة النهائية غير قابلة للتعديل (Immutable) لضمان النزاهة المالية.
-
-```mermaid
-stateDiagram-v2
-    [*] --> Planned: Create Shipment
-    Planned --> Dispatched: Seller adds Source Weight
-    Dispatched --> Received: Buyer adds Destination Weight
-    Received --> Closed: Close & Lock Final Weight/Value
-    
-    Planned --> Cancelled: Cancel
-    Dispatched --> Cancelled: Cancel
-```
-
----
-
-## 4. Reports Engine
-**Service Name:** Data Reports & Analytics  
-**Objective:** توفير لوحات معلومات وتقارير قابلة للتصدير تلخص العمليات للمستخدمين وللإدارة.  
-**Actors:** مستخدم الشركة (Company Member)، مدير المنصة (Admin).  
-**Trigger / Starting Point:** الدخول إلى تبويب التقارير `/reports`.  
-**Step-by-step process:**
-1. يختار المستخدم نوع التقرير (صفقات، شحنات عقود، إلخ).
-2. يطبق فلاتر التاريخ (من - إلى) والحالة.
-3. يحسب النظام الإجماليات (الوزن، القيمة، الضرائب).
-4. تصدير النتائج لملف CSV عند الحاجة.
-
-**Required Data:** تواريخ العمليات (closed_at, completed_at)، القيم النهائية، الضرائب.  
-**Outputs:** Data Grids, Aggregate Cards, CSV file.  
-**Current Implemented Scope:** تقارير الصفقات، وتقارير الشحنات للعقود.  
-**Future Proposed Enhancements:** Phase 2-G&H (فصل رسوم تدويرة لتظهر في تقرير إداري منفصل كـ Billing Claims).  
-**Risks / Notes:** التقارير تعتمد على التواريخ النهائية لإغلاق العمليات (Closed/Completed) لتجنب تغير الأرقام بعد إعداد التقرير.
-
-```mermaid
-flowchart LR
-    User[User / Admin] --> Select[Select Report Type]
-    Select --> Filter[Apply Filters: Date, Status]
-    Filter --> Query[Query DB: Deals / Shipments]
-    Query --> Agg[Aggregate Totals & VAT]
-    Agg --> UI[Display Cards & Grid]
-    UI --> Export[Export CSV]
-```
-
----
-
-## 5. Current Transport Workflow
-**Service Name:** Offline-Assisted Transport Request  
-**Objective:** تسهيل طلب شاحنات للعمليات قبل إطلاق سوق الناقلين المتكامل.  
-**Actors:** طالب النقل (Requester)، فريق عمليات تدويرة (Admin Ops).  
-**Trigger / Starting Point:** الصفقة تتطلب نقلاً والمستخدم يضغط "طلب نقل".  
-**Step-by-step process:**
-1. المستخدم ينشئ طلب نقل بمعلومات الشحنة والموقع.
-2. النظام يسجل الطلب ويرسل إشعار بريدي لفريق عمليات تدويرة.
-3. فريق العمليات يتواصل يدوياً (هاتف/واتساب) مع الناقلين.
-4. فريق العمليات يحدث حالة الطلب في لوحة الأدمن.
-
-**Statuses:** `pending`, `assigned`, `in_transit`, `completed`, `cancelled`.  
-**Required Data:** Pickup, Dropoff, Material specs, Vehicle requirements.  
-**Outputs:** Admin notification.  
-**Current Implemented Scope:** تسجيل الطلب، لوحة أدمن بسيطة، إشعار بريدي.  
-**Future Proposed Enhancements:** سيتم استبداله بـ Proposed Transport Marketplace.  
-**Risks / Notes:** عمل يدوي مكثف على فريق العمليات، لا يوجد تتبع حي.
-
-```mermaid
-sequenceDiagram
-    participant U as User
-    participant S as System
-    participant O as Ops Team
-    
-    U->>S: Create Transport Request
-    S->>O: Email Notification
-    O->>O: Offline Coordination (Phone/WA)
-    O->>S: Update Status (Assigned)
-    S->>U: Status Updated Notification
-```
-
----
-
-## 6. Proposed Transport Marketplace
-**Service Name:** Automated Transport Marketplace  
-**Objective:** أتمتة إسناد الرحلات للناقلين عبر نظام مزايدات وعروض أسعار.  
-**Actors:** طالب النقل، الناقل (Transporter)، الأدمن.  
-**Trigger / Starting Point:** إنشاء طلب نقل من صفقة أو عقد.  
-**Step-by-step process:**
-1. **Request:** المستخدم ينشئ طلب نقل وتُرسل إشعارات للناقلين المعتمدين.
-2. **Quoting:** الناقلون يقدمون عروض أسعار (Quotes).
-3. **Selection:** طالب النقل يراجع العروض ويختار أحدها.
-4. **Execution:** يتم إرسال بيانات السائق والمركبة.
-5. **Tracking:** تحديثات حية (في الطريق، وصل، تم التسليم).
-6. **Settlement:** اعتماد البوليصة وتأكيد الإنجاز.
-
-**Statuses:** Request: `open`, `quoting`, `assigned`, `in_transit`, `delivered`. Quote: `pending`, `accepted`, `rejected`.  
-**Required Data:** العروض المالية، بيانات السائقين.  
-**Outputs:** بوليصة النقل الإلكترونية، إسناد آلي.  
-**Current Implemented Scope:** ❌ غير منفذ (التصميم والهيكلة جاهزة للبدء لاحقاً).  
-**Future Proposed Enhancements:** تتبع مسار الشاحنة عبر GPS.  
-**Risks / Notes:** يتطلب تسجيل واعتماد شركات نقل كافية في المنصة لتلبية الطلبات.
-
-```mermaid
-stateDiagram-v2
-    [*] --> Open: Broadcast Request
-    Open --> Quoting: Transporters bid
-    Quoting --> Assigned: Requester selects quote
-    Assigned --> In_Transit: Driver departs
-    In_Transit --> Delivered: Freight dropped off
-    Delivered --> [*]
-```
-
----
-
-## 7. Marketplace and Deals
-**Service Name:** Spot Marketplace & Deal State Machine  
-**Objective:** إدارة سوق العرض والطلب المفتوح وتحويل العروض إلى صفقات مالية.  
-**Actors:** المنتج، المشتري.  
-**Trigger / Starting Point:** المنتج ينشر Listing.  
-**Step-by-step process:**
-1. **Publish:** نشر `Waste Listing`.
-2. **Offer:** المشتري يقدم `Offer`.
-3. **Acceptance:** المنتج يوافق على العرض فتتولد `Deal` (حالة: `active`).
-4. **Payment:** المشتري يرفع إيصال الدفع (`payment_submitted`).
-5. **Confirmation:** المنتج يؤكد استلام المبلغ (`payment_confirmed`).
-6. **Dispatch:** المنتج يرسل الشحنة ويدخل الأوزان/بيانات المركبة (`dispatched`).
-7. **Receipt:** المشتري يؤكد الاستلام.
-8. **Completion:** اكتمال الصفقة (`completed`).
-
-**Decision Points:** نوع التسوية (Fixed vs By Weight)، حاجة النقل.  
-**Statuses:** `active`, `payment_submitted`, `payment_confirmed`, `dispatched`, `receipt_pending`, `completed`, `cancelled`, `expired`.  
-**Required Data:** كمية، سعر، إيصال، بيانات مركبة، وقت التنفيذ.  
-**Current Implemented Scope:** مسار الصفقة بالكامل منفذ ويخضع لتحذيرات انتهاء الصلاحية الآلية.  
-**Future Proposed Enhancements:** ربط بوابات دفع إلكترونية B2B بدلاً من الإيصالات اليدوية.  
-**Risks / Notes:** انتهاء مهلة الـ 48 ساعة للاستلام يحيل الصفقة للأدمن للتدخل.
-
-```mermaid
-stateDiagram-v2
-    [*] --> Listing_Open
-    Listing_Open --> Offer_Pending
-    Offer_Pending --> Deal_Active: Producer Accepts
-    Deal_Active --> Payment_Submitted: Buyer Uploads Receipt
-    Payment_Submitted --> Payment_Confirmed: Producer Verifies
-    Payment_Confirmed --> Dispatched: Producer Dispatches
-    Dispatched --> Completed: Buyer Confirms Receipt
-    
-    Deal_Active --> Expired: Time Limit Reached
-```
-
----
-
-## 8. Admin Operations
-**Service Name:** Platform Administration & Governance  
-**Objective:** الإشراف على المنصة، التدخل في النزاعات، وإدارة البيانات الوصفية (Master Data).  
-**Actors:** Admin.  
-**Trigger / Starting Point:** وصول الأدمن إلى `/admin`.  
-**Step-by-step process:**
-1. **Governance:** تفعيل حسابات الشركات وتوثيق تراخيصها.
-2. **Operations Interventions:** استعراض العمليات المتأخرة، وإجبار إكمال (`force-complete`) أو الإلغاء في حال النزاعات.
-3. **Master Data Management:** إضافة وتعديل قوائم المواد، الوحدات، وفئات الشركات.
-4. **Issue Resolution:** مراجعة تقارير المشاكل المرفوعة من العملاء.
-
-**Current Implemented Scope:** واجهات التدخل في الصفقات (إلغاء، إكمال، إعادة فتح)، اعتمادات الشركات، تصدير التقارير.  
-**Future Proposed Enhancements:** واجهة Master Data كاملة (Phase 3-A).  
-**Risks / Notes:** أي تدخل إداري يُسجل إجبارياً في `audit_log` ولا يمكن حذفه.
-
-```mermaid
-flowchart TD
-    Admin[Admin] -->|Review| Co[Company Onboarding]
-    Admin -->|Intervene| Deals[Overdue Deals / Disputes]
-    Admin -->|Manage| Master[Master Data / Dropdowns]
-    
-    Deals -->|Force Complete| Audit[Audit Log]
-    Deals -->|Cancel| Audit
-    Master -->|Add Material| DB[(Database)]
-```
-
----
-
-## 9. Admin Findings & Wishlist
-**Service Name:** Internal Tracker (Phase 3-A2)  
-**Objective:** توثيق المتطلبات التشغيلية وملاحظات الـ UAT وأفكار التحسين داخلياً ضمن المنصة.  
-**Actors:** Admin.  
-**Trigger / Starting Point:** رصد ملاحظة أو طلب من جهة (مثل: شريك استراتيجي) يستدعي التطوير.  
-**Step-by-step process:**
-1. إدخال الملاحظة (العنوان، المسار، الأولوية، المصدر).
-2. ترتيب الملاحظات يدوياً بالأسهم (sort_order) لتحديد الأولوية العاجلة.
-3. تعديل أو تحزيم الملاحظة لاحقاً.
-4. حذف الملاحظة إذا لم تعد مطلوبة.
-
-**Statuses:** `new`, `under_review`, `accepted`, `deferred`, `closed`.  
-**Required Data:** Title, Type, Area, Priority, Status.  
-**Outputs:** Ranked backlog visible only to admins.  
-**Current Implemented Scope:** مسار متكامل CRUD + Reorder + التعريب.  
-**Future Proposed Enhancements:** لا يوجد. مصمم ليكون بسيطاً ومستقلاً.  
-**Risks / Notes:** النظام معزول كلياً عن جداول العمليات الحساسة (Zero Relations).
-
-```mermaid
-stateDiagram-v2
-    [*] --> New: Create Finding
-    New --> Under_Review: Analyzed
-    Under_Review --> Accepted: Approved for Dev
-    Under_Review --> Deferred: Postponed
-    Accepted --> Closed: Implemented
-    
-    state Admin_Actions {
-        Move_Up_Down
-        Hard_Delete
-        Edit_Details
-    }
-```
-
----
-
-## 10. Company Registration & Onboarding
-**Service Name:** Registration & RBAC  
-**Objective:** تسجيل وتدقيق الشركات قبل السماح لها بالتداول.  
-**Actors:** زائر، Clerk Auth، Admin.  
-**Trigger / Starting Point:** `/sign-up`  
-**Step-by-step process:**
-1. تسجيل الدخول عبر Clerk (رقم الجوال أو البريد).
-2. النظام يتحقق: هل المستخدم مرتبط بشركة؟
-3. إذا لا: يُوجه لصفحة `/onboarding/company` لتسجيل اسم الشركة ورقم الترخيص.
-4. يتم تسجيل الشركة بحالة ترخيص `pending`.
-5. الأدمن يراجع ويغير الحالة إلى `approved`.
-
-**Current Implemented Scope:** دورة التسجيل وحظر الميزات حتى الاعتماد. وربط مسار تنبيهات البريد التشغيلي.  
-**Future Proposed Enhancements:** إدارة فروع الشركة (Multi-Site) وتعدد الأدوار (RBAC).  
+## 2. Company Registration & Onboarding
+**Objective:** تسجيل وتدقيق الشركات والتحقق من التراخيص.  
+**Actors:** زائر، Clerk Auth، الأدمن.  
+**Trigger:** النقر على "إنشاء حساب".  
+**Current Implemented Steps:**
+1. التسجيل بـ OTP أو كلمة مرور عبر Clerk.
+2. توجيه لصفحة إكمال بيانات الشركة.
+3. إرسال الطلب (Pending).
+4. مراجعة الأدمن واعتماد الترخيص (Approved).
+**Decision Points:** هل توجد أوراق اعتماد رسمية صحيحة؟  
+**Statuses:** `pending`, `approved`, `rejected`.  
+**Required Data:** اسم الشركة، رقم الترخيص.  
+**Outputs:** حساب شركة فعال (Active Company Profile).  
+**Current Implemented Scope:** دورة التسجيل وحجب الخدمات لحين الاعتماد.  
+**Proposed Future Enhancements:** الربط مع الجهات الرسمية لتوثيق التراخيص آلياً.  
+**Risks / Notes:** التسجيل محصور بمالك الحساب حالياً.
 
 ```mermaid
 sequenceDiagram
@@ -340,12 +106,346 @@ sequenceDiagram
     participant App
     participant Admin
     
-    User->>Clerk: OTP / Password Signup
+    User->>Clerk: OTP Signup
     Clerk-->>App: JWT Token
-    App->>App: Check DB for Company
     App->>User: Redirect to Onboarding
-    User->>App: Submit Company Details
-    App->>Admin: Pending Approval Queue
+    User->>App: Submit Company Profile
+    App->>Admin: Alert Pending Approval
     Admin->>App: Approve License
-    App->>User: Full Platform Access Granted
+    App->>User: Platform Access Granted
 ```
+
+---
+
+## 3. Marketplace Listings Workflow
+**Objective:** عرض النفايات والمواد المتاحة للتداول الفوري.  
+**Actors:** المصدر / مولد النفايات.  
+**Trigger:** رغبة المولد في بيع أو التخلص من كمية معينة.  
+**Current Implemented Steps:**
+1. إنشاء Listing وتحديد المواصفات (الكمية، المادة، الصور).
+2. نشر الـ Listing في السوق.
+3. انتظار العروض.
+**Decision Points:** هل المادة تتطلب تصريحاً خاصاً للمعالجة؟  
+**Statuses:** `open`, `filled`, `expired`, `cancelled`.  
+**Required Data:** المادة، الوحدة، الكمية، الموقع.  
+**Outputs:** إعلان عام متاح للمشترين المؤهلين.  
+**Current Implemented Scope:** مسار متكامل لإنشاء العروض مع إشعارات بريدية.  
+**Proposed Future Enhancements:** مزايدات علنية (Auctions) بوقت محدد.  
+**Risks / Notes:** المادة المعروضة تُحجب تلقائياً عند انتهاء صلاحية العرض.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Draft: Create Listing
+    Draft --> Open: Publish
+    Open --> Filled: Offer Accepted (Deal Active)
+    Open --> Expired: Time Limit Reached
+    Open --> Cancelled: Creator Cancels
+```
+
+---
+
+## 4. Offers & Deals Workflow
+**Objective:** تحويل العروض في السوق إلى صفقات مالية ملزمة وحركية.  
+**Actors:** المصدر / مولد النفايات، المشتري، الأدمن.  
+**Trigger:** المشتري يرسل عرضاً (Offer) على Listing مفتوح.  
+**Current Implemented Steps:**
+1. المولد يقبل العرض فتتولد صفقة (Deal).
+2. المشتري يرفع إثبات التحويل المالي.
+3. المولد يؤكد استلام المبلغ.
+4. المولد يشحن المواد (Dispatched).
+5. المشتري يؤكد الاستلام (Completed).
+**Decision Points:** القبول أو الرفض للعرض، تطابق الاستلام مع الكمية.  
+**Statuses:** `active`, `payment_submitted`, `payment_confirmed`, `dispatched`, `receipt_pending`, `completed`, `cancelled`.  
+**Required Data:** السعر المتفق عليه، إيصال التحويل، بوليصة النقل.  
+**Outputs:** صفقة موثقة مع تقرير.  
+**Current Implemented Scope:** دورة حياة كاملة مع تحذيرات انقضاء المهلة.  
+**Proposed Future Enhancements:** بوابات دفع إلكتروني B2B لدعم الحسابات المعلقة (Escrow).  
+**Risks / Notes:** انقضاء 48 ساعة دون تأكيد استلام يُحيل الصفقة لتدخل الأدمن.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Deal_Active: Producer Accepts Offer
+    Deal_Active --> Payment_Submitted: Buyer Uploads Proof
+    Payment_Submitted --> Payment_Confirmed: Producer Verifies
+    Payment_Confirmed --> Dispatched: Producer Dispatches
+    Dispatched --> Completed: Buyer Confirms Receipt
+    Deal_Active --> Cancelled: Admin/User Cancel
+```
+
+---
+
+## 5. Operational Contracts Workflow
+**Objective:** إبرام عقود B2B مجدولة خارج السوق الفوري للتدفقات المتكررة.  
+**Actors:** منشئ العقد (مولد أو مشتري)، الطرف الآخر.  
+**Trigger:** اتفاق مسبق بين شركتين.  
+**Current Implemented Steps:**
+1. إنشاء مسودة العقد وتحديد سياسة احتساب الوزن.
+2. إضافة بنود المواد وتسعيرها.
+3. إرسال للطرف المقابل لاعتماده.
+4. الموافقة وتحول العقد لفعال (Active).
+5. إغلاق العقد عند الانتهاء.
+**Decision Points:** سياسة الوزن (المصدر مقابل الوجهة).  
+**Statuses:** `draft`, `pending_confirmation`, `active`, `completed`, `cancelled`.  
+**Required Data:** الشركة المقابلة، المواد، سياسة الوزن، تاريخ البدء والانتهاء.  
+**Outputs:** وثيقة العقد المرجعية.  
+**Current Implemented Scope:** مسار العقد وتحديد السياسات منفذ بالكامل.  
+**Proposed Future Enhancements:** التجديد التلقائي والتنبيه قبل الانتهاء.  
+**Risks / Notes:** لا تُغلق العقود تلقائياً بل تتطلب إجراءً يدوياً أو إدارياً.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Draft: Create Contract
+    Draft --> Pending_Confirmation: Submit
+    Pending_Confirmation --> Active: Counterparty Accepts
+    Pending_Confirmation --> Cancelled: Rejected
+    Active --> Completed: Terminal Shipments
+```
+
+---
+
+## 6. Shipments & Weights Workflow
+**Objective:** إدارة الحركات اللوجستية التفصيلية لمواد العقود واحتساب الأوزان النهائية.  
+**Actors:** مرسل الشحنة، مستقبل الشحنة.  
+**Trigger:** عقد فعال يتطلب إرسال شحنة.  
+**Current Implemented Steps:**
+1. إنشاء شحنة مخطط لها.
+2. إدخال "وزن المصدر" واعتماد الإرسال.
+3. إدخال "وزن الوجهة" من المستقبل.
+4. إغلاق الشحنة ليتم حساب الوزن النهائي والقيمة آلياً حسب سياسة العقد.
+**Decision Points:** مطابقة الوزن المدخل مع بوليصة الشحن.  
+**Statuses:** `planned`, `dispatched`, `received`, `closed`, `cancelled`.  
+**Required Data:** أوزان المصدر والوجهة، إيصالات الميزان.  
+**Outputs:** الوزن النهائي، القيمة المالية النهائية للشحنة.  
+**Current Implemented Scope:** 5 سياسات وزن مختلفة مدعومة حالياً بالكامل.  
+**Proposed Future Enhancements:** ربط آلي مع موازين الشاحنات (IoT Integration).  
+**Risks / Notes:** القيم المالية ثابتة (Immutable) بمجرد تحول الشحنة لـ Closed.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Planned: Create Shipment
+    Planned --> Dispatched: Source Weight Entered
+    Dispatched --> Received: Destination Weight Entered
+    Received --> Closed: Auto-calculate Final Weight & Value
+```
+
+---
+
+## 7. Reports Workflow
+**Objective:** تجميع وتصدير بيانات المنصة لدعم القرار التشغيلي.  
+**Actors:** فريق الشركة، الأدمن.  
+**Trigger:** الدخول لتبويب التقارير.  
+**Current Implemented Steps:**
+1. تحديد نوع التقرير (صفقات أو شحنات عقود).
+2. تطبيق فلاتر التاريخ أو المرجع.
+3. عرض الإجماليات (أوزان، قيم، ضرائب).
+4. التصدير لملف CSV.
+**Decision Points:** N/A.  
+**Statuses:** N/A.  
+**Required Data:** نطاق التاريخ.  
+**Outputs:** Data Cards, CSV Export.  
+**Current Implemented Scope:** تقارير الصفقات والشحنات المكتملة.  
+**Proposed Future Enhancements:** لوحات قياس رسوم تدويرة بشكل مستقل عن قيمة الصفقة (Billing).  
+**Risks / Notes:** تعتمد حصراً على العمليات المغلقة لضمان استقرار الأرقام.
+
+```mermaid
+flowchart LR
+    User[User/Admin] --> Select[Select Report]
+    Select --> Filter[Filter Dates]
+    Filter --> Agg[Aggregate Totals]
+    Agg --> UI[Show Dashboard]
+    UI --> CSV[Export CSV]
+```
+
+---
+
+## 8. Current Transport Workflow
+**Objective:** مساعدة لوجستية مؤقتة لترتيب النقل خارج المنصة الآلية.  
+**Actors:** طالب النقل، فريق تدويرة اللوجستي (Offline).  
+**Trigger:** اختيار "طلب نقل" من صفقة.  
+**Current Implemented Steps:**
+1. طلب النقل عبر النظام.
+2. إشعار بريدي لفريق تدويرة.
+3. ترتيب فريق تدويرة للنقل هاتفياً/واتساب مع الناقلين.
+4. تحديث الحالة يدوياً من قِبل الأدمن.
+**Decision Points:** تسعيرة النقل وقبول المولد لها.  
+**Statuses:** `pending`, `assigned`, `in_transit`, `completed`, `cancelled`.  
+**Required Data:** موقع الاستلام والتسليم، مواصفات الحمولة.  
+**Outputs:** إشعار بريدي.  
+**Current Implemented Scope:** نموذج طلب مبسط لتسجيل الاحتياج.  
+**Proposed Future Enhancements:** سيتم استبداله بسوق الناقلين المرخصين بالكامل (انظر Part 2).  
+**Risks / Notes:** يعتمد بشكل كبير على التدخل البشري خارج المنصة.
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant System
+    participant OpsTeam
+    
+    User->>System: Submit Transport Request
+    System->>OpsTeam: Email Notification
+    OpsTeam->>OpsTeam: Offline Coordination
+    OpsTeam->>System: Update Status
+    System->>User: Notify Status Change
+```
+
+---
+
+## 9. Admin Operations Workflow
+**Objective:** رقابة المنصة والتدخل لفض النزاعات أو تجاوز العقبات التقنية.  
+**Actors:** الأدمن.  
+**Trigger:** تذكرة دعم أو مراقبة لوحة التحكم.  
+**Current Implemented Steps:**
+1. اعتماد الشركات وتحديث التراخيص.
+2. التدخل في الصفقات (إجبار إكمال `force-complete`، أو إلغاء، أو إعادة فتح).
+3. إدارة القوائم المنسدلة والمواد.
+**Decision Points:** هل يحق للطرف المشتكي تجاوز النظام؟  
+**Statuses:** N/A.  
+**Required Data:** مبرر التدخل (Reason text).  
+**Outputs:** إجراء إداري يُسجل في `audit_log`.  
+**Current Implemented Scope:** واجهات التدخل في الصفقات وتصدير التقارير.  
+**Proposed Future Enhancements:** إدارة واجهات البيانات الوصفية (Master Data) بالكامل عبر UI.  
+**Risks / Notes:** كل عملية إجبارية تُسجل نهائياً للحفاظ على النزاهة.
+
+```mermaid
+flowchart TD
+    Admin[Admin] --> Intervene[Deal Interventions]
+    Admin --> Co[Company Approvals]
+    Admin --> Master[Master Data / Taxonomies]
+    Intervene --> Audit[Audit Log Record]
+```
+
+---
+
+## 10. Admin Findings & Wishlist Workflow
+**Objective:** نظام تتبع داخلي معزول لتوثيق احتياجات الشركاء الاستراتيجيين وتطوير المنصة.  
+**Actors:** الأدمن.  
+**Trigger:** طلب تطوير أو ملاحظة تشغيلية.  
+**Current Implemented Steps:**
+1. تسجيل الملاحظة (نوع، عنوان، أولوية).
+2. إسناد المصدر إلى "شريك استراتيجي" أو غيره.
+3. الترتيب اليدوي (Reorder) بالأسهم للأولوية القصوى.
+4. إغلاق الملاحظة عند الإنجاز.
+**Decision Points:** أولوية التنفيذ البرمجي.  
+**Statuses:** `new`, `under_review`, `accepted`, `deferred`, `closed`.  
+**Required Data:** Title, Source, Priority.  
+**Outputs:** قائمة مرتبة لأولويات التطوير الداخلي.  
+**Current Implemented Scope:** مسار مستقل (CRUD + Reorder) يعمل بنجاح.  
+**Proposed Future Enhancements:** N/A (مصمم ليكون أداة داخلية بسيطة).  
+**Risks / Notes:** لا يتصل نهائياً بجداول الصفقات (Zero Relation).
+
+```mermaid
+stateDiagram-v2
+    [*] --> New: Log Finding
+    New --> Under_Review: Analyze
+    Under_Review --> Accepted: Approve Dev
+    Accepted --> Closed: Implemented
+    Under_Review --> Deferred: Postpone
+```
+
+---
+
+# Part 2: Proposed Future Workflows
+
+> **ملاحظة هامة:** كافة التدفقات والإجراءات في هذا القسم تمثل **خارطة طريق مستقبلية ومقترحات تطوير**، وليست جزءاً من الشيفرة البرمجية الحالية في المنصة التشغيلية.
+
+## 11. Proposed Licensed Transporter Marketplace Workflow
+**Objective:** أتمتة وتوثيق إسناد مهام النقل للناقلين المرخصين ببيئة شفافة وتنافسية (Bidding Model).  
+**Actors:** طالب النقل (مصدر/مشتري)، الناقل المرخص، الأدمن.  
+**Trigger:** شحنة من عقد، أو صفقة فورية تتطلب ترتيب نقل لوجستي.  
+**Proposed Steps:**
+1. **إنشاء طلب نقل:** يحدد المستخدم نقطة الاستلام، نقطة التسليم، نوع الشاحنة المطلوبة، وتاريخ التنفيذ.
+2. **تحديد الناقلين وتوجيه الطلب:** يقوم النظام بحصر كافة "الناقلين المرخصين" والمؤهلين لتلك المادة وتوجيه الإشعار لهم.
+3. **استقبال العروض (Quoting):** يقدم الناقلون عروض أسعار (Bids) بناءً على تفاصيل الطلب.
+4. **المقارنة والاختيار:** طالب النقل يراجع العروض ويختار الناقل الأنسب مالياً ولوجستياً.
+5. **الربط والاعتماد:** يتم تعميد الناقل المختار وربطه بالشحنة.
+6. **إدخال بيانات التنفيذ:** يُدخل الناقل بيانات (رقم اللوحة، هوية السائق، رخصة القيادة).
+7. **تنفيذ ومتابعة النقل:** تحديث الحالة من (تم التحميل، في الطريق، تم التسليم).
+8. **الإغلاق:** تسليم بوليصة النقل الإلكترونية وربط بيانات التسعير والوزن بتقرير الصفقة الأساسية.
+**Decision Points:** اختيار الناقل المفضل، استبعاد العروض المتأخرة، مطابقة رخص القيادة وتصاريح النقل.  
+**Statuses (Proposed):** Request (`open`, `quoting`, `assigned`, `in_transit`, `delivered`). Quote (`pending`, `accepted`, `rejected`).  
+**Required Data:** العروض المالية، رخص القيادة، بطاقات التشغيل للمركبات.  
+**Outputs:** بوليصة نقل موثقة إلكترونياً، إسناد آلي شفاف.  
+**Current Implemented Scope:** ❌ غير منفذ. (موجود فقط كمسودة قواعد بيانات وتصميم أولي).  
+**Proposed Future Enhancements:** التتبع الحي (Live GPS Tracking) للشاحنات المتجهة للمواقع، وربط البوالص آلياً مع بوابات التوزين (Weighbridges).  
+**Risks / Notes:** يتطلب هذا السوق تأهيل وتسجيل شبكة ضخمة من الناقلين المرخصين لضمان كفاءة التنافس وعدم تعطل صفقات المولدين.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Request_Created: Shipment requires transport
+    Request_Created --> Bidding_Open: Notify Licensed Transporters
+    Bidding_Open --> Quotes_Received: Transporters submit bids
+    Quotes_Received --> Transporter_Assigned: Requester selects quote
+    Transporter_Assigned --> Driver_Details_Provided: Transporter assigns vehicle/driver
+    Driver_Details_Provided --> In_Transit: Material picked up
+    In_Transit --> Delivered: Material dropped off
+    Delivered --> [*]
+```
+
+---
+
+## 12. Proposed Recycled Materials Marketplace Workflow
+**Objective:** فتح قناة تسويق ومبيعات متقدمة لـ (المواد المعاد تدويرها / الجاهزة كمواد خام)، تمثل المرحلة اللاحقة لدورة المعالجة.  
+**Actors:** المعالج / شركة إعادة التدوير (كبائع)، المشتري (المصانع المحلية، أو مشترين إقليميين/عالميين).  
+**Trigger:** شركة إعادة التدوير أنهت معالجة كميات وتود طرحها كـ (مواد معاد تدويرها) جاهزة للبيع التصنيعي.  
+**فرق السوق الأساسي عن هذا السوق المقترح:**
+* **السوق الحالي (Spot Market):** مولد/مصدر يطرح (نفايات/مخلفات) ⬅️ للمعالج.
+* **السوق المقترح (Recycled Materials):** معالج يطرح (مواد خام معاد تدويرها) ⬅️ للمصنع النهائي أو المشتري العالمي.  
+**Proposed Steps:**
+1. المعالج يعرض (مواد معاد تدويرها) بذكر تفاصيل الجودة والنقاوة.
+2. إرفاق (الشهادات الفنية والتحاليل المخبرية) للمادة ضمن الـ Listing.
+3. تحديد شروط التوفر (جاهز للاستلام الفوري، أو متوفر خلال شهر).
+4. يستقبل المعالج طلبات شراء (Purchase Requests) من المشترين المهتمين.
+5. الموافقة وإصدار (Proforma Invoice / صفقة مبدئية).
+6. ترتيب النقل عبر (سوق الناقلين المرخصين) أو نقل دولي إن لزم الأمر.
+7. تسليم المواد للمصنع النهائي.
+**Decision Points:** مطابقة الجودة للمصنع المشتري، الاتفاق على شهادات الفحص.  
+**Statuses (Proposed):** مشابهة للسوق الحالي مع حالات إضافية لتدقيق الجودة والفحص المخبري.  
+**Required Data:** شهادات المنشأ، تحاليل الجودة (Purity/Specs)، شروط التسليم (Incoterms).  
+**Outputs:** صفقات مواد خام موثقة تلبي احتياجات سلاسل الإمداد العالمية أو المحلية.  
+**Current Implemented Scope:** ❌ غير منفذ. المنصة الحالية تركز على سوق المولدين إلى المعالجين.  
+**Proposed Future Enhancements:** مزامنة المخزون (Inventory Sync) بين مصانع التدوير والمنصة لتحديث الكميات المتاحة آلياً.  
+**Risks / Notes:** يتطلب هذا السوق تصنيفات (Taxonomy) دقيقة ومختلفة كلياً عن تصنيفات "النفايات والمخلفات" المعتمدة في المراحل الأولى.
+
+```mermaid
+sequenceDiagram
+    participant Recycler as Recycler (Seller)
+    participant Platform as Tadweerah Market
+    participant Factory as Factory (Buyer)
+    
+    Recycler->>Platform: Publish Recycled Material & Certs
+    Platform-->>Factory: Notify Matching Factories
+    Factory->>Platform: Submit Purchase Offer
+    Platform->>Recycler: Forward Offer
+    Recycler->>Platform: Accept Offer (Deal Active)
+    Platform->>Factory: Confirm Deal
+    Note over Recycler,Factory: Logistics and Delivery
+    Factory->>Platform: Confirm Receipt & Quality
+```
+
+---
+
+## 13. Future Advanced KPIs / Analytics
+**Objective:** توفير تحليلات استباقية وألواح قياس ذكية للإدارة العليا والشركاء الاستراتيجيين.  
+**Actors:** الأدمن، الشريك الاستراتيجي.  
+**Trigger:** طلب تقرير شهري استراتيجي.  
+**Proposed Steps:** تحويل بيانات العمليات المغلقة لمؤشرات اقتصادية (مثل حجم التداول السوقي، أوقات الاستجابة اللوجستية، نسب القبول للعروض).  
+**Current Implemented Scope:** ❌ غير منفذ (الموجود حالياً تقارير كمية تشغيلية بسيطة).  
+**Mermaid diagram:** N/A (Data Visualization Focus).
+
+---
+
+## 14. Future Payment Claims / Billing Support
+**Objective:** فصل رسوم ومطالبات منصة تدويرة عن القيم التشغيلية لصفقات الشركات.  
+**Actors:** الإدارة المالية لمنصة تدويرة، الشركات.  
+**Proposed Steps:** رصد كل صفقة تمت، وتجميعها في مسودة مطالبة شهرية (Billing Statement) تُرسل آلياً للشركة لدفع رسوم وعمولات المنصة.  
+**Current Implemented Scope:** ❌ غير منفذ. (موجود فقط في مستندات التصميم Phase 2-G&H).  
+**Mermaid diagram:** N/A (Financial Focus).
+
+---
+
+## 15. Future Team Permissions and Branch Routing
+**Objective:** دعم الهياكل المؤسسية الضخمة التي تملك فروعاً متعددة وفرق عمل مخصصة.  
+**Actors:** مدراء حسابات الشركات.  
+**Proposed Steps:** إدارة مواقع التشغيل (Branches/Sites)، وتعيين موظفين مخصصين (مثال: أمين مستودع الرياض لا يرى عقود مستودع جدة). توجيه التنبيهات وإشعارات العقود للفرع المعني مباشرة بدلاً من المالك العام.  
+**Current Implemented Scope:** ❌ غير منفذ. (يوجد فقط إمكانية تعيين مستلم بريد موحد `مستلم تنبيهات البريد`).  
+**Mermaid diagram:** N/A (RBAC Focus).
