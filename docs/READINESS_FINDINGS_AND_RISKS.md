@@ -1,12 +1,12 @@
-# Tadweerah — Readiness Findings & Risks
+﻿# Tadweerah â€” Readiness Findings & Risks
 > Last updated: 2026-06-09 | Session: 6b53fc3f
-> Status: DOCUMENTATION ONLY — no application code changed
+> Status: DOCUMENTATION ONLY â€” no application code changed
 
 > **Legend:**
-> - 🟢 Current behavior | 🎯 Target behavior | ⚠️ Gap
-> - 🔴 High risk | 🟡 Medium risk | 🟢 Low risk
-> - 🚫 Requires backend deploy | 🖥️ Frontend-only fix | 📋 Decision/documentation
-> - 🔍 Needs manual verification
+> - ðŸŸ¢ Current behavior | ðŸŽ¯ Target behavior | âš ï¸ Gap
+> - ðŸ”´ High risk | ðŸŸ¡ Medium risk | ðŸŸ¢ Low risk
+> - ðŸš« Requires backend deploy | ðŸ–¥ï¸ Frontend-only fix | ðŸ“‹ Decision/documentation
+> - ðŸ” Needs manual verification
 
 ---
 
@@ -14,7 +14,7 @@
 
 > **Overall Readiness: 9.7 / 10**
 > This is suitable for **final pilot UAT and launch preparation**.
-> It is nearly ready for an unsupervised Al Qaryan demo, pending final verification.
+> It is nearly ready for an unsupervised Strategic Partner demo, pending final verification.
 
 The core platform architecture is sound. The deal state machine, contract system,
 admin API controls, notification pipeline, audit trail, reports engine, and
@@ -22,26 +22,26 @@ admin dashboards are correctly implemented in code.
 
 The final steps to achieve full pilot launch readiness involve:
 
-1. **Final End-to-End UAT** — across seller, receiver/factory, transporter, and admin.
-2. **Minor Administrative UI Additions** — adding the missing `force-complete` deal action to the admin panel UI.
-3. **Operational Notification Hardening** — adding the buyer's 3-day deal expiry warning and admin override notifications.
+1. **Final End-to-End UAT** â€” across seller, receiver/factory, transporter, and admin.
+2. **Minor Administrative UI Additions** â€” adding the missing `force-complete` deal action to the admin panel UI.
+3. **Operational Notification Hardening** â€” adding the buyer's 3-day deal expiry warning and admin override notifications.
 
 ---
 
 ## Section 1: Resolved Findings (Phases 2-A & 2-C)
 
-* **H1 — Deal Receipt Mismatch**
+* **H1 â€” Deal Receipt Mismatch**
   * Status: resolved in Phase 2-A.
-* **H2 — Admin UI Missing Override Buttons**
+* **H2 â€” Admin UI Missing Override Buttons**
   * Status: resolved in Phase 2-C.
   * Evidence: admin force-complete and reopen controls.
-* **H3 — Buyer Not Warned Before Expiry**
+* **H3 â€” Buyer Not Warned Before Expiry**
   * Status: implemented/deployed in Phase 2-C.
   * Note: live verification deferred unless safe DB strategy is approved.
-* **H4 — Admin Overrides Send No Notifications**
+* **H4 â€” Admin Overrides Send No Notifications**
   * Status: resolved in Phase 2-C.
   * Evidence: cancel, force-complete, reopen notifications UAT passed.
-* **M2 — Cannot Cancel Dispatched Deals**
+* **M2 â€” Cannot Cancel Dispatched Deals**
   * Status: resolved/mitigated through admin override tools and reopen recovery.
 
 ---
@@ -50,39 +50,39 @@ The final steps to achieve full pilot launch readiness involve:
 
 > **Principle:** Remaining risks after Phase 2-D must be intentional, current, and actionable.
 
-### M1 — Transport Quote "Select" Does Not Assign
-**Severity: 🟢 Low / 🟡 Medium | Phase: Post-Pilot Polish**
+### M1 â€” Transport Quote "Select" Does Not Assign
+**Severity: ðŸŸ¢ Low / ðŸŸ¡ Medium | Phase: Post-Pilot Polish**
 - **Current:** Quote status changes, but true transporter assignment is not tracked.
 - **Recommended:** Defer true assignment logic; optional label polish (e.g. "Shortlist Only") later.
 
 ---
 
-### M3 — Buyer Blocked Silently (No Notification)
-**Severity: 🟡 Medium | Phase: TBD**
+### M3 â€” Buyer Blocked Silently (No Notification)
+**Severity: ðŸŸ¡ Medium | Phase: TBD**
 - **Current:** `offer_submission_blocked = true` triggers silently.
 - **Recommended:** Needs founder/product decision on whether blocking should be automatic or manual, and whether notifications are required.
 
 ---
 
-### M4 — Contract Lite Notifications
-**Severity: 🟡 Medium | Phase: Phase 2-E**
+### M4 â€” Contract Lite Notifications
+**Severity: ðŸŸ¡ Medium | Phase: Phase 2-E**
 - **Current:** Contract Lite notification architecture patched (`283270e`) and deployed to staging (`tadweerah-api-00085-rg9`); pending manual Contract Lite UAT.
   - Contract notification documentation aligned.
   - Contract completed notification added.
   - Shipment email noise mitigated.
-- **Still Pending:** Final Contract Lite UAT, Al Qaryan weight policy founder confirmation, and Contract UX manual UAT.
+- **Still Pending:** Final Contract Lite UAT, Strategic Partner weight policy founder confirmation, and Contract UX manual UAT.
 
 ---
 
-### M5 — Rich Deal Completion Email Not Wired
-**Severity: 🟡 Medium | Phase: Phase 2-F**
+### M5 â€” Rich Deal Completion Email Not Wired
+**Severity: ðŸŸ¡ Medium | Phase: Phase 2-F**
 - **Current:** `sendDealCompletionEmail` defined but never called.
 - **Recommended:** Should-do. Likely wire in Phase 2-F unless required earlier.
 
 ---
 
-### M6 — Hard-Coded Timer Values
-**Severity: 🟢 Low | Phase: Phase 3-B**
+### M6 â€” Hard-Coded Timer Values
+**Severity: ðŸŸ¢ Low | Phase: Phase 3-B**
 - **Current:** All timers are constants.
 - **Recommended:** Known limitation. Defer post-pilot unless pilot requires configurability.
 
@@ -115,8 +115,8 @@ The final steps to achieve full pilot launch readiness involve:
 > - Backend revision deployed for notification enrichment: `tadweerah-api-00082-lc2`.
 > - Frontend deployed after listing-card fix: `e5722e7`.
 > 
-> **Phase 2-C — Final Pilot Readiness & UAT Hardening:**
-> **Status:** ✅ Completed
+> **Phase 2-C â€” Final Pilot Readiness & UAT Hardening:**
+> **Status:** âœ… Completed
 > Admin override hardening successfully deployed and verified via UAT.
 > - **Deployed Backend Revision:** `tadweerah-api-00084-bnw`
 > - **Deployed Frontend Commit:** `7422819`
@@ -138,7 +138,7 @@ The final steps to achieve full pilot launch readiness involve:
 > 5. Broader branded email template redesign.
 > 6. Buyer expiry warning live verification (deferred unless safe DB strategy is approved).
 > 7. i18n dictionary refactor for admin action strings.
-> 8. Checklist wording `متطلبات متبقية` improvement to `متطلبات تشغيلية متبقية`.
+> 8. Checklist wording `Ù…ØªØ·Ù„Ø¨Ø§Øª Ù…ØªØ¨Ù‚ÙŠØ©` improvement to `Ù…ØªØ·Ù„Ø¨Ø§Øª ØªØ´ØºÙŠÙ„ÙŠØ© Ù…ØªØ¨Ù‚ÙŠØ©`.
 > 9. Shipment cancel modal destructive styling improvement.
 
 ---
@@ -150,61 +150,61 @@ The final steps to achieve full pilot launch readiness involve:
 
 | Finding | Files involved | Current source of truth | Recommended SOT | Risk | Phase | Founder decision needed? |
 |---------|---------------|------------------------|-----------------|------|-------|--------------------------|
-| **Timer durations** | `expire-deals.ts`, implicitly known by ops | Hard-coded constants | Admin-configurable table | 🟡 Medium | Post-pilot | No, but CTO must acknowledge values |
-| **Deal status semantics** | `routes/deals.ts`, `pages/admin.tsx`, `pages/dashboard.tsx` | Backend enum | Backend enum (correct) | 🟢 Low | — | No |
-| **Transport quote "select" implies assignment** | `routes/admin.ts`, `pages/admin.tsx` | Misleading — backend knows it's label-only; UI implies assignment | Clarify in UI label ("shortlist/prefer") | 🔴 High | Admin UI fix | No |
-| **Receipt confirmation implies wait** | `routes/deals.ts` comment, notification body text, `expire-deals.ts` | Backend: 48h wait. Notification text: "auto-complete in 48h". Target: immediate complete | Fix route + job + text | 🔴 High | Deal Lifecycle Correction | Yes — target behavior |
+| **Timer durations** | `expire-deals.ts`, implicitly known by ops | Hard-coded constants | Admin-configurable table | ðŸŸ¡ Medium | Post-pilot | No, but CTO must acknowledge values |
+| **Deal status semantics** | `routes/deals.ts`, `pages/admin.tsx`, `pages/dashboard.tsx` | Backend enum | Backend enum (correct) | ðŸŸ¢ Low | â€” | No |
+| **Transport quote "select" implies assignment** | `routes/admin.ts`, `pages/admin.tsx` | Misleading â€” backend knows it's label-only; UI implies assignment | Clarify in UI label ("shortlist/prefer") | ðŸ”´ High | Admin UI fix | No |
+| **Receipt confirmation implies wait** | `routes/deals.ts` comment, notification body text, `expire-deals.ts` | Backend: 48h wait. Notification text: "auto-complete in 48h". Target: immediate complete | Fix route + job + text | ðŸ”´ High | Deal Lifecycle Correction | Yes â€” target behavior |
 | **`sendDealCompletionEmail` wiring** | `lib/email.ts` defines it; no active lifecycle call site found | Defined but not wired | Decide whether to wire into completion flow | ?? Medium | Deal Lifecycle Correction | Yes |
-| **Admin capabilities: API vs UI** | `routes/admin.ts` (full CRUD), `pages/admin.tsx` (partial) | API has more capabilities than UI | UI should expose all safe admin actions | 🟡 Medium | Admin UI fix | No |
-| **Material categories: backend vs listing enum** | `material-categories` table (new), `wasteUnitEnum` (legacy enum on old listings) | Split — legacy enum for old, table for new | Migrate legacy listings (post-pilot) | 🟢 Low | Post-pilot | No |
-| **VAT calculation** | `routes/deals.ts` (computed at creation), `routes/admin.ts` (reported in CSV) | Single compute at creation ✅ | Same | 🟢 Low | — | No |
-| **pre_expiry_notified reset** | `routes/deals.ts` extend handler (resets to false) | Correct — resets so warning fires again | Same | 🟢 Low | — | No |
-| **Contract created_by_company_id nullable** | `contracts.ts` schema comment | Nullable for backwards-compat (pre-field contracts) | Acceptable | 🟢 Low | — | No |
+| **Admin capabilities: API vs UI** | `routes/admin.ts` (full CRUD), `pages/admin.tsx` (partial) | API has more capabilities than UI | UI should expose all safe admin actions | ðŸŸ¡ Medium | Admin UI fix | No |
+| **Material categories: backend vs listing enum** | `material-categories` table (new), `wasteUnitEnum` (legacy enum on old listings) | Split â€” legacy enum for old, table for new | Migrate legacy listings (post-pilot) | ðŸŸ¢ Low | Post-pilot | No |
+| **VAT calculation** | `routes/deals.ts` (computed at creation), `routes/admin.ts` (reported in CSV) | Single compute at creation âœ… | Same | ðŸŸ¢ Low | â€” | No |
+| **pre_expiry_notified reset** | `routes/deals.ts` extend handler (resets to false) | Correct â€” resets so warning fires again | Same | ðŸŸ¢ Low | â€” | No |
+| **Contract created_by_company_id nullable** | `contracts.ts` schema comment | Nullable for backwards-compat (pre-field contracts) | Acceptable | ðŸŸ¢ Low | â€” | No |
 
 ---
 
-## Section 4: Contract Lite — Phase-CLT Required
+## Section 4: Contract Lite â€” Phase-CLT Required
 
-> **Contract Lite is NOT ready for Al Qaryan demo until Phase-CLT is completed.**
+> **Contract Lite is NOT ready for Strategic Partner demo until Phase-CLT is completed.**
 
 ### What Was Audited (Broad)
-- ✅ State machine (draft → pending → active → completed/cancelled)
-- ✅ Creator vs. counterparty role logic
-- ✅ Material line management rules (creator-only, draft-only)
-- ✅ Shipment schema (planned/dispatched/received/closed/cancelled)
-- ✅ Weight policy schema (5 policies, fixed at creation)
-- ✅ Admin force-cancel capability
-- ✅ No auto-expiry
-- ✅ No notifications (confirmed intentional)
+- âœ… State machine (draft â†’ pending â†’ active â†’ completed/cancelled)
+- âœ… Creator vs. counterparty role logic
+- âœ… Material line management rules (creator-only, draft-only)
+- âœ… Shipment schema (planned/dispatched/received/closed/cancelled)
+- âœ… Weight policy schema (5 policies, fixed at creation)
+- âœ… Admin force-cancel capability
+- âœ… No auto-expiry
+- âœ… No notifications (confirmed intentional)
 
-### What Was NOT Audited — Phase-CLT Scope
+### What Was NOT Audited â€” Phase-CLT Scope
 | Gap | Why it matters |
 |-----|----------------|
-| `contract-detail.tsx` (57,112 bytes) full UI flow | Al Qaryan operator uses this page; unknown UX gaps |
+| `contract-detail.tsx` (57,112 bytes) full UI flow | Strategic Partner operator uses this page; unknown UX gaps |
 | Contract shipments route logic | Shipment state transitions not verified against business rules |
-| Which weight policy to recommend for Al Qaryan | `source_weight_only` vs `dual_higher_final` — founder decision needed |
+| Which weight policy to recommend for Strategic Partner | `source_weight_only` vs `dual_higher_final` â€” founder decision needed |
 | Whether contract notifications are needed | Founder decision |
 | Admin/report visibility for contract shipments | Can admin see individual shipment weights? |
-| Step-by-step Al Qaryan Contract Lite UAT scenario | No test script exists |
+| Step-by-step Strategic Partner Contract Lite UAT scenario | No test script exists |
 | What happens when closing a shipment with zero weight | Edge case not verified |
 
 
 ### Contract Lite UAT Scenario (Phase 2-E)
-Example UAT scenario to verify the Al Qaryan `dual_source_final` policy:
+Example UAT scenario to verify the Strategic Partner `dual_source_final` policy:
 1. `source_weight` = 10.5 tons
 2. `destination_weight` = 10.4 tons
 3. `policy` = `dual_source_final`
 4. **Expected `final_weight`** = 10.5
-5. **Expected `final_value`** = price_per_ton × 10.5
+5. **Expected `final_value`** = price_per_ton Ã— 10.5
 
 **UAT must verify:**
 - Selected policy is visible before counterparty confirmation.
 - Source and destination weights are visible.
 - `final_weight` follows selected policy.
-- `final_value` follows `final_weight` × price.
+- `final_value` follows `final_weight` Ã— price.
 
 **Report Terminology & VAT rules (MVP):**
-- Arabic: `تقرير الشحنات للفترة من ... إلى ...` / `تقرير شحنات العقد للفترة من [date] إلى [date]` / `تقرير شحنات العقود للفترة من [date] إلى [date]`
+- Arabic: `ØªÙ‚Ø±ÙŠØ± Ø§Ù„Ø´Ø­Ù†Ø§Øª Ù„Ù„ÙØªØ±Ø© Ù…Ù† ... Ø¥Ù„Ù‰ ...` / `ØªÙ‚Ø±ÙŠØ± Ø´Ø­Ù†Ø§Øª Ø§Ù„Ø¹Ù‚Ø¯ Ù„Ù„ÙØªØ±Ø© Ù…Ù† [date] Ø¥Ù„Ù‰ [date]` / `ØªÙ‚Ø±ÙŠØ± Ø´Ø­Ù†Ø§Øª Ø§Ù„Ø¹Ù‚ÙˆØ¯ Ù„Ù„ÙØªØ±Ø© Ù…Ù† [date] Ø¥Ù„Ù‰ [date]`
 - English: `Shipment Report for the period from ... to ...` / `Contract Shipment Report for the period from [date] to [date]` / `Contract Shipments Report for the period from [date] to [date]`
 - Must never use "invoice", "settlement", or "payment claim" terminology. It is an operational report.
 - VAT Behavior: `final_value` is treated as value excluding VAT. VAT (15%) and Total (incl VAT) are calculated dynamically for the report only.
@@ -212,15 +212,15 @@ Example UAT scenario to verify the Al Qaryan `dual_source_final` policy:
 **Report UAT Items:**
 - Reports page default remains marketplace deals.
 - Contracts tab appears and loads correctly via `GET /reports/contract-shipments`.
-- Contracts tab default visibly shows `مغلقة`.
+- Contracts tab default visibly shows `Ù…ØºÙ„Ù‚Ø©`.
 - Dispatched/cancelled rows do not appear by default.
 - Date filters act strictly on `closed_at`.
 - Contract ref filter supports visible `TDW-CTR-...`.
 - Company route restricts data strictly to seller/buyer participation. Admin route sees all.
-- Count card label is clear (`عدد الشحنات المغلقة` for closed, `عدد الشحنات المعروضة` for all).
+- Count card label is clear (`Ø¹Ø¯Ø¯ Ø§Ù„Ø´Ø­Ù†Ø§Øª Ø§Ù„Ù…ØºÙ„Ù‚Ø©` for closed, `Ø¹Ø¯Ø¯ Ø§Ù„Ø´Ø­Ù†Ø§Øª Ø§Ù„Ù…Ø¹Ø±ÙˆØ¶Ø©` for all).
 - Financial totals match closed rows.
 - Weight policy labels show Arabic values, not raw `source/destination/higher`.
-- Export button says `تصدير ملف`.
+- Export button says `ØªØµØ¯ÙŠØ± Ù…Ù„Ù`.
 - CSV export works and respects filters and includes VAT columns.
 - No invoice/settlement/payment-claim wording appears.
 
@@ -234,7 +234,7 @@ Example UAT scenario to verify the Al Qaryan `dual_source_final` policy:
 - Exact user steps (seller role, buyer role) for full contract + shipment flow
 - Roles involved and what each party can/cannot do
 - Shipment lifecycle map with source/destination weight entry points
-- Weight policy recommendation for Al Qaryan
+- Weight policy recommendation for Strategic Partner
 - UI gaps found in `contract-detail.tsx`
 - Admin/reporting visibility gaps
 - Whether notifications are needed (founder decision required)
@@ -248,12 +248,12 @@ Example UAT scenario to verify the Al Qaryan `dual_source_final` policy:
 ### Current State
 | Entity | Backend CRUD | Admin UI | Safe to expose freely? |
 |--------|-------------|----------|----------------------|
-| Material categories | ✅ Full CRUD (key, names, parent_id, is_sensitive, MWAN fields) | ❌ API-only | ✅ Yes — but protect `key` field from edits |
-| Unit options | ✅ Full CRUD (key, symbol, bilingual) | ❌ API-only | ✅ Yes — but protect `key` field |
-| Company categories | ✅ Full CRUD | ❌ API-only | ✅ Yes |
-| Capabilities | ❌ Read-only via `/lookup/capabilities` — no admin write endpoint | ❌ None | N/A — endpoint needed first |
-| Lifecycle status values | Not configurable (DB enums) | N/A | 🚫 Must NOT be editable — they drive backend logic |
-| Payment/financial fields | Not configurable | N/A | 🚫 Must NOT be editable |
+| Material categories | âœ… Full CRUD (key, names, parent_id, is_sensitive, MWAN fields) | âŒ API-only | âœ… Yes â€” but protect `key` field from edits |
+| Unit options | âœ… Full CRUD (key, symbol, bilingual) | âŒ API-only | âœ… Yes â€” but protect `key` field |
+| Company categories | âœ… Full CRUD | âŒ API-only | âœ… Yes |
+| Capabilities | âŒ Read-only via `/lookup/capabilities` â€” no admin write endpoint | âŒ None | N/A â€” endpoint needed first |
+| Lifecycle status values | Not configurable (DB enums) | N/A | ðŸš« Must NOT be editable â€” they drive backend logic |
+| Payment/financial fields | Not configurable | N/A | ðŸš« Must NOT be editable |
 
 ### Recommendation
 A simple admin-panel "Master Data" tab could expose:
@@ -267,7 +267,7 @@ A simple admin-panel "Master Data" tab could expose:
 - `is_sensitive` flag on material categories must be clearly labeled (triggers license check)
 - Lifecycle/status/payment fields must never be exposed as editable dropdowns
 
-🖥️ Frontend-only change for most; capabilities need 🚫 backend deploy.
+ðŸ–¥ï¸ Frontend-only change for most; capabilities need ðŸš« backend deploy.
 
 ---
 
@@ -278,10 +278,10 @@ A simple admin-panel "Master Data" tab could expose:
 
 | # | Assumption | How to verify | Risk if wrong |
 |---|-----------|--------------|---------------|
-| 1 | `RESEND_API_KEY` is set in Cloud Run revision `00046-pnj` | Cloud Run console → env vars | All transactional email silently disabled |
-| 2 | `TRANSPORT_REQUEST_EMAIL` is set | Cloud Run console → env vars | Ops never receives transport notifications |
-| 3 | `SUPPORT_EMAIL` is set | Cloud Run console → env vars | Issue reports not forwarded to support |
-| 4 | Cloud Scheduler expire-deals job is running and last execution succeeded | Cloud Scheduler console → job history | Deals never expire; no warnings fired |
+| 1 | `RESEND_API_KEY` is set in Cloud Run revision `00046-pnj` | Cloud Run console â†’ env vars | All transactional email silently disabled |
+| 2 | `TRANSPORT_REQUEST_EMAIL` is set | Cloud Run console â†’ env vars | Ops never receives transport notifications |
+| 3 | `SUPPORT_EMAIL` is set | Cloud Run console â†’ env vars | Issue reports not forwarded to support |
+| 4 | Cloud Scheduler expire-deals job is running and last execution succeeded | Cloud Scheduler console â†’ job history | Deals never expire; no warnings fired |
 | 5 | Contract Lite end-to-end flow works as expected in staging | Manual UAT walkthrough (Phase-CLT) | Demo fails at contract step |
 | 6 | Admin UI deal actions (cancel/force-complete) work via raw API in staging | Test with curl against staging API + valid ADMIN_API_KEY | Admin cannot intervene in stuck deals |
 | 7 | Quote "select" behavior is understood by ops team | Brief ops team; add UI label "shortlist only, not assigned" | Ops believes transporter is assigned when not |
@@ -314,65 +314,65 @@ A simple admin-panel "Master Data" tab could expose:
 
 > This roadmap assumes completion of Phase 2-C hardening.
 
-### 1. Phase 2-D — Readiness Risk Burn-down & Remaining Roadmap Alignment
+### 1. Phase 2-D â€” Readiness Risk Burn-down & Remaining Roadmap Alignment
 - **Scope:** Current docs-only phase.
 
-### 2. Phase 2-E — Contract Lite Pilot UAT & Al Qaryan Readiness
-- **Priority:** Must do before pilot if Al Qaryan/contract workflow is the target path.
-- **Scope:** Includes Contract Lite audit, Al Qaryan UAT script, weight/final quantity policy confirmation, and contract notification decision.
+### 2. Phase 2-E â€” Contract Lite Pilot UAT & Strategic Partner Readiness
+- **Priority:** Must do before pilot if Strategic Partner/contract workflow is the target path.
+- **Scope:** Includes Contract Lite audit, Strategic Partner UAT script, weight/final quantity policy confirmation, and contract notification decision.
 - **Status:** Contract Lite notification patch deployed. Contract Lite Shipment Report MVP implemented. Contract Detail operational UX (zero-weight block, notification handoffs, scroll/focus, list filters) implemented. Deployed to backend (`tadweerah-api-00089-jnt`) and frontend staging (`https://tadweerah-staging.web.app`), manual UAT passed, ready for pilot use.
 
-### 3. Phase 2-F — Admin Email Notification Recipient Override
+### 3. Phase 2-F â€” Admin Email Notification Recipient Override
 - **Priority:** Must do before external pilot/demo to handle owner separation requests.
-- **Status:** ✅ Implemented, deployed, and UAT passed.
-- **Scope:** Allows platform admin to specify an existing company member as the operational email notification recipient (`مستلم تنبيهات البريد`) without changing the company owner (`مالك حساب الشركة`). Includes fallback logic to the default owner if the custom recipient is invalid or unset.
+- **Status:** âœ… Implemented, deployed, and UAT passed.
+- **Scope:** Allows platform admin to specify an existing company member as the operational email notification recipient (`Ù…Ø³ØªÙ„Ù… ØªÙ†Ø¨ÙŠÙ‡Ø§Øª Ø§Ù„Ø¨Ø±ÙŠØ¯`) without changing the company owner (`Ù…Ø§Ù„Ùƒ Ø­Ø³Ø§Ø¨ Ø§Ù„Ø´Ø±ÙƒØ©`). Includes fallback logic to the default owner if the custom recipient is invalid or unset.
 
-### 4. Phase 2-G & 2-H — Billing & Admin Reports Design Notes
+### 4. Phase 2-G & 2-H â€” Billing & Admin Reports Design Notes
 - **Priority:** Done.
-- **Status:** ✅ Design Approved (No Implementation Yet).
+- **Status:** âœ… Design Approved (No Implementation Yet).
 - **Scope:** Strategic design note establishing the billing/fee separation model and the architecture for dynamic, period-based management reports.
 - **Documentation:** Logged in `docs/PHASE_2_G_H_DESIGN_NOTES.md`.
 
-### 4. Phase 3-A1 — Admin Backup Allowlist
+### 4. Phase 3-A1 â€” Admin Backup Allowlist
 - **Priority:** Done.
-- **Status:** ✅ Implemented and UAT passed.
+- **Status:** âœ… Implemented and UAT passed.
 - **Scope:** Fast, secure fallback for adding backup admin team members by leveraging the `VITE_TADWEERAH_ADMIN_EMAILS` environment variable to bypass onboarding, combined with the company invite flow for initial user record creation. Admin roles and `admin_invitations` tables deferred to future.
 - **Note:** `info@tadweerah.com` is reserved for support routing. Backend remains protected by `ADMIN_API_KEY`.
 
-### 5. Phase 3-A — Admin Master Data MVP
+### 5. Phase 3-A â€” Admin Master Data MVP
 - **Priority:** Should do before broader operations if pilot requires frequent taxonomy/unit edits. Can defer if pilot taxonomy is stable.
 - **Scope:** Admin CRUD UI for material categories and unit options.
 
-### 5. Phase 3-B — Post-Pilot Workflow Configurability & Polish
+### 5. Phase 3-B â€” Post-Pilot Workflow Configurability & Polish
 - **Priority:** Post-pilot.
 - **Scope:** Configurable timers, category-targeted notifications, i18n refactor, checklist wording polish, etc.
 
-### 6. Phase 3-C — Multi-Branch / Multi-Site Operational Routing
+### 6. Phase 3-C â€” Multi-Branch / Multi-Site Operational Routing
 - **Priority:** Post-pilot.
-- **Scope:** Support for multiple operational sites/branches per company (`المواقع التشغيلية / الفروع`). Each site can have its own notification recipient or team. Contracts, shipments, and listings may be associated with a specific site.
-- **Routing Order:** Site/branch-level recipient (if linked) → company-level `مستلم تنبيهات البريد` → company owner fallback.
+- **Scope:** Support for multiple operational sites/branches per company (`Ø§Ù„Ù…ÙˆØ§Ù‚Ø¹ Ø§Ù„ØªØ´ØºÙŠÙ„ÙŠØ© / Ø§Ù„ÙØ±ÙˆØ¹`). Each site can have its own notification recipient or team. Contracts, shipments, and listings may be associated with a specific site.
+- **Routing Order:** Site/branch-level recipient (if linked) â†’ company-level `Ù…Ø³ØªÙ„Ù… ØªÙ†Ø¨ÙŠÙ‡Ø§Øª Ø§Ù„Ø¨Ø±ÙŠØ¯` â†’ company owner fallback.
 - **Rules:** Routing remains role/site-based, not hardcoded by company name or city. Supports cases where the same company may be buyer in one transaction and seller in another.
 
 ## Section 9: Go / No-Go Framing
 
 ### Ready for supervised internal UAT and pilot preparation:
-✅ Core deal flow (marketplace → offer → deal → payment → dispatch)
-✅ Audit trail
-✅ Master data API management
-✅ Admin company/license management
-✅ Report export (CSV)
+âœ… Core deal flow (marketplace â†’ offer â†’ deal â†’ payment â†’ dispatch)
+âœ… Audit trail
+âœ… Master data API management
+âœ… Admin company/license management
+âœ… Report export (CSV)
 
 ### NOT ready without completing:
-⚠️ Phase 1 (Contract Lite audit) — if Contract Lite is part of Al Qaryan scenario
-⚠️ Phase 2 (Deal receipt lifecycle fix) — current behavior diverges from target
-⚠️ Phase 3 (Admin UI deal actions) — admin cannot intervene without curl
-⚠️ Assumptions verified (§Section 6) — email, scheduler, env vars
+âš ï¸ Phase 1 (Contract Lite audit) â€” if Contract Lite is part of Strategic Partner scenario
+âš ï¸ Phase 2 (Deal receipt lifecycle fix) â€” current behavior diverges from target
+âš ï¸ Phase 3 (Admin UI deal actions) â€” admin cannot intervene without curl
+âš ï¸ Assumptions verified (Â§Section 6) â€” email, scheduler, env vars
 
 ### Decisions Required from Founder/CTO Before Pilot
 1. Accept or fix deal receipt flow (immediate vs 48h wait)?
 2. Accept or change auto-complete without admin review?
 3. Should contract notifications be sent during pilot?
-4. Which weight policy for Al Qaryan (Contract Lite)?
+4. Which weight policy for Strategic Partner (Contract Lite)?
 5. Acknowledge hard-coded timer values as acceptable for pilot?
 6. Should buyer auto-blocking require admin confirmation step?
 
@@ -383,9 +383,9 @@ A simple admin-panel "Master Data" tab could expose:
 Admin restore of shipments without DB migration relies on timestamps + audit log and is acceptable only for pilot. Long-term implementation should include cancelled_from_status and cancelled_reason columns in the database.
 
 
-## Phase 3-A2 — Admin Wishlist & Findings Register
-**Status:** ✅ Implemented and UAT Passed
-**Goal:** Establish an internal tracking system within the Admin Panel to log operational findings, UAT issues, customer requests, and improvements (specifically for partners like Al Qaryan).
+## Phase 3-A2 â€” Admin Wishlist & Findings Register
+**Status:** âœ… Implemented and UAT Passed
+**Goal:** Establish an internal tracking system within the Admin Panel to log operational findings, UAT issues, customer requests, and improvements (specifically for partners like Strategic Partner).
 **Details:**
 - Completely isolated feature using the `admin_findings` table.
 - Has zero database relations to active deals, shipments, or users.

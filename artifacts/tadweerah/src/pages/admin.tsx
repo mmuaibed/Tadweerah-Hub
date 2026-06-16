@@ -3629,7 +3629,7 @@ const areaLabels: Record<string, string> = {
 const sourceLabels: Record<string, string> = {
   internal: "داخلي",
   uat: "اختبار UAT",
-  al_qaryan: "القريان",
+  strategic_partner: "شريك استراتيجي",
   customer: "عميل",
   support: "الدعم",
   other: "أخرى",
@@ -3944,7 +3944,7 @@ function AdminFindingsTab({
                   <select className="w-full border rounded-md h-9 px-3 text-sm" value={sourceLabel} onChange={e => setSourceLabel(e.target.value)}>
                     <option value="internal">Internal</option>
                     <option value="uat">UAT</option>
-                    <option value="al_qaryan">Al Qaryan</option>
+                    <option value="strategic_partner">Strategic Partner</option>
                     <option value="customer">Customer</option>
                     <option value="support">Support</option>
                     <option value="other">Other</option>
