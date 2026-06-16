@@ -3,6 +3,41 @@
 هذه الوثيقة تمثل المرجع الأساسي لهندسة الإجراءات (Workflow Architecture) والنموذج التشغيلي في منصة تدويرة. 
 تلتزم الوثيقة بالفصل التام بين الإجراءات **المنفذة حالياً (Current Implemented)** وبين الإجراءات **المقترحة مستقبلاً (Proposed Future)**.
 
+## Evolution from Phase 1 MVP to Strategic Operating Model
+
+لقد تطور نموذج تدويرة التشغيلي في مسار نضج طبيعي ومدروس من نموذج العمل الأساسي (MVP) ليصل إلى نموذج تشغيلي استراتيجي شامل.
+
+**1. Phase 1 MVP Focus:**
+كان التركيز في المرحلة الأولى على بناء النواة التشغيلية الأساسية:
+* Company onboarding.
+* Marketplace listings.
+* Offers and deals.
+* Off-platform payment confirmation.
+* Dispatch and receipt.
+* Basic transport request.
+* Audit/compliance readiness.
+
+**2. Current Expanded Platform Model:**
+النموذج الحالي للمنصة توسع بشكل منهجي وعملي ليشمل:
+* Marketplace and deals.
+* Operational contracts.
+* Shipments.
+* Source weight / destination weight / final weight logic.
+* Operational reports.
+* Admin operations.
+* Admin Findings & Wishlist.
+
+**3. Proposed Future Expansions:**
+استكمالاً لمسار النضج وتلبية لاحتياجات الشركاء الاستراتيجيين (Strategic Partners)، فإن التوسعات المستقبلية المقترحة تشمل:
+* Licensed Transporter Marketplace.
+* Recycled Materials Marketplace.
+* Advanced KPIs and analytics.
+* Payment claims support.
+* Team permissions and branch routing.
+
+> **Important Note:** Current implemented workflows and proposed future workflows are intentionally separated throughout this document to avoid presenting future concepts as live platform features.
+
+
 ## مصطلحات المنصة المعتمدة
 * تدويرة (Tadweerah)
 * الشريك الاستراتيجي (Strategic Partner)
