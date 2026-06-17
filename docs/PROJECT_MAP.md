@@ -21,9 +21,10 @@ Tadweerah-Hub/
 ├── lib/
 │   └── db/                  # Shared Drizzle ORM schema + client (@workspace/db)
 ├── docs/                    # This directory — documentation only
+│   ├── archive/             # Deprecated/historical workflow diagrams (NOT active references)
 │   ├── exports/             # Exported PDFs and PNGs for review (e.g. operational-truth-v5)
-│   ├── WORKFLOW_ARCHITECTURE.md # Architecture Intent
-│   └── Tadweerah_Operational_Truth_Workflows_v5.drawio # Native Operational flowchart
+│   ├── WORKFLOW_ARCHITECTURE.md # Architecture Intent / Target Vision (NOT operational truth)
+│   └── Tadweerah_Operational_Truth_Workflows_v5.drawio # Native Operational flowchart (Single Source of Truth)
 ├── tadweerah-user-guide-source.md # Untracked local reference (not part of committed source of truth yet)
 ├── pnpm-workspace.yaml      # Workspace root (use pnpm.cmd on Windows)
 └── turbo.json               # Turborepo build pipeline

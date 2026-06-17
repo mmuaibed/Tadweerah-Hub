@@ -1,5 +1,11 @@
-# Tadweerah Operating Model & Workflow Architecture
+# Tadweerah Workflow Architecture
 
+> **NOTE:** This document outlines the **Architecture Intent / Target Direction** and the conceptual evolution of the platform. 
+> It is **NOT** the current operational truth. 
+> For the definitive, exact mapping of the platform's current behavior, please refer to: 
+> `docs/Tadweerah_Operational_Truth_Workflows_v5.drawio`
+
+## Overview & Scope
 هذه الوثيقة تمثل المرجع الأساسي لهندسة الإجراءات (Workflow Architecture) والنموذج التشغيلي في منصة تدويرة. 
 تلتزم الوثيقة بالفصل التام بين الإجراءات **المنفذة حالياً (Current Implemented)** وبين الإجراءات **المقترحة مستقبلاً (Proposed Future)**.
 
