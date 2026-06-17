@@ -458,24 +458,7 @@ export function ListingNewPage() {
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="google_maps_url">{t("listing.form.google_maps_url")}</Label>
-                <Input
-                  id="google_maps_url"
-                  type="url"
-                  inputMode="url"
-                  placeholder={t("listing.form.google_maps_url.placeholder")}
-                  value={googleMapsUrl}
-                  onChange={(e) => {
-                    setGoogleMapsUrl(e.target.value);
-                    setMapsUrlError(!!e.target.value && !e.target.value.startsWith("https://"));
-                  }}
-                  className={mapsUrlError ? "border-destructive" : ""}
-                />
-                {mapsUrlError && (
-                  <p className="text-xs text-destructive">{t("listing.form.google_maps_url.invalid")}</p>
-                )}
-              </div>
+
 
               <div className={`grid gap-3 ${isOtherUnit ? "sm:grid-cols-2" : ""}`}>
                 <div className="space-y-1.5">
