@@ -1,3 +1,12 @@
+"""
+PDF to PNG Exporter for Tadweerah Hub
+Note: This script requires PyMuPDF. 
+Before running, install it via:
+    pip install PyMuPDF
+
+This script extracts PNG images from the generated PDF as a fallback
+when draw.io CLI image export fails (e.g. headless GPU issues).
+"""
 import fitz
 import os
 
