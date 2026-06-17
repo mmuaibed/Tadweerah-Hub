@@ -22,11 +22,11 @@ const translations: Record<string, Record<Language, string>> = {
   },
   "home.badge": {
     ar: "منصة سعودية لتوثيق وإدارة تدفق المواد القابلة للتدوير",
-    en: "Saudi platform connecting waste producers with licensed companies",
+    en: "Saudi platform for documenting and managing recyclable material flows",
   },
   "home.headline": {
     ar: "من المصدر إلى المعالجة — مسار موثّق للمواد القابلة للتدوير",
-    en: "Together toward a smart, governed, and sustainable industrial waste ecosystem",
+    en: "From source to processing — a documented pathway for recyclable materials",
   },
   "home.subheadline": {
     ar: "كل قيمة تستحق أن تعود",
@@ -34,7 +34,7 @@ const translations: Record<string, Record<Language, string>> = {
   },
   "home.description": {
     ar: "تدويرة — منصة B2B لتوثيق تدفق المواد القابلة للتدوير من المصدر إلى المعالجة وما بعدها",
-    en: "A B2B platform to list recyclable materials, receive documented offers, and close deals",
+    en: "Tadweerah — a B2B platform for documenting recyclable material flows from source to processing and beyond",
   },
   "home.trust_line": {
     ar: "نبني سوقاً أكثر كفاءة وشفافية لإدارة المواد القابلة للتدوير",
@@ -57,7 +57,7 @@ const translations: Record<string, Record<Language, string>> = {
   "home.why.title": { ar: "لماذا تدويرة؟", en: "Why Tadweerah?" },
   "home.why.p1": {
     ar: "منصة موحّدة ومحوكمة لإدارة تدفق المواد القابلة للتدوير",
-    en: "A unified, governed platform for recyclable materials management",
+    en: "A unified, governed platform for managing recyclable material flows",
   },
   "home.why.p2": {
     ar: "كل عملية موثّقة وقابلة للتتبع بالكامل",
@@ -65,33 +65,33 @@ const translations: Record<string, Record<Language, string>> = {
   },
   "home.why.p3": {
     ar: "تقارير تدعم الامتثال، الاستدامة، ومسؤولية المنتج",
-    en: "Compliance reports ready for regulatory bodies",
+    en: "Reports that support compliance, sustainability, and producer responsibility",
   },
   "home.why.p4": {
     ar: "لوحة تحكم وبيانات تساعد جميع الأطراف على قرارات أفضل",
-    en: "One dashboard to track all your operations",
+    en: "Dashboards and data that help all parties make better decisions",
   },
   "home.why.p5": {
     ar: "حماية وخصوصية عالية لبيانات منشأتك",
-    en: "Enterprise-grade data privacy protecting your business",
+    en: "Strong protection and privacy for your company data",
   },
   "home.why.p6": {
     ar: "وصول أسهل إلى شبكة أوسع من المنتجين والمعالجين والناقلين بضغطة زر",
-    en: "Access to a wider market at the click of a button",
+    en: "Easier access to a wider network of producers, processors, and carriers",
   },
 
   "home.for.title": { ar: "لمن هذه المنصة؟", en: "Who Is This For?" },
   "home.for.producers.value": {
     ar: "حوّل مخلفاتك القابلة للتدوير إلى قيمة موثّقة تدعم الامتثال والاستدامة",
-    en: "Sell your surplus at the best price via transparent auction",
+    en: "Turn your recyclable waste into documented value that supports compliance and sustainability",
   },
   "home.for.buyers.value": {
     ar: "أمّن مدخلات موثوقة لتغذية عملياتك وفتح فرص أوسع للقيمة الدائرية",
-    en: "Source reliable recyclables and cut procurement costs",
+    en: "Secure trusted inputs for your operations and unlock wider circular-value opportunities",
   },
   "home.for.transporters.value": {
     ar: "انضم إلى منظومة شحن موثّقة بين المنتجين والمعالجين المرخّصين",
-    en: "Get steady transport opportunities from verified clients",
+    en: "Join a documented transport network between producers and licensed processors",
   },
   "nav.language": { ar: "English", en: "العربية" },
   "action.signin": { ar: "تسجيل الدخول", en: "Sign In" },

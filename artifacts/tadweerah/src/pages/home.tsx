@@ -126,11 +126,7 @@ export function HomePage() {
                     <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
                       <Icon className="h-3.5 w-3.5" />
                     </span>
-                    <span
-                      className={`text-sm leading-snug ${
-                        bold ? "font-bold text-foreground" : "font-medium text-foreground/85"
-                      }`}
-                    >
+                    <span className="text-sm font-semibold text-foreground leading-snug">
                       {t(key)}
                     </span>
                   </li>
