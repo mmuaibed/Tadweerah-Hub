@@ -179,7 +179,7 @@ export function Topbar({ showSignOut = false }: { showSignOut?: boolean }) {
         {location === "/" && (
           <span className="pointer-events-none absolute inset-0 hidden items-center justify-center lg:flex">
             <span className="text-sm font-semibold tracking-wide text-secondary select-none">
-              كل قيمة تستحق أن تعود
+              {t("home.subheadline")}
             </span>
           </span>
         )}
