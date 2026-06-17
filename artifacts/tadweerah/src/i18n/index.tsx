@@ -246,7 +246,7 @@ const translations: Record<string, Record<Language, string>> = {
   "status.closed": { ar: "مغلق", en: "Closed" },
 
   // Producer — new listing
-  "listing.new.title": { ar: "إضافة عرض نفايات", en: "Add Waste Listing" },
+  "listing.new.title": { ar: "إضافة إعلان نفايات", en: "Add Waste Listing" },
   "listing.new.subtitle": {
     ar: "حدّد نوع المادة والكمية والوحدة لعرض نفاياتك في السوق",
     en: "Specify the material type, quantity, and unit to list your waste in the marketplace",
@@ -284,22 +284,22 @@ const translations: Record<string, Record<Language, string>> = {
   "listing.form.image": { ar: "صورة العرض (اختياري)", en: "Listing Image (Optional)" },
   "listing.form.image.prompt": { ar: "انقر لرفع صورة", en: "Click to upload an image" },
   "listing.form.image.hint": { ar: "JPG أو PNG · حتى 5 ميجابايت", en: "JPG or PNG · up to 5 MB" },
-  "listing.form.submit": { ar: "نشر العرض", en: "Publish Listing" },
+  "listing.form.submit": { ar: "نشر الإعلان", en: "Publish Listing" },
   "listing.form.saving": { ar: "جاري النشر...", en: "Publishing..." },
   "listing.form.uploading": { ar: "جاري رفع الصورة...", en: "Uploading image..." },
-  "listing.form.error": { ar: "تعذر نشر العرض. تأكد من البيانات وحاول مرة أخرى.", en: "Could not publish the listing. Check your inputs and try again." },
-  "listing.form.error.license_invalid": { ar: "لا يمكن نشر عرض جديد. الترخيص الحالي لشركتك غير صالح. تواصل مع الدعم.", en: "Cannot post a new listing. Your company's license has been rejected or expired. Please contact support." },
+  "listing.form.error": { ar: "تعذر نشر الإعلان. تأكد من البيانات وحاول مرة أخرى.", en: "Could not publish the listing. Check your inputs and try again." },
+  "listing.form.error.license_invalid": { ar: "لا يمكن نشر إعلان جديد. الترخيص الحالي لشركتك غير صالح. تواصل مع الدعم.", en: "Cannot post a new listing. Your company's license has been rejected or expired. Please contact support." },
   "listing.form.error.revenue_share_pct_required": { ar: "أدخل نسبة تشارك الإيرادات (1–100) لإتمام النشر.", en: "Enter a revenue share percentage (1–100) to publish the listing." },
 
   // Producer — my listings
-  "myListings.title": { ar: "عروضي", en: "My Listings" },
-  "myListings.subtitle": { ar: "كل عروض النفايات التي نشرتها", en: "All the waste listings you've published" },
-  "myListings.empty.title": { ar: "لا توجد عروض حالياً", en: "No listings yet" },
-  "myListings.empty.desc": { ar: "ابدأ بإضافة أول عرض نفايات لك.", en: "Start by adding your first waste listing." },
-  "myListings.add": { ar: "إضافة عرض", en: "Add Listing" },
-  "myListings.close": { ar: "إغلاق العرض", en: "Close Listing" },
+  "myListings.title": { ar: "إعلاناتي", en: "My Listings" },
+  "myListings.subtitle": { ar: "جميع إعلانات النفايات التي نشرتها", en: "All the waste listings you've published" },
+  "myListings.empty.title": { ar: "لا توجد إعلانات حالياً", en: "No listings yet" },
+  "myListings.empty.desc": { ar: "ابدأ بإضافة أول إعلان نفايات لك.", en: "Start by adding your first waste listing." },
+  "myListings.add": { ar: "إضافة إعلان", en: "Add Listing" },
+  "myListings.close": { ar: "إغلاق الإعلان", en: "Close Listing" },
   "myListings.closing": { ar: "جاري الإغلاق...", en: "Closing..." },
-  "myListings.closeError": { ar: "تعذر إغلاق العرض. حاول مرة أخرى.", en: "Could not close the listing. Try again." },
+  "myListings.closeError": { ar: "تعذر إغلاق الإعلان. حاول مرة أخرى.", en: "Could not close the listing. Try again." },
 
   // Buyer — marketplace
   "marketplace.title": { ar: "السوق", en: "Marketplace" },

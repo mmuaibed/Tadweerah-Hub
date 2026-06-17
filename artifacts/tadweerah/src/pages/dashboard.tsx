@@ -160,18 +160,18 @@ function PendingActionsSection({
     : `You have ${count} action${count !== 1 ? "s" : ""} requiring your attention`;
 
   return (
-    <div className="mb-4">
+    <div className="mb-2.5">
       <Link to="/pending-actions">
-        <div className="group flex cursor-pointer items-center gap-3 rounded-xl border-2 border-amber-400/40 bg-amber-50/70 px-4 py-3.5 transition-all hover:border-amber-400/60 hover:bg-amber-50">
-          <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
-            <Clock className="h-5 w-5" />
+        <div className="group flex cursor-pointer items-center gap-2.5 rounded-xl border-2 border-amber-400/40 bg-amber-50/70 px-3.5 py-2.5 transition-all hover:border-amber-400/60 hover:bg-amber-50">
+          <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
+            <Clock className="h-4.5 w-4.5" />
             <span className="absolute -top-1 -end-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[9px] font-bold text-white">
               {count}
             </span>
           </span>
           <div className="flex-1 min-w-0">
-            <p className="text-[10px] font-medium text-amber-600/80">{t("dashboard.pending.title")}</p>
-            <p className="text-sm font-bold text-foreground leading-snug">{summaryText}</p>
+            <p className="text-[10px] font-medium text-amber-600/80 leading-none">{t("dashboard.pending.title")}</p>
+            <p className="text-sm font-bold text-foreground leading-snug mt-0.5">{summaryText}</p>
           </div>
           <Arrow className="h-4 w-4 shrink-0 text-amber-500 opacity-60 transition-opacity group-hover:opacity-100" />
         </div>
@@ -190,13 +190,13 @@ function StatPill({
 }) {
   const inner = (
     <div
-      className={`flex flex-col items-center gap-0.5 rounded-lg border border-border bg-card px-3 py-2 min-w-0 transition-colors ${
+      className={`flex flex-col items-center gap-0.5 rounded-lg border border-border bg-card px-2 py-1.5 min-w-0 transition-colors ${
         href ? "hover:border-primary/40 hover:bg-primary/5 cursor-pointer" : ""
       }`}
     >
-      <Icon className="h-3.5 w-3.5 text-primary shrink-0" />
-      <span className="text-base font-bold text-foreground leading-none">{value}</span>
-      <span className="text-[10px] text-muted-foreground text-center leading-tight">{label}</span>
+      <Icon className="h-3 w-3 text-primary shrink-0" />
+      <span className="text-sm font-bold text-foreground leading-none">{value}</span>
+      <span className="text-[9px] text-muted-foreground text-center leading-tight">{label}</span>
     </div>
   );
   if (href) return <Link to={href}>{inner}</Link>;
@@ -217,17 +217,17 @@ function NextActionBanner({ stats, t, Arrow }: NextBannerProps) {
 
   if (isFirstUse) {
     return (
-      <div className="mb-4 rounded-xl border border-primary/20 bg-primary/5 p-3.5">
-        <div className="flex items-center gap-2.5">
+      <div className="mb-2.5 rounded-xl border border-primary/20 bg-primary/5 p-2.5">
+        <div className="flex items-center gap-2">
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
             <Sparkles className="h-3.5 w-3.5" />
           </span>
           <div className="flex-1 min-w-0">
-            <h2 className="text-sm font-semibold text-foreground">{t("dashboard.onboarding.title")}</h2>
-            <p className="mt-0.5 text-xs text-muted-foreground">{t("dashboard.onboarding.desc")}</p>
+            <h2 className="text-sm font-semibold text-foreground leading-snug">{t("dashboard.onboarding.title")}</h2>
+            <p className="mt-0.5 text-xs text-muted-foreground leading-snug">{t("dashboard.onboarding.desc")}</p>
           </div>
           <Link to="/listings/new">
-            <button className="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors">
+            <button className="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors">
               {t("dashboard.onboarding.cta")}
             </button>
           </Link>
@@ -238,13 +238,13 @@ function NextActionBanner({ stats, t, Arrow }: NextBannerProps) {
 
   if (stats.offers_received_count > 0) {
     return (
-      <Link to="/listings/mine" className="block mb-4">
-        <div className="rounded-xl border border-secondary/25 bg-secondary/5 p-3.5 cursor-pointer hover:bg-secondary/10 transition-colors">
-          <div className="flex items-center gap-2.5">
+      <Link to="/listings/mine" className="block mb-2.5">
+        <div className="rounded-xl border border-secondary/25 bg-secondary/5 p-2.5 cursor-pointer hover:bg-secondary/10 transition-colors">
+          <div className="flex items-center gap-2">
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary/15 text-secondary">
               <Bell className="h-3.5 w-3.5" />
             </span>
-            <p className="flex-1 text-sm font-semibold text-foreground">
+            <p className="flex-1 text-sm font-semibold text-foreground leading-snug">
               {t("dashboard.next.offers_received")}
             </p>
             <Arrow className="h-4 w-4 shrink-0 text-secondary" />
@@ -256,18 +256,18 @@ function NextActionBanner({ stats, t, Arrow }: NextBannerProps) {
 
   if (stats.pending_offers_count > 0) {
     return (
-      <div className="mb-4">
+      <div className="mb-2.5">
         <Link to="/participations">
-          <div className="group flex cursor-pointer items-center gap-3.5 rounded-xl border-2 border-primary/25 bg-primary/5 px-4 py-3.5 transition-all hover:border-primary/45 hover:bg-primary/10">
-            <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
-              <Package className="h-5 w-5" />
+          <div className="group flex cursor-pointer items-center gap-3 rounded-xl border-2 border-primary/25 bg-primary/5 px-3.5 py-2.5 transition-all hover:border-primary/45 hover:bg-primary/10">
+            <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+              <Package className="h-4.5 w-4.5" />
               <span className="absolute -top-1 -end-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground">
                 {stats.pending_offers_count}
               </span>
             </span>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-foreground leading-snug">{t("dashboard.next.offers_made.title")}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{t("dashboard.next.offers_made.helper")}</p>
+              <p className="text-xs text-muted-foreground mt-0.5 leading-tight">{t("dashboard.next.offers_made.helper")}</p>
             </div>
             <Arrow className="h-4 w-4 shrink-0 text-primary opacity-60 transition-opacity group-hover:opacity-100" />
           </div>
@@ -290,18 +290,18 @@ const SECONDARY_CARDS = [
 
 function CarrierSection({ t, Arrow }: { t: (k: string) => string; Arrow: typeof ArrowLeft }) {
   return (
-    <div className="mb-4">
-      <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+    <div className="mb-2.5">
+      <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
         {t("dashboard.carrier.title")}
       </p>
       <Link to="/transport-requests">
-        <div className="group flex cursor-pointer items-center gap-3.5 rounded-xl border-2 border-amber-500/25 bg-amber-50/60 dark:bg-amber-950/20 px-4 py-3.5 transition-all hover:border-amber-500/45 hover:bg-amber-50">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 text-amber-600">
-            <Truck className="h-5 w-5" />
+        <div className="group flex cursor-pointer items-center gap-3 rounded-xl border-2 border-amber-500/25 bg-amber-50/60 dark:bg-amber-950/20 px-3.5 py-2.5 transition-all hover:border-amber-500/45 hover:bg-amber-50">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 text-amber-600">
+            <Truck className="h-4.5 w-4.5" />
           </span>
           <div className="flex-1 min-w-0">
-            <p className="text-[10px] font-medium text-amber-600/80">{t("role.transporter")}</p>
-            <h3 className="text-sm font-bold text-foreground">{t("transport.title")}</h3>
+            <p className="text-[10px] font-medium text-amber-600/80 leading-none">{t("role.transporter")}</p>
+            <h3 className="text-sm font-bold text-foreground leading-tight mt-0.5">{t("transport.title")}</h3>
             <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{t("dashboard.carrier.desc")}</p>
           </div>
           <Arrow className="h-4 w-4 shrink-0 text-amber-600 opacity-60 transition-opacity group-hover:opacity-100" />
@@ -336,24 +336,22 @@ export function DashboardPage() {
     <AppLayout showSignOut>
 
       {/* ── Company header ── */}
-      <div className="mb-3 flex items-center gap-3">
-        <div className="min-w-0">
-          <p className="text-xs text-muted-foreground">{t("dashboard.welcome")}</p>
-          <h1 className="text-xl font-bold text-foreground sm:text-2xl truncate">{company.name}</h1>
-          <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
-            <Truck className="h-3 w-3 shrink-0" />
-            {company.city}
-          </p>
-        </div>
+      <div className="mb-2.5 flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+        <span className="text-xs text-muted-foreground">{t("dashboard.welcome")}</span>
+        <h1 className="text-lg font-bold text-foreground sm:text-xl truncate leading-none">{company.name}</h1>
+        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+          <Truck className="h-3 w-3 shrink-0" />
+          {company.city}
+        </span>
       </div>
 
       {/* ── Activity stats — clickable ── */}
       {stats && (
-        <div className="mb-3">
-          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <div className="mb-2.5">
+          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
             {t("dashboard.stats.title")}
           </p>
-          <div className="grid grid-cols-3 gap-2 md:grid-cols-5">
+          <div className="grid grid-cols-3 gap-1.5 md:grid-cols-5">
             <StatPill icon={FileText}   label={t("dashboard.stats.listings")}        value={stats.listings_count}         href="/listings/mine" />
             <StatPill icon={Bell}       label={t("dashboard.stats.offers_received")} value={stats.offers_received_count}  href="/listings/mine" />
             <StatPill icon={Package}    label={t("dashboard.stats.offers_made")}     value={stats.offers_made_count}      href="/participations" />
@@ -382,30 +380,30 @@ export function DashboardPage() {
       {isTransporter && <CarrierSection t={t} Arrow={Arrow} />}
 
       {/* ── Primary action cards (blue = produce, green = buy) ── */}
-      <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="mb-3 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
         <Link to="/listings/new">
-          <div className="group flex cursor-pointer items-center gap-3.5 rounded-xl border-2 border-primary/25 bg-primary/5 px-4 py-3.5 transition-all hover:border-primary/45 hover:bg-primary/10">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
-              <Recycle className="h-5 w-5" />
+          <div className="group flex cursor-pointer items-center gap-3 rounded-xl border-2 border-primary/25 bg-primary/5 px-3.5 py-2.5 transition-all hover:border-primary/45 hover:bg-primary/10">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+              <Recycle className="h-4.5 w-4.5" />
             </span>
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-medium text-primary/70">{t("dashboard.primary.producer")}</p>
-              <h3 className="text-sm font-bold text-foreground">{t("listing.new.title")}</h3>
-              <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{t("listing.new.subtitle")}</p>
+              <p className="text-[10px] font-medium text-primary/70 leading-none">{t("dashboard.primary.producer")}</p>
+              <h3 className="text-sm font-bold text-foreground leading-tight mt-0.5">{t("listing.new.title")}</h3>
+              <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground leading-tight">{t("listing.new.subtitle")}</p>
             </div>
             <Arrow className="h-4 w-4 shrink-0 text-primary opacity-60 transition-opacity group-hover:opacity-100" />
           </div>
         </Link>
 
         <Link to="/marketplace">
-          <div className="group flex cursor-pointer items-center gap-3.5 rounded-xl border-2 border-secondary/25 bg-secondary/5 px-4 py-3.5 transition-all hover:border-secondary/45 hover:bg-secondary/10">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-secondary/15 text-secondary">
-              <ShoppingBag className="h-5 w-5" />
+          <div className="group flex cursor-pointer items-center gap-3 rounded-xl border-2 border-secondary/25 bg-secondary/5 px-3.5 py-2.5 transition-all hover:border-secondary/45 hover:bg-secondary/10">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-secondary/15 text-secondary">
+              <ShoppingBag className="h-4.5 w-4.5" />
             </span>
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-medium text-secondary/70">{t("dashboard.primary.buyer")}</p>
-              <h3 className="text-sm font-bold text-foreground">{t("marketplace.title")}</h3>
-              <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{t("marketplace.subtitle")}</p>
+              <p className="text-[10px] font-medium text-secondary/70 leading-none">{t("dashboard.primary.buyer")}</p>
+              <h3 className="text-sm font-bold text-foreground leading-tight mt-0.5">{t("marketplace.title")}</h3>
+              <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground leading-tight">{t("marketplace.subtitle")}</p>
             </div>
             <Arrow className="h-4 w-4 shrink-0 text-secondary opacity-60 transition-opacity group-hover:opacity-100" />
           </div>
@@ -413,22 +411,22 @@ export function DashboardPage() {
       </div>
 
       {/* ── Secondary tools ── */}
-      <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+      <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
         {t("dashboard.tools.title")}
       </p>
       <div className="grid grid-cols-2 gap-2 sm:gap-2.5 lg:grid-cols-3">
         {SECONDARY_CARDS.map(({ titleKey, descKey, icon: Icon, href }) => (
           <Link key={titleKey} to={href}>
             <Card className="group h-full cursor-pointer border-border bg-card transition-all hover:-translate-y-0.5 hover:shadow-sm">
-              <CardContent className="flex h-full flex-col items-start gap-2 p-3 sm:p-3.5">
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-muted-foreground transition-colors group-hover:bg-primary/10 group-hover:text-primary">
+              <CardContent className="flex h-full flex-col items-start gap-1.5 p-2.5 sm:p-3">
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-muted text-muted-foreground transition-colors group-hover:bg-primary/10 group-hover:text-primary">
                   <Icon className="h-3.5 w-3.5" />
                 </span>
                 <div className="flex-1">
-                  <h3 className="text-sm font-semibold text-card-foreground">{t(titleKey)}</h3>
-                  <p className="mt-0.5 line-clamp-2 text-xs leading-snug text-muted-foreground">{t(descKey)}</p>
+                  <h3 className="text-xs sm:text-sm font-semibold text-card-foreground leading-snug">{t(titleKey)}</h3>
+                  <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-muted-foreground">{t(descKey)}</p>
                 </div>
-                <span className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors group-hover:text-primary">
+                <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs font-medium text-muted-foreground transition-colors group-hover:text-primary leading-none">
                   {t("action.getstarted")}
                   <Arrow className="h-3 w-3" />
                 </span>
