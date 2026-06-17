@@ -21,11 +21,11 @@ const translations: Record<string, Record<Language, string>> = {
     en: "A structured marketplace for companies to list recyclable or surplus materials, receive documented offers, and track deals through to a formal close.",
   },
   "home.badge": {
-    ar: "منصة سعودية لربط منتجي النفايات بالشركات المرخصة",
+    ar: "منصة سعودية لتوثيق وإدارة تدفق المواد القابلة للتدوير",
     en: "Saudi platform connecting waste producers with licensed companies",
   },
   "home.headline": {
-    ar: "معاً نحو منظومة نفايات صناعية ذكية، محوكمة، ومستدامة",
+    ar: "من المصدر إلى المعالجة — مسار موثّق للمواد القابلة للتدوير",
     en: "Together toward a smart, governed, and sustainable industrial waste ecosystem",
   },
   "home.subheadline": {
@@ -33,7 +33,7 @@ const translations: Record<string, Record<Language, string>> = {
     en: "Every value deserves to be recovered",
   },
   "home.description": {
-    ar: "منصة B2B لعرض المواد القابلة للتدوير وتلقي العروض الموثقة حتى الإغلاق",
+    ar: "تدويرة — منصة B2B لتوثيق تدفق المواد القابلة للتدوير من المصدر إلى المعالجة وما بعدها",
     en: "A B2B platform to list recyclable materials, receive documented offers, and close deals",
   },
   "home.trust_line": {
@@ -56,7 +56,7 @@ const translations: Record<string, Record<Language, string>> = {
 
   "home.why.title": { ar: "لماذا تدويرة؟", en: "Why Tadweerah?" },
   "home.why.p1": {
-    ar: "منصة موحدة ومحوكمة لإدارة المواد القابلة للتدوير",
+    ar: "منصة موحّدة ومحوكمة لإدارة تدفق المواد القابلة للتدوير",
     en: "A unified, governed platform for recyclable materials management",
   },
   "home.why.p2": {
@@ -64,33 +64,33 @@ const translations: Record<string, Record<Language, string>> = {
     en: "Every operation documented and fully traceable",
   },
   "home.why.p3": {
-    ar: "تقارير امتثال جاهزة للجهات التنظيمية",
+    ar: "تقارير تدعم الامتثال، الاستدامة، ومسؤولية المنتج",
     en: "Compliance reports ready for regulatory bodies",
   },
   "home.why.p4": {
-    ar: "لوحة تحكم واحدة لمتابعة جميع عملياتك",
+    ar: "لوحة تحكم وبيانات تساعد جميع الأطراف على قرارات أفضل",
     en: "One dashboard to track all your operations",
   },
   "home.why.p5": {
-    ar: "خصوصية بيانات عالية تحمي عملياتك",
+    ar: "حماية وخصوصية عالية لبيانات منشأتك",
     en: "Enterprise-grade data privacy protecting your business",
   },
   "home.why.p6": {
-    ar: "الوصول إلى سوق أوسع بضغطة زر",
+    ar: "وصول أسهل إلى شبكة أوسع من المنتجين والمعالجين والناقلين بضغطة زر",
     en: "Access to a wider market at the click of a button",
   },
 
   "home.for.title": { ar: "لمن هذه المنصة؟", en: "Who Is This For?" },
   "home.for.producers.value": {
-    ar: "بِع فائضك بأفضل سعر عبر مزاد شفاف",
+    ar: "حوّل مخلفاتك القابلة للتدوير إلى قيمة موثّقة تدعم الامتثال والاستدامة",
     en: "Sell your surplus at the best price via transparent auction",
   },
   "home.for.buyers.value": {
-    ar: "اطّلع على مواد تدوير موثوقة ووفّر التكلفة",
+    ar: "أمّن مدخلات موثوقة لتغذية عملياتك وفتح فرص أوسع للقيمة الدائرية",
     en: "Source reliable recyclables and cut procurement costs",
   },
   "home.for.transporters.value": {
-    ar: "احصل على فرص شحن مستمرة من عملاء موثّقين",
+    ar: "انضم إلى منظومة شحن موثّقة بين المنتجين والمعالجين المرخّصين",
     en: "Get steady transport opportunities from verified clients",
   },
   "nav.language": { ar: "English", en: "العربية" },
@@ -171,12 +171,12 @@ const translations: Record<string, Record<Language, string>> = {
     ar: "اعرض نفاياتك واستلم عروضًا من شركات التدوير",
     en: "List your waste and receive offers from recycling buyers",
   },
-  "home.feature2.title": { ar: "للمشترين", en: "For Buyers" },
+  "home.feature2.title": { ar: "للمعالجين والمصانع", en: "For Buyers" },
   "home.feature2.desc": {
     ar: "تصفح آلاف الفرص لشراء مواد قابلة للتدوير",
     en: "Browse thousands of opportunities to buy recyclable materials",
   },
-  "home.feature3.title": { ar: "للناقلين", en: "For Carriers" },
+  "home.feature3.title": { ar: "للناقلين المرخّصين", en: "For Carriers" },
   "home.feature3.desc": {
     ar: "قدم عروض نقل واكسب رحلات جديدة بسهولة",
     en: "Submit transport bids and win new trips easily",
