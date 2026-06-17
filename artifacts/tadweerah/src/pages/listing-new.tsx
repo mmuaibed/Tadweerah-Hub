@@ -429,16 +429,45 @@ export function ListingNewPage() {
                   <Input id="city" required minLength={2} maxLength={80} value={city} onChange={(e) => setCity(e.target.value)} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="quantity">{t("listing.form.quantity")}</Label>
-                  <Input id="quantity" required type="number" inputMode="decimal" min={0} step="0.001" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
+                  <div className="flex gap-2">
+                    <div className="flex-1 space-y-1.5">
+                      <Label htmlFor="quantity">{t("listing.form.quantity")}</Label>
+                      <Input id="quantity" required type="number" inputMode="decimal" min={0} step="0.001" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
+                    </div>
+                    <div className="w-[120px] sm:w-[140px] space-y-1.5">
+                      <Label htmlFor="unit">{t("listing.form.unit")}</Label>
+                      <Select value={resolvedUnitId} onValueChange={setUnitOptionId}>
+                        <SelectTrigger id="unit"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {(unitOptions as UnitOption[]).map((u) => (
+                            <SelectItem key={u.id} value={u.id}>
+                              {t(`unit.${u.key}`) !== `unit.${u.key}` ? t(`unit.${u.key}`) : u.name_ar + " / " + u.name_en}
+                              {" "}({u.symbol})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                 </div>
               </div>
 
+              {isOtherUnit && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="unit_notes">{t("listing.form.unit_notes.required_label")}</Label>
+                  <Input
+                    id="unit_notes"
+                    placeholder={t("listing.form.unit_notes.placeholder")}
+                    value={unitNotes}
+                    onChange={(e) => setUnitNotes(e.target.value)}
+                  />
+                </div>
+              )}
+
               <div className="space-y-1.5">
                 <Label htmlFor="material_location_address">{t("listing.form.material_location_address")}</Label>
-                <textarea
+                <Input
                   id="material_location_address"
-                  className="flex min-h-[72px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
                   maxLength={500}
                   placeholder={t("listing.form.material_location_address.placeholder")}
                   value={materialLocationAddress}
@@ -448,44 +477,13 @@ export function ListingNewPage() {
 
               <div className="space-y-1.5">
                 <Label htmlFor="material_location_notes">{t("listing.form.material_location_notes")}</Label>
-                <textarea
+                <Input
                   id="material_location_notes"
-                  className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
                   maxLength={500}
                   placeholder={t("listing.form.material_location_notes.placeholder")}
                   value={materialLocationNotes}
                   onChange={(e) => setMaterialLocationNotes(e.target.value)}
                 />
-              </div>
-
-
-
-              <div className={`grid gap-3 ${isOtherUnit ? "sm:grid-cols-2" : ""}`}>
-                <div className="space-y-1.5">
-                  <Label htmlFor="unit">{t("listing.form.unit")}</Label>
-                  <Select value={resolvedUnitId} onValueChange={setUnitOptionId}>
-                    <SelectTrigger id="unit"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {(unitOptions as UnitOption[]).map((u) => (
-                        <SelectItem key={u.id} value={u.id}>
-                          {t(`unit.${u.key}`) !== `unit.${u.key}` ? t(`unit.${u.key}`) : u.name_ar + " / " + u.name_en}
-                          {" "}({u.symbol})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                {isOtherUnit && (
-                  <div className="space-y-1.5">
-                    <Label htmlFor="unit_notes">{t("listing.form.unit_notes.required_label")}</Label>
-                    <Input
-                      id="unit_notes"
-                      placeholder={t("listing.form.unit_notes.placeholder")}
-                      value={unitNotes}
-                      onChange={(e) => setUnitNotes(e.target.value)}
-                    />
-                  </div>
-                )}
               </div>
 
             </CardContent>
