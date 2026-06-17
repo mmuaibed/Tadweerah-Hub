@@ -21,6 +21,7 @@ Tadweerah-Hub/
 ├── lib/
 │   └── db/                  # Shared Drizzle ORM schema + client (@workspace/db)
 ├── docs/                    # This directory — documentation only
+│   ├── exports/             # Exported PDFs and PNGs for review (e.g. operational-truth-v5)
 │   ├── WORKFLOW_ARCHITECTURE.md # Architecture Intent
 │   └── Tadweerah_Operational_Truth_Workflows_v5.drawio # Native Operational flowchart
 ├── tadweerah-user-guide-source.md # Untracked local reference (not part of committed source of truth yet)

@@ -160,7 +160,7 @@ The final steps to achieve full pilot launch readiness involve:
 | **VAT calculation** | `routes/deals.ts` (computed at creation), `routes/admin.ts` (reported in CSV) | Single compute at creation âœ… | Same | ðŸŸ¢ Low | â€” | No |
 | **pre_expiry_notified reset** | `routes/deals.ts` extend handler (resets to false) | Correct â€” resets so warning fires again | Same | ðŸŸ¢ Low | â€” | No |
 | **Contract created_by_company_id nullable** | `contracts.ts` schema comment | Nullable for backwards-compat (pre-field contracts) | Acceptable | 🟢 Low | — | No |
-| **Operational Truth Audit (v5 Drawio)** | `deals.ts`, `expire-deals.ts`, `admin.tsx` | Deal receipt immediately completes; listings have no auto-expiry job; transport quote lite is active | Native architecture matches backend code | 🟢 Low | Documentation | No |
+| **Operational Truth Audit (v5 Drawio)** | `deals.ts`, `expire-deals.ts`, `admin.tsx` | Deal receipt immediately completes; listings have no auto-expiry job; transport quote lite is active. **Note: v5 exported exactly as-is to PDF/PNG in docs/exports/operational-truth-v5 for internal study without simplification.** | Native architecture matches backend code | 🟢 Low | Documentation | No |
 
 ---
 
