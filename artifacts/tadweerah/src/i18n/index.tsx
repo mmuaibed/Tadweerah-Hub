@@ -168,7 +168,7 @@ const translations: Record<string, Record<Language, string>> = {
 
   "home.feature1.title": { ar: "للمنتجين", en: "For Producers" },
   "home.feature1.desc": {
-    ar: "اعرض نفاياتك واستلم عروضًا من شركات التدوير",
+    ar: "اعرض موادك واستلم عروضًا من شركات التدوير",
     en: "List your waste and receive offers from recycling buyers",
   },
   "home.feature2.title": { ar: "للمعالجين والمصانع", en: "For Processors and Factories" },
@@ -246,9 +246,9 @@ const translations: Record<string, Record<Language, string>> = {
   "status.closed": { ar: "مغلق", en: "Closed" },
 
   // Producer — new listing
-  "listing.new.title": { ar: "إضافة إعلان نفايات", en: "Add Waste Listing" },
+  "listing.new.title": { ar: "إضافة إعلان مواد", en: "Add Waste Listing" },
   "listing.new.subtitle": {
-    ar: "حدّد نوع المادة والكمية والوحدة لعرض نفاياتك في السوق",
+    ar: "حدّد نوع المادة والكمية والوحدة لعرضها في السوق",
     en: "Specify the material type, quantity, and unit to list your waste in the marketplace",
   },
   "listing.form.material": { ar: "تصنيف المادة", en: "Material Category" },
@@ -293,9 +293,9 @@ const translations: Record<string, Record<Language, string>> = {
 
   // Producer — my listings
   "myListings.title": { ar: "إعلاناتي", en: "My Listings" },
-  "myListings.subtitle": { ar: "جميع إعلانات النفايات التي نشرتها", en: "All the waste listings you've published" },
+  "myListings.subtitle": { ar: "جميع إعلانات المواد التي نشرتها", en: "All the waste listings you've published" },
   "myListings.empty.title": { ar: "لا توجد إعلانات حالياً", en: "No listings yet" },
-  "myListings.empty.desc": { ar: "ابدأ بإضافة أول إعلان نفايات لك.", en: "Start by adding your first waste listing." },
+  "myListings.empty.desc": { ar: "ابدأ بإضافة أول إعلان مواد لك.", en: "Start by adding your first waste listing." },
   "myListings.add": { ar: "إضافة إعلان", en: "Add Listing" },
   "myListings.close": { ar: "إغلاق الإعلان", en: "Close Listing" },
   "myListings.closing": { ar: "جاري الإغلاق...", en: "Closing..." },
@@ -303,7 +303,7 @@ const translations: Record<string, Record<Language, string>> = {
 
   // Buyer — marketplace
   "marketplace.title": { ar: "السوق", en: "Marketplace" },
-  "marketplace.subtitle": { ar: "تصفح عروض النفايات المتاحة من المنتجين", en: "Browse available waste listings from producers" },
+  "marketplace.subtitle": { ar: "تصفح إعلانات المواد المتاحة من المنتجين", en: "Browse available waste listings from producers" },
   "marketplace.filter.material": { ar: "فلترة بالمادة", en: "Filter by material" },
   "marketplace.filter.city": { ar: "ابحث بالمدينة", en: "Search by city" },
   "marketplace.filter.all": { ar: "جميع المواد", en: "All materials" },
@@ -493,7 +493,7 @@ const translations: Record<string, Record<Language, string>> = {
   // M4.5 — M2: My Participations
   "participations.title": { ar: "مشاركاتي", en: "My Participations" },
   "participations.subtitle": {
-    ar: "عروض الأسعار التي قدّمتها على إعلانات النفايات",
+    ar: "عروض الأسعار التي قدّمتها على إعلانات المواد",
     en: "Price offers you've submitted on waste listings",
   },
   "participations.empty.title": { ar: "لا توجد مشاركات بعد", en: "No participations yet" },
@@ -1245,7 +1245,7 @@ const translations: Record<string, Record<Language, string>> = {
     en: "Start your first journey with Tadweerah",
   },
   "dashboard.onboarding.desc": {
-    ar: "أنشئ إعلان نفاياتك الأول — يستغرق 3 دقائق. ستصلك العروض من المشترين المعتمدين مباشرة.",
+    ar: "أنشئ إعلانك الأول للمواد — يستغرق 3 دقائق. ستصلك العروض من المشترين المعتمدين مباشرة.",
     en: "Create your first waste listing — takes 3 minutes. Verified buyers will start sending offers directly.",
   },
   "dashboard.onboarding.cta": { ar: "أنشئ إعلانك الأول", en: "Create your first listing" },
