@@ -30,7 +30,7 @@ const translations: Record<string, Record<Language, string>> = {
   },
   "home.subheadline": {
     ar: "كل قيمة تستحق أن تعود",
-    en: "Every value deserves to be recovered",
+    en: "Every Value Deserves a Second Life",
   },
   "home.description": {
     ar: "تدويرة — منصة B2B لتوثيق تدفق المواد القابلة للتدوير من المصدر إلى المعالجة وما بعدها",
@@ -83,7 +83,7 @@ const translations: Record<string, Record<Language, string>> = {
   "home.for.title": { ar: "لمن هذه المنصة؟", en: "Who Is This For?" },
   "home.for.producers.value": {
     ar: "حوّل مخلفاتك القابلة للتدوير إلى قيمة موثّقة تدعم الامتثال والاستدامة",
-    en: "Turn your recyclable waste into documented value that supports compliance and sustainability",
+    en: "Turn your recyclable materials into documented value that supports compliance and sustainability",
   },
   "home.for.buyers.value": {
     ar: "أمّن مدخلات موثوقة لتغذية عملياتك وفتح فرص أوسع للقيمة الدائرية",
@@ -171,12 +171,12 @@ const translations: Record<string, Record<Language, string>> = {
     ar: "اعرض نفاياتك واستلم عروضًا من شركات التدوير",
     en: "List your waste and receive offers from recycling buyers",
   },
-  "home.feature2.title": { ar: "للمعالجين والمصانع", en: "For Buyers" },
+  "home.feature2.title": { ar: "للمعالجين والمصانع", en: "For Processors and Factories" },
   "home.feature2.desc": {
     ar: "تصفح آلاف الفرص لشراء مواد قابلة للتدوير",
     en: "Browse thousands of opportunities to buy recyclable materials",
   },
-  "home.feature3.title": { ar: "للناقلين المرخّصين", en: "For Carriers" },
+  "home.feature3.title": { ar: "للناقلين المرخّصين", en: "For Licensed Carriers" },
   "home.feature3.desc": {
     ar: "قدم عروض نقل واكسب رحلات جديدة بسهولة",
     en: "Submit transport bids and win new trips easily",
