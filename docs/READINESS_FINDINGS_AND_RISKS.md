@@ -1,4 +1,4 @@
-﻿# Tadweerah â€” Readiness Findings & Risks
+# Tadweerah â€” Readiness Findings & Risks
 > Last updated: 2026-06-09 | Session: 6b53fc3f
 > Status: DOCUMENTATION ONLY â€” no application code changed
 
@@ -159,7 +159,8 @@ The final steps to achieve full pilot launch readiness involve:
 | **Material categories: backend vs listing enum** | `material-categories` table (new), `wasteUnitEnum` (legacy enum on old listings) | Split â€” legacy enum for old, table for new | Migrate legacy listings (post-pilot) | ðŸŸ¢ Low | Post-pilot | No |
 | **VAT calculation** | `routes/deals.ts` (computed at creation), `routes/admin.ts` (reported in CSV) | Single compute at creation âœ… | Same | ðŸŸ¢ Low | â€” | No |
 | **pre_expiry_notified reset** | `routes/deals.ts` extend handler (resets to false) | Correct â€” resets so warning fires again | Same | ðŸŸ¢ Low | â€” | No |
-| **Contract created_by_company_id nullable** | `contracts.ts` schema comment | Nullable for backwards-compat (pre-field contracts) | Acceptable | ðŸŸ¢ Low | â€” | No |
+| **Contract created_by_company_id nullable** | `contracts.ts` schema comment | Nullable for backwards-compat (pre-field contracts) | Acceptable | 🟢 Low | — | No |
+| **Operational Truth Audit (v5 Drawio)** | `deals.ts`, `expire-deals.ts`, `admin.tsx` | Deal receipt immediately completes; listings have no auto-expiry job; transport quote lite is active | Native architecture matches backend code | 🟢 Low | Documentation | No |
 
 ---
 
