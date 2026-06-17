@@ -138,6 +138,27 @@ function shipmentBadgeClass(status: ShipmentStatus): string {
   }
 }
 
+function localizeLabel(label: string, lang: string): string {
+  if (lang !== "en") return label;
+  const trimmed = label.trim().toLowerCase();
+  switch (trimmed) {
+    case "حديد": return "Steel";
+    case "المنيوم":
+    case "ألمنيوم": return "Aluminum";
+    case "طن": return "ton";
+    case "كجم": return "kg";
+    case "بلاستيك": return "Plastic";
+    case "كرتون":
+    case "ورق وكرتون": return "Cardboard";
+    case "معادن": return "Metals";
+    case "زجاج": return "Glass";
+    case "إلكترونيات": return "Electronics";
+    case "عضوية": return "Organic";
+    case "أخرى": return "Other";
+    default: return label;
+  }
+}
+
 // ── API hooks ─────────────────────────────────────────────────────────────────
 
 function makeAuthHeaders(token: string | null): Record<string, string> {
@@ -666,8 +687,8 @@ function MaterialLinesSection({
             <tbody className="divide-y divide-border">
               {contract.materials.map((m) => (
                 <tr key={m.id} className="hover:bg-muted/20 transition-colors">
-                  <td className="px-4 py-3 font-medium text-foreground">{m.material_label}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{m.unit_label}</td>
+                  <td className="px-4 py-3 font-medium text-foreground">{localizeLabel(m.material_label, lang)}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{localizeLabel(m.unit_label, lang)}</td>
                   <td className="px-4 py-3 text-end font-mono text-foreground">
                     {fmtNumber(m.price_per_unit)}
                   </td>
@@ -1062,7 +1083,7 @@ function ShipmentRow({
               {shipment.reference}
             </span>
             <span className="block text-xs text-muted-foreground mt-0.5">
-              {material?.material_label ?? "—"} · {material?.unit_label ?? ""}
+              {material?.material_label ? localizeLabel(material.material_label, lang) : "—"} · {material?.unit_label ? localizeLabel(material.unit_label, lang) : ""}
             </span>
           </div>
         </div>
@@ -1342,7 +1363,9 @@ function ShipmentsSection({
                   >
                     <option value="">{lang === "ar" ? "اختر المادة..." : "Select material..."}</option>
                     {contract.materials.map(m => (
-                      <option key={m.id} value={m.id}>{m.material_label} ({m.unit_label})</option>
+                      <option key={m.id} value={m.id}>
+                        {localizeLabel(m.material_label, lang)} ({localizeLabel(m.unit_label, lang)})
+                      </option>
                     ))}
                   </select>
                   <ChevronDown className="pointer-events-none absolute end-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
