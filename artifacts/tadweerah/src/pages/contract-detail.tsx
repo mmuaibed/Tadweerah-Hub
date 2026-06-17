@@ -22,6 +22,7 @@ import {
   XCircle,
   Clock,
   User,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +33,24 @@ import { AppLayout } from "@/components/app-layout";
 import { useT } from "@/i18n";
 import { fmtNumber } from "@/lib/format";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
+function isImageUrl(url: string): boolean {
+  const cleanUrl = url.split("?")[0].toLowerCase();
+  return (
+    cleanUrl.endsWith(".jpg") ||
+    cleanUrl.endsWith(".jpeg") ||
+    cleanUrl.endsWith(".png") ||
+    cleanUrl.endsWith(".webp") ||
+    cleanUrl.endsWith(".gif") ||
+    url.startsWith("data:image/")
+  );
+}
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -774,10 +793,26 @@ function ShipmentMiniTimeline({
   const ar = lang === "ar";
   const isCancelled = shipment.status === "cancelled";
 
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewData, setPreviewData] = useState<{
+    url: string;
+    type: "source" | "destination";
+    uploadedBy: string | null;
+    date: string | null;
+  } | null>(null);
+
   function fmtShort(iso: string | null) {
     if (!iso) return null;
     return new Date(iso).toLocaleDateString(ar ? "ar-SA-u-nu-latn" : "en-US", {
       month: "short", day: "numeric",
+    });
+  }
+
+  function formatDocDate(iso: string | null) {
+    if (!iso) return "";
+    return new Date(iso).toLocaleDateString(ar ? "ar-SA-u-nu-latn" : "en-US", {
+      year: "numeric", month: "short", day: "numeric",
+      hour: "2-digit", minute: "2-digit"
     });
   }
 
@@ -849,72 +884,158 @@ function ShipmentMiniTimeline({
   const steps: MiniStep[] = [...baseSteps, lastStep];
 
   return (
-    <div className="flex items-start gap-0 overflow-x-auto" dir="ltr">
-      {steps.map((step, i) => {
-        const isLast = i === steps.length - 1;
-        const iconCls = step.isCancelled
-          ? "bg-red-100 text-red-400 border border-red-200"
-          : step.isDone
-            ? "bg-primary text-white"
-            : step.isCurrent
-              ? "bg-white border-2 border-primary text-primary ring-2 ring-primary/15"
-              : "border border-muted-foreground/25 bg-background text-muted-foreground/25";
-        const lineCls = step.isDone ? "bg-primary/35" : "bg-muted-foreground/15";
+    <>
+      <div className="flex items-start gap-0 overflow-x-auto" dir="ltr">
+        {steps.map((step, i) => {
+          const isLast = i === steps.length - 1;
+          const iconCls = step.isCancelled
+            ? "bg-red-100 text-red-400 border border-red-200"
+            : step.isDone
+              ? "bg-primary text-white"
+              : step.isCurrent
+                ? "bg-white border-2 border-primary text-primary ring-2 ring-primary/15"
+                : "border border-muted-foreground/25 bg-background text-muted-foreground/25";
+          const lineCls = step.isDone ? "bg-primary/35" : "bg-muted-foreground/15";
 
-        return (
-          <div key={step.id} className="flex items-start flex-1 min-w-0">
-            {/* Step block */}
-            <div className="flex flex-col items-center min-w-0">
-              {/* Circle */}
-              <div className={`h-5 w-5 rounded-full flex items-center justify-center shrink-0 ${iconCls}`}>
-                {step.isDone && !step.isCancelled ? <CheckCircle2 className="h-3 w-3" />
-                  : step.isCancelled              ? <XCircle className="h-3 w-3" />
-                  : step.isCurrent               ? <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-                  :                                <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground/30" />}
-              </div>
-              {/* Label */}
-              <p className={`text-[9px] font-semibold mt-1 text-center leading-tight ${
-                step.isCancelled ? "text-red-500"
-                : step.isDone || step.isCurrent ? "text-foreground"
-                : "text-muted-foreground/40"
-              }`}>{step.label}</p>
-              {/* Party */}
-              {step.party && (
-                <p className={`text-[9px] text-center leading-tight ${
-                  step.isCurrent ? "text-primary" : step.isDone ? "text-muted-foreground" : "text-muted-foreground/30"
-                }`}>{step.party}</p>
-              )}
-              {/* Date */}
-              {step.ts && step.isDone && (
-                <p className="text-[9px] text-muted-foreground text-center mt-0.5">{fmtShort(step.ts)}</p>
-              )}
-              {/* Weight note */}
-              {step.weightNote && step.isDone && (
-                <div className="flex flex-col items-center gap-0.5 mt-0.5">
-                  <span className="text-[9px] text-primary font-semibold text-center">{step.weightNote}</span>
-                  {step.ticketUrl && (
-                    <div className="flex flex-col items-center">
-                      <a href={step.ticketUrl} target="_blank" rel="noopener noreferrer" className="text-[9px] text-blue-600 hover:underline text-center">
-                        {ar ? "عرض مستند الوزن" : "View weight document"}
-                      </a>
-                      {step.ticketUploadedBy && (
-                        <span className="text-[8px] text-muted-foreground/70 text-center">
-                          {ar ? `مرفوع بواسطة: ${getUploaderLabel(step.ticketUploadedBy)}` : `Uploaded by: ${getUploaderLabel(step.ticketUploadedBy)}`}
-                        </span>
-                      )}
-                    </div>
-                  )}
+          return (
+            <div key={step.id} className="flex items-start flex-1 min-w-0">
+              {/* Step block */}
+              <div className="flex flex-col items-center min-w-0">
+                {/* Circle */}
+                <div className={`h-5 w-5 rounded-full flex items-center justify-center shrink-0 ${iconCls}`}>
+                  {step.isDone && !step.isCancelled ? <CheckCircle2 className="h-3 w-3" />
+                    : step.isCancelled              ? <XCircle className="h-3 w-3" />
+                    : step.isCurrent               ? <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                    :                                <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground/30" />}
                 </div>
+                {/* Label */}
+                <p className={`text-[9px] font-semibold mt-1 text-center leading-tight ${
+                  step.isCancelled ? "text-red-500"
+                  : step.isDone || step.isCurrent ? "text-foreground"
+                  : "text-muted-foreground/40"
+                }`}>{step.label}</p>
+                {/* Party */}
+                {step.party && (
+                  <p className={`text-[9px] text-center leading-tight ${
+                    step.isCurrent ? "text-primary" : step.isDone ? "text-muted-foreground" : "text-muted-foreground/30"
+                  }`}>{step.party}</p>
+                )}
+                {/* Date */}
+                {step.ts && step.isDone && (
+                  <p className="text-[9px] text-muted-foreground text-center mt-0.5">{fmtShort(step.ts)}</p>
+                )}
+                {/* Weight note */}
+                {step.weightNote && step.isDone && (
+                  <div className="flex flex-col items-center gap-0.5 mt-0.5">
+                    <span className="text-[9px] text-primary font-semibold text-center">{step.weightNote}</span>
+                    {step.ticketUrl && (
+                      <div className="flex flex-col items-center">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPreviewData({
+                              url: step.ticketUrl!,
+                              type: step.id === "dispatched" ? "source" : "destination",
+                              uploadedBy: step.ticketUploadedBy
+                                ? (step.ticketUploadedBy === contract.seller_company_id
+                                    ? (ar ? "المورد" : "Seller")
+                                    : step.ticketUploadedBy === contract.buyer_company_id
+                                      ? (ar ? "المشتري" : "Buyer")
+                                      : ar ? "غير محدد" : "Unknown")
+                                : null,
+                              date: step.ts,
+                            });
+                            setPreviewOpen(true);
+                          }}
+                          className="text-[9px] text-blue-600 hover:underline text-center focus:outline-none"
+                        >
+                          {ar ? "عرض مستند الوزن" : "View weight document"}
+                        </button>
+                        {step.ticketUploadedBy && (
+                          <span className="text-[8px] text-muted-foreground/70 text-center">
+                            {ar ? `مرفوع بواسطة: ${getUploaderLabel(step.ticketUploadedBy)}` : `Uploaded by: ${getUploaderLabel(step.ticketUploadedBy)}`}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              {/* Connector line */}
+              {!isLast && (
+                <div className={`h-0.5 flex-1 mt-2.5 mx-0.5 rounded-full ${lineCls}`} />
               )}
             </div>
-            {/* Connector line */}
-            {!isLast && (
-              <div className={`h-0.5 flex-1 mt-2.5 mx-0.5 rounded-full ${lineCls}`} />
-            )}
-          </div>
-        );
-      })}
-    </div>
+          );
+        })}
+      </div>
+
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{ar ? "مستند الوزن" : "Weight Document"}</DialogTitle>
+          </DialogHeader>
+          
+          {previewData && (
+            <div className="space-y-4 pt-2">
+              <div className="flex items-center justify-between border-b border-border pb-3">
+                <span className="text-sm text-muted-foreground">{ar ? "نوع المستند" : "Document Type"}</span>
+                <span className="text-sm font-semibold">
+                  {previewData.type === "source"
+                    ? (ar ? "مستند وزن موقع المورد" : "Seller site weight document")
+                    : (ar ? "مستند وزن موقع المشتري" : "Buyer site weight document")}
+                </span>
+              </div>
+
+              {previewData.uploadedBy && (
+                <div className="flex items-center justify-between border-b border-border pb-3">
+                  <span className="text-sm text-muted-foreground">{ar ? "تم الرفع بواسطة" : "Uploaded by"}</span>
+                  <span className="text-sm font-semibold">{previewData.uploadedBy}</span>
+                </div>
+              )}
+
+              {previewData.date && (
+                <div className="flex items-center justify-between border-b border-border pb-3">
+                  <span className="text-sm text-muted-foreground">{ar ? "التاريخ والوقت" : "Date & Time"}</span>
+                  <span className="text-sm font-medium">{formatDocDate(previewData.date)}</span>
+                </div>
+              )}
+
+              <div className="flex flex-col gap-2 pt-2">
+                <span className="text-sm text-muted-foreground mb-1">{ar ? "معاينة المستند" : "Document Preview"}</span>
+                {isImageUrl(previewData.url) ? (
+                  <div className="rounded-md border border-border overflow-hidden bg-muted/30 p-2 flex justify-center">
+                    <img 
+                      src={previewData.url} 
+                      alt="Weight Document Preview" 
+                      className="max-w-full max-h-[350px] object-contain rounded"
+                    />
+                  </div>
+                ) : (
+                  <div className="rounded-md border border-dashed border-border bg-muted/20 px-4 py-8 text-center">
+                    <p className="text-sm text-muted-foreground">
+                      {ar ? "المستند غير قابل للمعاينة المباشرة (مثل ملف PDF)" : "This document cannot be previewed directly (e.g. PDF file)"}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-4 border-t border-border/50">
+                <a 
+                  href={previewData.url} 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 rounded-md bg-secondary px-4 py-2.5 text-sm font-medium text-secondary-foreground hover:bg-secondary/80 transition-colors w-full justify-center"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  {ar ? "فتح المستند في تبويب جديد" : "Open document in new tab"}
+                </a>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
