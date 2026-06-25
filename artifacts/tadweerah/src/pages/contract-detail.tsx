@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useLocation } from "wouter";
+import { useParams, useLocation, useSearch } from "wouter";
 import { useAuth } from "@clerk/react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -1317,14 +1317,14 @@ function ShipmentsSection({
   const [showAdd, setShowAdd] = useState(false);
   const [addForm, setAddForm] = useState({ materialLineId: "", plannedAt: "", notes: "" });
   const [adding, setAdding] = useState(false);
+  const searchStr = useSearch();
   const [pendingScrollId, setPendingScrollId] = useState<string | null>(() => {
-    if (typeof window !== "undefined") {
-      const sp = new URLSearchParams(window.location.search);
-      return sp.get("shipment");
-    }
-    return null;
+    const sp = new URLSearchParams(searchStr);
+    return sp.get("shipment");
   });
   const [tab, setTab] = useState<"all" | "in-progress" | "closed">(() => {
+    const sp = new URLSearchParams(searchStr);
+    if (sp.get("shipment")) return "all";
     return shipments.some(s => s.status !== "closed" && s.status !== "cancelled") ? "in-progress" : "all";
   });
 
@@ -1538,6 +1538,7 @@ export function ContractDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { t, lang } = useT();
   const [, navigate] = useLocation();
+  const searchStr = useSearch();
   const queryClient = useQueryClient();
 
   const { data: contract, isLoading, isError } = useContract(id!);
@@ -1597,13 +1598,11 @@ export function ContractDetailPage() {
           variant="ghost" 
           size="sm" 
           onClick={() => {
-            if (typeof window !== "undefined") {
-              const sp = new URLSearchParams(window.location.search);
-              const returnTo = sp.get("returnTo");
-              if (returnTo) {
-                navigate(decodeURIComponent(returnTo));
-                return;
-              }
+            const sp = new URLSearchParams(searchStr);
+            const returnTo = sp.get("returnTo");
+            if (returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//")) {
+              navigate(decodeURIComponent(returnTo));
+              return;
             }
             navigate("/contracts");
           }} 
