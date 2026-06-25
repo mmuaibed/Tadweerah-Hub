@@ -1809,6 +1809,8 @@ const translations: Record<string, Record<Language, string>> = {
   "sustainability.allocations.ineligibility_desc.non_positive_quantity": { ar: "لا يمكن التوزيع لكمية صفر أو أقل.", en: "Allocation is not possible for a quantity of zero or less." },
   "sustainability.allocations.ineligibility.missing_buyer_quantity": { ar: "كمية الاستلام (للمشتري) غير متوفرة", en: "Buyer received quantity is missing" },
   "sustainability.allocations.ineligibility_desc.missing_buyer_quantity": { ar: "يجب تحديد الكمية المستلمة فعلياً من قبل المشتري لكي تكون الشحنة مؤهلة للتوزيع.", en: "The actual received quantity by the buyer must be specified for the shipment to be eligible for allocation." },
+  "sustainability.allocations.ineligibility.missing_source_quantity": { ar: "كمية المصدر غير متوفرة", en: "Seller source quantity is missing" },
+  "sustainability.allocations.ineligibility_desc.missing_source_quantity": { ar: "يجب توفر وزن المصدر المعتمد حسب منهجية العقد لتكون الشحنة مؤهلة للتوزيع.", en: "The approved quantity by the source (seller) must be specified per the contract policy for the shipment to be eligible for allocation." },
   "sustainability.allocations.eligible": { ar: "مؤهل للتوزيع", en: "Eligible for allocation" },
   "sustainability.allocations.ineligible": { ar: "غير قابل للتوزيع", en: "Not allocatable" },
   "sustainability.allocations.draft_saved": { ar: "تم حفظ مسودة توزيع الاستدامة بنجاح", en: "Sustainability allocation draft saved successfully" },

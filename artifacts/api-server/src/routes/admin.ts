@@ -18,6 +18,12 @@ import {
   companyCapabilitiesTable,
   companyMembersTable,
   companyInvitationsTable,
+  sustainabilityReceivedLinesTable,
+  contractShipmentsTable,
+  contractsTable,
+  sustainabilityAllocationsTable,
+  contractMaterialsTable
+} from "@workspace/db";
   issueReportsTable,
   auditLogTable,
   dealsTable,
@@ -39,6 +45,79 @@ import { notifyDealStageChange } from "../lib/notify";
 import { dealRef } from "../lib/listing-ref";
 
 const router = Router();
+
+// Mock diagnostics
+router.get("/admin/diagnostics/shipment/:reference", async (req: Request, res: Response) => {
+  const reference = req.params.reference;
+  const [line] = await db
+    .select({
+      received_line: sustainabilityReceivedLinesTable,
+      allocation_status: sustainabilityAllocationsTable.status,
+      shipment_destination_weight: contractShipmentsTable.destination_weight,
+      shipment_source_weight: contractShipmentsTable.source_weight,
+      shipment_weight_policy: contractsTable.weight_policy,
+      shipment_reference: contractShipmentsTable.reference
+    })
+    .from(sustainabilityReceivedLinesTable)
+    .leftJoin(sustainabilityAllocationsTable, eq(sustainabilityReceivedLinesTable.id, sustainabilityAllocationsTable.received_line_id))
+    .leftJoin(contractShipmentsTable, eq(sustainabilityReceivedLinesTable.parent_entity_id, contractShipmentsTable.id))
+    .leftJoin(contractsTable, eq(contractShipmentsTable.contract_id, contractsTable.id))
+    .where(eq(contractShipmentsTable.reference, reference))
+    .limit(1);
+
+  if (!line) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+
+  let derived_qty = line.received_line.final_received_qty;
+  let errorReason: string | null = null;
+  let expectedQty: string | null = null;
+
+  if (line.allocation_status !== "finalized") {
+    if (line.shipment_weight_policy === "source_weight_only") {
+      if (line.shipment_source_weight && Number(line.shipment_source_weight) > 0) {
+        expectedQty = line.shipment_source_weight;
+      } else {
+        errorReason = "missing_source_quantity";
+      }
+    } else if (line.shipment_weight_policy === "destination_weight_only" || line.shipment_weight_policy?.startsWith("dual_")) {
+      if (line.shipment_destination_weight && Number(line.shipment_destination_weight) > 0) {
+        expectedQty = line.shipment_destination_weight;
+      } else {
+        errorReason = "missing_buyer_quantity";
+      }
+    } else {
+      if (line.shipment_destination_weight && Number(line.shipment_destination_weight) > 0) {
+        expectedQty = line.shipment_destination_weight;
+      } else {
+        errorReason = "missing_buyer_quantity";
+      }
+    }
+
+    if (expectedQty) {
+      derived_qty = expectedQty;
+    } else {
+      derived_qty = "0";
+    }
+  }
+
+  res.json({
+    parent_reference: line.shipment_reference,
+    parent_entity_type: line.received_line.parent_entity_type,
+    final_received_qty: derived_qty,
+    final_received_unit: line.received_line.final_received_unit,
+    allocation_status: line.allocation_status,
+    eligible_for_allocation: Boolean(expectedQty),
+    ineligibility_reason: errorReason,
+    weight_policy: line.shipment_weight_policy,
+    source_weight: line.shipment_source_weight,
+    destination_weight: line.shipment_destination_weight,
+    final_weight: "not_fetched_but_exists"
+  });
+});
+
+export { router as adminRouter };
 
 /* -------------------------------------------------------------------------- */
 /* Admin key guard                                                              */
