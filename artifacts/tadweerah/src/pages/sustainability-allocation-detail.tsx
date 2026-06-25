@@ -119,7 +119,7 @@ export function SustainabilityAllocationDetailPage() {
           data.lines.map((l) => ({
             uiId: Math.random().toString(36).substring(7),
             pathway_id: l.pathway_id,
-            quantity: l.quantity,
+            quantity: Number(l.quantity).toString(),
             explanation_text: l.explanation_text || "",
           }))
         );
@@ -244,18 +244,21 @@ export function SustainabilityAllocationDetailPage() {
   
   const isDirty = (() => {
     if (!allocation) return draftLines.length > 0;
-    if (draftLines.length !== (data.lines?.length || 0)) return true;
-    const orig = [...(data.lines || [])].sort((a,b) => a.pathway_id.localeCompare(b.pathway_id));
-    const curr = [...draftLines].sort((a,b) => a.pathway_id.localeCompare(b.pathway_id));
-    for (let i = 0; i < orig.length; i++) {
-      if (orig[i].pathway_id !== curr[i].pathway_id) return true;
-      if (Number(orig[i].quantity) !== Number(curr[i].quantity)) return true;
-      if ((orig[i].explanation_text || "").trim() !== curr[i].explanation_text.trim()) return true;
+    const dbLines = data?.lines || [];
+    if (draftLines.length !== dbLines.length) return true;
+    
+    const dbMap = new Map(dbLines.map((l: any) => [l.pathway_id, l]));
+    for (const draft of draftLines) {
+      if (!draft.pathway_id) return true;
+      const dbL = dbMap.get(draft.pathway_id);
+      if (!dbL) return true;
+      if (Math.abs(Number(draft.quantity) - Number(dbL.quantity)) > 0.0001) return true;
+      if ((draft.explanation_text || "").trim() !== (dbL.explanation_text || "").trim()) return true;
     }
     return false;
   })();
 
-  let canSave = draftLines.length > 0 && !isOverAllocated && !hasDuplicates && draftLines.every(l => {
+  const isValidLines = draftLines.every(l => {
     if (!l.pathway_id) return false;
     const qty = Number(l.quantity);
     if (isNaN(qty) || qty <= 0) return false;
@@ -263,6 +266,8 @@ export function SustainabilityAllocationDetailPage() {
     if (pw?.requires_explanation && !l.explanation_text.trim()) return false;
     return true;
   });
+
+  const canSave = !isOverAllocated && !hasDuplicates && isValidLines;
 
   const handleSave = () => {
     const payload = {
@@ -572,8 +577,8 @@ export function SustainabilityAllocationDetailPage() {
                   ) : (
                     <Button
                       onClick={() => setShowFinalizeModal(true)}
-                      disabled={!canSave || !isPerfectlyAllocated || saveMutation.isPending || finalizeMutation.isPending || isDirty}
-                      className="min-w-[140px] bg-green-600 hover:bg-green-700 text-white"
+                      disabled={!canSave || !isPerfectlyAllocated || saveMutation.isPending || finalizeMutation.isPending || isDirty || draftLines.length === 0}
+                      className="min-w-[140px] bg-green-600 hover:bg-green-700 text-white disabled:bg-green-600/50 disabled:text-white/70"
                       title={(!isPerfectlyAllocated && lang === "ar") ? "يجب توزيع الكمية بالكامل" : ""}
                     >
                       <Lock className="h-4 w-4 me-2" /> {t("sustainability.allocations.finalize")}
