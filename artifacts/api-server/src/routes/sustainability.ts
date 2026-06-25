@@ -13,6 +13,39 @@ import { requireAuth } from "../middlewares/requireAuth";
 import { requireCompany, type AuthedCompanyRequest } from "../middlewares/requireCompany";
 import { validateAllocationDraft } from "../services/sustainability-validation";
 import { logAudit } from "../lib/audit";
+import { wasteListingsTable } from "@workspace/db";
+
+async function enrichReceivedLineQty(receivedLine: any) {
+  if (receivedLine.parent_entity_type === "deal" && receivedLine.parent_entity_id) {
+    const [deal] = await db
+      .select({
+        actual_quantity: dealsTable.actual_quantity,
+        listing_quantity: wasteListingsTable.quantity
+      })
+      .from(dealsTable)
+      .leftJoin(wasteListingsTable, eq(dealsTable.listing_id, wasteListingsTable.id))
+      .where(eq(dealsTable.id, receivedLine.parent_entity_id))
+      .limit(1);
+
+    if (deal) {
+      if (deal.actual_quantity) {
+        receivedLine.final_received_qty = deal.actual_quantity;
+      } else if (deal.listing_quantity) {
+        receivedLine.final_received_qty = deal.listing_quantity;
+      }
+    }
+  } else if (receivedLine.parent_entity_type === "contract_shipment" && receivedLine.parent_entity_id) {
+    const [shipment] = await db
+      .select({ final_weight: contractShipmentsTable.final_weight })
+      .from(contractShipmentsTable)
+      .where(eq(contractShipmentsTable.id, receivedLine.parent_entity_id))
+      .limit(1);
+    
+    if (shipment && shipment.final_weight) {
+      receivedLine.final_received_qty = shipment.final_weight;
+    }
+  }
+}
 
 const router = Router();
 
@@ -31,7 +64,10 @@ router.get("/sustainability/received-lines", requireAuth, requireCompany(), asyn
       allocation_id: sustainabilityAllocationsTable.id,
       allocation_status: sustainabilityAllocationsTable.status,
       deal_created_at: dealsTable.created_at,
+      deal_actual_quantity: dealsTable.actual_quantity,
+      listing_quantity: wasteListingsTable.quantity,
       shipment_reference: contractShipmentsTable.reference,
+      shipment_final_weight: contractShipmentsTable.final_weight,
     })
     .from(sustainabilityReceivedLinesTable)
     .leftJoin(
@@ -44,6 +80,10 @@ router.get("/sustainability/received-lines", requireAuth, requireCompany(), asyn
         eq(sustainabilityReceivedLinesTable.parent_entity_type, "deal"),
         eq(sustainabilityReceivedLinesTable.parent_entity_id, dealsTable.id)
       )
+    )
+    .leftJoin(
+      wasteListingsTable,
+      eq(dealsTable.listing_id, wasteListingsTable.id)
     )
     .leftJoin(
       contractShipmentsTable,
@@ -59,19 +99,31 @@ router.get("/sustainability/received-lines", requireAuth, requireCompany(), asyn
 
   const formattedRows = rows.map((r) => {
     let parent_reference = "مرجع غير متاح";
+    let derived_qty = r.received_line.final_received_qty;
     
     if (r.received_line.parent_entity_type === "deal" && r.received_line.parent_entity_id) {
       const id = r.received_line.parent_entity_id;
       const year = r.deal_created_at ? new Date(r.deal_created_at).getFullYear() : new Date().getFullYear();
       parent_reference = `TDW-${year}-${id.replace(/-/g, "").slice(0, 6).toUpperCase()}`;
+
+      if (r.deal_actual_quantity) {
+        derived_qty = r.deal_actual_quantity;
+      } else if (r.listing_quantity) {
+        derived_qty = r.listing_quantity;
+      }
     } else if (r.received_line.parent_entity_type === "contract_shipment" && r.shipment_reference) {
       parent_reference = r.shipment_reference;
+      
+      if (r.shipment_final_weight) {
+        derived_qty = r.shipment_final_weight;
+      }
     }
 
     return {
       received_line: {
         ...r.received_line,
-        parent_reference
+        parent_reference,
+        final_received_qty: derived_qty
       },
       allocation_id: r.allocation_id,
       allocation_status: r.allocation_status
@@ -104,6 +156,8 @@ router.get("/sustainability/received-lines/:id/allocation", requireAuth, require
     res.status(404).json({ error: "NotFound", message: "Received line not found." });
     return;
   }
+
+  await enrichReceivedLineQty(receivedLine);
 
   const activePathways = await db.select().from(sustainabilityPathwaysTable).where(eq(sustainabilityPathwaysTable.is_active, true));
 
@@ -182,6 +236,8 @@ router.post("/sustainability/received-lines/:id/allocation", requireAuth, requir
     res.status(404).json({ error: "NotFound", message: "Received line not found." });
     return;
   }
+
+  await enrichReceivedLineQty(receivedLine);
 
   if (!receivedLine.is_eligible) {
     res.status(400).json({
