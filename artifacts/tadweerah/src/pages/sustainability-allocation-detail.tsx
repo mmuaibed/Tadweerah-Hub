@@ -15,7 +15,9 @@ import {
 import { AppLayout } from "@/components/app-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
+import { useGetMaterialCategories } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { useT } from "@/i18n";
 import { fmtNumber, fmtDate } from "@/lib/format";
@@ -65,6 +67,20 @@ export function SustainabilityAllocationDetailPage() {
   const dir = lang === "ar" ? "rtl" : "ltr";
   const [, params] = useRoute("/sustainability/allocations/:id");
   const id = params?.id;
+  
+  const { data: allCategoriesRaw = [] } = useGetMaterialCategories();
+  const allCategories = allCategoriesRaw as Array<{ id: string; name_ar: string; name_en: string; parent_id: string | null }>;
+
+  const getCategoryPath = (catId: string | null | undefined) => {
+    if (!catId) return lang === "ar" ? "غير مصنف" : "Unclassified";
+    const cat = allCategories.find((c) => c.id === catId);
+    if (!cat) return lang === "ar" ? "غير مصنف" : "Unclassified";
+    if (!cat.parent_id) return lang === "ar" ? cat.name_ar : cat.name_en;
+    const parent = allCategories.find((c) => c.id === cat.parent_id);
+    if (!parent) return lang === "ar" ? cat.name_ar : cat.name_en;
+    return lang === "ar" ? `${parent.name_ar} / ${cat.name_ar}` : `${parent.name_en} / ${cat.name_en}`;
+  };
+
   const { getToken } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -212,8 +228,8 @@ export function SustainabilityAllocationDetailPage() {
 
   return (
     <AppLayout
-      title={t("sustainability.allocations.detail.title")}
-      subtitle={t("sustainability.allocations.detail.subtitle")}
+      title={t("sustainability.allocations.title")}
+      subtitle={t("sustainability.allocations.subtitle")}
     >
       <div className="space-y-6 max-w-4xl" dir={dir}>
         
@@ -234,16 +250,18 @@ export function SustainabilityAllocationDetailPage() {
           <div className="flex flex-col md:flex-row gap-6 md:items-center justify-between">
             <div>
               <p className="text-xs font-semibold text-primary uppercase tracking-wider">{t("sustainability.allocations.col.material")}</p>
-              <h2 className="text-xl font-bold text-foreground mt-1">{rl.material_label}</h2>
+              <h2 className="text-xl font-bold text-foreground mt-1">{getCategoryPath(rl.material_category_id)}</h2>
               <div className="flex items-center gap-2 mt-2">
                 {rl.parent_entity_type === "deal" && rl.source_line_type === "listing" && rl.source_line_id ? (
                   <Link href={`/listings/${rl.source_line_id}?deal=${rl.parent_entity_id}&returnTo=${encodeURIComponent(`/sustainability/allocations/${id}`)}`}>
-                    <a className="text-sm font-semibold font-mono bg-primary/10 px-2 py-0.5 rounded text-primary hover:underline transition-colors" title={t("sustainability.allocations.open_deal")}>
-                      {rl.parent_entity_type} / {rl.parent_entity_id?.substring(0, 8)}
+                    <a className="text-[10px] text-primary font-semibold hover:underline font-mono bg-primary/10 px-1.5 py-0.5 rounded uppercase transition-colors" dir="ltr" title={t("sustainability.allocations.open_deal")}>
+                      {rl.parent_entity_type === "deal" ? (lang === "ar" ? "صفقة" : "DEAL") : rl.parent_entity_type === "contract_shipment" ? (lang === "ar" ? "شحنة عقد" : "CONTRACT SHIPMENT") : rl.parent_entity_type} / {rl.parent_reference || (lang === "ar" ? "مرجع غير متاح" : "REF_UNAVAILABLE")}
                     </a>
                   </Link>
                 ) : (
-                  <span className="text-sm font-mono bg-muted px-2 py-0.5 rounded text-muted-foreground">{rl.parent_entity_type} / {rl.parent_entity_id?.substring(0, 8)}</span>
+                  <span className="text-[10px] text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded uppercase" dir="ltr">
+                    {rl.parent_entity_type === "deal" ? (lang === "ar" ? "صفقة" : "DEAL") : rl.parent_entity_type === "contract_shipment" ? (lang === "ar" ? "شحنة عقد" : "CONTRACT SHIPMENT") : rl.parent_entity_type} / {rl.parent_reference || (lang === "ar" ? "مرجع غير متاح" : "REF_UNAVAILABLE")}
+                  </span>
                 )}
                 <span className="text-sm text-muted-foreground">{fmtDate(rl.created_at, lang)}</span>
               </div>

@@ -21,7 +21,10 @@ async function enrichReceivedLineQty(receivedLine: any) {
     const [deal] = await db
       .select({
         actual_quantity: dealsTable.actual_quantity,
-        listing_quantity: wasteListingsTable.quantity
+        listing_quantity: wasteListingsTable.quantity,
+        is_processed_output: wasteListingsTable.is_processed_output,
+        material_subcategory_id: wasteListingsTable.material_subcategory_id,
+        created_at: dealsTable.created_at
       })
       .from(dealsTable)
       .leftJoin(wasteListingsTable, eq(dealsTable.listing_id, wasteListingsTable.id))
@@ -34,16 +37,36 @@ async function enrichReceivedLineQty(receivedLine: any) {
       } else if (deal.listing_quantity) {
         receivedLine.final_received_qty = deal.listing_quantity;
       }
+
+      if (receivedLine.ineligibility_reason === "processed_output_or_unclassified") {
+        if (deal.is_processed_output === true) receivedLine.ineligibility_reason = "processed_output";
+        else if (deal.is_processed_output === null) receivedLine.ineligibility_reason = "unclassified";
+      }
+
+      if (deal.material_subcategory_id) {
+        receivedLine.material_category_id = deal.material_subcategory_id;
+      }
+
+      const year = deal.created_at ? new Date(deal.created_at).getFullYear() : new Date().getFullYear();
+      receivedLine.parent_reference = `TDW-${year}-${receivedLine.parent_entity_id.replace(/-/g, "").slice(0, 6).toUpperCase()}`;
     }
   } else if (receivedLine.parent_entity_type === "contract_shipment" && receivedLine.parent_entity_id) {
     const [shipment] = await db
-      .select({ final_weight: contractShipmentsTable.final_weight })
+      .select({ 
+        final_weight: contractShipmentsTable.final_weight,
+        reference: contractShipmentsTable.reference
+      })
       .from(contractShipmentsTable)
       .where(eq(contractShipmentsTable.id, receivedLine.parent_entity_id))
       .limit(1);
     
-    if (shipment && shipment.final_weight) {
-      receivedLine.final_received_qty = shipment.final_weight;
+    if (shipment) {
+      if (shipment.final_weight) {
+        receivedLine.final_received_qty = shipment.final_weight;
+      }
+      if (shipment.reference) {
+        receivedLine.parent_reference = shipment.reference;
+      }
     }
   }
 }
@@ -68,6 +91,7 @@ router.get("/sustainability/received-lines", requireAuth, requireCompany(), asyn
       deal_actual_quantity: dealsTable.actual_quantity,
       listing_quantity: wasteListingsTable.quantity,
       listing_is_processed_output: wasteListingsTable.is_processed_output,
+      listing_subcategory_id: wasteListingsTable.material_subcategory_id,
       shipment_reference: contractShipmentsTable.reference,
       shipment_final_weight: contractShipmentsTable.final_weight,
       shipment_material_id: contractShipmentsTable.material_line_id,
@@ -108,6 +132,7 @@ router.get("/sustainability/received-lines", requireAuth, requireCompany(), asyn
     let parent_reference = "مرجع غير متاح";
     let derived_qty = r.received_line.final_received_qty;
     let derived_reason = r.received_line.ineligibility_reason;
+    let derived_cat = r.received_line.material_category_id;
     
     if (r.received_line.parent_entity_type === "deal" && r.received_line.parent_entity_id) {
       const id = r.received_line.parent_entity_id;
@@ -125,6 +150,10 @@ router.get("/sustainability/received-lines", requireAuth, requireCompany(), asyn
         else if (r.listing_is_processed_output === null) derived_reason = "unclassified";
       }
 
+      if (r.listing_subcategory_id) {
+        derived_cat = r.listing_subcategory_id;
+      }
+
     } else if (r.received_line.parent_entity_type === "contract_shipment" && r.shipment_reference) {
       parent_reference = r.shipment_reference;
       
@@ -139,6 +168,7 @@ router.get("/sustainability/received-lines", requireAuth, requireCompany(), asyn
         parent_reference,
         final_received_qty: derived_qty,
         ineligibility_reason: derived_reason,
+        material_category_id: derived_cat,
       },
       allocation_id: r.allocation_id,
       allocation_status: r.allocation_status
