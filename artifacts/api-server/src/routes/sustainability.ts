@@ -238,23 +238,25 @@ router.get("/sustainability/received-lines", requireAuth, requireCompany(), asyn
         parent_entity_contract_id = r.shipment_contract_id;
       }
       
-      if (r.shipment_destination_weight) {
-        derived_qty = r.shipment_destination_weight;
-        
-        if (Number(derived_qty) > 0 && (derived_reason === "non_positive_quantity" || derived_reason === "missing_buyer_quantity")) {
-          const hasCat = Boolean(r.shipment_material_category_id) || Boolean(r.shipment_material_label);
-          if (!hasCat) {
-            derived_reason = "unclassified";
-            derived_is_eligible = false;
-          } else {
-            derived_is_eligible = true;
-            derived_reason = null;
+      if (r.allocation_status !== "finalized") {
+        if (r.shipment_destination_weight) {
+          derived_qty = r.shipment_destination_weight;
+          
+          if (Number(derived_qty) > 0 && (derived_reason === "non_positive_quantity" || derived_reason === "missing_buyer_quantity")) {
+            const hasCat = Boolean(r.shipment_material_category_id) || Boolean(r.shipment_material_label);
+            if (!hasCat) {
+              derived_reason = "unclassified";
+              derived_is_eligible = false;
+            } else {
+              derived_is_eligible = true;
+              derived_reason = null;
+            }
           }
+        } else {
+          derived_qty = "0";
+          derived_is_eligible = false;
+          derived_reason = "missing_buyer_quantity";
         }
-      } else {
-        derived_qty = "0";
-        derived_is_eligible = false;
-        derived_reason = "missing_buyer_quantity";
       }
       
       if (r.shipment_material_label) {
