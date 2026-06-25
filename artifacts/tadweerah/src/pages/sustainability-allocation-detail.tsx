@@ -242,6 +242,19 @@ export function SustainabilityAllocationDetailPage() {
 
   const hasDuplicates = new Set(draftLines.map(l => l.pathway_id).filter(Boolean)).size !== draftLines.map(l => l.pathway_id).filter(Boolean).length;
   
+  const isDirty = (() => {
+    if (!allocation) return draftLines.length > 0;
+    if (draftLines.length !== (data.lines?.length || 0)) return true;
+    const orig = [...(data.lines || [])].sort((a,b) => a.pathway_id.localeCompare(b.pathway_id));
+    const curr = [...draftLines].sort((a,b) => a.pathway_id.localeCompare(b.pathway_id));
+    for (let i = 0; i < orig.length; i++) {
+      if (orig[i].pathway_id !== curr[i].pathway_id) return true;
+      if (Number(orig[i].quantity) !== Number(curr[i].quantity)) return true;
+      if ((orig[i].explanation_text || "").trim() !== curr[i].explanation_text.trim()) return true;
+    }
+    return false;
+  })();
+
   let canSave = draftLines.length > 0 && !isOverAllocated && !hasDuplicates && draftLines.every(l => {
     if (!l.pathway_id) return false;
     const qty = Number(l.quantity);
@@ -526,7 +539,7 @@ export function SustainabilityAllocationDetailPage() {
               )}
             </div>
             
-            <div className="p-4 border-t border-border bg-muted/20 flex justify-end gap-3">
+            <div className="p-4 border-t border-border bg-muted/20 flex flex-wrap justify-end gap-3">
               <Button
                 variant="ghost"
                 onClick={() => setLocation("/sustainability/allocations")}
@@ -537,7 +550,7 @@ export function SustainabilityAllocationDetailPage() {
                 <>
                   <Button
                     onClick={handleSave}
-                    disabled={!canSave || saveMutation.isPending || finalizeMutation.isPending}
+                    disabled={!canSave || saveMutation.isPending || finalizeMutation.isPending || !isDirty}
                     variant="outline"
                     className="min-w-[140px]"
                   >
@@ -547,13 +560,25 @@ export function SustainabilityAllocationDetailPage() {
                       <><Save className="h-4 w-4 me-2" /> {t("sustainability.allocations.save_draft")}</>
                     )}
                   </Button>
-                  <Button
-                    onClick={() => setShowFinalizeModal(true)}
-                    disabled={!canSave || !isPerfectlyAllocated || saveMutation.isPending || finalizeMutation.isPending}
-                    className="min-w-[140px] bg-green-600 hover:bg-green-700 text-white"
-                  >
-                    <Lock className="h-4 w-4 me-2" /> {t("sustainability.allocations.finalize")}
-                  </Button>
+                  {isDirty && isPerfectlyAllocated ? (
+                    <Button
+                      disabled
+                      className="min-w-[140px] bg-muted text-muted-foreground border border-border"
+                      title={lang === "ar" ? "احفظ المسودة أولاً لاعتماد بيانات الاستدامة" : "Save the draft first to finalize sustainability data"}
+                    >
+                      <Lock className="h-4 w-4 me-2 opacity-50" /> 
+                      {lang === "ar" ? "احفظ المسودة أولاً" : "Save Draft First"}
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={() => setShowFinalizeModal(true)}
+                      disabled={!canSave || !isPerfectlyAllocated || saveMutation.isPending || finalizeMutation.isPending || isDirty}
+                      className="min-w-[140px] bg-green-600 hover:bg-green-700 text-white"
+                      title={(!isPerfectlyAllocated && lang === "ar") ? "يجب توزيع الكمية بالكامل" : ""}
+                    >
+                      <Lock className="h-4 w-4 me-2" /> {t("sustainability.allocations.finalize")}
+                    </Button>
+                  )}
                 </>
               )}
             </div>
