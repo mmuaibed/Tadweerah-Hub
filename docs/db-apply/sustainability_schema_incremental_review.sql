@@ -6,37 +6,37 @@ BEGIN;
 
 -- 1. Enum Types
 DO $$ BEGIN
- CREATE TYPE "public"."sustainability_pathway_category" AS ENUM('recycling', 'recovery', 'disposal');
+ CREATE TYPE "public"."sustainability_pathway_category" AS ENUM('circular', 'energy', 'treatment', 'disposal', 'residue', 'other');
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 
 DO $$ BEGIN
- CREATE TYPE "public"."sust_received_line_parent_type" AS ENUM('deal', 'contract_shipment', 'auction_lot');
+ CREATE TYPE "public"."sust_received_line_parent_type" AS ENUM('deal', 'auction', 'contract', 'contract_shipment', 'manual');
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 
 DO $$ BEGIN
- CREATE TYPE "public"."sust_received_line_source_type" AS ENUM('listing', 'contract_material', 'auction_item');
+ CREATE TYPE "public"."sust_received_line_source_type" AS ENUM('listing', 'contract_material', 'manual');
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 
 DO $$ BEGIN
- CREATE TYPE "public"."sust_quantity_source" AS ENUM('platform_confirmed', 'estimated', 'manual_override');
+ CREATE TYPE "public"."sust_quantity_source" AS ENUM('platform_confirmed', 'estimated', 'manual_entry');
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 
 DO $$ BEGIN
- CREATE TYPE "public"."sustainability_allocation_status" AS ENUM('draft', 'submitted', 'needs_review', 'finalized', 'superseded');
+ CREATE TYPE "public"."sustainability_allocation_status" AS ENUM('draft', 'finalized', 'needs_review', 'superseded');
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 
 DO $$ BEGIN
- CREATE TYPE "public"."sust_data_quality_level" AS ENUM('high', 'medium', 'low', 'unverified');
+ CREATE TYPE "public"."sust_data_quality_level" AS ENUM('high', 'medium', 'low');
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
@@ -52,9 +52,12 @@ CREATE TABLE IF NOT EXISTS "sustainability_pathways" (
 	"name_ar" text NOT NULL,
 	"name_en" text NOT NULL,
 	"category" "public"."sustainability_pathway_category" NOT NULL,
-	"is_circular_diversion" boolean DEFAULT false NOT NULL,
+	"is_circular_diversion" boolean NOT NULL,
+	"requires_explanation" boolean DEFAULT false NOT NULL,
 	"is_active" boolean DEFAULT true NOT NULL,
+	"sort_order" integer DEFAULT 0 NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "sustainability_pathways_key_unique" UNIQUE("key")
 );
 
@@ -64,13 +67,15 @@ CREATE TABLE IF NOT EXISTS "sustainability_received_lines" (
 	"parent_entity_id" uuid NOT NULL,
 	"line_seq" integer DEFAULT 1 NOT NULL,
 	"source_line_type" "public"."sust_received_line_source_type" NOT NULL,
-	"source_line_id" uuid NOT NULL,
+	"source_line_id" uuid,
 	"seller_company_id" uuid NOT NULL,
 	"buyer_company_id" uuid NOT NULL,
-	"final_received_qty" numeric(14, 3) NOT NULL,
-	"quantity_source" "public"."sust_quantity_source" DEFAULT 'platform_confirmed' NOT NULL,
 	"material_category_id" uuid,
-	"material_label" text,
+	"material_label" text NOT NULL,
+	"final_received_qty" numeric(12, 3) NOT NULL,
+	"final_received_unit" text NOT NULL,
+	"quantity_source" "public"."sust_quantity_source" NOT NULL,
+	"location_label" text,
 	"is_eligible" boolean DEFAULT true NOT NULL,
 	"ineligibility_reason" text,
 	"evidence_metadata" jsonb,
@@ -86,14 +91,17 @@ CREATE TABLE IF NOT EXISTS "sustainability_allocations" (
 	"received_line_id" uuid NOT NULL,
 	"status" "public"."sustainability_allocation_status" DEFAULT 'draft' NOT NULL,
 	"version" integer DEFAULT 1 NOT NULL,
+	"revision_reason" text,
+	"allocation_tolerance_pct" numeric(5, 2) DEFAULT '2.00' NOT NULL,
+	"allocation_variance_pct" numeric(5, 2),
 	"data_quality_level" "public"."sust_data_quality_level",
-	"total_allocated_qty" numeric(14, 3) DEFAULT '0' NOT NULL,
-	"unallocated_qty" numeric(14, 3) DEFAULT '0' NOT NULL,
-	"notes" text,
-	"submitted_at" timestamp with time zone,
-	"submitted_by_user_id" text,
+	"data_quality_reason" text,
+	"has_weighbridge_ticket" boolean DEFAULT false NOT NULL,
+	"has_payment_proof" boolean DEFAULT false NOT NULL,
+	"has_dispatch_evidence" boolean DEFAULT false NOT NULL,
+	"has_receipt_confirmation" boolean DEFAULT false NOT NULL,
+	"finalized_by" text,
 	"finalized_at" timestamp with time zone,
-	"finalized_by_user_id" text,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -102,10 +110,9 @@ CREATE TABLE IF NOT EXISTS "sustainability_allocation_lines" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"allocation_id" uuid NOT NULL,
 	"pathway_id" uuid NOT NULL,
-	"quantity" numeric(14, 3) NOT NULL,
-	"percentage" numeric(5, 4) NOT NULL,
-	"value_recovered_currency" text,
-	"value_recovered_amount" numeric(14, 3),
+	"quantity" numeric(12, 3) NOT NULL,
+	"percentage" numeric(5, 2) NOT NULL,
+	"explanation_text" text,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -158,7 +165,7 @@ EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 DO $$ BEGIN
- ALTER TABLE "sustainability_allocations" ADD CONSTRAINT "sustainability_allocations_received_line_id_sustainability_received_lines_id_fk" FOREIGN KEY ("received_line_id") REFERENCES "public"."sustainability_received_lines"("id") ON DELETE cascade ON UPDATE no action;
+ ALTER TABLE "sustainability_allocations" ADD CONSTRAINT "sustainability_allocations_received_line_id_sustainability_received_lines_id_fk" FOREIGN KEY ("received_line_id") REFERENCES "public"."sustainability_received_lines"("id") ON DELETE restrict ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
@@ -179,6 +186,9 @@ EXCEPTION
 END $$;
 
 -- 5. Indexes and Unique Constraints
+CREATE INDEX IF NOT EXISTS "idx_sust_pathways_category" ON "sustainability_pathways" ("category");
+CREATE INDEX IF NOT EXISTS "idx_sust_pathways_active" ON "sustainability_pathways" ("is_active");
+
 CREATE INDEX IF NOT EXISTS "idx_sust_received_parent" ON "sustainability_received_lines" ("parent_entity_type","parent_entity_id");
 CREATE INDEX IF NOT EXISTS "idx_sust_received_buyer_company" ON "sustainability_received_lines" ("buyer_company_id");
 CREATE INDEX IF NOT EXISTS "idx_sust_received_seller_company" ON "sustainability_received_lines" ("seller_company_id");
@@ -186,13 +196,10 @@ CREATE INDEX IF NOT EXISTS "idx_sust_received_eligible" ON "sustainability_recei
 CREATE INDEX IF NOT EXISTS "idx_sust_received_material_cat" ON "sustainability_received_lines" ("material_category_id");
 CREATE UNIQUE INDEX IF NOT EXISTS "uq_sust_received_parent_line" ON "sustainability_received_lines" ("parent_entity_type","parent_entity_id","line_seq");
 
-CREATE INDEX IF NOT EXISTS "idx_sust_alloc_line" ON "sustainability_allocations" ("received_line_id");
+CREATE INDEX IF NOT EXISTS "idx_sust_alloc_received_line" ON "sustainability_allocations" ("received_line_id");
 CREATE INDEX IF NOT EXISTS "idx_sust_alloc_status" ON "sustainability_allocations" ("status");
-CREATE UNIQUE INDEX IF NOT EXISTS "uq_sust_alloc_line_version" ON "sustainability_allocations" ("received_line_id","version");
-
-CREATE INDEX IF NOT EXISTS "idx_sust_alloc_lines_alloc" ON "sustainability_allocation_lines" ("allocation_id");
+CREATE INDEX IF NOT EXISTS "idx_sust_alloc_lines_allocation" ON "sustainability_allocation_lines" ("allocation_id");
 CREATE INDEX IF NOT EXISTS "idx_sust_alloc_lines_pathway" ON "sustainability_allocation_lines" ("pathway_id");
-CREATE UNIQUE INDEX IF NOT EXISTS "uq_sust_alloc_line_pathway" ON "sustainability_allocation_lines" ("allocation_id","pathway_id");
 
 CREATE INDEX IF NOT EXISTS "idx_sust_field_config_system" ON "sustainability_report_field_config" ("is_system_field");
 CREATE INDEX IF NOT EXISTS "idx_sust_field_config_section" ON "sustainability_report_field_config" ("section");
