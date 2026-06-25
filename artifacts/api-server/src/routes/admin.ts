@@ -22,22 +22,16 @@ import {
   contractShipmentsTable,
   contractsTable,
   sustainabilityAllocationsTable,
-  contractMaterialsTable
-} from "@workspace/db";
+  contractMaterialsTable,
   issueReportsTable,
   auditLogTable,
   dealsTable,
-  contractsTable,
-  contractShipmentsTable,
-  contractMaterialsTable,
   transportRequestsTable,
   transportQuotesTable,
   wasteListingsTable,
   materialCategoriesTable,
   listingOffersTable,
-  adminFindingsTable,
-  sustainabilityReceivedLinesTable,
-  sustainabilityAllocationsTable,
+  adminFindingsTable
 } from "@workspace/db";
 import { buildCsv } from "../lib/csv";
 import { logAudit } from "../lib/audit";
@@ -48,7 +42,7 @@ const router = Router();
 
 // Mock diagnostics
 router.get("/admin/diagnostics/shipment/:reference", async (req: Request, res: Response) => {
-  const reference = req.params.reference;
+  const reference = String(req.params.reference);
   const [line] = await db
     .select({
       received_line: sustainabilityReceivedLinesTable,
