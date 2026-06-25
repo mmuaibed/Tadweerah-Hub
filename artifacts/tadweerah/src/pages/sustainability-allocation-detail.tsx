@@ -150,7 +150,7 @@ export function SustainabilityAllocationDetailPage() {
         let errMsg = "Failed to save draft";
         try {
           const errBody = await res.json();
-          if (errBody.message) errMsg = errBody.message;
+          errMsg = errBody.message || errBody.error || errMsg;
         } catch (e) {
           errMsg = `Server error ${res.status}: ${res.statusText}`;
         }
@@ -188,7 +188,7 @@ export function SustainabilityAllocationDetailPage() {
         let errMsg = "Failed to finalize";
         try {
           const errBody = await res.json();
-          if (errBody.message) errMsg = errBody.message;
+          errMsg = errBody.message || errBody.error || errMsg;
         } catch (e) {
           errMsg = `Server error ${res.status}: ${res.statusText}`;
         }
@@ -556,7 +556,7 @@ export function SustainabilityAllocationDetailPage() {
                   <Button
                     onClick={handleSave}
                     disabled={!canSave || saveMutation.isPending || finalizeMutation.isPending || !isDirty}
-                    variant="outline"
+                    variant="default"
                     className="min-w-[140px]"
                   >
                     {saveMutation.isPending ? (
@@ -568,7 +568,8 @@ export function SustainabilityAllocationDetailPage() {
                   {isDirty && isPerfectlyAllocated ? (
                     <Button
                       disabled
-                      className="min-w-[140px] bg-muted text-muted-foreground border border-border"
+                      variant="outline"
+                      className="min-w-[140px] bg-muted/30 text-muted-foreground"
                       title={lang === "ar" ? "احفظ المسودة أولاً لاعتماد بيانات الاستدامة" : "Save the draft first to finalize sustainability data"}
                     >
                       <Lock className="h-4 w-4 me-2 opacity-50" /> 
@@ -578,7 +579,8 @@ export function SustainabilityAllocationDetailPage() {
                     <Button
                       onClick={() => setShowFinalizeModal(true)}
                       disabled={!canSave || !isPerfectlyAllocated || saveMutation.isPending || finalizeMutation.isPending || isDirty || draftLines.length === 0}
-                      className="min-w-[140px] bg-green-600 hover:bg-green-700 text-white disabled:bg-green-600/50 disabled:text-white/70"
+                      variant={(!canSave || !isPerfectlyAllocated || isDirty || draftLines.length === 0) ? "outline" : "default"}
+                      className={`min-w-[140px] ${(!canSave || !isPerfectlyAllocated || isDirty || draftLines.length === 0) ? 'bg-muted/30 text-muted-foreground' : 'bg-green-600 hover:bg-green-700 text-white'}`}
                       title={(!isPerfectlyAllocated && lang === "ar") ? "يجب توزيع الكمية بالكامل" : ""}
                     >
                       <Lock className="h-4 w-4 me-2" /> {t("sustainability.allocations.finalize")}
