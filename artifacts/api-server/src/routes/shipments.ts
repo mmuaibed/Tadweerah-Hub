@@ -23,6 +23,7 @@ import {
   notifyContractShipmentFinalized,
   notifyContractShipmentCancelled,
 } from "../lib/notify";
+import { deriveReceivedLineForShipment } from "../services/sustainability-derivation";
 
 import multer from "multer";
 import { Storage } from "@google-cloud/storage";
@@ -755,6 +756,8 @@ router.post(
           console.error("[notify] Shipment finalize error:", err),
         );
       }
+
+      void deriveReceivedLineForShipment(shipment.id);
 
       res.json(serializeShipment(updated));
     } catch (err) {

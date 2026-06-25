@@ -10,6 +10,7 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
 import { and, count, desc, asc, eq, gte, ilike, isNotNull, isNull, lte, or, sql, aliasedTable, inArray, lt } from "drizzle-orm";
 import { clerkClient } from "@clerk/express";
+import { deriveReceivedLineForDeal } from "../services/sustainability-derivation";
 import {
   db,
   companiesTable,
@@ -626,6 +627,8 @@ router.post("/admin/deals/:id/force-complete", requireAdminKey, async (req, res)
       body_en: `The deal ${ref} has been marked as completed by an admin.${reason ? " Reason: " + reason : ""}`,
     })
   ]).catch(err => req.log.error({ err, dealId: deal.id }, "Failed to send admin deal complete notifications"));
+
+  void deriveReceivedLineForDeal(id);
 
   res.json(updated);
 });

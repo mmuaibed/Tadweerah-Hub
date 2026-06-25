@@ -240,6 +240,7 @@ const baseSelect = {
   material_location_address: wasteListingsTable.material_location_address,
   google_maps_url: wasteListingsTable.google_maps_url,
   material_location_notes: wasteListingsTable.material_location_notes,
+  is_processed_output: wasteListingsTable.is_processed_output,
   created_at: wasteListingsTable.created_at,
   closed_at: wasteListingsTable.closed_at,
   company_name: companiesTable.name,

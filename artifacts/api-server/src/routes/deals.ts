@@ -16,6 +16,7 @@ import { HttpError, assertUuid } from "../middlewares/errorHandler";
 import { logAudit } from "../lib/audit";
 import { notifyDealStageChange } from "../lib/notify";
 import { dealRef } from "../lib/listing-ref";
+import { deriveReceivedLineForDeal } from "../services/sustainability-derivation";
 
 const router: IRouter = Router();
 
@@ -727,6 +728,8 @@ router.post(
       body_ar: "تم إتمام الصفقة بنجاح بعد تأكيد الاستلام",
       body_en: "The deal has been completed successfully after receipt confirmation.",
     });
+
+    void deriveReceivedLineForDeal(updated.id);
 
     return res.json(serializeDeal(updated, counterparty!));
   },
