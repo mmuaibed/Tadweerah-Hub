@@ -220,7 +220,10 @@ export function SustainabilityAllocationsPage() {
                     
                     let statusLabel = t("sustainability.allocations.status.none");
                     let statusStyle = "bg-gray-100 text-gray-600";
-                    if (row.allocation_status === "draft") {
+                    if (row.allocation_status === "finalized") {
+                      statusLabel = t("sustainability.allocations.status.finalized");
+                      statusStyle = "bg-green-100 text-green-800";
+                    } else if (row.allocation_status === "draft") {
                       statusLabel = t("sustainability.allocations.status.draft");
                       statusStyle = "bg-amber-100 text-amber-800";
                     }

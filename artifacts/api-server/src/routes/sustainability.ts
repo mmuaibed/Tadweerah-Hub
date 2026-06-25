@@ -443,4 +443,152 @@ router.post("/sustainability/received-lines/:id/allocation", requireAuth, requir
   }
 });
 
+/**
+ * POST /sustainability/received-lines/:lineId/allocation/finalize
+ * Finalizes a completely allocated draft. Locks it from future edits.
+ */
+router.post("/sustainability/received-lines/:lineId/allocation/finalize", requireAuth, requireCompany(), async (req, res) => {
+  const lineId = req.params.lineId as string;
+  const { company, userId } = req as AuthedCompanyRequest;
+
+  // 1. Load and check received line
+  const [receivedLine] = await db
+    .select()
+    .from(sustainabilityReceivedLinesTable)
+    .where(
+      and(
+        eq(sustainabilityReceivedLinesTable.id, lineId),
+        eq(sustainabilityReceivedLinesTable.buyer_company_id, company.id)
+      )
+    )
+    .limit(1);
+
+  if (!receivedLine) {
+    res.status(404).json({ error: "NotFound", message: "Received line not found." });
+    return;
+  }
+
+  await enrichReceivedLineQty(receivedLine);
+
+  if (!receivedLine.is_eligible) {
+    res.status(400).json({ error: "Ineligible", message: "This received line is not eligible." });
+    return;
+  }
+
+  const finalReceived = Number(receivedLine.final_received_qty);
+  if (!Number.isFinite(finalReceived) || finalReceived <= 0) {
+    res.status(400).json({ error: "ValidationError", message: "Trusted operational quantity must be greater than zero." });
+    return;
+  }
+
+  // 2. Load allocation
+  const [allocation] = await db
+    .select()
+    .from(sustainabilityAllocationsTable)
+    .where(eq(sustainabilityAllocationsTable.received_line_id, lineId))
+    .limit(1);
+
+  if (!allocation) {
+    res.status(404).json({ error: "NotFound", message: "No allocation found." });
+    return;
+  }
+
+  if (allocation.status !== "draft") {
+    res.status(409).json({ error: "InvalidState", message: "Allocation is already finalized or locked." });
+    return;
+  }
+
+  // 3. Load lines and pathways
+  const lines = await db
+    .select()
+    .from(sustainabilityAllocationLinesTable)
+    .where(eq(sustainabilityAllocationLinesTable.allocation_id, allocation.id));
+
+  if (lines.length === 0) {
+    res.status(400).json({ error: "ValidationError", message: "Cannot finalize an empty allocation." });
+    return;
+  }
+
+  const pathwayIds = lines.map(l => l.pathway_id);
+  const activePathways = await db
+    .select()
+    .from(sustainabilityPathwaysTable)
+    .where(and(inArray(sustainabilityPathwaysTable.id, pathwayIds), eq(sustainabilityPathwaysTable.is_active, true)));
+  
+  const pathwayMap = new Map(activePathways.map(p => [p.id, p]));
+
+  // 4. Validate 100% allocation and line rules
+  let sum = 0;
+  const seenPathways = new Set<string>();
+
+  for (const l of lines) {
+    if (seenPathways.has(l.pathway_id)) {
+      res.status(400).json({ error: "ValidationError", message: "Duplicate pathway found." });
+      return;
+    }
+    seenPathways.add(l.pathway_id);
+
+    const qty = Number(l.quantity);
+    if (isNaN(qty) || qty <= 0) {
+      res.status(400).json({ error: "ValidationError", message: "All allocation lines must have a quantity > 0." });
+      return;
+    }
+    sum += qty;
+
+    const pw = pathwayMap.get(l.pathway_id);
+    if (!pw) {
+      res.status(400).json({ error: "ValidationError", message: "Invalid or inactive pathway found in allocation." });
+      return;
+    }
+    if (pw.requires_explanation && (!l.explanation_text || !l.explanation_text.trim())) {
+      res.status(400).json({ error: "ValidationError", message: "Missing required explanation." });
+      return;
+    }
+  }
+
+  // Strict numeric tolerance for precision drift (0.001)
+  const TOLERANCE_DRIFT = 0.001;
+  const diff = finalReceived - sum;
+
+  if (Math.abs(diff) > TOLERANCE_DRIFT) {
+    res.status(400).json({ 
+      error: "ValidationError", 
+      message: `Total allocated quantity must exactly equal the received quantity. Remaining/Excess: ${diff.toFixed(3)}` 
+    });
+    return;
+  }
+
+  // 5. Finalize
+  const now = new Date();
+  const updateResult = await db
+    .update(sustainabilityAllocationsTable)
+    .set({
+      status: "finalized",
+      finalized_by: userId,
+      finalized_at: now,
+      updated_at: now
+    })
+    .where(
+      and(
+        eq(sustainabilityAllocationsTable.id, allocation.id),
+        eq(sustainabilityAllocationsTable.status, "draft")
+      )
+    )
+    .returning({ id: sustainabilityAllocationsTable.id });
+
+  if (updateResult.length === 0) {
+    res.status(409).json({ error: "InvalidState", message: "Allocation was already finalized or locked concurrently." });
+    return;
+  }
+
+  void logAudit({
+    action: "sustainability.allocation_finalized",
+    entityType: "sustainability_allocation",
+    entityId: allocation.id,
+    actorRole: "user"
+  });
+
+  res.json({ success: true, allocation_id: allocation.id, finalized_at: now });
+});
+
 export default router;

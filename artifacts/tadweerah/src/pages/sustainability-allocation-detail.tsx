@@ -21,6 +21,14 @@ import { useGetMaterialCategories } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { useT } from "@/i18n";
 import { fmtNumber, fmtDate } from "@/lib/format";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface Pathway {
   id: string;
@@ -88,6 +96,7 @@ export function SustainabilityAllocationDetailPage() {
 
   const [draftLines, setDraftLines] = useState<DraftLine[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [showFinalizeModal, setShowFinalizeModal] = useState(false);
 
   const { data, isLoading, error } = useQuery<AllocationDetailRes>({
     queryKey: ["sustainability-allocation", id],
@@ -158,6 +167,45 @@ export function SustainabilityAllocationDetailPage() {
     },
   });
 
+  const finalizeMutation = useMutation({
+    mutationFn: async () => {
+      const token = await getToken();
+      let res: Response;
+      try {
+        res = await fetch(`/api/sustainability/received-lines/${id}/allocation/finalize`, {
+          method: "POST",
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        });
+      } catch (err: any) {
+        throw new Error(err.message || "Network Error: Failed to fetch");
+      }
+      
+      if (!res.ok) {
+        let errMsg = "Failed to finalize";
+        try {
+          const errBody = await res.json();
+          if (errBody.message) errMsg = errBody.message;
+        } catch (e) {
+          errMsg = `Server error ${res.status}: ${res.statusText}`;
+        }
+        throw new Error(errMsg);
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: t("sustainability.allocations.finalized_success"),
+      });
+      setShowFinalizeModal(false);
+      queryClient.invalidateQueries({ queryKey: ["sustainability-allocation", id] });
+      queryClient.invalidateQueries({ queryKey: ["sustainability-received-lines"] });
+    },
+  });
+
   if (isLoading) {
     return (
       <AppLayout title={t("sustainability.allocations.detail.title")}>
@@ -180,13 +228,16 @@ export function SustainabilityAllocationDetailPage() {
   }
 
   const rl = data.received_line;
+  const allocation = data.allocation;
+  const isFinalized = allocation?.status === "finalized";
   const pathways = data.pathways;
   const totalReceived = Number(rl.final_received_qty) || 0;
 
   // Real-time UI validation
   const currentTotalAllocated = draftLines.reduce((sum, line) => sum + (Number(line.quantity) || 0), 0);
   const remaining = totalReceived - currentTotalAllocated;
-  const isOverAllocated = remaining < 0;
+  const isOverAllocated = remaining < -0.001;
+  const isPerfectlyAllocated = Math.abs(remaining) <= 0.001;
   const allocatedPercentage = totalReceived > 0 ? (currentTotalAllocated / totalReceived) * 100 : 0;
 
   const hasDuplicates = new Set(draftLines.map(l => l.pathway_id).filter(Boolean)).size !== draftLines.map(l => l.pathway_id).filter(Boolean).length;
@@ -282,8 +333,8 @@ export function SustainabilityAllocationDetailPage() {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">{t("sustainability.allocations.remaining_quantity")}</p>
-                <p className={`text-lg font-bold font-mono mt-0.5 ${isOverAllocated ? "text-destructive" : "text-amber-600"}`}>
-                  {fmtNumber(remaining)} <span className="text-sm">{t(`unit.${rl.final_received_unit}`) || rl.final_received_unit}</span>
+                <p className={`text-lg font-bold font-mono mt-0.5 ${isOverAllocated ? "text-destructive" : isPerfectlyAllocated ? "text-primary" : "text-amber-600"}`}>
+                  {fmtNumber(Math.abs(remaining) <= 0.001 ? 0 : remaining)} <span className="text-sm">{t(`unit.${rl.final_received_unit}`) || rl.final_received_unit}</span>
                 </p>
               </div>
               <div>
@@ -347,9 +398,21 @@ export function SustainabilityAllocationDetailPage() {
                 <Leaf className="h-4 w-4 text-primary" />
                 {t("sustainability.allocations.detail.title")}
               </h3>
-              <span className="inline-flex rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-800">
-                {t("sustainability.allocations.status.draft")}
-              </span>
+              {isFinalized ? (
+                <div className="flex items-center gap-4">
+                  <span className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
+                    {t("sustainability.allocations.finalized_at")}: {fmtDate(allocation.finalized_at, lang)}
+                  </span>
+                  <span className="inline-flex rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-bold text-green-800 flex items-center gap-1">
+                    <Lock className="h-3 w-3" />
+                    {t("sustainability.allocations.status.finalized")}
+                  </span>
+                </div>
+              ) : (
+                <span className="inline-flex rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-800">
+                  {t("sustainability.allocations.status.draft")}
+                </span>
+              )}
             </div>
             
             <div className="p-4 space-y-4">
@@ -373,7 +436,8 @@ export function SustainabilityAllocationDetailPage() {
                             <select
                               value={line.pathway_id}
                               onChange={(e) => updateLine(line.uiId, "pathway_id", e.target.value)}
-                              className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                              disabled={isFinalized}
+                              className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               <option value="" disabled>{lang === "ar" ? "اختر مساراً" : "Select pathway"}</option>
                               {pathways.map(p => (
@@ -399,7 +463,8 @@ export function SustainabilityAllocationDetailPage() {
                                 step="0.01"
                                 value={line.quantity}
                                 onChange={(e) => updateLine(line.uiId, "quantity", e.target.value)}
-                                className="pr-12 h-10"
+                                disabled={isFinalized}
+                                className="pr-12 h-10 disabled:opacity-50"
                                 placeholder="0"
                                 dir="ltr"
                               />
@@ -410,17 +475,19 @@ export function SustainabilityAllocationDetailPage() {
                           </div>
 
                           {/* Remove Button */}
-                          <div className="pt-6">
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              onClick={() => removeLine(line.uiId)}
-                              className="h-10 w-10 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                              title={t("sustainability.allocations.remove")}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
+                          {!isFinalized && (
+                            <div className="pt-6">
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={() => removeLine(line.uiId)}
+                                className="h-10 w-10 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                title={t("sustainability.allocations.remove")}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          )}
                         </div>
 
                         {/* Explanation Textarea (if required) */}
@@ -436,7 +503,8 @@ export function SustainabilityAllocationDetailPage() {
                               value={line.explanation_text}
                               onChange={(e) => updateLine(line.uiId, "explanation_text", e.target.value)}
                               placeholder={lang === "ar" ? "أدخل تفاصيل ومبررات استخدام هذا المسار..." : "Enter details and justification..."}
-                              className={`min-h-[80px] text-sm resize-y ${isMissingExplanation ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                              disabled={isFinalized}
+                              className={`min-h-[80px] text-sm resize-y disabled:opacity-50 disabled:cursor-not-allowed ${isMissingExplanation ? "border-destructive focus-visible:ring-destructive" : ""}`}
                             />
                           </div>
                         )}
@@ -446,14 +514,16 @@ export function SustainabilityAllocationDetailPage() {
                 </div>
               )}
 
-              <Button
-                variant="outline"
-                onClick={addLine}
-                className="w-full mt-4 border-dashed border-2 hover:border-primary hover:bg-primary/5 hover:text-primary transition-all text-muted-foreground"
-              >
-                <Plus className="h-4 w-4 me-2" />
-                {t("sustainability.allocations.add_pathway")}
-              </Button>
+              {!isFinalized && (
+                <Button
+                  variant="outline"
+                  onClick={addLine}
+                  className="w-full mt-4 border-dashed border-2 hover:border-primary hover:bg-primary/5 hover:text-primary transition-all text-muted-foreground"
+                >
+                  <Plus className="h-4 w-4 me-2" />
+                  {t("sustainability.allocations.add_pathway")}
+                </Button>
+              )}
             </div>
             
             <div className="p-4 border-t border-border bg-muted/20 flex justify-end gap-3">
@@ -461,24 +531,76 @@ export function SustainabilityAllocationDetailPage() {
                 variant="ghost"
                 onClick={() => setLocation("/sustainability/allocations")}
               >
-                {t("action.cancel")}
+                {t(isFinalized ? "action.back" : "action.cancel")}
               </Button>
-              <Button
-                onClick={handleSave}
-                disabled={!canSave || saveMutation.isPending}
-                className="min-w-[140px]"
-              >
-                {saveMutation.isPending ? (
-                  <><Loader2 className="h-4 w-4 me-2 animate-spin" /> {t("sustainability.allocations.saving")}</>
-                ) : (
-                  <><Save className="h-4 w-4 me-2" /> {t("sustainability.allocations.save_draft")}</>
-                )}
-              </Button>
+              {!isFinalized && (
+                <>
+                  <Button
+                    onClick={handleSave}
+                    disabled={!canSave || saveMutation.isPending || finalizeMutation.isPending}
+                    variant="outline"
+                    className="min-w-[140px]"
+                  >
+                    {saveMutation.isPending ? (
+                      <><Loader2 className="h-4 w-4 me-2 animate-spin" /> {t("sustainability.allocations.saving")}</>
+                    ) : (
+                      <><Save className="h-4 w-4 me-2" /> {t("sustainability.allocations.save_draft")}</>
+                    )}
+                  </Button>
+                  <Button
+                    onClick={() => setShowFinalizeModal(true)}
+                    disabled={!canSave || !isPerfectlyAllocated || saveMutation.isPending || finalizeMutation.isPending}
+                    className="min-w-[140px] bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <Lock className="h-4 w-4 me-2" /> {t("sustainability.allocations.finalize")}
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         )}
 
       </div>
+
+      <Dialog open={showFinalizeModal} onOpenChange={setShowFinalizeModal}>
+        <DialogContent dir={dir}>
+          <DialogHeader>
+            <DialogTitle>{t("sustainability.allocations.finalize")}</DialogTitle>
+            <DialogDescription className="pt-4 text-foreground font-medium">
+              {t("sustainability.allocations.finalize_warning")}
+            </DialogDescription>
+          </DialogHeader>
+
+          {finalizeMutation.isError && (
+            <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive mt-2">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              {finalizeMutation.error?.message}
+            </div>
+          )}
+
+          <DialogFooter className="mt-6 gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setShowFinalizeModal(false)}
+              disabled={finalizeMutation.isPending}
+            >
+              {t("action.cancel")}
+            </Button>
+            <Button
+              variant="default"
+              onClick={() => finalizeMutation.mutate()}
+              disabled={finalizeMutation.isPending}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              {finalizeMutation.isPending ? (
+                <><Loader2 className="h-4 w-4 me-2 animate-spin" /> {t("sustainability.allocations.finalizing")}</>
+              ) : (
+                <><Lock className="h-4 w-4 me-2" /> {t("sustainability.allocations.finalize")}</>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }
