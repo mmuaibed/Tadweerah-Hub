@@ -21,6 +21,7 @@ import {
   Bell,
   ClipboardList,
   Clock,
+  Leaf,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { AppLayout } from "@/components/app-layout";
@@ -286,6 +287,7 @@ const SECONDARY_CARDS = [
   { titleKey: "members.dashboard.title",   descKey: "members.dashboard.subtitle",   icon: Users,      href: "/company/members" },
   { titleKey: "profile.nav.title",         descKey: "profile.nav.subtitle",         icon: Building2,  href: "/company/profile" },
   { titleKey: "contracts.title",           descKey: "contracts.subtitle",           icon: ClipboardList, href: "/contracts" },
+  { titleKey: "sustainability.allocations.title", descKey: "sustainability.allocations.subtitle", icon: Leaf, href: "/sustainability/allocations" },
 ] as const;
 
 function CarrierSection({ t, Arrow }: { t: (k: string) => string; Arrow: typeof ArrowLeft }) {

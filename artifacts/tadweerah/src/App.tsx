@@ -35,6 +35,8 @@ import { ContractDetailPage } from "@/pages/contract-detail";
 import { TransportRequestsPage } from "@/pages/transport-requests";
 import { PendingActionsPage } from "@/pages/pending-actions";
 import { AdminPage } from "@/pages/admin";
+import { SustainabilityAllocationsPage } from "@/pages/sustainability-allocations";
+import { SustainabilityAllocationDetailPage } from "@/pages/sustainability-allocation-detail";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -260,6 +262,12 @@ function ClerkProviderWithRoutes() {
             </Route>
             <Route path="/reports">
               <CompanyRoute><ReportsPage /></CompanyRoute>
+            </Route>
+            <Route path="/sustainability/allocations">
+              <CompanyRoute><SustainabilityAllocationsPage /></CompanyRoute>
+            </Route>
+            <Route path="/sustainability/allocations/:id">
+              <CompanyRoute><SustainabilityAllocationDetailPage /></CompanyRoute>
             </Route>
             <Route path="/company/capabilities">
               <CompanyRoute><CompanyCapabilitiesPage /></CompanyRoute>

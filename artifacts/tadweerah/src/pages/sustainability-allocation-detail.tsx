@@ -1,0 +1,411 @@
+import { useState, useEffect } from "react";
+import { useRoute, useLocation } from "wouter";
+import { useAuth } from "@clerk/react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  Leaf,
+  Loader2,
+  AlertCircle,
+  Plus,
+  Trash2,
+  Save,
+  Lock,
+  ArrowLeft,
+} from "lucide-react";
+import { AppLayout } from "@/components/app-layout";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { useT } from "@/i18n";
+import { fmtNumber, fmtDate } from "@/lib/format";
+
+interface Pathway {
+  id: string;
+  name_ar: string;
+  name_en: string;
+  requires_explanation: boolean;
+}
+
+interface AllocationDetailRes {
+  received_line: any;
+  allocation: any | null;
+  lines: any[];
+  pathways: Pathway[];
+  validation: any;
+}
+
+interface DraftLine {
+  uiId: string;
+  pathway_id: string;
+  quantity: string;
+  explanation_text: string;
+}
+
+export function SustainabilityAllocationDetailPage() {
+  const { t, lang } = useT();
+  const dir = lang === "ar" ? "rtl" : "ltr";
+  const [, params] = useRoute("/sustainability/allocations/:id");
+  const id = params?.id;
+  const { getToken } = useAuth();
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const [draftLines, setDraftLines] = useState<DraftLine[]>([]);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  const { data, isLoading, error } = useQuery<AllocationDetailRes>({
+    queryKey: ["sustainability-allocation", id],
+    enabled: !!id,
+    queryFn: async () => {
+      const token = await getToken();
+      const res = await fetch(`/api/sustainability/received-lines/${id}/allocation`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to load allocation details");
+      return res.json() as Promise<AllocationDetailRes>;
+    },
+  });
+
+  useEffect(() => {
+    if (data && !isInitialized) {
+      if (data.lines && data.lines.length > 0) {
+        setDraftLines(
+          data.lines.map((l) => ({
+            uiId: Math.random().toString(36).substring(7),
+            pathway_id: l.pathway_id,
+            quantity: l.quantity,
+            explanation_text: l.explanation_text || "",
+          }))
+        );
+      }
+      setIsInitialized(true);
+    }
+  }, [data, isInitialized]);
+
+  const saveMutation = useMutation({
+    mutationFn: async (payload: { lines: any[] }) => {
+      const token = await getToken();
+      const res = await fetch(`/api/sustainability/received-lines/${id}/allocation`, {
+        method: "POST",
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        throw new Error(errBody.message || "Failed to save draft");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: t("sustainability.allocations.draft_saved"),
+      });
+      queryClient.invalidateQueries({ queryKey: ["sustainability-allocation", id] });
+      queryClient.invalidateQueries({ queryKey: ["sustainability-received-lines"] });
+    },
+  });
+
+  if (isLoading) {
+    return (
+      <AppLayout title={t("sustainability.allocations.detail.title")}>
+        <div className="flex h-64 items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <AppLayout title={t("sustainability.allocations.detail.title")}>
+        <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive mt-4">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          {error ? (error as Error).message : "Not found"}
+        </div>
+      </AppLayout>
+    );
+  }
+
+  const rl = data.received_line;
+  const pathways = data.pathways;
+  const totalReceived = Number(rl.final_received_qty) || 0;
+
+  // Real-time UI validation
+  const currentTotalAllocated = draftLines.reduce((sum, line) => sum + (Number(line.quantity) || 0), 0);
+  const remaining = totalReceived - currentTotalAllocated;
+  const isOverAllocated = remaining < 0;
+  const allocatedPercentage = totalReceived > 0 ? (currentTotalAllocated / totalReceived) * 100 : 0;
+
+  const hasDuplicates = new Set(draftLines.map(l => l.pathway_id).filter(Boolean)).size !== draftLines.map(l => l.pathway_id).filter(Boolean).length;
+  
+  let canSave = draftLines.length > 0 && !isOverAllocated && !hasDuplicates && draftLines.every(l => {
+    if (!l.pathway_id) return false;
+    const qty = Number(l.quantity);
+    if (isNaN(qty) || qty <= 0) return false;
+    const pw = pathways.find(p => p.id === l.pathway_id);
+    if (pw?.requires_explanation && !l.explanation_text.trim()) return false;
+    return true;
+  });
+
+  const handleSave = () => {
+    const payload = {
+      lines: draftLines.map(l => ({
+        pathway_id: l.pathway_id,
+        quantity: Number(l.quantity),
+        explanation_text: l.explanation_text,
+      }))
+    };
+    saveMutation.mutate(payload);
+  };
+
+  const addLine = () => {
+    setDraftLines([
+      ...draftLines,
+      { uiId: Math.random().toString(36).substring(7), pathway_id: "", quantity: "", explanation_text: "" }
+    ]);
+  };
+
+  const removeLine = (uiId: string) => {
+    setDraftLines(draftLines.filter(l => l.uiId !== uiId));
+  };
+
+  const updateLine = (uiId: string, field: keyof DraftLine, value: string) => {
+    setDraftLines(draftLines.map(l => l.uiId === uiId ? { ...l, [field]: value } : l));
+  };
+
+  return (
+    <AppLayout
+      title={t("sustainability.allocations.detail.title")}
+      subtitle={t("sustainability.allocations.detail.subtitle")}
+    >
+      <div className="space-y-6 max-w-4xl" dir={dir}>
+        
+        {/* Header Summary */}
+        <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+          <div className="flex flex-col md:flex-row gap-6 md:items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold text-primary uppercase tracking-wider">{t("sustainability.allocations.col.material")}</p>
+              <h2 className="text-xl font-bold text-foreground mt-1">{rl.material_label}</h2>
+              <div className="flex items-center gap-2 mt-2">
+                <span className="text-sm font-mono bg-muted px-2 py-0.5 rounded text-muted-foreground">{rl.parent_entity_type} / {rl.parent_entity_id?.substring(0, 8)}</span>
+                <span className="text-sm text-muted-foreground">{fmtDate(rl.created_at, lang)}</span>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-x-8 gap-y-2">
+              <div>
+                <p className="text-xs text-muted-foreground">{t("sustainability.allocations.total_received")}</p>
+                <p className="text-lg font-bold font-mono text-foreground mt-0.5">
+                  {fmtNumber(rl.final_received_qty)} <span className="text-sm">{t(`unit.${rl.final_received_unit}`) || rl.final_received_unit}</span>
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">{t("sustainability.allocations.total_allocated")}</p>
+                <p className="text-lg font-bold font-mono text-primary mt-0.5">
+                  {fmtNumber(currentTotalAllocated)} <span className="text-sm">{t(`unit.${rl.final_received_unit}`) || rl.final_received_unit}</span>
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">{t("sustainability.allocations.remaining_quantity")}</p>
+                <p className={`text-lg font-bold font-mono mt-0.5 ${isOverAllocated ? "text-destructive" : "text-amber-600"}`}>
+                  {fmtNumber(remaining)} <span className="text-sm">{t(`unit.${rl.final_received_unit}`) || rl.final_received_unit}</span>
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">{t("sustainability.allocations.allocated_percentage")}</p>
+                <p className="text-lg font-bold font-mono text-foreground mt-0.5">
+                  {allocatedPercentage.toFixed(1)}%
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {isOverAllocated && (
+          <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            {t("sustainability.allocations.over_allocated")}
+          </div>
+        )}
+
+        {hasDuplicates && (
+          <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            {t("sustainability.allocations.duplicate_pathway")}
+          </div>
+        )}
+
+        {saveMutation.isError && (
+          <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            {saveMutation.error?.message}
+          </div>
+        )}
+
+        {/* Editor or Read-Only Guard */}
+        {!rl.is_eligible ? (
+          <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-6 shadow-sm flex flex-col items-center text-center">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10 text-destructive mb-4">
+              <Lock className="h-6 w-6" />
+            </div>
+            <h3 className="text-lg font-bold text-destructive">
+              {t("sustainability.allocations.detail.not_allocatable")}
+            </h3>
+            {rl.ineligibility_reason && (
+              <p className="mt-2 text-sm text-muted-foreground max-w-md">
+                <strong className="font-semibold">{t("sustainability.allocations.ineligibility_reason")}:</strong> {rl.ineligibility_reason}
+              </p>
+            )}
+            <Button
+              variant="outline"
+              className="mt-6"
+              onClick={() => setLocation("/sustainability/allocations")}
+            >
+              <ArrowLeft className="h-4 w-4 me-2 rtl:rotate-180" />
+              {t("action.cancel")}
+            </Button>
+          </div>
+        ) : (
+          <div className="rounded-xl border border-border bg-card shadow-sm">
+            <div className="p-4 border-b border-border flex justify-between items-center bg-muted/20">
+              <h3 className="font-semibold text-foreground flex items-center gap-2">
+                <Leaf className="h-4 w-4 text-primary" />
+                {t("sustainability.allocations.detail.title")}
+              </h3>
+              <span className="inline-flex rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-800">
+                {t("sustainability.allocations.status.draft")}
+              </span>
+            </div>
+            
+            <div className="p-4 space-y-4">
+              {draftLines.length === 0 ? (
+                <div className="text-center py-8 text-sm text-muted-foreground bg-muted/20 rounded-lg border border-dashed border-border">
+                  {t("sustainability.allocations.no_pathways")}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {draftLines.map((line, index) => {
+                    const pw = pathways.find(p => p.id === line.pathway_id);
+                    const isMissingExplanation = pw?.requires_explanation && !line.explanation_text.trim();
+                    
+                    return (
+                      <div key={line.uiId} className="flex flex-col gap-3 p-4 rounded-lg border border-border/80 bg-background relative group transition-colors hover:border-primary/30">
+                        <div className="flex flex-col md:flex-row gap-4 md:items-start">
+                          
+                          {/* Pathway Select */}
+                          <div className="flex-1 space-y-1">
+                            <label className="text-xs font-medium text-foreground">{t("sustainability.allocations.pathway")}</label>
+                            <select
+                              value={line.pathway_id}
+                              onChange={(e) => updateLine(line.uiId, "pathway_id", e.target.value)}
+                              className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                            >
+                              <option value="" disabled>{lang === "ar" ? "اختر مساراً" : "Select pathway"}</option>
+                              {pathways.map(p => (
+                                <option key={p.id} value={p.id}>
+                                  {lang === "ar" ? p.name_ar : p.name_en}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          
+                          {/* Quantity Input */}
+                          <div className="w-full md:w-48 space-y-1 shrink-0">
+                            <label className="text-xs font-medium text-foreground">{t("sustainability.allocations.col.quantity")}</label>
+                            <div className="relative">
+                              <Input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={line.quantity}
+                                onChange={(e) => updateLine(line.uiId, "quantity", e.target.value)}
+                                className="pr-12 h-10"
+                                placeholder="0"
+                                dir="ltr"
+                              />
+                              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-xs text-muted-foreground font-medium">
+                                {t(`unit.${rl.final_received_unit}`) || rl.final_received_unit}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Remove Button */}
+                          <div className="pt-6">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={() => removeLine(line.uiId)}
+                              className="h-10 w-10 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                              title={t("sustainability.allocations.remove")}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+
+                        {/* Explanation Textarea (if required) */}
+                        {pw?.requires_explanation && (
+                          <div className="mt-2 space-y-1 bg-muted/30 p-3 rounded-md border border-border/50">
+                            <label className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                              {t("sustainability.allocations.explanation_text")}
+                              <span className="text-[10px] text-destructive bg-destructive/10 px-1.5 py-0.5 rounded-sm font-semibold">
+                                {t("sustainability.allocations.explanation_required")}
+                              </span>
+                            </label>
+                            <Textarea
+                              value={line.explanation_text}
+                              onChange={(e) => updateLine(line.uiId, "explanation_text", e.target.value)}
+                              placeholder={lang === "ar" ? "أدخل تفاصيل ومبررات استخدام هذا المسار..." : "Enter details and justification..."}
+                              className={`min-h-[80px] text-sm resize-y ${isMissingExplanation ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              <Button
+                variant="outline"
+                onClick={addLine}
+                className="w-full mt-4 border-dashed border-2 hover:border-primary hover:bg-primary/5 hover:text-primary transition-all text-muted-foreground"
+              >
+                <Plus className="h-4 w-4 me-2" />
+                {t("sustainability.allocations.add_pathway")}
+              </Button>
+            </div>
+            
+            <div className="p-4 border-t border-border bg-muted/20 flex justify-end gap-3">
+              <Button
+                variant="ghost"
+                onClick={() => setLocation("/sustainability/allocations")}
+              >
+                {t("action.cancel")}
+              </Button>
+              <Button
+                onClick={handleSave}
+                disabled={!canSave || saveMutation.isPending}
+                className="min-w-[140px]"
+              >
+                {saveMutation.isPending ? (
+                  <><Loader2 className="h-4 w-4 me-2 animate-spin" /> {t("sustainability.allocations.saving")}</>
+                ) : (
+                  <><Save className="h-4 w-4 me-2" /> {t("sustainability.allocations.save_draft")}</>
+                )}
+              </Button>
+            </div>
+          </div>
+        )}
+
+      </div>
+    </AppLayout>
+  );
+}
