@@ -121,9 +121,17 @@ export function SustainabilityAllocationsPage() {
                           {fmtNumber(rl.final_received_qty)} {rl.final_received_unit && t(`unit.${rl.final_received_unit}`) ? t(`unit.${rl.final_received_unit}`) : rl.final_received_unit}
                         </td>
                         <td className="px-3 py-2.5">
-                          <span className="text-[10px] text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded uppercase" dir="ltr">
-                            {rl.parent_entity_type} / {rl.parent_entity_id?.substring(0, 8)}
-                          </span>
+                          {rl.parent_entity_type === "deal" && rl.source_line_type === "listing" && rl.source_line_id ? (
+                            <Link href={`/listings/${rl.source_line_id}?deal=${rl.parent_entity_id}`}>
+                              <a className="text-[10px] text-primary hover:underline font-mono bg-primary/5 px-1.5 py-0.5 rounded uppercase" dir="ltr" title={lang === "ar" ? "فتح المصدر" : "Open source"}>
+                                {rl.parent_entity_type} / {rl.parent_entity_id?.substring(0, 8)}
+                              </a>
+                            </Link>
+                          ) : (
+                            <span className="text-[10px] text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded uppercase" dir="ltr">
+                              {rl.parent_entity_type} / {rl.parent_entity_id?.substring(0, 8)}
+                            </span>
+                          )}
                         </td>
                         <td className="px-3 py-2.5">
                           {isEligible ? (

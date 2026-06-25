@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useRoute, useLocation } from "wouter";
+import { useRoute, useLocation, Link } from "wouter";
 import { useAuth } from "@clerk/react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -22,6 +22,7 @@ import { fmtNumber, fmtDate } from "@/lib/format";
 
 interface Pathway {
   id: string;
+  key: string;
   name_ar: string;
   name_en: string;
   requires_explanation: boolean;
@@ -41,6 +42,23 @@ interface DraftLine {
   quantity: string;
   explanation_text: string;
 }
+
+const getPathwayDesc = (key: string, t: any) => {
+  if (!key) return "";
+  switch (key) {
+    case "reuse": return t("pathway.reuse.desc");
+    case "repair_refurbishment": return t("pathway.repair.desc");
+    case "remanufacturing": return t("pathway.remanufacturing.desc");
+    case "recycling": return t("pathway.recycling.desc");
+    case "material_recovery": return t("pathway.material_recovery.desc");
+    case "energy_recovery": return t("pathway.energy_recovery.desc");
+    case "safe_treatment": return t("pathway.safe_treatment.desc");
+    case "certified_disposal": return t("pathway.certified_disposal.desc");
+    case "residue_loss": return t("pathway.loss_rejected.desc");
+    case "other": return t("pathway.other.desc");
+    default: return "";
+  }
+};
 
 export function SustainabilityAllocationDetailPage() {
   const { t, lang } = useT();
@@ -88,18 +106,30 @@ export function SustainabilityAllocationDetailPage() {
   const saveMutation = useMutation({
     mutationFn: async (payload: { lines: any[] }) => {
       const token = await getToken();
-      const res = await fetch(`/api/sustainability/received-lines/${id}/allocation`, {
-        method: "POST",
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify(payload),
-      });
+      let res: Response;
+      try {
+        res = await fetch(`/api/sustainability/received-lines/${id}/allocation`, {
+          method: "POST",
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify(payload),
+        });
+      } catch (err: any) {
+        throw new Error(err.message || "Network Error: Failed to fetch");
+      }
+      
       if (!res.ok) {
-        const errBody = await res.json().catch(() => ({}));
-        throw new Error(errBody.message || "Failed to save draft");
+        let errMsg = "Failed to save draft";
+        try {
+          const errBody = await res.json();
+          if (errBody.message) errMsg = errBody.message;
+        } catch (e) {
+          errMsg = `Server error ${res.status}: ${res.statusText}`;
+        }
+        throw new Error(errMsg);
       }
       return res.json();
     },
@@ -187,6 +217,18 @@ export function SustainabilityAllocationDetailPage() {
     >
       <div className="space-y-6 max-w-4xl" dir={dir}>
         
+        {/* Back Button */}
+        <div>
+          <Button
+            variant="ghost"
+            onClick={() => setLocation("/sustainability/allocations")}
+            className="text-muted-foreground hover:text-foreground -ms-2"
+          >
+            <ArrowLeft className="h-4 w-4 me-2 rtl:rotate-180" />
+            {t("sustainability.allocations.detail.back")}
+          </Button>
+        </div>
+
         {/* Header Summary */}
         <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
           <div className="flex flex-col md:flex-row gap-6 md:items-center justify-between">
@@ -194,7 +236,15 @@ export function SustainabilityAllocationDetailPage() {
               <p className="text-xs font-semibold text-primary uppercase tracking-wider">{t("sustainability.allocations.col.material")}</p>
               <h2 className="text-xl font-bold text-foreground mt-1">{rl.material_label}</h2>
               <div className="flex items-center gap-2 mt-2">
-                <span className="text-sm font-mono bg-muted px-2 py-0.5 rounded text-muted-foreground">{rl.parent_entity_type} / {rl.parent_entity_id?.substring(0, 8)}</span>
+                {rl.parent_entity_type === "deal" && rl.source_line_type === "listing" && rl.source_line_id ? (
+                  <Link href={`/listings/${rl.source_line_id}?deal=${rl.parent_entity_id}`}>
+                    <a className="text-sm font-mono bg-primary/5 px-2 py-0.5 rounded text-primary hover:underline transition-colors" title={lang === "ar" ? "فتح المصدر" : "Open source"}>
+                      {rl.parent_entity_type} / {rl.parent_entity_id?.substring(0, 8)}
+                    </a>
+                  </Link>
+                ) : (
+                  <span className="text-sm font-mono bg-muted px-2 py-0.5 rounded text-muted-foreground">{rl.parent_entity_type} / {rl.parent_entity_id?.substring(0, 8)}</span>
+                )}
                 <span className="text-sm text-muted-foreground">{fmtDate(rl.created_at, lang)}</span>
               </div>
             </div>
@@ -314,6 +364,11 @@ export function SustainabilityAllocationDetailPage() {
                                 </option>
                               ))}
                             </select>
+                            {pw && getPathwayDesc(pw.key, t) && (
+                              <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                                {getPathwayDesc(pw.key, t)}
+                              </p>
+                            )}
                           </div>
                           
                           {/* Quantity Input */}
