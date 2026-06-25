@@ -96,7 +96,7 @@ Tadweerah-Hub/
 | `listing_offers` | `listing_id`, `buyer_company_id`, `amount`, `status` | Offer state machine |
 | `deals` | (see §4 below) | Core transactional entity |
 | `contracts` | `id`, `reference`, `status`, `seller_company_id`, `buyer_company_id`, `weight_policy` | Contract Lite |
-| `contract_materials` | `contract_id`, `material_label`, `price_per_unit`, `seller_pct`, `buyer_pct`, `sort_order` | Material lines on contracts |
+| `contract_materials` | `contract_id`, `material_label`, `price_per_unit`, `is_processed_output` | Material lines on contracts |
 | `contract_shipments` | `contract_id`, `material_line_id`, `status`, `source_weight`, `destination_weight`, `final_weight`, `final_value` | Shipment sub-records per material line |
 | `transport_requests` | `deal_id`, `manifest_ref`, `transport_mode`, `status` | Transport ops |
 | `transport_quotes` | `transport_request_id`, `transporter_company_id`, `status` | Transporter bids |

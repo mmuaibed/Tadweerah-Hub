@@ -522,6 +522,13 @@ None in this phase — i18n is added in SR-1C when UI is built.
   - Drizzle baseline migration generation locally (`drizzle-kit generate`) produced a full initialization snapshot (since the repository previously relied on `drizzle-kit push`), which was intentionally deleted/not committed to keep the git history clean.
   - The database application/migration strategy is held for a separate approved phase before staging/production. No direct DB push has been run.
 
+**SIR-1A.2a Patch Record (2026-06-25):**
+- **Status:** Completed & Approved.
+- **Commit Reference:** `feat(db): add contract material sustainability eligibility flag`
+- **Schema Updates:** Added `is_processed_output` to `contract_materials` (without default value, nullable) to structurally mirror the `waste_listings` flag, because contracts are independent of listings.
+- **Auto-derivation Update:** Contract shipment auto-derivation must NOT assume eligibility; it must check `contract_materials.is_processed_output === false`. Auto-derivation hooks remain un-implemented.
+- **DB Apply Update:** DB apply is still NOT executed. A manual incremental SQL script (`docs/db-apply/sustainability_schema_incremental_review.sql`) has been authored for review-only until separately approved. No direct `drizzle-kit push` has been run.
+
 ---
 
 ## 5. Phase SR-1B: Backend Services + APIs + Lifecycle

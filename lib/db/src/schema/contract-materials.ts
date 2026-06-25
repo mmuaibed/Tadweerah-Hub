@@ -6,6 +6,7 @@ import {
   integer,
   timestamp,
   index,
+  boolean,
 } from "drizzle-orm/pg-core";
 import { contractsTable } from "./contracts";
 import { materialCategoriesTable } from "./material-categories";
@@ -61,6 +62,16 @@ export const contractMaterialsTable = pgTable(
     buyer_pct: numeric("buyer_pct", { precision: 5, scale: 2 }),
 
     sort_order: integer("sort_order").notNull().default(0),
+
+    /**
+     * Determines eligibility for sustainability diversion reporting.
+     * Mirrors waste_listings.is_processed_output.
+     * false = original generator waste (eligible).
+     * true = processed output (ineligible - prevents double-counting).
+     * null = unknown/pending classification (ineligible until classified).
+     * Defaults to null (no default false).
+     */
+    is_processed_output: boolean("is_processed_output"),
 
     created_at: timestamp("created_at", { withTimezone: true })
       .notNull()
