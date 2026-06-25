@@ -19,13 +19,15 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 interface ReportIssueModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialSubject?: string;
+  initialMessage?: string;
 }
 
-export function ReportIssueModal({ open, onOpenChange }: ReportIssueModalProps) {
+export function ReportIssueModal({ open, onOpenChange, initialSubject = "", initialMessage = "" }: ReportIssueModalProps) {
   const { getToken } = useAuth();
   const { t } = useT();
-  const [subject, setSubject] = useState("");
-  const [message, setMessage] = useState("");
+  const [subject, setSubject] = useState(initialSubject);
+  const [message, setMessage] = useState(initialMessage);
   const [phone, setPhone] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
 
@@ -56,8 +58,13 @@ export function ReportIssueModal({ open, onOpenChange }: ReportIssueModalProps) 
 
   function handleOpenChange(val: boolean) {
     if (!val) {
-      setSubject("");
-      setMessage("");
+      setSubject(initialSubject);
+      setMessage(initialMessage);
+      setPhone("");
+      setStatus("idle");
+    } else {
+      setSubject(initialSubject);
+      setMessage(initialMessage);
       setPhone("");
       setStatus("idle");
     }

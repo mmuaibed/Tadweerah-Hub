@@ -20,6 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useGetMaterialCategories } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { useT } from "@/i18n";
+import { ReportIssueModal } from "@/components/report-issue-modal";
 import { fmtNumber, fmtDate } from "@/lib/format";
 import {
   Dialog,
@@ -644,32 +645,22 @@ export function SustainabilityAllocationDetailPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showRequestChangeModal} onOpenChange={setShowRequestChangeModal}>
-        <DialogContent dir={dir}>
-          <DialogHeader>
-            <DialogTitle>{t("sustainability.allocations.request_change")}</DialogTitle>
-            <DialogDescription className="pt-4 text-foreground leading-relaxed">
-              {t("sustainability.allocations.request_change.desc")}
-            </DialogDescription>
-          </DialogHeader>
+      <ReportIssueModal 
+        open={showRequestChangeModal} 
+        onOpenChange={setShowRequestChangeModal}
+        initialSubject={lang === "ar" ? `طلب تعديل توزيع الاستدامة - ${rl.parent_reference || ''}` : `Request to change Sustainability Allocation - ${rl.parent_reference || ''}`}
+        initialMessage={lang === "ar" ? `أرغب في تعديل التوزيع للمرجعية التالية:
+المرجعية: ${rl.parent_reference || ''}
+المادة: ${rl.material_label || ''}
+تاريخ الاعتماد: ${allocation?.finalized_at ? fmtDate(allocation.finalized_at, lang) : ''}
 
-          <DialogFooter className="mt-6 gap-2 sm:gap-0">
-            <Button
-              variant="outline"
-              onClick={() => setShowRequestChangeModal(false)}
-            >
-              {t("action.close")}
-            </Button>
-            <a
-              href={`mailto:info@tadweerah.com?subject=تعديل%20توزيع%20الاستدامة%20-%20${rl.parent_reference || ''}&body=يرجى%20مراجعة%20توزيع%20الاستدامة%20للسجل%20الآتي:%0Aالمرجع:%20${rl.parent_reference || ''}%0Aالمادة:%20${rl.material_label || ''}%0Aتاريخ%20الاعتماد:%20${allocation?.finalized_at ? fmtDate(allocation.finalized_at, lang) : ''}%0A%0Aالسبب:%20`}
-            >
-              <Button variant="default">
-                {t("sustainability.allocations.contact_support")}
-              </Button>
-            </a>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+السبب: ` : `I would like to request a change for the following allocation:
+Reference: ${rl.parent_reference || ''}
+Material: ${rl.material_label || ''}
+Finalized Date: ${allocation?.finalized_at ? fmtDate(allocation.finalized_at, lang) : ''}
+
+Reason: `}
+      />
     </AppLayout>
   );
 }
