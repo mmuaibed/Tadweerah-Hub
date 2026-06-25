@@ -272,13 +272,11 @@ export function SustainabilityAllocationsPage() {
                           )}
                         </td>
                         <td className="px-3 py-2.5 text-end">
-                          {isEligible && (
-                            <Link href={`/sustainability/allocations/${rl.id}`}>
-                              <button className="text-xs font-semibold text-primary hover:underline">
-                                {t("sustainability.allocations.view_detail")}
-                              </button>
-                            </Link>
-                          )}
+                          <Link href={`/sustainability/allocations/${rl.id}`}>
+                            <button className="text-xs font-semibold text-primary hover:underline">
+                              {t("sustainability.allocations.view_detail")}
+                            </button>
+                          </Link>
                         </td>
                       </tr>
                     );
