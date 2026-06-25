@@ -849,13 +849,18 @@ API error messages and validation messages — ~20 keys for backend validation r
 - **Exclusions:** No CO₂e calculations, no reports/PDFs, and no frontend UI components are built in this phase.
 
 **Important Operational Note:**
-- The SIR-2A code is committed, but the staging database must apply the unique index patch `docs/db-apply/SIR_2A_incremental_review.sql` before UAT or deployment of allocation APIs that rely on the new uniqueness constraint.
-- **No DB apply was run in this phase.**
-- **No deployment was run.**
+- The SIR-2A code is committed.
+- The unique index patch `docs/db-apply/SIR_2A_incremental_review.sql` was successfully applied to the staging database on 2026-06-25.
+- **No production DB apply or deployment was run.**
+
+**SIR-2A DB Staging Index Apply Record (2026-06-25):**
+- **Status:** Staging Apply Completed & Verified.
+- **Execution:** Manually applied via Google Cloud SQL Studio to `tadweerah-staging` project, `tadweerah-pilot-db` instance, `tadweerah` database.
+- **SQL Applied:** `CREATE UNIQUE INDEX IF NOT EXISTS uq_sust_alloc_received_line_version ON sustainability_allocations (received_line_id, version);`
+- **Verification:** Backup `1782373946874` confirmed. Index existence confirmed. `duplicate_groups = 0` confirmed.
 
 **Next Candidate Phases:**
-- DB apply for SIR-2A unique index on staging, when approved.
-- Then SIR-2B — Allocation UI, or SIR-2C — Finalization + Revision Governance depending on product priority.
+- SIR-2B — Allocation UI, or SIR-2C — Finalization + Revision Governance depending on product priority.
   *(Do not start either phase yet)*
 
 

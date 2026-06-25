@@ -1,6 +1,6 @@
 # Tadweerah Hub — PROJECT MAP
-> Last updated: 2026-06-25 | Gate SIR-2A Closed
-> Status: Phase SIR-2A Approved — Sustainability allocation draft APIs and validation service implemented. Staging DB requires manual unique index patch apply before deployment. No DB apply or deployment was run. Next approved candidate phase: DB apply for SIR-2A unique index on staging, followed by SIR-2B — Allocation UI, or SIR-2C — Finalization + Revision Governance.
+> Last updated: 2026-06-25 | Gate SIR-2A DB Staging Apply Closed
+> Status: Phase SIR-2A Approved — Sustainability allocation draft APIs and validation service implemented. Staging DB unique index patch applied and verified. Ready for next phase (SIR-2B Allocation UI or SIR-2C Finalization + Revision Governance). No production DB apply or deployment was run.
 
 
 > **Legend used throughout this document:**
