@@ -1,8 +1,9 @@
 # Sustainability Reports — Implementation Plan (Phase SR-1)
 
-> Created: 2026-06-24 | **Updated: 2026-06-25 (v1.2 — Gate 1 / SR-1A.1 Schema Foundation Completed)**
-> Phase: SR-1B — Backend Services + APIs + Lifecycle
-> Status: ✅ Gate 1 / SR-1A.1 Completed (feat(db): add sustainability reporting schema foundation)
+> Created: 2026-06-24 | **Updated: 2026-06-25 (v1.3 — Gate 2 / SIR-2A Allocation API Foundation Completed)**
+> Phase: SR-1C — Buyer/Processor Allocation UI (or next candidate: DB apply for SIR-2A unique index on staging)
+> Status: ✅ Gate 2 / SIR-2A Completed (feat(api): add sustainability allocation draft APIs — commit fcb4fc1)
+
 > Source: `docs/SUSTAINABILITY_REPORTS_ENGINEERING_DISCOVERY.md` v2.3
 > Canonical repo: `C:\Users\user\Documents\Tadweerah-Hub\Tadweerah-Hub`
 
@@ -171,8 +172,9 @@ Phase SR-0 ──→ SR-1A ──→ SR-1B ──→ SR-1C ──→ SR-1D ─�
 |-------|------|----------|-------------|---------------|
 | SR-0 | PDF Arabic Rendering Spike | ~2 days | None | ✅ Gate 0: PDF approach decision |
 | SR-1A | Database Schema + Seeds + Foundation | ~3 days | SR-0 decision (can start in parallel) | ✅ Gate 1: Schema review (Completed - Commit: `feat(db): add sustainability reporting schema foundation`) |
-| SR-1B | Backend Services + APIs + Lifecycle | ~5 days | SR-1A complete | ✅ Gate 2: API review |
+| SR-1B (SIR-2A) | Backend Services + APIs + Lifecycle (Allocation API Foundation) | ~5 days | SR-1A complete | ✅ Gate 2: API review (Completed - Commit: fcb4fc1) |
 | SR-1C | Buyer/Processor Allocation UI | ~5 days | SR-1B complete | ✅ Gate 3: UI review |
+
 | SR-1D | Report View + PDF Export | ~5 days | SR-1C + SR-0 complete | ✅ Gate 4: Report+PDF review |
 | SR-1E | Notifications + Reports Tab + UAT Polish | ~3 days | SR-1D complete | ✅ Gate 5: UAT sign-off |
 | SR-1F | Documentation Update + Closure | ~1 day | SR-1E complete | ✅ Final sign-off |
@@ -806,16 +808,56 @@ API error messages and validation messages — ~20 keys for backend validation r
 | Silent balancing creep (C4) | 🟡 Medium | Unit test: assert no auto-created allocation lines; code review |
 | Listings without `is_processed_output` set (C1) | 🟡 Medium | NULL = excluded; admin batch can request classification |
 
-### Approval Checkpoint (v1.1 — updated per C1, C4, C6, C10)
-**Gate 2:** CTO reviews API contract (routes, request/response shapes, validation rules) before frontend work begins.
+### Approval Checkpoint (v1.3 — Gate 2 / SIR-2A Closed)
+**Gate 2 / SIR-2A:** CTO reviews draft allocation API foundation. (Completed & Approved)
 
-**Gate 2 exit conditions:**
-- [ ] Eligibility query structurally excludes `is_processed_output = true` AND `IS NULL`
-- [ ] Finalize endpoint enforces 100% reconciliation with no silent balancing
-- [ ] Gap error message explicitly states system does not auto-balance
-- [ ] Cross-transaction exclusion tested (both true and NULL cases)
-- [ ] Data Quality scoring uses `data_quality_level` / `data_quality_reason`
-- [ ] Re-weigh/correction triggers `needs_review` status on existing allocations
+**Gate 2 / SIR-2A Completed Conditions:**
+- [x] Draft allocations only.
+- [x] Eligible and ineligible received lines are visible.
+- [x] Ineligible lines are read-only and blocked from creating/updating draft allocations.
+- [x] Draft saving can be incomplete.
+- [x] Over-allocation is rejected.
+- [x] Duplicate pathway IDs are rejected.
+- [x] `requires_explanation = true` pathways require `explanation_text`.
+- [x] No silent balancing.
+- [x] No auto-created residue/loss/other lines.
+- [ ] Finalization endpoint (Deferred to SIR-2C).
+- [ ] Status transition to finalized (Deferred to SIR-2C).
+- [ ] Reports/PDF/UI/admin config UI (Deferred to later phases).
+- [ ] CO₂e calculations (Deferred to Phase 2).
+
+**SIR-2A — Allocation API Foundation Record (2026-06-25):**
+- **Status:** Completed & Approved.
+- **Commit Reference:** `fcb4fc1 feat(api): add sustainability allocation draft APIs`
+- **New Files Added:**
+  - New API route: `artifacts/api-server/src/routes/sustainability.ts`
+  - New validation service: `artifacts/api-server/src/services/sustainability-validation.ts`
+  - Manual SQL review patch: `docs/db-apply/SIR_2A_incremental_review.sql`
+- **Files Modified:**
+  - Admin read-only endpoint added in: `artifacts/api-server/src/routes/admin.ts`
+  - Router mounted in: `artifacts/api-server/src/routes/index.ts`
+  - Allocation schema updated with unique index `uq_sust_alloc_received_line_version` in `lib/db/src/schema/sustainability-allocations.ts`
+
+**SIR-2A Behavior & Validation Constraints:**
+- **Draft Allocations Only:** Supports draft state creation and updates. No finalized status or transitions exist in this phase.
+- **Visibility & Eligibility:** Both eligible and ineligible received lines are returned in listings. Ineligible lines (e.g. processed output) are read-only and blocked from allocation draft creation/modification.
+- **Flexible Draft Saving:** Drafts can be saved in an incomplete state (total allocated quantity less than received quantity).
+- **Over-Allocation Prevention:** If the total allocated quantity exceeds the received quantity, the request is rejected.
+- **Duplicate Pathways Blocked:** Prevents matching multiple lines to the same pathway ID within a single allocation draft.
+- **Explanation Requirements:** Pathways marked with `requires_explanation = true` (e.g. `other`) strictly require `explanation_text` text input.
+- **No Silent Balancing / Auto-balancing:** Gaps are not balanced with auto-created residue or loss lines.
+- **Exclusions:** No CO₂e calculations, no reports/PDFs, and no frontend UI components are built in this phase.
+
+**Important Operational Note:**
+- The SIR-2A code is committed, but the staging database must apply the unique index patch `docs/db-apply/SIR_2A_incremental_review.sql` before UAT or deployment of allocation APIs that rely on the new uniqueness constraint.
+- **No DB apply was run in this phase.**
+- **No deployment was run.**
+
+**Next Candidate Phases:**
+- DB apply for SIR-2A unique index on staging, when approved.
+- Then SIR-2B — Allocation UI, or SIR-2C — Finalization + Revision Governance depending on product priority.
+  *(Do not start either phase yet)*
+
 
 ---
 

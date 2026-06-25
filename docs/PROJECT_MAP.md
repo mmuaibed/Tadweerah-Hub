@@ -1,6 +1,7 @@
 # Tadweerah Hub — PROJECT MAP
-> Last updated: 2026-06-25 | Gate 1A.2b Closed (session 64528c3a)
-> Status: Phase SIR-1A.2b Approved — Auto-derivation hooks implemented in deals.ts, admin.ts, and shipments.ts. Auto-derivation safely creates sustainability_received_lines without allocations or reports. No DB push or deployment was run. Next approved candidate phase: SIR-2 — Allocation Workflow (not started).
+> Last updated: 2026-06-25 | Gate SIR-2A Closed
+> Status: Phase SIR-2A Approved — Sustainability allocation draft APIs and validation service implemented. Staging DB requires manual unique index patch apply before deployment. No DB apply or deployment was run. Next approved candidate phase: DB apply for SIR-2A unique index on staging, followed by SIR-2B — Allocation UI, or SIR-2C — Finalization + Revision Governance.
+
 
 > **Legend used throughout this document:**
 > - 🟢 **Current behavior** — what the code does today
@@ -60,9 +61,11 @@ Tadweerah-Hub/
 | `routes/lookup.ts` | `/lookup/*` + `/admin/lookup/*` | Master data CRUD | 🚫 Yes |
 | `routes/listings.ts` | `/listings` | Waste listing CRUD + offer management | 🚫 Yes |
 | `routes/reports.ts` | `/reports` | Per-company deal reports + CSV export | 🚫 Yes |
+| `routes/sustainability.ts` | `/sustainability` | Sustainability pathways and allocation drafts (SIR-2A) | 🚫 Yes |
 | `routes/transport-requests.ts` | `/transport-requests` | Transport request lifecycle | 🚫 Yes |
 | `routes/stats.ts` | `/stats` | Per-company dashboard statistics | 🚫 Yes |
 | `routes/notifications.ts` | `/notifications` | In-app notification reads/acks | 🚫 Yes |
+
 
 ### Background Jobs
 | File | Schedule | Description | Deploy required to change? |
