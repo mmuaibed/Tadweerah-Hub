@@ -1317,7 +1317,13 @@ function ShipmentsSection({
   const [showAdd, setShowAdd] = useState(false);
   const [addForm, setAddForm] = useState({ materialLineId: "", plannedAt: "", notes: "" });
   const [adding, setAdding] = useState(false);
-  const [pendingScrollId, setPendingScrollId] = useState<string | null>(null);
+  const [pendingScrollId, setPendingScrollId] = useState<string | null>(() => {
+    if (typeof window !== "undefined") {
+      const sp = new URLSearchParams(window.location.search);
+      return sp.get("shipment");
+    }
+    return null;
+  });
   const [tab, setTab] = useState<"all" | "in-progress" | "closed">(() => {
     return shipments.some(s => s.status !== "closed" && s.status !== "cancelled") ? "in-progress" : "all";
   });
@@ -1590,11 +1596,21 @@ export function ContractDetailPage() {
         <Button 
           variant="ghost" 
           size="sm" 
-          onClick={() => navigate("/contracts")} 
+          onClick={() => {
+            if (typeof window !== "undefined") {
+              const sp = new URLSearchParams(window.location.search);
+              const returnTo = sp.get("returnTo");
+              if (returnTo) {
+                navigate(decodeURIComponent(returnTo));
+                return;
+              }
+            }
+            navigate("/contracts");
+          }} 
           className="-ms-2 gap-1.5 h-8 text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
-          {lang === "ar" ? "العودة إلى العقود" : "Back to Contracts"}
+          {lang === "ar" ? "رجوع" : "Back"}
         </Button>
         <div className="flex w-full flex-col sm:flex-row sm:items-end justify-between gap-2">
           <div>

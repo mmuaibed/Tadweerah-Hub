@@ -86,14 +86,18 @@ async function enrichReceivedLineQty(receivedLine: any) {
         receivedLine.material_label = shipment.material_label;
       }
       if (shipment.unit_label) {
-        receivedLine.final_received_unit = shipment.unit_label;
+        let u = shipment.unit_label.toLowerCase().trim();
+        if (u === "طن" || u === "ton") u = "ton";
+        else if (u === "كجم" || u === "kg") u = "kg";
+        receivedLine.final_received_unit = u;
       }
       if (shipment.material_category_id) {
         receivedLine.material_category_id = shipment.material_category_id;
       }
       
       if (receivedLine.ineligibility_reason === "processed_output_or_unclassified") {
-        if (!shipment.material_category_id) {
+        const hasCat = Boolean(shipment.material_category_id) || Boolean(shipment.material_label);
+        if (!hasCat) {
           receivedLine.ineligibility_reason = "unclassified";
         } else {
           receivedLine.is_eligible = true;

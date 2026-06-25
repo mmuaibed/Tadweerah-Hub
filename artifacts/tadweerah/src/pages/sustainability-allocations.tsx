@@ -63,10 +63,10 @@ export function SustainabilityAllocationsPage() {
   const { data: allCategoriesRaw = [] } = useGetMaterialCategories();
   const allCategories = allCategoriesRaw as Array<{ id: string; name_ar: string; name_en: string; parent_id: string | null }>;
 
-  const getCategoryPath = (catId: string | null | undefined) => {
-    if (!catId) return lang === "ar" ? "غير مصنف" : "Unclassified";
+  const getCategoryPath = (catId: string | null | undefined, label?: string | null) => {
+    if (!catId) return label || (lang === "ar" ? "غير مصنف" : "Unclassified");
     const cat = allCategories.find((c) => c.id === catId);
-    if (!cat) return lang === "ar" ? "غير مصنف" : "Unclassified";
+    if (!cat) return label || (lang === "ar" ? "غير مصنف" : "Unclassified");
     if (!cat.parent_id) return lang === "ar" ? cat.name_ar : cat.name_en;
     const parent = allCategories.find((c) => c.id === cat.parent_id);
     if (!parent) return lang === "ar" ? cat.name_ar : cat.name_en;
@@ -232,9 +232,9 @@ export function SustainabilityAllocationsPage() {
                     return (
                       <tr key={rl.id} className={`transition-colors ${isEligible ? "hover:bg-muted/20" : "bg-muted/5 opacity-80"}`}>
                         <td className="px-3 py-2.5 whitespace-nowrap font-mono text-xs">{fmtDate(rl.created_at, lang)}</td>
-                        <td className="px-3 py-2.5 font-semibold text-foreground">{getCategoryPath(rl.material_category_id)}</td>
+                        <td className="px-3 py-2.5 font-semibold text-foreground">{getCategoryPath(rl.material_category_id, rl.material_label)}</td>
                         <td className="px-3 py-2.5 font-mono">
-                          {fmtNumber(rl.final_received_qty)} {rl.final_received_unit && t(`unit.${rl.final_received_unit}`) ? t(`unit.${rl.final_received_unit}`) : rl.final_received_unit}
+                          {fmtNumber(rl.final_received_qty)} {rl.final_received_unit ? (t(`unit.${rl.final_received_unit}`) === `unit.${rl.final_received_unit}` ? rl.final_received_unit : t(`unit.${rl.final_received_unit}`)) : ""}
                         </td>
                         <td className="px-3 py-2.5">
                           {rl.parent_entity_type === "deal" && rl.source_line_type === "listing" && rl.source_line_id ? (

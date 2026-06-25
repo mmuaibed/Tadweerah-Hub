@@ -88,10 +88,10 @@ export function SustainabilityAllocationDetailPage() {
   const { data: allCategoriesRaw = [] } = useGetMaterialCategories();
   const allCategories = allCategoriesRaw as Array<{ id: string; name_ar: string; name_en: string; parent_id: string | null }>;
 
-  const getCategoryPath = (catId: string | null | undefined) => {
-    if (!catId) return lang === "ar" ? "غير مصنف" : "Unclassified";
+  const getCategoryPath = (catId: string | null | undefined, label?: string | null) => {
+    if (!catId) return label || (lang === "ar" ? "غير مصنف" : "Unclassified");
     const cat = allCategories.find((c) => c.id === catId);
-    if (!cat) return lang === "ar" ? "غير مصنف" : "Unclassified";
+    if (!cat) return label || (lang === "ar" ? "غير مصنف" : "Unclassified");
     if (!cat.parent_id) return lang === "ar" ? cat.name_ar : cat.name_en;
     const parent = allCategories.find((c) => c.id === cat.parent_id);
     if (!parent) return lang === "ar" ? cat.name_ar : cat.name_en;
@@ -329,7 +329,7 @@ export function SustainabilityAllocationDetailPage() {
           <div className="flex flex-col md:flex-row gap-6 md:items-center justify-between">
             <div>
               <p className="text-xs font-semibold text-primary uppercase tracking-wider">{t("sustainability.allocations.col.material")}</p>
-              <h2 className="text-xl font-bold text-foreground mt-1">{getCategoryPath(rl.material_category_id)}</h2>
+              <h2 className="text-xl font-bold text-foreground mt-1">{getCategoryPath(rl.material_category_id, rl.material_label)}</h2>
               <div className="flex items-center gap-2 mt-2">
                 {rl.parent_entity_type === "deal" && rl.source_line_type === "listing" && rl.source_line_id ? (
                   <Link href={`/listings/${rl.source_line_id}?deal=${rl.parent_entity_id}&returnTo=${encodeURIComponent(`/sustainability/allocations/${id}`)}`}>
@@ -356,19 +356,19 @@ export function SustainabilityAllocationDetailPage() {
               <div>
                 <p className="text-xs text-muted-foreground">{t("sustainability.allocations.total_received")}</p>
                 <p className="text-lg font-bold font-mono text-foreground mt-0.5">
-                  {fmtNumber(rl.final_received_qty)} <span className="text-sm">{t(`unit.${rl.final_received_unit}`) || rl.final_received_unit}</span>
+                  {fmtNumber(rl.final_received_qty)} <span className="text-sm">{rl.final_received_unit ? (t(`unit.${rl.final_received_unit}`) === `unit.${rl.final_received_unit}` ? rl.final_received_unit : t(`unit.${rl.final_received_unit}`)) : ""}</span>
                 </p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">{t("sustainability.allocations.total_allocated")}</p>
                 <p className="text-lg font-bold font-mono text-primary mt-0.5">
-                  {fmtNumber(currentTotalAllocated)} <span className="text-sm">{t(`unit.${rl.final_received_unit}`) || rl.final_received_unit}</span>
+                  {fmtNumber(currentTotalAllocated)} <span className="text-sm">{rl.final_received_unit ? (t(`unit.${rl.final_received_unit}`) === `unit.${rl.final_received_unit}` ? rl.final_received_unit : t(`unit.${rl.final_received_unit}`)) : ""}</span>
                 </p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">{t("sustainability.allocations.remaining_quantity")}</p>
                 <p className={`text-lg font-bold font-mono mt-0.5 ${isOverAllocated ? "text-destructive" : isPerfectlyAllocated ? "text-primary" : "text-amber-600"}`}>
-                  {fmtNumber(Math.abs(remaining) <= 0.001 ? 0 : remaining)} <span className="text-sm">{t(`unit.${rl.final_received_unit}`) || rl.final_received_unit}</span>
+                  {fmtNumber(Math.abs(remaining) <= 0.001 ? 0 : remaining)} <span className="text-sm">{rl.final_received_unit ? (t(`unit.${rl.final_received_unit}`) === `unit.${rl.final_received_unit}` ? rl.final_received_unit : t(`unit.${rl.final_received_unit}`)) : ""}</span>
                 </p>
               </div>
               <div>
@@ -503,7 +503,7 @@ export function SustainabilityAllocationDetailPage() {
                                 dir="ltr"
                               />
                               <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-xs text-muted-foreground font-medium">
-                                {t(`unit.${rl.final_received_unit}`) || rl.final_received_unit}
+                                {rl.final_received_unit ? (t(`unit.${rl.final_received_unit}`) === `unit.${rl.final_received_unit}` ? rl.final_received_unit : t(`unit.${rl.final_received_unit}`)) : ""}
                               </div>
                             </div>
                           </div>
