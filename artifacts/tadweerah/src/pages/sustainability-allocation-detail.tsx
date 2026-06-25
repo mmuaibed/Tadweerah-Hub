@@ -237,7 +237,7 @@ export function SustainabilityAllocationDetailPage() {
               <h2 className="text-xl font-bold text-foreground mt-1">{rl.material_label}</h2>
               <div className="flex items-center gap-2 mt-2">
                 {rl.parent_entity_type === "deal" && rl.source_line_type === "listing" && rl.source_line_id ? (
-                  <Link href={`/listings/${rl.source_line_id}?deal=${rl.parent_entity_id}`}>
+                  <Link href={`/listings/${rl.source_line_id}?deal=${rl.parent_entity_id}&returnTo=${encodeURIComponent(`/sustainability/allocations/${id}`)}`}>
                     <a className="text-sm font-semibold font-mono bg-primary/10 px-2 py-0.5 rounded text-primary hover:underline transition-colors" title={t("sustainability.allocations.open_deal")}>
                       {rl.parent_entity_type} / {rl.parent_entity_id?.substring(0, 8)}
                     </a>

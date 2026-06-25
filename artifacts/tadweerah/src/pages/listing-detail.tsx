@@ -1283,15 +1283,23 @@ export function ListingDetailPage() {
     : null;
   const eligibilityDecision = useEligibility(eligibilityListing, eligibilityCompany);
 
-  const fromParam = new URLSearchParams(search).get("from");
+  const searchParams = new URLSearchParams(search);
+  const fromParam = searchParams.get("from");
+  const returnToParam = searchParams.get("returnTo");
+
+  const isSafeInternalReturnPath = (value: string | null) =>
+    Boolean(value && value.startsWith("/") && !value.startsWith("//") && !value.includes("://"));
+
   const backPath =
-    fromParam === "reports"
-      ? "/reports"
-      : fromParam === "participations"
-        ? "/participations"
-        : isOwner
-          ? "/listings/mine"
-          : "/marketplace";
+    isSafeInternalReturnPath(returnToParam)
+      ? returnToParam!
+      : fromParam === "reports"
+        ? "/reports"
+        : fromParam === "participations"
+          ? "/participations"
+          : isOwner
+            ? "/listings/mine"
+            : "/marketplace";
 
   const dateStr = listing
     ? new Date(listing.created_at).toLocaleDateString(

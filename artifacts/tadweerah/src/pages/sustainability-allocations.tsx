@@ -122,7 +122,7 @@ export function SustainabilityAllocationsPage() {
                         </td>
                         <td className="px-3 py-2.5">
                           {rl.parent_entity_type === "deal" && rl.source_line_type === "listing" && rl.source_line_id ? (
-                            <Link href={`/listings/${rl.source_line_id}?deal=${rl.parent_entity_id}`}>
+                            <Link href={`/listings/${rl.source_line_id}?deal=${rl.parent_entity_id}&returnTo=${encodeURIComponent("/sustainability/allocations")}`}>
                               <a className="text-[10px] text-primary font-semibold hover:underline font-mono bg-primary/10 px-1.5 py-0.5 rounded uppercase transition-colors" dir="ltr" title={t("sustainability.allocations.open_deal")}>
                                 {rl.parent_entity_type} / {rl.parent_entity_id?.substring(0, 8)}
                               </a>
