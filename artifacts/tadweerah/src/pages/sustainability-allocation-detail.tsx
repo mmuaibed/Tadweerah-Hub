@@ -338,8 +338,8 @@ export function SustainabilityAllocationDetailPage() {
                     </a>
                   </Link>
                 ) : rl.parent_entity_type === "contract_shipment" && rl.parent_entity_contract_id ? (
-                  <Link href={`/contracts/${rl.parent_entity_contract_id}?shipment=${rl.parent_entity_id}#shipment-${rl.parent_entity_id}`}>
-                    <a className="text-[10px] text-primary font-semibold hover:underline font-mono bg-primary/10 px-1.5 py-0.5 rounded uppercase transition-colors" dir="ltr" title={lang === "ar" ? "فتح العقد (لا يمكن فتح الشحنة مباشرة حالياً)" : "Open Contract (MVP cannot open shipment directly)"}>
+                  <Link href={`/contracts/${rl.parent_entity_contract_id}?shipment=${rl.parent_entity_id}&returnTo=${encodeURIComponent(`/sustainability/allocations/${id}`)}#shipment-${rl.parent_entity_id}`}>
+                    <a className="text-[10px] text-primary font-semibold hover:underline font-mono bg-primary/10 px-1.5 py-0.5 rounded uppercase transition-colors" dir="ltr" title={lang === "ar" ? "فتح العقد (لا يمكن لـ MVP فتح الشحنة مباشرة)" : "Open Contract (MVP cannot open shipment directly)"}>
                       {lang === "ar" ? "شحنة عقد" : "CONTRACT SHIPMENT"} / {rl.parent_reference || (lang === "ar" ? "مرجع غير متاح" : "REF_UNAVAILABLE")}
                     </a>
                   </Link>

@@ -225,7 +225,10 @@ router.get("/sustainability/received-lines", requireAuth, requireCompany(), asyn
       }
       
       if (r.shipment_unit_label) {
-        derived_unit = r.shipment_unit_label;
+        let u = r.shipment_unit_label.toLowerCase().trim();
+        if (u === "طن" || u === "ton") u = "ton";
+        else if (u === "كجم" || u === "kg") u = "kg";
+        derived_unit = u;
       }
 
       if (r.shipment_material_category_id) {
@@ -233,7 +236,8 @@ router.get("/sustainability/received-lines", requireAuth, requireCompany(), asyn
       }
 
       if (derived_reason === "processed_output_or_unclassified") {
-        if (!r.shipment_material_category_id) {
+        const hasCat = Boolean(r.shipment_material_category_id) || Boolean(r.shipment_material_label);
+        if (!hasCat) {
           derived_reason = "unclassified";
         } else {
           derived_is_eligible = true;
