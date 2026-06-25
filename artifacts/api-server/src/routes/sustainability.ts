@@ -39,8 +39,19 @@ async function enrichReceivedLineQty(receivedLine: any) {
       }
 
       if (receivedLine.ineligibility_reason === "processed_output_or_unclassified") {
-        if (deal.is_processed_output === true) receivedLine.ineligibility_reason = "processed_output";
-        else if (deal.is_processed_output === null) receivedLine.ineligibility_reason = "unclassified";
+        if (deal.is_processed_output === true) {
+          receivedLine.ineligibility_reason = "processed_output";
+        } else {
+          const hasQty = Number(receivedLine.final_received_qty) > 0;
+          const hasCat = Boolean(receivedLine.material_category_id) || Boolean(deal.material_subcategory_id);
+          
+          if (hasQty && hasCat) {
+            receivedLine.is_eligible = true;
+            receivedLine.ineligibility_reason = null;
+          } else if (deal.is_processed_output === null) {
+            receivedLine.ineligibility_reason = "unclassified";
+          }
+        }
       }
 
       if (deal.material_subcategory_id) {
@@ -133,6 +144,7 @@ router.get("/sustainability/received-lines", requireAuth, requireCompany(), asyn
     let derived_qty = r.received_line.final_received_qty;
     let derived_reason = r.received_line.ineligibility_reason;
     let derived_cat = r.received_line.material_category_id;
+    let derived_is_eligible = r.received_line.is_eligible;
     
     if (r.received_line.parent_entity_type === "deal" && r.received_line.parent_entity_id) {
       const id = r.received_line.parent_entity_id;
@@ -145,13 +157,24 @@ router.get("/sustainability/received-lines", requireAuth, requireCompany(), asyn
         derived_qty = r.listing_quantity;
       }
 
-      if (derived_reason === "processed_output_or_unclassified") {
-        if (r.listing_is_processed_output === true) derived_reason = "processed_output";
-        else if (r.listing_is_processed_output === null) derived_reason = "unclassified";
-      }
-
       if (r.listing_subcategory_id) {
         derived_cat = r.listing_subcategory_id;
+      }
+
+      if (derived_reason === "processed_output_or_unclassified") {
+        if (r.listing_is_processed_output === true) {
+          derived_reason = "processed_output";
+        } else {
+          const hasQty = Number(derived_qty) > 0;
+          const hasCat = Boolean(derived_cat);
+          
+          if (hasQty && hasCat) {
+            derived_is_eligible = true;
+            derived_reason = null;
+          } else if (r.listing_is_processed_output === null) {
+            derived_reason = "unclassified";
+          }
+        }
       }
 
     } else if (r.received_line.parent_entity_type === "contract_shipment" && r.shipment_reference) {
@@ -169,6 +192,7 @@ router.get("/sustainability/received-lines", requireAuth, requireCompany(), asyn
         final_received_qty: derived_qty,
         ineligibility_reason: derived_reason,
         material_category_id: derived_cat,
+        is_eligible: derived_is_eligible,
       },
       allocation_id: r.allocation_id,
       allocation_status: r.allocation_status
