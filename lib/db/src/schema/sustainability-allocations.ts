@@ -8,6 +8,7 @@ import {
   timestamp,
   pgEnum,
   index,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { sustainabilityReceivedLinesTable } from "./sustainability-received-lines";
 
@@ -141,6 +142,7 @@ export const sustainabilityAllocationsTable = pgTable(
       table.received_line_id,
     ),
     idx_alloc_status: index("idx_sust_alloc_status").on(table.status),
+    uq_sust_alloc_received_line_version: uniqueIndex("uq_sust_alloc_received_line_version").on(table.received_line_id, table.version),
   }),
 );
 

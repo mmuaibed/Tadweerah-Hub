@@ -30,6 +30,8 @@ import {
   materialCategoriesTable,
   listingOffersTable,
   adminFindingsTable,
+  sustainabilityReceivedLinesTable,
+  sustainabilityAllocationsTable,
 } from "@workspace/db";
 import { buildCsv } from "../lib/csv";
 import { logAudit } from "../lib/audit";
@@ -2168,6 +2170,32 @@ router.delete("/admin/findings/:id", requireAdminKey, async (req, res) => {
   }
 
   res.json({ success: true, deleted });
+});
+
+/**
+ * GET /admin/sustainability/received-lines
+ * Admin read-only list across platform.
+ */
+router.get("/admin/sustainability/received-lines", requireAdminKey, async (req, res) => {
+  const limit = Math.min(Number(req.query.limit) || 50, 200);
+  const offset = Number(req.query.offset) || 0;
+  
+  const rows = await db
+    .select({
+      received_line: sustainabilityReceivedLinesTable,
+      allocation_id: sustainabilityAllocationsTable.id,
+      allocation_status: sustainabilityAllocationsTable.status,
+    })
+    .from(sustainabilityReceivedLinesTable)
+    .leftJoin(
+      sustainabilityAllocationsTable,
+      eq(sustainabilityReceivedLinesTable.id, sustainabilityAllocationsTable.received_line_id)
+    )
+    .orderBy(desc(sustainabilityReceivedLinesTable.created_at))
+    .limit(limit)
+    .offset(offset);
+
+  res.json(rows);
 });
 
 export default router;

@@ -15,6 +15,7 @@ import contractsRouter from "./contracts";
 import shipmentsRouter from "./shipments";
 import transportRequestsRouter from "./transport-requests";
 import reportsRouter from "./reports";
+import sustainabilityRouter from "./sustainability";
 
 const router: IRouter = Router();
 
@@ -34,5 +35,6 @@ router.use(reportsRouter);
 router.use(contractsRouter);
 router.use(shipmentsRouter);
 router.use(transportRequestsRouter);
+router.use(sustainabilityRouter);
 
 export default router;
