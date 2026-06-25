@@ -66,6 +66,30 @@ interface ReportResponse {
   count: number;
 }
 
+interface SustainabilityReportRow {
+  allocation_id: string;
+  finalized_at: string | null;
+  status: string;
+  source_type: string;
+  commercial_ref: string;
+  my_role: "seller" | "buyer";
+  counterparty_name: string | null;
+  material: string;
+  quantity: string;
+  unit: string;
+  pathways: Array<{
+    pathway_name_ar: string;
+    pathway_name_en: string;
+    quantity: string;
+    percentage: string;
+  }>;
+}
+
+interface SustainabilityReportResponse {
+  rows: SustainabilityReportRow[];
+  count: number;
+}
+
 
 interface ContractReportSummary {
   total_final_weight: string;
@@ -141,7 +165,7 @@ export function ReportsPage() {
   const dir = lang === "ar" ? "rtl" : "ltr";
 
   /* ── Tab State ── */
-  const [tab, setTab] = useState<"deals" | "contracts">("deals");
+  const [tab, setTab] = useState<"deals" | "contracts" | "sustainability">("deals");
 
   /* Filters */
   const [role, setRole] = useState<"all" | "seller" | "buyer">("all");
@@ -165,6 +189,13 @@ export function ReportsPage() {
   const [contractLoading, setContractLoading] = useState(false);
   const [contractError, setContractError] = useState<string | null>(null);
   const [contractExporting, setContractExporting] = useState(false);
+
+  /* Sustainability Data state */
+  const [sustReport, setSustReport] = useState<SustainabilityReportResponse | null>(null);
+  const [sustLoading, setSustLoading] = useState(false);
+  const [sustError, setSustError] = useState<string | null>(null);
+  const [sustExporting, setSustExporting] = useState(false);
+  const [sustRefFilter, setSustRefFilter] = useState("");
 
   /* ── Build query string ── */
   function buildParams(extraFormat?: string): string {
@@ -277,6 +308,60 @@ export function ReportsPage() {
     }
   }
 
+  /* ── Build query string for sustainability ── */
+  function buildSustParams(extraFormat?: string): string {
+    const p = new URLSearchParams();
+    if (dateFrom) p.set("date_from", dateFrom);
+    if (dateTo) p.set("date_to", dateTo);
+    if (sustRefFilter) p.set("commercial_ref", sustRefFilter);
+    if (extraFormat) p.set("format", extraFormat);
+    return p.toString();
+  }
+
+  /* ── Load sustainability report ── */
+  async function loadSustReport() {
+    setSustLoading(true);
+    setSustError(null);
+    try {
+      const token = await getToken();
+      const res = await fetch(`/api/reports/sustainability?${buildSustParams()}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = (await res.json()) as SustainabilityReportResponse;
+      setSustReport(data);
+    } catch (e) {
+      setSustError(e instanceof Error ? e.message : t("admin.error.generic"));
+    } finally {
+      setSustLoading(false);
+    }
+  }
+
+  /* ── Export CSV for sustainability ── */
+  async function exportSustCsv() {
+    setSustExporting(true);
+    try {
+      const token = await getToken();
+      const res = await fetch(`/api/reports/sustainability?${buildSustParams("csv")}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `sustainability-report-${dateFrom || "all"}-${dateTo || "all"}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      /* silent */
+    } finally {
+      setSustExporting(false);
+    }
+  }
+
   const summary = report?.summary;
   const rows = report?.rows ?? [];
 
@@ -299,7 +384,7 @@ export function ReportsPage() {
               }
             </Button>
           )
-        ) : (
+        ) : tab === "contracts" ? (
           contractReport && (
             <Button
               variant="outline"
@@ -313,6 +398,20 @@ export function ReportsPage() {
               }
             </Button>
           )
+        ) : (
+          sustReport && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void exportSustCsv()}
+              disabled={sustExporting}
+            >
+              {sustExporting
+                ? <><Loader2 className="h-4 w-4 me-2 animate-spin" />{t("reports.action.exporting")}</>
+                : <><Download className="h-4 w-4 me-2" />{lang === "ar" ? "تصدير ملف" : "Export File"}</>
+              }
+            </Button>
+          )
         )
       }
     >
@@ -320,7 +419,7 @@ export function ReportsPage() {
 
         {/* ── Top Level Tabs ── */}
         <div className="flex gap-1 border-b border-border">
-          {(["deals", "contracts"] as const).map((tName) => (
+          {(["deals", "contracts", "sustainability"] as const).map((tName) => (
             <button
               key={tName}
               onClick={() => {
@@ -328,6 +427,7 @@ export function ReportsPage() {
                 setStatus(tName === "contracts" ? "closed" : "");
                 setDateFrom("");
                 setDateTo("");
+                setSustRefFilter("");
               }}
               className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
                 tab === tName
@@ -335,7 +435,7 @@ export function ReportsPage() {
                   : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >
-              {tName === "deals" ? (lang === "ar" ? "الصفقات" : "Marketplace Deals") : (lang === "ar" ? "العقود" : "Contracts")}
+              {tName === "deals" ? (lang === "ar" ? "الصفقات" : "Marketplace Deals") : tName === "contracts" ? (lang === "ar" ? "العقود" : "Contracts") : (lang === "ar" ? "تقارير الاستدامة" : "Sustainability Reports")}
             </button>
           ))}
         </div>
@@ -553,7 +653,7 @@ export function ReportsPage() {
         )}
 
           </>
-        ) : (
+        ) : tab === "contracts" ? (
           <>
             {/* ── Contracts Tab Content ── */}
             <div className="mb-2">
@@ -748,6 +848,135 @@ export function ReportsPage() {
                               <Td mono bold>
                                 <span className="text-green-800 bg-green-100/50 px-2 py-1 rounded text-sm">
                                   {fmtSAR(row.total_including_vat, lang)}
+                                </span>
+                              </Td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            {/* ── Sustainability Tab Content ── */}
+            <div className="mb-2">
+              <h2 className="text-lg font-bold text-foreground">
+                {lang === "ar" ? `تقارير الاستدامة المعتمدة للفترة من ${dateFrom || "..."} إلى ${dateTo || "..."}` : `Finalized Sustainability Reports for the period from ${dateFrom || "..."} to ${dateTo || "..."}`}
+              </h2>
+            </div>
+            {/* ── Filters ── */}
+            <div className="rounded-xl border border-border bg-card p-4 flex flex-wrap gap-3 items-end">
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-foreground">{t("reports.filter.date_from")}</label>
+                <Input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="h-9 w-36 text-sm"
+                  dir="ltr"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-foreground">{t("reports.filter.date_to")}</label>
+                <Input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="h-9 w-36 text-sm"
+                  dir="ltr"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-foreground">
+                  {lang === "ar" ? "المرجع التجاري" : "Commercial Ref"}
+                </label>
+                <Input
+                  type="text"
+                  value={sustRefFilter}
+                  onChange={(e) => setSustRefFilter(e.target.value)}
+                  className="h-9 w-36 text-sm"
+                  placeholder="TDW-..."
+                  dir="ltr"
+                />
+              </div>
+              <Button onClick={() => void loadSustReport()} disabled={sustLoading}>
+                {sustLoading
+                  ? <><Loader2 className="h-4 w-4 me-2 animate-spin" />{t("reports.loading")}</>
+                  : <><RefreshCw className="h-4 w-4 me-2" />{t("reports.action.load")}</>
+                }
+              </Button>
+            </div>
+
+            {/* ── Error ── */}
+            {sustError && (
+              <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                <AlertCircle className="h-4 w-4 shrink-0" />{sustError}
+              </div>
+            )}
+
+            {/* ── Table ── */}
+            {sustReport !== null && (
+              <div className="rounded-xl border border-border bg-card overflow-hidden mt-4">
+                <div className="px-4 py-3 border-b border-border flex items-center justify-between gap-2">
+                  <p className="text-sm font-semibold text-foreground">
+                    {sustReport.rows.length} {lang === "ar" ? "سجل استدامة معتمد" : "finalized sustainability records"}
+                  </p>
+                </div>
+
+                {sustReport.rows.length === 0 ? (
+                  <div className="px-4 py-10 text-center text-sm text-muted-foreground">
+                    {t("reports.empty")}
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-border bg-muted/30">
+                          <Th>{lang === "ar" ? "تاريخ الاعتماد" : "Finalized Date"}</Th>
+                          <Th>{lang === "ar" ? "المصدر" : "Source"}</Th>
+                          <Th>{lang === "ar" ? "المرجع التجاري" : "Commercial Ref"}</Th>
+                          <Th>{lang === "ar" ? "دوري" : "My Role"}</Th>
+                          <Th>{lang === "ar" ? "الطرف الآخر" : "Counterparty"}</Th>
+                          <Th>{lang === "ar" ? "المادة" : "Material"}</Th>
+                          <Th>{lang === "ar" ? "الكمية المستلمة" : "Received Qty"}</Th>
+                          <Th>{lang === "ar" ? "مسارات الاستدامة" : "Pathways"}</Th>
+                          <Th>{lang === "ar" ? "الحالة" : "Status"}</Th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {sustReport.rows.map((row, i) => {
+                          const sourceLabel = row.source_type === "deal" ? (lang === "ar" ? "صفقة" : "Deal") : row.source_type === "contract_shipment" ? (lang === "ar" ? "شحنة" : "Shipment") : row.source_type;
+                          return (
+                            <tr key={i} className="hover:bg-muted/20 transition-colors">
+                              <Td mono>{row.finalized_at ? fmtDate(row.finalized_at, lang) : "—"}</Td>
+                              <Td>{sourceLabel}</Td>
+                              <Td mono>{row.commercial_ref}</Td>
+                              <Td>
+                                <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                                  row.my_role === "seller" ? "bg-blue-100 text-blue-800" : "bg-teal-100 text-teal-800"
+                                }`}>
+                                  {row.my_role === "seller" ? (lang === "ar" ? "البائع / المصدر" : "Seller / Source") : (lang === "ar" ? "المشتري / المستلم" : "Buyer / Processor")}
+                                </span>
+                              </Td>
+                              <Td>{row.counterparty_name ?? "—"}</Td>
+                              <Td>{row.material}</Td>
+                              <Td mono bold>{row.quantity} {row.unit}</Td>
+                              <Td>
+                                <div className="flex flex-col gap-1 max-w-[200px] whitespace-normal">
+                                  {row.pathways.map((p, pIdx) => (
+                                    <span key={pIdx} className="text-xs text-muted-foreground leading-tight">
+                                      {lang === "ar" ? p.pathway_name_ar : p.pathway_name_en}: {p.quantity} {row.unit}
+                                    </span>
+                                  ))}
+                                </div>
+                              </Td>
+                              <Td>
+                                <span className="inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold bg-green-100 text-green-800">
+                                  {lang === "ar" ? "معتمد" : "Finalized"}
                                 </span>
                               </Td>
                             </tr>

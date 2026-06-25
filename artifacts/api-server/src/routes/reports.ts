@@ -26,6 +26,10 @@ import {
   contractsTable,
   contractShipmentsTable,
   contractMaterialsTable,
+  sustainabilityReceivedLinesTable,
+  sustainabilityAllocationsTable,
+  sustainabilityAllocationLinesTable,
+  sustainabilityPathwaysTable,
 } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requireCompany, type AuthedCompanyRequest } from "../middlewares/requireCompany";
@@ -423,6 +427,213 @@ router.get(
     }
 
     res.json({ summary, rows: serialized, count: serialized.length });
+  }
+);
+
+/* ── GET /reports/sustainability ────────────────────────────────────────── */
+
+const SUST_CSV_HEADERS = [
+  "Finalized Date",
+  "Source",
+  "Commercial Ref",
+  "My Role",
+  "Counterparty",
+  "Material",
+  "Received Qty",
+  "Unit",
+  "Pathways (Qty)",
+  "Status"
+];
+
+router.get(
+  "/reports/sustainability",
+  requireAuth,
+  requireCompany(),
+  async (req, res) => {
+    const { company } = req as AuthedCompanyRequest;
+    const cid = company.id;
+
+    const dateFromRaw = typeof req.query.date_from === "string" ? req.query.date_from : null;
+    const dateToRaw = typeof req.query.date_to === "string" ? req.query.date_to : null;
+    const refFilter = typeof req.query.commercial_ref === "string" && req.query.commercial_ref ? req.query.commercial_ref : null;
+    const format = typeof req.query.format === "string" ? req.query.format : "json";
+
+    const limit = Math.min(Number(req.query.limit) || 1000, 5000);
+    const offset = Number(req.query.offset) || 0;
+
+    const dateFrom = dateFromRaw ? new Date(dateFromRaw + "T00:00:00.000Z") : null;
+    const dateTo = dateToRaw ? new Date(dateToRaw + "T23:59:59.999Z") : null;
+
+    /* ── Build WHERE conditions ── */
+    const conditions = [];
+
+    // Role scope
+    conditions.push(
+      or(
+        eq(sustainabilityReceivedLinesTable.seller_company_id, cid),
+        eq(sustainabilityReceivedLinesTable.buyer_company_id, cid)
+      )
+    );
+
+    // Finalized allocations only
+    conditions.push(eq(sustainabilityAllocationsTable.status, "finalized"));
+
+    if (dateFrom) conditions.push(gte(sustainabilityAllocationsTable.finalized_at, dateFrom));
+    if (dateTo) conditions.push(lte(sustainabilityAllocationsTable.finalized_at, dateTo));
+
+    if (refFilter) {
+      conditions.push(
+        or(
+          ilike(dealsTable.id, `%${refFilter}%`),
+          ilike(contractShipmentsTable.reference, `%${refFilter}%`)
+        )
+      );
+    }
+
+    const where = conditions.length > 0 ? and(...conditions) : undefined;
+
+    // Use a flat query joining lines and pathways, then group in memory.
+    const flatRows = await db
+      .select({
+        // Allocation details
+        allocation_id: sustainabilityAllocationsTable.id,
+        finalized_at: sustainabilityAllocationsTable.finalized_at,
+        status: sustainabilityAllocationsTable.status,
+        
+        // Received line details
+        received_line_id: sustainabilityReceivedLinesTable.id,
+        parent_entity_type: sustainabilityReceivedLinesTable.parent_entity_type,
+        parent_entity_id: sustainabilityReceivedLinesTable.parent_entity_id,
+        material_label: sustainabilityReceivedLinesTable.material_label,
+        final_received_qty: sustainabilityReceivedLinesTable.final_received_qty,
+        final_received_unit: sustainabilityReceivedLinesTable.final_received_unit,
+        
+        // Counterparties
+        seller_id: sustainabilityReceivedLinesTable.seller_company_id,
+        buyer_id: sustainabilityReceivedLinesTable.buyer_company_id,
+        seller_name: sql<string | null>`seller.name`,
+        buyer_name: sql<string | null>`buyer.name`,
+        
+        // Commercial references
+        deal_id: dealsTable.id,
+        shipment_ref: contractShipmentsTable.reference,
+        
+        // Pathway line details
+        line_id: sustainabilityAllocationLinesTable.id,
+        pathway_qty: sustainabilityAllocationLinesTable.quantity,
+        pathway_pct: sustainabilityAllocationLinesTable.percentage,
+        pathway_name_ar: sustainabilityPathwaysTable.name_ar,
+        pathway_name_en: sustainabilityPathwaysTable.name_en,
+      })
+      .from(sustainabilityAllocationsTable)
+      .innerJoin(
+        sustainabilityReceivedLinesTable,
+        eq(sustainabilityReceivedLinesTable.id, sustainabilityAllocationsTable.received_line_id)
+      )
+      // Left join commercial tables to resolve reference safely
+      .leftJoin(
+        dealsTable,
+        and(
+          eq(sustainabilityReceivedLinesTable.parent_entity_type, "deal"),
+          eq(sustainabilityReceivedLinesTable.parent_entity_id, dealsTable.id)
+        )
+      )
+      .leftJoin(
+        contractShipmentsTable,
+        and(
+          eq(sustainabilityReceivedLinesTable.parent_entity_type, "contract_shipment"),
+          eq(sustainabilityReceivedLinesTable.parent_entity_id, contractShipmentsTable.id)
+        )
+      )
+      .leftJoin(sql`companies seller`, sql`seller.id = ${sustainabilityReceivedLinesTable.seller_company_id}`)
+      .leftJoin(sql`companies buyer`, sql`buyer.id = ${sustainabilityReceivedLinesTable.buyer_company_id}`)
+      // Left join lines and pathways
+      .leftJoin(
+        sustainabilityAllocationLinesTable,
+        eq(sustainabilityAllocationLinesTable.allocation_id, sustainabilityAllocationsTable.id)
+      )
+      .leftJoin(
+        sustainabilityPathwaysTable,
+        eq(sustainabilityPathwaysTable.id, sustainabilityAllocationLinesTable.pathway_id)
+      )
+      .where(where)
+      .orderBy(desc(sustainabilityAllocationsTable.finalized_at));
+
+    // Grouping: ensure we only keep the latest finalized allocation per received line
+    // Since rows are ordered by finalized_at DESC, the first one we encounter for a received_line_id is the latest.
+    const groupedMap = new Map<string, any>();
+    for (const row of flatRows) {
+      if (!groupedMap.has(row.received_line_id)) {
+        let commercialRef = "—";
+        let sourceType = row.parent_entity_type;
+        if (sourceType === "deal" && row.deal_id) {
+          commercialRef = `TDW-${new Date(row.finalized_at || new Date()).getFullYear()}-${row.deal_id.slice(0, 6)}`;
+        } else if (sourceType === "contract_shipment" && row.shipment_ref) {
+          commercialRef = row.shipment_ref;
+        }
+
+        groupedMap.set(row.received_line_id, {
+          allocation_id: row.allocation_id,
+          received_line_id: row.received_line_id,
+          finalized_at: row.finalized_at ? row.finalized_at.toISOString() : null,
+          status: row.status,
+          source_type: sourceType,
+          commercial_ref: commercialRef,
+          my_role: row.seller_id === cid ? "seller" : "buyer",
+          counterparty_name: row.seller_id === cid ? row.buyer_name : row.seller_name,
+          material: row.material_label,
+          quantity: row.final_received_qty,
+          unit: row.final_received_unit,
+          pathways: []
+        });
+      }
+
+      // Only add pathway to the latest allocation we decided to keep
+      if (row.line_id && groupedMap.get(row.received_line_id).allocation_id === row.allocation_id) {
+        groupedMap.get(row.received_line_id).pathways.push({
+          pathway_name_ar: row.pathway_name_ar,
+          pathway_name_en: row.pathway_name_en,
+          quantity: row.pathway_qty,
+          percentage: row.pathway_pct,
+        });
+      }
+    }
+
+    const serialized = Array.from(groupedMap.values()).slice(offset, offset + (format === "csv" ? 5000 : limit));
+
+    if (format === "csv") {
+      const csvRows = serialized.map((r) => {
+        const pathwaysStr = r.pathways.map((p: any) => `${p.pathway_name_ar}: ${p.quantity} ${r.unit}`).join("، ");
+        const sourceLabel = r.source_type === "deal" ? "صفقة" : r.source_type === "contract_shipment" ? "شحنة" : r.source_type;
+        const roleLabel = r.my_role === "seller" ? "البائع / المصدر" : "المشتري / المستلم";
+        return [
+          r.finalized_at ? new Date(r.finalized_at).toLocaleDateString("en-GB") : "",
+          sourceLabel,
+          r.commercial_ref,
+          roleLabel,
+          r.counterparty_name || "",
+          r.material,
+          r.quantity,
+          r.unit,
+          pathwaysStr,
+          "معتمد"
+        ];
+      });
+
+      const csv = buildCsv(SUST_CSV_HEADERS, csvRows);
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+
+      const df = dateFromRaw || "all";
+      const dt = dateToRaw || "all";
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="sustainability-report-${df}-${dt}.csv"`
+      );
+      res.send(csv);
+      return;
+    }
+
+    res.json({ rows: serialized, count: serialized.length });
   }
 );
 
