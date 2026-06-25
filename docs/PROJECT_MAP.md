@@ -1,6 +1,6 @@
 # Tadweerah Hub — PROJECT MAP
 > Last updated: 2026-06-25 | Gate 1 Closed (session 64528c3a)
-> Status: Gate 1 Approved — Sustainability schema foundation added (no DB push/migration applied)
+> Status: Gate 1 Approved — Sustainability schema foundation added only. Auto-derivation hooks/functionality deferred to SIR-1A.2. No operational routes/hooks were touched. (No DB push or migration applied)
 
 > **Legend used throughout this document:**
 > - 🟢 **Current behavior** — what the code does today

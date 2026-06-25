@@ -500,11 +500,12 @@ None in this phase — i18n is added in SR-1C when UI is built.
 - [x] 13 protected system field seeds defined with `is_system_field = true`
 - [x] "Data Quality" label replaces "Confidence Level" everywhere
 - [x] CO₂e placeholder wording: "Not estimated — pending methodology governance"
-- [x] Auto-derivation tested for deal completion and shipment close
+- [ ] Auto-derivation tested for deal completion and shipment close (Deferred to SIR-1A.2)
 
 **Gate 1 Closure Record (2026-06-25):**
 - **Status:** Completed & Approved.
 - **Commit Reference:** `feat(db): add sustainability reporting schema foundation`
+- **Scope:** SR-1A.1 implemented the schema foundation only. Auto-derivation hooks and functionality are deferred to a separate later phase: SIR-1A.2.
 - **Tables Added:**
   - `sustainability_pathways`
   - `sustainability_received_lines` (multi-line-ready)
@@ -514,8 +515,8 @@ None in this phase — i18n is added in SR-1C when UI is built.
   - `sustainability_reports` (parent-level sustainability reports, requiring `parent_entity_type` + `parent_entity_id`)
 - **Schema Updates:** Added `is_processed_output` to `waste_listings` (without default value, backfilling existing rows as `NULL`).
 - **Seeds Added:** GRI-aligned pathways, thin report field config registry including 13 protected system fields.
-- **Auto-derivation:** Sourced from `deals.actual_quantity` (completed deals) and `contract_shipments.final_weight` (closed contract shipments).
-- **Exclusion Confirmation:** Confirmed that no operational/financial reports or routes were touched.
+- **Auto-derivation:** The schemas are fully prepared to support auto-derivation sourced from `deals.actual_quantity` (completed deals) and `contract_shipments.final_weight` (closed contract shipments), but the actual implementation of auto-derivation hooks and logic is deferred to SIR-1A.2.
+- **Exclusion & Hook Confirmation:** Verified and confirmed that **no operational/financial reports, routes, or hooks were touched or modified** in this phase.
 - **Migration & Deploy Policy:**
   - **No DB push or migration was applied to staging/production.**
   - Drizzle baseline migration generation locally (`drizzle-kit generate`) produced a full initialization snapshot (since the repository previously relied on `drizzle-kit push`), which was intentionally deleted/not committed to keep the git history clean.
