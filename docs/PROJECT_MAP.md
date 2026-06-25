@@ -1,6 +1,6 @@
 # Tadweerah Hub — PROJECT MAP
-> Last updated: 2026-06-09 | Audited by: Antigravity CTO Audit (session 6b53fc3f)
-> Status: DOCUMENTATION ONLY — no application code changed
+> Last updated: 2026-06-25 | Gate 1 Closed (session 64528c3a)
+> Status: Gate 1 Approved — Sustainability schema foundation added (no DB push/migration applied)
 
 > **Legend used throughout this document:**
 > - 🟢 **Current behavior** — what the code does today
@@ -92,7 +92,7 @@ Tadweerah-Hub/
 |-------|-----------|-------|
 | `companies` | `id`, `name`, `license_status`, `offer_submission_blocked`, `receipt_failures_count` | Producer or buyer entity |
 | `company_members` | `company_id`, `user_id`, `role` | Role: `owner` or `member` |
-| `waste_listings` | `id`, `status`, `material`, `city`, `material_category_id` | open/closed/filled/cancelled |
+| `waste_listings` | `id`, `status`, `material`, `city`, `material_category_id`, `is_processed_output` | open/closed/filled/cancelled. Contains `is_processed_output` flag for sustainability eligibility |
 | `listing_offers` | `listing_id`, `buyer_company_id`, `amount`, `status` | Offer state machine |
 | `deals` | (see §4 below) | Core transactional entity |
 | `contracts` | `id`, `reference`, `status`, `seller_company_id`, `buyer_company_id`, `weight_policy` | Contract Lite |
@@ -109,6 +109,12 @@ Tadweerah-Hub/
 | `company_categories` | `key`, `name_ar`, `name_en` | Admin-managed company types |
 | `capabilities` | `key`, `name_ar`, `name_en` | Admin-managed certifications |
 | `manifest_records` | `deal_id` | MWAN waste manifest references |
+| `sustainability_pathways` | `id`, `key`, `name_ar`, `name_en`, `category`, `is_circular_diversion`, `is_active` | GRI 306 pathways taxonomy lookup (seeded) |
+| `sustainability_received_lines` | `id`, `parent_entity_type`, `parent_entity_id`, `final_received_qty`, `is_eligible` | Canonical multi-line-ready grain for sustainability reporting |
+| `sustainability_allocations` | `id`, `received_line_id`, `status`, `version`, `data_quality_level` | Lifecycle of pathway allocations for a received line |
+| `sustainability_allocation_lines` | `id`, `allocation_id`, `pathway_id`, `quantity`, `percentage` | Breakdown of pathways per allocation |
+| `sustainability_report_field_config` | `id`, `field_key`, `is_visible`, `is_system_field` | Thin report field registry (13 protected fields) |
+| `sustainability_reports` | `id`, `report_number`, `parent_entity_type`, `parent_entity_id`, `report_data_snapshot` | Parent transaction level reports and snapshots |
 
 ### Deal Table — Full Field Reference
 ```

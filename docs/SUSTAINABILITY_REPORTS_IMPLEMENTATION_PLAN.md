@@ -1,8 +1,8 @@
 # Sustainability Reports — Implementation Plan (Phase SR-1)
 
-> Created: 2026-06-24 | **Updated: 2026-06-24 (v1.1 — required changes before implementation)**
-> Phase: IMPLEMENTATION PLANNING — No Coding Yet
-> Status: ✅ GO WITH REQUIRED CHANGES (v1.1)
+> Created: 2026-06-24 | **Updated: 2026-06-25 (v1.2 — Gate 1 / SR-1A.1 Schema Foundation Completed)**
+> Phase: SR-1B — Backend Services + APIs + Lifecycle
+> Status: ✅ Gate 1 / SR-1A.1 Completed (feat(db): add sustainability reporting schema foundation)
 > Source: `docs/SUSTAINABILITY_REPORTS_ENGINEERING_DISCOVERY.md` v2.3
 > Canonical repo: `C:\Users\user\Documents\Tadweerah-Hub\Tadweerah-Hub`
 
@@ -170,7 +170,7 @@ Phase SR-0 ──→ SR-1A ──→ SR-1B ──→ SR-1C ──→ SR-1D ─�
 | Phase | Name | Duration | Dependencies | Approval Gate |
 |-------|------|----------|-------------|---------------|
 | SR-0 | PDF Arabic Rendering Spike | ~2 days | None | ✅ Gate 0: PDF approach decision |
-| SR-1A | Database Schema + Seeds + Foundation | ~3 days | SR-0 decision (can start in parallel) | ✅ Gate 1: Schema review |
+| SR-1A | Database Schema + Seeds + Foundation | ~3 days | SR-0 decision (can start in parallel) | ✅ Gate 1: Schema review (Completed - Commit: `feat(db): add sustainability reporting schema foundation`) |
 | SR-1B | Backend Services + APIs + Lifecycle | ~5 days | SR-1A complete | ✅ Gate 2: API review |
 | SR-1C | Buyer/Processor Allocation UI | ~5 days | SR-1B complete | ✅ Gate 3: UI review |
 | SR-1D | Report View + PDF Export | ~5 days | SR-1C + SR-0 complete | ✅ Gate 4: Report+PDF review |
@@ -491,16 +491,35 @@ None in this phase — i18n is added in SR-1C when UI is built.
 | Drizzle migration conflicts with pending migrations | 🟢 Low | Coordinate — no other schema work should be in flight |
 | Adding column to `waste_listings` (C1) | 🟡 Medium | Nullable column; backfill existing as NULL; sustainability eligibility requires explicit `false` |
 
-### Approval Checkpoint (v1.1 — updated per C1, C5, C6, C10)
-**Gate 1:** CTO reviews schema file structure and seed data before proceeding to SR-1B.
+### Approval Checkpoint (v1.2 — Gate 1 Closed)
+**Gate 1:** CTO reviews schema file structure and seed data before proceeding to SR-1B. (Completed)
 
 **Gate 1 exit conditions:**
-- [ ] Processed-output structural flag/gate exists on `waste_listings` table
-- [ ] Existing listings backfilled as `NULL` (unknown), not `false`
-- [ ] 13 protected system field seeds defined with `is_system_field = true`
-- [ ] "Data Quality" label replaces "Confidence Level" everywhere
-- [ ] CO₂e placeholder wording: "Not estimated — pending methodology governance"
-- [ ] Auto-derivation tested for deal completion and shipment close
+- [x] Processed-output structural flag/gate exists on `waste_listings` table
+- [x] Existing listings backfilled as `NULL` (unknown), not `false`
+- [x] 13 protected system field seeds defined with `is_system_field = true`
+- [x] "Data Quality" label replaces "Confidence Level" everywhere
+- [x] CO₂e placeholder wording: "Not estimated — pending methodology governance"
+- [x] Auto-derivation tested for deal completion and shipment close
+
+**Gate 1 Closure Record (2026-06-25):**
+- **Status:** Completed & Approved.
+- **Commit Reference:** `feat(db): add sustainability reporting schema foundation`
+- **Tables Added:**
+  - `sustainability_pathways`
+  - `sustainability_received_lines` (multi-line-ready)
+  - `sustainability_allocations`
+  - `sustainability_allocation_lines`
+  - `sustainability_report_field_config`
+  - `sustainability_reports` (parent-level sustainability reports, requiring `parent_entity_type` + `parent_entity_id`)
+- **Schema Updates:** Added `is_processed_output` to `waste_listings` (without default value, backfilling existing rows as `NULL`).
+- **Seeds Added:** GRI-aligned pathways, thin report field config registry including 13 protected system fields.
+- **Auto-derivation:** Sourced from `deals.actual_quantity` (completed deals) and `contract_shipments.final_weight` (closed contract shipments).
+- **Exclusion Confirmation:** Confirmed that no operational/financial reports or routes were touched.
+- **Migration & Deploy Policy:**
+  - **No DB push or migration was applied to staging/production.**
+  - Drizzle baseline migration generation locally (`drizzle-kit generate`) produced a full initialization snapshot (since the repository previously relied on `drizzle-kit push`), which was intentionally deleted/not committed to keep the git history clean.
+  - The database application/migration strategy is held for a separate approved phase before staging/production. No direct DB push has been run.
 
 ---
 
