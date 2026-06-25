@@ -237,8 +237,12 @@ export function SustainabilityAllocationDetailPage() {
     );
   }
 
+  const cachedList = queryClient.getQueryData<any[]>(["sustainability-received-lines"]);
+  const cachedItem = cachedList?.find((x) => x.received_line.id === id);
+
   const rl = data.received_line;
   const allocation = data.allocation;
+  const contractId = rl?.parent_entity_contract_id || cachedItem?.received_line?.parent_entity_contract_id;
   const isFinalized = allocation?.status === "finalized";
   const pathways = data.pathways;
   const totalReceived = Number(rl.final_received_qty) || 0;
@@ -337,8 +341,8 @@ export function SustainabilityAllocationDetailPage() {
                       {lang === "ar" ? "صفقة" : "DEAL"} / {rl.parent_reference || (lang === "ar" ? "مرجع غير متاح" : "REF_UNAVAILABLE")}
                     </a>
                   </Link>
-                ) : rl.parent_entity_type === "contract_shipment" && rl.parent_entity_contract_id ? (
-                  <Link href={`/contracts/${rl.parent_entity_contract_id}?shipment=${rl.parent_entity_id}&returnTo=${encodeURIComponent(`/sustainability/allocations/${id}`)}#shipment-${rl.parent_entity_id}`}>
+                ) : rl.parent_entity_type === "contract_shipment" && contractId ? (
+                  <Link href={`/contracts/${contractId}?shipment=${rl.parent_entity_id}&returnTo=${encodeURIComponent(`/sustainability/allocations/${id}`)}#shipment-${rl.parent_entity_id}`}>
                     <a className="text-[10px] text-primary font-semibold hover:underline font-mono bg-primary/10 px-1.5 py-0.5 rounded uppercase transition-colors" dir="ltr" title={lang === "ar" ? "فتح العقد (لا يمكن لـ MVP فتح الشحنة مباشرة)" : "Open Contract (MVP cannot open shipment directly)"}>
                       {lang === "ar" ? "شحنة عقد" : "CONTRACT SHIPMENT"} / {rl.parent_reference || (lang === "ar" ? "مرجع غير متاح" : "REF_UNAVAILABLE")}
                     </a>
