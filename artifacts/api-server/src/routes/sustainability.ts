@@ -84,12 +84,24 @@ async function enrichReceivedLineQty(receivedLine: any, allocationStatus?: strin
         let finalQty: string | null = null;
         let errorReason: string | null = null;
 
-        if (shipment.destination_weight && Number(shipment.destination_weight) > 0) {
-          finalQty = shipment.destination_weight;
-        } else if (shipment.weight_policy === "source_weight_only" && shipment.source_weight && Number(shipment.source_weight) > 0) {
-          finalQty = shipment.source_weight;
+        if (shipment.weight_policy === "source_weight_only") {
+          if (shipment.source_weight && Number(shipment.source_weight) > 0) {
+            finalQty = shipment.source_weight;
+          } else {
+            errorReason = "missing_source_quantity";
+          }
+        } else if (shipment.weight_policy === "destination_weight_only" || shipment.weight_policy?.startsWith("dual_")) {
+          if (shipment.destination_weight && Number(shipment.destination_weight) > 0) {
+            finalQty = shipment.destination_weight;
+          } else {
+            errorReason = "missing_buyer_quantity";
+          }
         } else {
-          errorReason = "missing_buyer_quantity";
+          if (shipment.destination_weight && Number(shipment.destination_weight) > 0) {
+            finalQty = shipment.destination_weight;
+          } else {
+            errorReason = "missing_buyer_quantity";
+          }
         }
 
         if (finalQty) {
@@ -112,14 +124,23 @@ async function enrichReceivedLineQty(receivedLine: any, allocationStatus?: strin
         }
       } else {
         let expectedQty: string | null = null;
-        if (shipment.destination_weight && Number(shipment.destination_weight) > 0) {
-          expectedQty = shipment.destination_weight;
-        } else if (shipment.weight_policy === "source_weight_only" && shipment.source_weight && Number(shipment.source_weight) > 0) {
-          expectedQty = shipment.source_weight;
+        
+        if (shipment.weight_policy === "source_weight_only") {
+          if (shipment.source_weight && Number(shipment.source_weight) > 0) {
+            expectedQty = shipment.source_weight;
+          }
+        } else if (shipment.weight_policy === "destination_weight_only" || shipment.weight_policy?.startsWith("dual_")) {
+          if (shipment.destination_weight && Number(shipment.destination_weight) > 0) {
+            expectedQty = shipment.destination_weight;
+          }
+        } else {
+          if (shipment.destination_weight && Number(shipment.destination_weight) > 0) {
+            expectedQty = shipment.destination_weight;
+          }
         }
 
         if (expectedQty && expectedQty !== receivedLine.final_received_qty) {
-          receivedLine.mismatch_warning = `Finalized quantity (${receivedLine.final_received_qty}) mismatches buyer received weight (${expectedQty}).`;
+          receivedLine.mismatch_warning = `Finalized quantity (${receivedLine.final_received_qty}) mismatches derived weight (${expectedQty}).`;
         }
       }
       if (shipment.reference) {
@@ -269,12 +290,24 @@ router.get("/sustainability/received-lines", requireAuth, requireCompany(), asyn
         let expectedQty: string | null = null;
         let errorReason: string | null = null;
 
-        if (r.shipment_destination_weight && Number(r.shipment_destination_weight) > 0) {
-          expectedQty = r.shipment_destination_weight;
-        } else if (r.shipment_weight_policy === "source_weight_only" && r.shipment_source_weight && Number(r.shipment_source_weight) > 0) {
-          expectedQty = r.shipment_source_weight;
+        if (r.shipment_weight_policy === "source_weight_only") {
+          if (r.shipment_source_weight && Number(r.shipment_source_weight) > 0) {
+            expectedQty = r.shipment_source_weight;
+          } else {
+            errorReason = "missing_source_quantity";
+          }
+        } else if (r.shipment_weight_policy === "destination_weight_only" || r.shipment_weight_policy?.startsWith("dual_")) {
+          if (r.shipment_destination_weight && Number(r.shipment_destination_weight) > 0) {
+            expectedQty = r.shipment_destination_weight;
+          } else {
+            errorReason = "missing_buyer_quantity";
+          }
         } else {
-          errorReason = "missing_buyer_quantity";
+          if (r.shipment_destination_weight && Number(r.shipment_destination_weight) > 0) {
+            expectedQty = r.shipment_destination_weight;
+          } else {
+            errorReason = "missing_buyer_quantity";
+          }
         }
 
         if (expectedQty) {

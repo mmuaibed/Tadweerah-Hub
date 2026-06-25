@@ -127,12 +127,24 @@ export async function deriveReceivedLineForShipment(shipmentId: string): Promise
     let finalQty: string | null = null;
     let errorReason: string | null = null;
 
-    if (shipment.destination_weight && Number(shipment.destination_weight) > 0) {
-      finalQty = shipment.destination_weight;
-    } else if (contract.weight_policy === "source_weight_only" && shipment.source_weight && Number(shipment.source_weight) > 0) {
-      finalQty = shipment.source_weight;
+    if (contract.weight_policy === "source_weight_only") {
+      if (shipment.source_weight && Number(shipment.source_weight) > 0) {
+        finalQty = shipment.source_weight;
+      } else {
+        errorReason = "missing_source_quantity";
+      }
+    } else if (contract.weight_policy === "destination_weight_only" || contract.weight_policy?.startsWith("dual_")) {
+      if (shipment.destination_weight && Number(shipment.destination_weight) > 0) {
+        finalQty = shipment.destination_weight;
+      } else {
+        errorReason = "missing_buyer_quantity";
+      }
     } else {
-      errorReason = "missing_buyer_quantity";
+      if (shipment.destination_weight && Number(shipment.destination_weight) > 0) {
+        finalQty = shipment.destination_weight;
+      } else {
+        errorReason = "missing_buyer_quantity";
+      }
     }
     
     if (!material.material_label || !material.unit_label) {
