@@ -1,8 +1,8 @@
 # Sustainability Reports — Implementation Plan (Phase SR-1)
 
-> Created: 2026-06-24 | **Updated: 2026-06-25 (v1.3 — Gate 2 / SIR-2A Allocation API Foundation Completed)**
-> Phase: SR-1C — Buyer/Processor Allocation UI (or next candidate: DB apply for SIR-2A unique index on staging)
-> Status: ✅ Gate 2 / SIR-2A Completed (feat(api): add sustainability allocation draft APIs — commit fcb4fc1)
+> Created: 2026-06-24 | **Updated: 2026-06-25 (v1.4 — Gate 3 / SIR-2B Allocation UI Draft Experience Closed)**
+> Phase: SR-1D — Report View + PDF Export (or next candidate: staging deployment/UAT checkpoint for SIR-2A/SIR-2B)
+> Status: ✅ Gate 3 / SIR-2B Closed (feat(ui): add sustainability allocation draft experience — commit 6d50ca6703395f44e0ad9c684370fa62c2bead3f)
 
 > Source: `docs/SUSTAINABILITY_REPORTS_ENGINEERING_DISCOVERY.md` v2.3
 > Canonical repo: `C:\Users\user\Documents\Tadweerah-Hub\Tadweerah-Hub`
@@ -1007,8 +1007,57 @@ Dashboard → shows pending/completed allocations
 | Field registry driving form (MVP has few fields) | 🟢 Low | Simple mapping; complex scenarios deferred to Phase 2 |
 | Modification of existing pages could break things | 🟡 Medium | Changes are additive — action button with feature flag |
 
-### Approval Checkpoint
-**Gate 3:** CTO reviews allocation UI (screenshots/demo) before proceeding to report view.
+### Approval Checkpoint (v1.4 — Gate 3 / SIR-2B Closed)
+**Gate 3 / SIR-2B:** CTO reviews and approves the sustainability allocation draft UI experience. (Completed & Approved)
+
+**Gate 3 / SIR-2B Completed Conditions:**
+- [x] User-facing allocation draft list and editor UI implemented.
+- [x] Eligible and ineligible received lines are visible.
+- [x] Ineligible lines are read-only in both list and direct detail route access.
+- [x] Editor supports adding/removing pathway rows.
+- [x] Editor calculates total allocated quantity, allocated percentage, and remaining/gap quantity.
+- [x] Draft saving is allowed only when at least one valid row exists.
+- [x] Incomplete draft saving is allowed.
+- [x] Over-allocation is blocked in the UI.
+- [x] Duplicate pathway IDs are blocked in the UI.
+- [x] Pathways with `requires_explanation = true` require explanation text before save.
+- [x] Backend validation errors are surfaced in the UI.
+- [x] No silent balancing.
+- [x] No auto-created residue/loss/other rows.
+- [x] Final workspace verified: `npm run typecheck` passed, `spike/` remains untracked and was not committed.
+
+**SIR-2B — Allocation UI Draft Experience Record (2026-06-25):**
+- **Status:** Completed & Approved.
+- **Commit Reference:** `6d50ca6703395f44e0ad9c684370fa62c2bead3f feat(ui): add sustainability allocation draft experience`
+- **New Frontend Pages:**
+  - `artifacts/tadweerah/src/pages/sustainability-allocations.tsx` (list view of allocations)
+  - `artifacts/tadweerah/src/pages/sustainability-allocation-detail.tsx` (edit/draft view of allocation)
+- **Frontend Routes Added:**
+  - `/sustainability/allocations`
+  - `/sustainability/allocations/:id`
+- **Files Modified:**
+  - `artifacts/tadweerah/src/App.tsx` (integrated new routes)
+  - `artifacts/tadweerah/src/pages/dashboard.tsx` (added secondary card to navigate to `/sustainability/allocations`)
+  - `artifacts/tadweerah/src/i18n/index.tsx` (added/reused missing localized translation keys)
+
+**SIR-2B Negative Scope Record:**
+- No finalization button.
+- No generate report button.
+- No PDF/export.
+- No CO₂e.
+- No certificate language.
+- No independent verification claim.
+- No Data Quality UI in SIR-2B.
+- No admin approval workflow.
+- No revision/superseded/needs_review flow.
+- No DB schema changes.
+- No DB push/migration/seed.
+- No deployment.
+
+**Next Candidate Phase:**
+- `SIR-2C — Finalization + Revision Governance`
+  or a staging deployment/UAT checkpoint for SIR-2A/SIR-2B before SIR-2C.
+  Do not start either yet.
 
 ---
 

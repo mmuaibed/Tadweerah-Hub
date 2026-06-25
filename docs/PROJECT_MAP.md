@@ -1,6 +1,6 @@
 # Tadweerah Hub — PROJECT MAP
-> Last updated: 2026-06-25 | Gate SIR-2A DB Staging Apply Closed
-> Status: Phase SIR-2A Approved — Sustainability allocation draft APIs and validation service implemented. Staging DB unique index patch applied and verified. Ready for next phase (SIR-2B Allocation UI or SIR-2C Finalization + Revision Governance). No production DB apply or deployment was run.
+> Last updated: 2026-06-25 | Gate SIR-2B Closed
+> Status: Phase SIR-2B Completed — Sustainability allocation UI draft experience source implementation completed and committed. Staging DB unique index applied and verified in SIR-2A. Next candidate phase: SIR-2C (Finalization + Revision Governance) or staging deployment/UAT checkpoint. No production DB actions, migrations, or deployments were performed.
 
 
 > **Legend used throughout this document:**
@@ -61,7 +61,7 @@ Tadweerah-Hub/
 | `routes/lookup.ts` | `/lookup/*` + `/admin/lookup/*` | Master data CRUD | 🚫 Yes |
 | `routes/listings.ts` | `/listings` | Waste listing CRUD + offer management | 🚫 Yes |
 | `routes/reports.ts` | `/reports` | Per-company deal reports + CSV export | 🚫 Yes |
-| `routes/sustainability.ts` | `/sustainability` | Sustainability pathways and allocation drafts (SIR-2A) | 🚫 Yes |
+| `routes/sustainability.ts` | `/sustainability` | Sustainability pathways and allocation drafts (SIR-2A/B) | 🚫 Yes |
 | `routes/transport-requests.ts` | `/transport-requests` | Transport request lifecycle | 🚫 Yes |
 | `routes/stats.ts` | `/stats` | Per-company dashboard statistics | 🚫 Yes |
 | `routes/notifications.ts` | `/notifications` | In-app notification reads/acks | 🚫 Yes |
@@ -405,7 +405,7 @@ Event occurs (route handler or hourly job)
 | `listing-detail.tsx` | `/listings/:id` | Listing + offer submission + deal panel |
 | `listing-new.tsx` | `/listings/new` | Create new waste listing |
 | `my-listings.tsx` | `/my-listings` | Producer's own listings |
-| `dashboard.tsx` | `/dashboard` | Both-party deal dashboard with status overviews |
+| `dashboard.tsx` | `/dashboard` | Both-party deal dashboard with status overviews and sustainability allocation draft card (SIR-2B) |
 | `participations.tsx` | `/participations` | Buyer's submitted offers + deal status |
 | `contracts.tsx` | `/contracts` | Contract Lite list |
 | `contract-detail.tsx` | `/contracts/:id` | Contract detail + shipments (⚠️ not yet audited for Phase-CLT) |
@@ -418,6 +418,8 @@ Event occurs (route handler or hourly job)
 | `company-capabilities.tsx` | `/capabilities` | Waste-handling certifications |
 | `members.tsx` | `/members` | Team members + invitations |
 | `pending-actions.tsx` | `/pending-actions` | Pending deal actions queue |
+| `sustainability-allocations.tsx` | `/sustainability/allocations` | List of eligible sustainability received lines and allocation drafts (SIR-2B) |
+| `sustainability-allocation-detail.tsx` | `/sustainability/allocations/:id` | Edit and save sustainability pathway allocation drafts (SIR-2B) |
 
 ---
 
