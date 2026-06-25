@@ -97,6 +97,7 @@ export function SustainabilityAllocationDetailPage() {
   const [draftLines, setDraftLines] = useState<DraftLine[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
   const [showFinalizeModal, setShowFinalizeModal] = useState(false);
+  const [showRequestChangeModal, setShowRequestChangeModal] = useState(false);
 
   const { data, isLoading, error } = useQuery<AllocationDetailRes>({
     queryKey: ["sustainability-allocation", id],
@@ -208,7 +209,7 @@ export function SustainabilityAllocationDetailPage() {
 
   if (isLoading) {
     return (
-      <AppLayout title={t("sustainability.allocations.detail.title")}>
+      <AppLayout title={t("sustainability.allocations.title")}>
         <div className="flex h-64 items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
@@ -218,7 +219,7 @@ export function SustainabilityAllocationDetailPage() {
 
   if (error || !data) {
     return (
-      <AppLayout title={t("sustainability.allocations.detail.title")}>
+      <AppLayout title={t("sustainability.allocations.title")}>
         <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive mt-4">
           <AlertCircle className="h-4 w-4 shrink-0" />
           {error ? (error as Error).message : "Not found"}
@@ -414,7 +415,7 @@ export function SustainabilityAllocationDetailPage() {
             <div className="p-4 border-b border-border flex justify-between items-center bg-muted/20">
               <h3 className="font-semibold text-foreground flex items-center gap-2">
                 <Leaf className="h-4 w-4 text-primary" />
-                {t("sustainability.allocations.detail.title")}
+                {isFinalized ? t("sustainability.allocations.report.title") : t("sustainability.allocations.detail.title")}
               </h3>
               {isFinalized ? (
                 <div className="flex items-center gap-4">
@@ -544,7 +545,16 @@ export function SustainabilityAllocationDetailPage() {
               )}
             </div>
             
-            <div className="p-4 border-t border-border bg-muted/20 flex flex-wrap justify-end gap-3">
+            <div className="p-4 border-t border-border bg-muted/20 flex flex-wrap justify-end gap-3 items-center">
+              {isFinalized && (
+                <Button
+                  variant="outline"
+                  onClick={() => setShowRequestChangeModal(true)}
+                  className="me-auto bg-background text-muted-foreground hover:text-foreground"
+                >
+                  {t("sustainability.allocations.request_change")}
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 onClick={() => setLocation("/sustainability/allocations")}
@@ -630,6 +640,33 @@ export function SustainabilityAllocationDetailPage() {
                 <><Lock className="h-4 w-4 me-2" /> {t("sustainability.allocations.finalize")}</>
               )}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showRequestChangeModal} onOpenChange={setShowRequestChangeModal}>
+        <DialogContent dir={dir}>
+          <DialogHeader>
+            <DialogTitle>{t("sustainability.allocations.request_change")}</DialogTitle>
+            <DialogDescription className="pt-4 text-foreground leading-relaxed">
+              {t("sustainability.allocations.request_change.desc")}
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter className="mt-6 gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setShowRequestChangeModal(false)}
+            >
+              {t("action.close")}
+            </Button>
+            <a
+              href={`mailto:info@tadweerah.com?subject=تعديل%20توزيع%20الاستدامة%20-%20${rl.parent_reference || ''}&body=يرجى%20مراجعة%20توزيع%20الاستدامة%20للسجل%20الآتي:%0Aالمرجع:%20${rl.parent_reference || ''}%0Aالمادة:%20${rl.material_label || ''}%0Aتاريخ%20الاعتماد:%20${allocation?.finalized_at ? fmtDate(allocation.finalized_at, lang) : ''}%0A%0Aالسبب:%20`}
+            >
+              <Button variant="default">
+                {t("sustainability.allocations.contact_support")}
+              </Button>
+            </a>
           </DialogFooter>
         </DialogContent>
       </Dialog>

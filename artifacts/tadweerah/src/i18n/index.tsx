@@ -1793,6 +1793,7 @@ const translations: Record<string, Record<Language, string>> = {
   
   // Sustainability Allocations
   "sustainability.allocations.title": { ar: "إدخال بيانات الاستدامة", en: "Sustainability Data Entry" },
+  "sustainability.allocations.report.title": { ar: "تقرير الاستدامة", en: "Sustainability Report" },
   "sustainability.allocations.subtitle": { ar: "أضف الإجراء الذي تم على المواد المستلمة وحدد مسار كل كمية.", en: "Record the action taken for received materials and allocate each quantity." },
   "sustainability.allocations.open_deal": { ar: "فتح الصفقة", en: "Open deal" },
   "sustainability.allocations.empty.title": { ar: "لا توجد مواد مستلمة جاهزة لإدخال بيانات الاستدامة حالياً.", en: "No received materials are available for sustainability data entry yet." },
