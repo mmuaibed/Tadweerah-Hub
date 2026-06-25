@@ -1,6 +1,6 @@
 # Tadweerah Hub — PROJECT MAP
-> Last updated: 2026-06-25 | Gate SIR-2B Closed
-> Status: Phase SIR-2B Completed and SIR-2AB Bug Fixes Closed — Sustainability UI consistency, exact Arabic terminology, read-time eligibility leniency for completed deals, and read-time quantity derivations successfully implemented and verified in Staging UAT. Next candidate phase: SIR-2C (Finalization + Revision Governance). No production DB actions, migrations, or deployments were performed.
+> Last updated: 2026-06-26 | Gate SIR-2C Closed
+> Status: Phase SIR-2C Finalization + Lock completed on Staging. Active backend revision: `tadweerah-api-00111-jjf`. Frontend deployed to Firebase Staging. Finalized allocations are locked/read-only. `طلب تعديل التوزيع` routes through platform Issues as a temporary bridge. Full admin-governed reopen/versioned revision workflow is deferred to SIR-2D. Seller-facing Sustainability Reports tab is deferred to SIR-3A. Contract shipment parity and methodology-first sustainability quantity derivation completed. No production deploy, no DB mutation.
 
 
 > **Legend used throughout this document:**
