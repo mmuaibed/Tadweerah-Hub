@@ -124,7 +124,16 @@ export async function deriveReceivedLineForShipment(shipmentId: string): Promise
 
     if (!material) return;
 
-    const finalQty = shipment.destination_weight;
+    let finalQty: string | null = null;
+    let errorReason: string | null = null;
+
+    if (shipment.destination_weight && Number(shipment.destination_weight) > 0) {
+      finalQty = shipment.destination_weight;
+    } else if (contract.weight_policy === "source_weight_only" && shipment.source_weight && Number(shipment.source_weight) > 0) {
+      finalQty = shipment.source_weight;
+    } else {
+      errorReason = "missing_buyer_quantity";
+    }
     
     if (!material.material_label || !material.unit_label) {
       console.warn(`[sustainability] Shipment ${shipmentId} material has no material_label or unit_label. Cannot derive line.`);
@@ -135,12 +144,9 @@ export async function deriveReceivedLineForShipment(shipmentId: string): Promise
     let isEligible = true;
     let reason = null;
 
-    if (!finalQty) {
+    if (errorReason) {
       isEligible = false;
-      reason = "missing_buyer_quantity";
-    } else if (numericQty <= 0) {
-      isEligible = false;
-      reason = "non_positive_quantity";
+      reason = errorReason;
     } else if (!material.material_category_id) {
       isEligible = false;
       reason = "unclassified";

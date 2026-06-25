@@ -8,7 +8,8 @@ import {
   sustainabilityPathwaysTable,
   dealsTable,
   contractShipmentsTable,
-  contractMaterialsTable
+  contractMaterialsTable,
+  contractsTable
 } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requireCompany, type AuthedCompanyRequest } from "../middlewares/requireCompany";
@@ -65,23 +66,36 @@ async function enrichReceivedLineQty(receivedLine: any, allocationStatus?: strin
     const [shipment] = await db
       .select({ 
         destination_weight: contractShipmentsTable.destination_weight,
+        source_weight: contractShipmentsTable.source_weight,
         reference: contractShipmentsTable.reference,
         material_category_id: contractMaterialsTable.material_category_id,
         material_label: contractMaterialsTable.material_label,
         unit_label: contractMaterialsTable.unit_label,
+        weight_policy: contractsTable.weight_policy,
       })
       .from(contractShipmentsTable)
       .leftJoin(contractMaterialsTable, eq(contractShipmentsTable.material_line_id, contractMaterialsTable.id))
+      .leftJoin(contractsTable, eq(contractShipmentsTable.contract_id, contractsTable.id))
       .where(eq(contractShipmentsTable.id, receivedLine.parent_entity_id))
       .limit(1);
     
     if (shipment) {
       if (allocationStatus !== "finalized") {
-        if (shipment.destination_weight) {
-          receivedLine.final_received_qty = shipment.destination_weight;
+        let finalQty: string | null = null;
+        let errorReason: string | null = null;
+
+        if (shipment.destination_weight && Number(shipment.destination_weight) > 0) {
+          finalQty = shipment.destination_weight;
+        } else if (shipment.weight_policy === "source_weight_only" && shipment.source_weight && Number(shipment.source_weight) > 0) {
+          finalQty = shipment.source_weight;
+        } else {
+          errorReason = "missing_buyer_quantity";
+        }
+
+        if (finalQty) {
+          receivedLine.final_received_qty = finalQty;
           
-          if (Number(shipment.destination_weight) > 0 && 
-              (receivedLine.ineligibility_reason === "non_positive_quantity" || receivedLine.ineligibility_reason === "missing_buyer_quantity")) {
+          if (receivedLine.ineligibility_reason === "non_positive_quantity" || receivedLine.ineligibility_reason === "missing_buyer_quantity") {
             const hasCat = Boolean(receivedLine.material_category_id) || Boolean(shipment.material_category_id) || Boolean(shipment.material_label);
             if (!hasCat) {
               receivedLine.is_eligible = false;
@@ -94,11 +108,18 @@ async function enrichReceivedLineQty(receivedLine: any, allocationStatus?: strin
         } else {
           receivedLine.final_received_qty = "0";
           receivedLine.is_eligible = false;
-          receivedLine.ineligibility_reason = "missing_buyer_quantity";
+          receivedLine.ineligibility_reason = errorReason;
         }
       } else {
-        if (shipment.destination_weight && shipment.destination_weight !== receivedLine.final_received_qty) {
-          receivedLine.mismatch_warning = `Finalized quantity (${receivedLine.final_received_qty}) mismatches buyer received weight (${shipment.destination_weight}).`;
+        let expectedQty: string | null = null;
+        if (shipment.destination_weight && Number(shipment.destination_weight) > 0) {
+          expectedQty = shipment.destination_weight;
+        } else if (shipment.weight_policy === "source_weight_only" && shipment.source_weight && Number(shipment.source_weight) > 0) {
+          expectedQty = shipment.source_weight;
+        }
+
+        if (expectedQty && expectedQty !== receivedLine.final_received_qty) {
+          receivedLine.mismatch_warning = `Finalized quantity (${receivedLine.final_received_qty}) mismatches buyer received weight (${expectedQty}).`;
         }
       }
       if (shipment.reference) {
@@ -153,6 +174,8 @@ router.get("/sustainability/received-lines", requireAuth, requireCompany(), asyn
       listing_subcategory_id: wasteListingsTable.material_subcategory_id,
       shipment_reference: contractShipmentsTable.reference,
       shipment_destination_weight: contractShipmentsTable.destination_weight,
+      shipment_source_weight: contractShipmentsTable.source_weight,
+      shipment_weight_policy: contractsTable.weight_policy,
       shipment_material_id: contractShipmentsTable.material_line_id,
       shipment_contract_id: contractShipmentsTable.contract_id,
       shipment_material_category_id: contractMaterialsTable.material_category_id,
@@ -185,6 +208,10 @@ router.get("/sustainability/received-lines", requireAuth, requireCompany(), asyn
     .leftJoin(
       contractMaterialsTable,
       eq(contractShipmentsTable.material_line_id, contractMaterialsTable.id)
+    )
+    .leftJoin(
+      contractsTable,
+      eq(contractShipmentsTable.contract_id, contractsTable.id)
     )
     .where(eq(sustainabilityReceivedLinesTable.buyer_company_id, company.id))
     .orderBy(desc(sustainabilityReceivedLinesTable.created_at))
@@ -239,10 +266,21 @@ router.get("/sustainability/received-lines", requireAuth, requireCompany(), asyn
       }
       
       if (r.allocation_status !== "finalized") {
-        if (r.shipment_destination_weight) {
-          derived_qty = r.shipment_destination_weight;
+        let expectedQty: string | null = null;
+        let errorReason: string | null = null;
+
+        if (r.shipment_destination_weight && Number(r.shipment_destination_weight) > 0) {
+          expectedQty = r.shipment_destination_weight;
+        } else if (r.shipment_weight_policy === "source_weight_only" && r.shipment_source_weight && Number(r.shipment_source_weight) > 0) {
+          expectedQty = r.shipment_source_weight;
+        } else {
+          errorReason = "missing_buyer_quantity";
+        }
+
+        if (expectedQty) {
+          derived_qty = expectedQty;
           
-          if (Number(derived_qty) > 0 && (derived_reason === "non_positive_quantity" || derived_reason === "missing_buyer_quantity")) {
+          if (derived_reason === "non_positive_quantity" || derived_reason === "missing_buyer_quantity") {
             const hasCat = Boolean(r.shipment_material_category_id) || Boolean(r.shipment_material_label);
             if (!hasCat) {
               derived_reason = "unclassified";
@@ -255,7 +293,7 @@ router.get("/sustainability/received-lines", requireAuth, requireCompany(), asyn
         } else {
           derived_qty = "0";
           derived_is_eligible = false;
-          derived_reason = "missing_buyer_quantity";
+          derived_reason = errorReason;
         }
       }
       
