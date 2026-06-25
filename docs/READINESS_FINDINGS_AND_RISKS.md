@@ -394,3 +394,26 @@ Admin restore of shipments without DB migration relies on timestamps + audit log
 - The admin interface fully supports creating, editing, manual reordering via arrows, and hard deletion.
 - Fully localized in Arabic within the Admin UI.
 **Risks:** **Low Operational Risk** (completely decoupled from marketplace logic; UI changes confined to Admin Panel).
+
+---
+
+## Section 10: Phase SIR-2B Closed (Sustainability Draft Allocation UI & API)
+
+> **Status:** ✅ Completed and Staging UAT Confirmed.
+> 
+> **Completed Scope (SIR-2A / SIR-2B / SIR-2AB Polish):**
+> - **SIR-2A DB Prep:** Created `sustainability_received_lines`, `sustainability_allocations`, `sustainability_allocation_lines`. Added robust unique indexes for `(parent_entity_type, parent_entity_id)` and allocation drafting. No production DB changes were made.
+> - **Derivation Logic:** Deployed `sustainability-derivation.ts` worker to securely create received lines when deals complete or contract shipments close.
+> - **UX/UI implementation:** "إدخال بيانات الاستدامة" (Sustainability Data Entry) list view and diagnostic read-only detail view for ineligible sources.
+> - **Read-Time Accuracy:** 
+>   - Source references display as e.g., `صفقة / TDW-2026-648100` instead of raw UUIDs.
+>   - Material paths use Arabic hierarchy (e.g., `معادن / ألمنيوم`) dynamically overriding generic category codes.
+>   - Quantities are strictly derived from trusted operational fields (e.g., `deal.actual_quantity` or `listing.quantity`), entirely avoiding financial numbers.
+> - **Eligibility Rules:** Read-time leniency ensures completed deals with `is_processed_output = null` remain eligible as long as trusted quantity and material classification are available. Explicit `is_processed_output = true` correctly blocks allocation.
+> - **Guards:** UI securely disables saving if allocation > received, if pathways duplicate, or if explanations are missing. Ineligible lines present a strict read-only diagnostic view showing exact Arabic error reasons.
+>
+> **Important Deferrals / Out of Scope (For SIR-2C / Future):**
+> - No Production deployment yet.
+> - No DB cleanup/migration/backfill executed.
+> - Multi-material support remains out of scope (current model is single-material per received line).
+> - SIR-2C Finalization logic, reporting, PDF exports, CO₂e calculations, and certificate generation are NOT implemented yet.

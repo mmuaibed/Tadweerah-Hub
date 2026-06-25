@@ -1,6 +1,6 @@
 # Tadweerah Hub — PROJECT MAP
 > Last updated: 2026-06-25 | Gate SIR-2B Closed
-> Status: Phase SIR-2B Completed — Sustainability allocation UI draft experience source implementation completed and committed. Staging DB unique index applied and verified in SIR-2A. Next candidate phase: SIR-2C (Finalization + Revision Governance) or staging deployment/UAT checkpoint. No production DB actions, migrations, or deployments were performed.
+> Status: Phase SIR-2B Completed and SIR-2AB Bug Fixes Closed — Sustainability UI consistency, exact Arabic terminology, read-time eligibility leniency for completed deals, and read-time quantity derivations successfully implemented and verified in Staging UAT. Next candidate phase: SIR-2C (Finalization + Revision Governance). No production DB actions, migrations, or deployments were performed.
 
 
 > **Legend used throughout this document:**
