@@ -2198,4 +2198,35 @@ router.get("/admin/sustainability/received-lines", requireAdminKey, async (req, 
   res.json(rows);
 });
 
+/**
+ * GET /admin/sustainability/contract-shipments/missing-received-lines
+ * Dry-run audit for closed contract shipments missing sustainability lines.
+ */
+router.get("/admin/sustainability/contract-shipments/missing-received-lines", requireAdminKey, async (req, res) => {
+  const results = await db
+    .select({
+      id: contractShipmentsTable.id,
+      reference: contractShipmentsTable.reference,
+    })
+    .from(contractShipmentsTable)
+    .leftJoin(
+      sustainabilityReceivedLinesTable,
+      and(
+        eq(sustainabilityReceivedLinesTable.parent_entity_id, contractShipmentsTable.id),
+        eq(sustainabilityReceivedLinesTable.parent_entity_type, "contract_shipment")
+      )
+    )
+    .where(
+      and(
+        eq(contractShipmentsTable.status, "closed"),
+        isNull(sustainabilityReceivedLinesTable.id)
+      )
+    );
+
+  res.json({
+    count: results.length,
+    shipments: results.map(r => r.reference)
+  });
+});
+
 export default router;
