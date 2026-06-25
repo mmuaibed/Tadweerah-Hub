@@ -465,13 +465,13 @@ None in this phase — i18n is added in SR-1C when UI is built.
 | Check | Command | Expected |
 |-------|---------|----------|
 | TypeScript compilation | `npx tsc --noEmit` across affected packages | No errors |
-| Schema generation | `npx drizzle-kit generate` | Migration file created |
-| Migration apply (local) | `npx drizzle-kit push` (or `migrate`) | Tables created in local DB |
-| Seed script | `npx tsx scripts/seed-sustainability.ts` | 10 pathways + 15 field configs inserted |
+| Schema generation | (Local only - do not commit output) | N/A |
+| Migration apply | Run manual incremental SQL review script | Tables created in DB |
+| Seed script | `npm run seed:sustainability` (Run only after schema applied) | 10 pathways + 15 field configs inserted |
 | Auto-derivation test | Manual: complete a test deal → verify received line created | Line exists in DB |
 
 ### Manual UAT Steps
-1. Run migration on local/staging DB
+1. Apply the manual incremental SQL script (`sustainability_schema_incremental_review.sql`) to local/staging DB
 2. Verify all 5 sustainability tables exist with correct columns
 3. Verify `waste_listings.is_processed_output` column exists (nullable for existing records)
 4. Verify 10 pathways seeded with correct data
