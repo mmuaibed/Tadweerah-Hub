@@ -1792,9 +1792,10 @@ const translations: Record<string, Record<Language, string>> = {
   "admin.stats.pending_companies": { ar: "شركات بانتظار الاعتماد", en: "Pending Companies" },
   
   // Sustainability Allocations
-  "sustainability.allocations.title": { ar: "مسودات توزيع الاستدامة", en: "Sustainability Allocation Drafts" },
-  "sustainability.allocations.subtitle": { ar: "استعراض المواد المستلمة وإنشاء مسودات التوزيع", en: "View received materials and create allocation drafts" },
-  "sustainability.allocations.empty.title": { ar: "لا توجد مواد مستلمة جاهزة لمسودات توزيع الاستدامة حالياً.", en: "No received materials are available for sustainability allocation drafts yet." },
+  "sustainability.allocations.title": { ar: "إدخال بيانات الاستدامة", en: "Sustainability Data Entry" },
+  "sustainability.allocations.subtitle": { ar: "أضف الإجراء الذي تم على المواد المستلمة وحدد مسار كل كمية.", en: "Record the action taken for received materials and allocate each quantity." },
+  "sustainability.allocations.open_deal": { ar: "فتح الصفقة", en: "Open deal" },
+  "sustainability.allocations.empty.title": { ar: "لا توجد مواد مستلمة جاهزة لإدخال بيانات الاستدامة حالياً.", en: "No received materials are available for sustainability data entry yet." },
   "sustainability.allocations.empty.desc": { ar: "بمجرد استلامك لمواد جديدة كمعالج، ستظهر هنا لتمكين توزيعها.", en: "Once you receive new materials as a processor, they will appear here for allocation." },
   "sustainability.allocations.ineligibility_reason": { ar: "سبب عدم الأهلية", en: "Ineligibility Reason" },
   "sustainability.allocations.eligible": { ar: "مؤهل للتوزيع", en: "Eligible for allocation" },
@@ -1815,7 +1816,7 @@ const translations: Record<string, Record<Language, string>> = {
   "sustainability.allocations.detail.title": { ar: "مسودة توزيع الاستدامة", en: "Sustainability Allocation Draft" },
   "sustainability.allocations.detail.subtitle": { ar: "إدارة مسودة توزيع الكميات المستلمة", en: "Manage the allocation draft for received quantities" },
   "sustainability.allocations.detail.not_allocatable": { ar: "هذه المادة غير قابلة للتوزيع", en: "This received material is not allocatable" },
-  "sustainability.allocations.detail.back": { ar: "العودة إلى مسودات التوزيع", en: "Back to Allocation Drafts" },
+  "sustainability.allocations.detail.back": { ar: "العودة إلى إدخال بيانات الاستدامة", en: "Back to Sustainability Data Entry" },
   "pathway.reuse.desc": { ar: "استخدام المادة مرة أخرى كما هي أو بعد فرز/تنظيف بسيط دون تغيير جوهري في طبيعتها.", en: "Reusing the material as is or after simple sorting/cleaning without fundamental changes to its nature." },
   "pathway.repair.desc": { ar: "إصلاح أو تجديد المادة أو المنتج ليعود قابلاً للاستخدام مع الحفاظ على وظيفته الأصلية.", en: "Repairing or refurbishing the material or product to be usable while maintaining its original function." },
   "pathway.remanufacturing.desc": { ar: "إدخال المادة أو المكوّن في عملية تصنيع لإنتاج منتج أو مكوّن جديد أو معاد تصنيعه.", en: "Introducing the material or component into a manufacturing process to produce a new or remanufactured product or component." },
