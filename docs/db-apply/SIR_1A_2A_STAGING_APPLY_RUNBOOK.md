@@ -105,8 +105,8 @@ WHERE field_key = 'co2e_placeholder';
 
 Record the execution of this runbook for auditing purposes. Do not proceed to SIR-1A.2b (Auto-Derivation Hooks) until the verification passes.
 
-- **Apply Date/Time:** [Enter Date/Time]
-- **Applied By:** [Enter Name/Role]
+- **Apply Date/Time:** 2026-06-25
+- **Applied By:** DB Owner / Admin
 - **Target DB:** Staging Only (Confirmed)
-- **Errors Encountered (if any):** [None / Describe issues]
-- **Verification Result:** [Passed / Failed]
+- **Errors Encountered (if any):** None
+- **Verification Result:** Passed

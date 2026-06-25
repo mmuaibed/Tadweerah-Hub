@@ -529,6 +529,14 @@ None in this phase — i18n is added in SR-1C when UI is built.
 - **Auto-derivation Update:** Contract shipment auto-derivation must NOT assume eligibility; it must check `contract_materials.is_processed_output === false`. Auto-derivation hooks remain un-implemented.
 - **DB Apply Update:** DB apply is still NOT executed. A manual incremental SQL script (`docs/db-apply/sustainability_schema_incremental_review.sql`) has been authored for review-only until separately approved. No direct `drizzle-kit push` has been run.
 
+**SIR-1A.2a Staging DB Apply Record (2026-06-25):**
+- **Status:** Staging Apply Completed & Verified.
+- **Execution:** The DB owner manually applied the reviewed incremental SQL script and executed the `seed:sustainability` script against the Staging Database.
+- **Verification:** Preflight checks passed (including `gen_random_uuid()`). All 6 new sustainability tables exist. Both `waste_listings` and `contract_materials` have the `is_processed_output` boolean column.
+- **Seed Verification:** 10 pathways seeded successfully (`other` and `energy_recovery` are correctly marked non-circular). 13 protected system fields seeded successfully (including `co2e_placeholder`).
+- **Safety Validations:** A Cloud SQL staging backup was taken before apply. No `drizzle-kit push` was run. The production DB was untouched. No operational data was altered.
+- **Next Phase Eligibility:** SIR-1A.2b (Auto-Derivation Hooks) is now unblocked and eligible to start as a separate approved phase.
+
 ---
 
 ## 5. Phase SR-1B: Backend Services + APIs + Lifecycle

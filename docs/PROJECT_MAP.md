@@ -1,6 +1,6 @@
 # Tadweerah Hub — PROJECT MAP
 > Last updated: 2026-06-25 | Gate 1 Closed (session 64528c3a)
-> Status: Gate 1 Approved — Sustainability schema foundation added only. Auto-derivation hooks/functionality deferred to SIR-1A.2. No operational routes/hooks were touched. (No DB push or migration applied)
+> Status: Gate 1A.2a Approved — Staging DB manually applied and seeded. Auto-derivation hooks (SIR-1A.2b) are now eligible to start. No operational routes/hooks were touched. No drizzle-kit push was used.
 
 > **Legend used throughout this document:**
 > - 🟢 **Current behavior** — what the code does today
