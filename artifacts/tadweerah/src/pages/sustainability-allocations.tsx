@@ -1,3 +1,4 @@
+import { useState, useMemo } from "react";
 import { Link } from "wouter";
 import { useAuth } from "@clerk/react";
 import { useQuery } from "@tanstack/react-query";
@@ -6,8 +7,12 @@ import {
   Loader2,
   AlertCircle,
   Lock,
+  Search,
+  Filter,
 } from "lucide-react";
 import { AppLayout } from "@/components/app-layout";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useT } from "@/i18n";
 import { fmtDate, fmtNumber } from "@/lib/format";
 
@@ -52,6 +57,41 @@ export function SustainabilityAllocationsPage() {
   const dir = lang === "ar" ? "rtl" : "ltr";
   const { data: rows, isLoading, error } = useReceivedLines();
 
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "not_started" | "draft">("all");
+  const [eligibilityFilter, setEligibilityFilter] = useState<"all" | "eligible" | "ineligible">("all");
+  const [sourceFilter, setSourceFilter] = useState<"all" | "deal" | "contract">("all");
+
+  const filteredRows = useMemo(() => {
+    if (!rows) return [];
+    return rows.filter((row) => {
+      // Status
+      if (statusFilter === "not_started" && row.allocation_status === "draft") return false;
+      if (statusFilter === "draft" && row.allocation_status !== "draft") return false;
+
+      // Eligibility
+      if (eligibilityFilter === "eligible" && !row.received_line.is_eligible) return false;
+      if (eligibilityFilter === "ineligible" && row.received_line.is_eligible) return false;
+
+      // Source
+      if (sourceFilter === "deal" && row.received_line.parent_entity_type !== "deal") return false;
+      if (sourceFilter === "contract" && row.received_line.parent_entity_type !== "contract_shipment") return false;
+
+      // Search
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        const mat = row.received_line.material_label.toLowerCase();
+        const srcId = row.received_line.parent_entity_id?.toLowerCase() || "";
+        const srcType = row.received_line.parent_entity_type.toLowerCase();
+        
+        if (!mat.includes(q) && !srcId.includes(q) && !srcType.includes(q)) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [rows, statusFilter, eligibilityFilter, sourceFilter, searchQuery]);
+
   return (
     <AppLayout
       title={t("sustainability.allocations.title")}
@@ -83,9 +123,60 @@ export function SustainabilityAllocationsPage() {
           </div>
         ) : (
           <div className="rounded-xl border border-border bg-card overflow-hidden">
-            <div className="px-4 py-3 border-b border-border flex items-center justify-between gap-2">
-              <p className="text-sm font-semibold text-foreground">
-                {rows.length} {lang === "ar" ? "مادة مستلمة" : "received materials"}
+            <div className="p-4 border-b border-border flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-muted/10">
+              <div className="flex items-center gap-2 w-full md:w-auto">
+                <div className="relative w-full md:w-64">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder={lang === "ar" ? "بحث بالمادة أو المصدر..." : "Search material or source..."}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9 bg-background"
+                  />
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0 hide-scrollbar">
+                <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
+                
+                <Select value={statusFilter} onValueChange={(val: any) => setStatusFilter(val)}>
+                  <SelectTrigger className="w-[130px] h-9 text-xs bg-background">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{lang === "ar" ? "كل الحالات" : "All status"}</SelectItem>
+                    <SelectItem value="not_started">{lang === "ar" ? "لم يبدأ" : "Not started"}</SelectItem>
+                    <SelectItem value="draft">{lang === "ar" ? "مسودة" : "Draft"}</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={eligibilityFilter} onValueChange={(val: any) => setEligibilityFilter(val)}>
+                  <SelectTrigger className="w-[130px] h-9 text-xs bg-background">
+                    <SelectValue placeholder="Eligibility" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{lang === "ar" ? "كل الأهلية" : "All eligibility"}</SelectItem>
+                    <SelectItem value="eligible">{t("sustainability.allocations.eligible")}</SelectItem>
+                    <SelectItem value="ineligible">{t("sustainability.allocations.ineligible")}</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={sourceFilter} onValueChange={(val: any) => setSourceFilter(val)}>
+                  <SelectTrigger className="w-[130px] h-9 text-xs bg-background">
+                    <SelectValue placeholder="Source" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{lang === "ar" ? "كل المصادر" : "All sources"}</SelectItem>
+                    <SelectItem value="deal">{lang === "ar" ? "صفقة" : "Deal"}</SelectItem>
+                    <SelectItem value="contract">{lang === "ar" ? "عقد" : "Contract"}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="px-4 py-2 border-b border-border flex items-center justify-between gap-2 bg-muted/5">
+              <p className="text-xs font-medium text-muted-foreground">
+                {filteredRows.length} {lang === "ar" ? "مادة مستلمة مطابقة" : "received materials match"}
               </p>
             </div>
             <div className="overflow-x-auto">
@@ -102,7 +193,13 @@ export function SustainabilityAllocationsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {rows.map((row) => {
+                  {filteredRows.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="px-3 py-8 text-center text-sm text-muted-foreground">
+                        {lang === "ar" ? "لا توجد نتائج مطابقة للبحث أو التصفية" : "No results match the current filters"}
+                      </td>
+                    </tr>
+                  ) : filteredRows.map((row) => {
                     const rl = row.received_line;
                     const isEligible = rl.is_eligible;
                     
@@ -146,7 +243,7 @@ export function SustainabilityAllocationsPage() {
                               </span>
                               {rl.ineligibility_reason && (
                                 <span className="text-[10px] text-muted-foreground max-w-[200px] truncate" title={rl.ineligibility_reason}>
-                                  {rl.ineligibility_reason}
+                                  {t(`sustainability.allocations.ineligibility.${rl.ineligibility_reason}`) === `sustainability.allocations.ineligibility.${rl.ineligibility_reason}` ? rl.ineligibility_reason : t(`sustainability.allocations.ineligibility.${rl.ineligibility_reason}`)}
                                 </span>
                               )}
                             </div>

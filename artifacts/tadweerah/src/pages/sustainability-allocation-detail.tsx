@@ -310,7 +310,7 @@ export function SustainabilityAllocationDetailPage() {
             </h3>
             {rl.ineligibility_reason && (
               <p className="mt-2 text-sm text-muted-foreground max-w-md">
-                <strong className="font-semibold">{t("sustainability.allocations.ineligibility_reason")}:</strong> {rl.ineligibility_reason}
+                <strong className="font-semibold">{t("sustainability.allocations.ineligibility_reason")}:</strong> {t(`sustainability.allocations.ineligibility_desc.${rl.ineligibility_reason}`) === `sustainability.allocations.ineligibility_desc.${rl.ineligibility_reason}` ? rl.ineligibility_reason : t(`sustainability.allocations.ineligibility_desc.${rl.ineligibility_reason}`)}
               </p>
             )}
             <Button

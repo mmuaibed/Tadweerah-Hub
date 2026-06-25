@@ -1798,6 +1798,8 @@ const translations: Record<string, Record<Language, string>> = {
   "sustainability.allocations.empty.title": { ar: "لا توجد مواد مستلمة جاهزة لإدخال بيانات الاستدامة حالياً.", en: "No received materials are available for sustainability data entry yet." },
   "sustainability.allocations.empty.desc": { ar: "بمجرد استلامك لمواد جديدة كمعالج، ستظهر هنا لتمكين توزيعها.", en: "Once you receive new materials as a processor, they will appear here for allocation." },
   "sustainability.allocations.ineligibility_reason": { ar: "سبب عدم الأهلية", en: "Ineligibility Reason" },
+  "sustainability.allocations.ineligibility.processed_output_or_unclassified": { ar: "المادة مخرجات معالجة أو غير مصنفة بعد", en: "Processed output or not yet classified" },
+  "sustainability.allocations.ineligibility_desc.processed_output_or_unclassified": { ar: "لا يمكن إدخال بيانات الاستدامة لهذه المادة لأنها مخرجات معالجة أو غير مصنفة بعد.", en: "Sustainability data entry is not available for this material because it is a processed output or has not yet been classified." },
   "sustainability.allocations.eligible": { ar: "مؤهل للتوزيع", en: "Eligible for allocation" },
   "sustainability.allocations.ineligible": { ar: "غير قابل للتوزيع", en: "Not allocatable" },
   "sustainability.allocations.draft_saved": { ar: "تم حفظ مسودة توزيع الاستدامة بنجاح", en: "Sustainability allocation draft saved successfully" },
