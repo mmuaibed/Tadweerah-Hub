@@ -65,9 +65,13 @@ async function enrichReceivedLineQty(receivedLine: any) {
     const [shipment] = await db
       .select({ 
         final_weight: contractShipmentsTable.final_weight,
-        reference: contractShipmentsTable.reference
+        reference: contractShipmentsTable.reference,
+        material_category_id: contractMaterialsTable.material_category_id,
+        material_label: contractMaterialsTable.material_label,
+        unit_label: contractMaterialsTable.unit_label,
       })
       .from(contractShipmentsTable)
+      .leftJoin(contractMaterialsTable, eq(contractShipmentsTable.material_line_id, contractMaterialsTable.id))
       .where(eq(contractShipmentsTable.id, receivedLine.parent_entity_id))
       .limit(1);
     
@@ -77,6 +81,24 @@ async function enrichReceivedLineQty(receivedLine: any) {
       }
       if (shipment.reference) {
         receivedLine.parent_reference = shipment.reference;
+      }
+      if (shipment.material_label) {
+        receivedLine.material_label = shipment.material_label;
+      }
+      if (shipment.unit_label) {
+        receivedLine.final_received_unit = shipment.unit_label;
+      }
+      if (shipment.material_category_id) {
+        receivedLine.material_category_id = shipment.material_category_id;
+      }
+      
+      if (receivedLine.ineligibility_reason === "processed_output_or_unclassified") {
+        if (!shipment.material_category_id) {
+          receivedLine.ineligibility_reason = "unclassified";
+        } else {
+          receivedLine.is_eligible = true;
+          receivedLine.ineligibility_reason = null;
+        }
       }
     }
   }
@@ -106,6 +128,10 @@ router.get("/sustainability/received-lines", requireAuth, requireCompany(), asyn
       shipment_reference: contractShipmentsTable.reference,
       shipment_final_weight: contractShipmentsTable.final_weight,
       shipment_material_id: contractShipmentsTable.material_line_id,
+      shipment_contract_id: contractShipmentsTable.contract_id,
+      shipment_material_category_id: contractMaterialsTable.material_category_id,
+      shipment_material_label: contractMaterialsTable.material_label,
+      shipment_unit_label: contractMaterialsTable.unit_label,
     })
     .from(sustainabilityReceivedLinesTable)
     .leftJoin(
@@ -141,10 +167,13 @@ router.get("/sustainability/received-lines", requireAuth, requireCompany(), asyn
 
   const formattedRows = rows.map((r) => {
     let parent_reference = "مرجع غير متاح";
+    let parent_entity_contract_id: string | null = null;
     let derived_qty = r.received_line.final_received_qty;
+    let derived_unit = r.received_line.final_received_unit;
     let derived_reason = r.received_line.ineligibility_reason;
     let derived_cat = r.received_line.material_category_id;
     let derived_is_eligible = r.received_line.is_eligible;
+    let derived_material_label = r.received_line.material_label;
     
     if (r.received_line.parent_entity_type === "deal" && r.received_line.parent_entity_id) {
       const id = r.received_line.parent_entity_id;
@@ -179,9 +208,33 @@ router.get("/sustainability/received-lines", requireAuth, requireCompany(), asyn
 
     } else if (r.received_line.parent_entity_type === "contract_shipment" && r.shipment_reference) {
       parent_reference = r.shipment_reference;
+      if (r.shipment_contract_id) {
+        parent_entity_contract_id = r.shipment_contract_id;
+      }
       
       if (r.shipment_final_weight) {
         derived_qty = r.shipment_final_weight;
+      }
+      
+      if (r.shipment_material_label) {
+        derived_material_label = r.shipment_material_label;
+      }
+      
+      if (r.shipment_unit_label) {
+        derived_unit = r.shipment_unit_label;
+      }
+
+      if (r.shipment_material_category_id) {
+        derived_cat = r.shipment_material_category_id;
+      }
+
+      if (derived_reason === "processed_output_or_unclassified") {
+        if (!r.shipment_material_category_id) {
+          derived_reason = "unclassified";
+        } else {
+          derived_is_eligible = true;
+          derived_reason = null;
+        }
       }
     }
 
@@ -189,7 +242,10 @@ router.get("/sustainability/received-lines", requireAuth, requireCompany(), asyn
       received_line: {
         ...r.received_line,
         parent_reference,
+        parent_entity_contract_id,
         final_received_qty: derived_qty,
+        final_received_unit: derived_unit,
+        material_label: derived_material_label,
         ineligibility_reason: derived_reason,
         material_category_id: derived_cat,
         is_eligible: derived_is_eligible,

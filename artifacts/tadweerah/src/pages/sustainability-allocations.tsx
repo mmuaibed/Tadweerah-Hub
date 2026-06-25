@@ -22,6 +22,7 @@ interface ReceivedLine {
   parent_entity_type: string;
   parent_entity_id: string;
   parent_reference?: string;
+  parent_entity_contract_id?: string;
   source_line_type: string;
   source_line_id: string;
   material_category_id?: string | null;
@@ -239,7 +240,13 @@ export function SustainabilityAllocationsPage() {
                           {rl.parent_entity_type === "deal" && rl.source_line_type === "listing" && rl.source_line_id ? (
                             <Link href={`/listings/${rl.source_line_id}?deal=${rl.parent_entity_id}&returnTo=${encodeURIComponent("/sustainability/allocations")}`}>
                               <a className="text-[10px] text-primary font-semibold hover:underline font-mono bg-primary/10 px-1.5 py-0.5 rounded uppercase transition-colors" dir="ltr" title={t("sustainability.allocations.open_deal")}>
-                                {rl.parent_entity_type === "deal" ? (lang === "ar" ? "صفقة" : "DEAL") : rl.parent_entity_type === "contract_shipment" ? (lang === "ar" ? "شحنة عقد" : "CONTRACT SHIPMENT") : rl.parent_entity_type} / {rl.parent_reference || (lang === "ar" ? "مرجع غير متاح" : "REF_UNAVAILABLE")}
+                                {lang === "ar" ? "صفقة" : "DEAL"} / {rl.parent_reference || (lang === "ar" ? "مرجع غير متاح" : "REF_UNAVAILABLE")}
+                              </a>
+                            </Link>
+                          ) : rl.parent_entity_type === "contract_shipment" && rl.parent_entity_contract_id ? (
+                            <Link href={`/contracts/${rl.parent_entity_contract_id}?shipment=${rl.parent_entity_id}#shipment-${rl.parent_entity_id}`}>
+                              <a className="text-[10px] text-primary font-semibold hover:underline font-mono bg-primary/10 px-1.5 py-0.5 rounded uppercase transition-colors" dir="ltr" title={lang === "ar" ? "فتح العقد (لا يمكن فتح الشحنة مباشرة حالياً)" : "Open Contract (MVP cannot open shipment directly)"}>
+                                {lang === "ar" ? "شحنة عقد" : "CONTRACT SHIPMENT"} / {rl.parent_reference || (lang === "ar" ? "مرجع غير متاح" : "REF_UNAVAILABLE")}
                               </a>
                             </Link>
                           ) : (

@@ -143,9 +143,9 @@ export async function deriveReceivedLineForShipment(shipmentId: string): Promise
     if (numericQty <= 0) {
       isEligible = false;
       reason = "non_positive_quantity";
-    } else if (material.is_processed_output !== false) {
+    } else if (!material.material_category_id) {
       isEligible = false;
-      reason = "processed_output_or_unclassified";
+      reason = "unclassified";
     }
 
     await db
