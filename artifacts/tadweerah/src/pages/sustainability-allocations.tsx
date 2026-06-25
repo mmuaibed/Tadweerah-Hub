@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useT } from "@/i18n";
 import { fmtDate, fmtNumber } from "@/lib/format";
+import { useGetMaterialCategories } from "@workspace/api-client-react";
 
 interface ReceivedLine {
   id: string;
@@ -23,6 +24,7 @@ interface ReceivedLine {
   parent_reference?: string;
   source_line_type: string;
   source_line_id: string;
+  material_category_id?: string | null;
   material_label: string;
   final_received_qty: string;
   final_received_unit: string;
@@ -57,6 +59,18 @@ export function SustainabilityAllocationsPage() {
   const { t, lang } = useT();
   const dir = lang === "ar" ? "rtl" : "ltr";
   const { data: rows, isLoading, error } = useReceivedLines();
+  const { data: allCategoriesRaw = [] } = useGetMaterialCategories();
+  const allCategories = allCategoriesRaw as Array<{ id: string; name_ar: string; name_en: string; parent_id: string | null }>;
+
+  const getCategoryPath = (catId: string | null | undefined) => {
+    if (!catId) return lang === "ar" ? "غير مصنف" : "Unclassified";
+    const cat = allCategories.find((c) => c.id === catId);
+    if (!cat) return lang === "ar" ? "غير مصنف" : "Unclassified";
+    if (!cat.parent_id) return lang === "ar" ? cat.name_ar : cat.name_en;
+    const parent = allCategories.find((c) => c.id === cat.parent_id);
+    if (!parent) return lang === "ar" ? cat.name_ar : cat.name_en;
+    return lang === "ar" ? `${parent.name_ar} / ${cat.name_ar}` : `${parent.name_en} / ${cat.name_en}`;
+  };
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "not_started" | "draft">("all");
@@ -214,7 +228,7 @@ export function SustainabilityAllocationsPage() {
                     return (
                       <tr key={rl.id} className={`transition-colors ${isEligible ? "hover:bg-muted/20" : "bg-muted/5 opacity-80"}`}>
                         <td className="px-3 py-2.5 whitespace-nowrap font-mono text-xs">{fmtDate(rl.created_at, lang)}</td>
-                        <td className="px-3 py-2.5">{rl.material_label}</td>
+                        <td className="px-3 py-2.5 font-semibold text-foreground">{getCategoryPath(rl.material_category_id)}</td>
                         <td className="px-3 py-2.5 font-mono">
                           {fmtNumber(rl.final_received_qty)} {rl.final_received_unit && t(`unit.${rl.final_received_unit}`) ? t(`unit.${rl.final_received_unit}`) : rl.final_received_unit}
                         </td>

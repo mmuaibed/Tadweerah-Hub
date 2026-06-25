@@ -7,7 +7,8 @@ import {
   sustainabilityAllocationLinesTable,
   sustainabilityPathwaysTable,
   dealsTable,
-  contractShipmentsTable
+  contractShipmentsTable,
+  contractMaterialsTable
 } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requireCompany, type AuthedCompanyRequest } from "../middlewares/requireCompany";
@@ -66,8 +67,10 @@ router.get("/sustainability/received-lines", requireAuth, requireCompany(), asyn
       deal_created_at: dealsTable.created_at,
       deal_actual_quantity: dealsTable.actual_quantity,
       listing_quantity: wasteListingsTable.quantity,
+      listing_is_processed_output: wasteListingsTable.is_processed_output,
       shipment_reference: contractShipmentsTable.reference,
       shipment_final_weight: contractShipmentsTable.final_weight,
+      shipment_material_id: contractShipmentsTable.material_line_id,
     })
     .from(sustainabilityReceivedLinesTable)
     .leftJoin(
@@ -92,6 +95,10 @@ router.get("/sustainability/received-lines", requireAuth, requireCompany(), asyn
         eq(sustainabilityReceivedLinesTable.parent_entity_id, contractShipmentsTable.id)
       )
     )
+    .leftJoin(
+      contractMaterialsTable,
+      eq(contractShipmentsTable.material_line_id, contractMaterialsTable.id)
+    )
     .where(eq(sustainabilityReceivedLinesTable.buyer_company_id, company.id))
     .orderBy(desc(sustainabilityReceivedLinesTable.created_at))
     .limit(limit)
@@ -100,6 +107,7 @@ router.get("/sustainability/received-lines", requireAuth, requireCompany(), asyn
   const formattedRows = rows.map((r) => {
     let parent_reference = "مرجع غير متاح";
     let derived_qty = r.received_line.final_received_qty;
+    let derived_reason = r.received_line.ineligibility_reason;
     
     if (r.received_line.parent_entity_type === "deal" && r.received_line.parent_entity_id) {
       const id = r.received_line.parent_entity_id;
@@ -111,6 +119,12 @@ router.get("/sustainability/received-lines", requireAuth, requireCompany(), asyn
       } else if (r.listing_quantity) {
         derived_qty = r.listing_quantity;
       }
+
+      if (derived_reason === "processed_output_or_unclassified") {
+        if (r.listing_is_processed_output === true) derived_reason = "processed_output";
+        else if (r.listing_is_processed_output === null) derived_reason = "unclassified";
+      }
+
     } else if (r.received_line.parent_entity_type === "contract_shipment" && r.shipment_reference) {
       parent_reference = r.shipment_reference;
       
@@ -123,7 +137,8 @@ router.get("/sustainability/received-lines", requireAuth, requireCompany(), asyn
       received_line: {
         ...r.received_line,
         parent_reference,
-        final_received_qty: derived_qty
+        final_received_qty: derived_qty,
+        ineligibility_reason: derived_reason,
       },
       allocation_id: r.allocation_id,
       allocation_status: r.allocation_status
