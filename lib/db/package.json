@@ -8,9 +8,11 @@
     "./schema": "./src/schema/index.ts"
   },
   "scripts": {
+    "generate": "drizzle-kit generate --config ./drizzle.config.ts",
     "push": "drizzle-kit push --config ./drizzle.config.ts",
     "push-force": "drizzle-kit push --force --config ./drizzle.config.ts",
     "seed": "tsx src/seed.ts",
+    "seed:sustainability": "tsx src/seed-sustainability.ts",
     "studio": "drizzle-kit studio --config ./drizzle.config.ts --port 8099 --host 0.0.0.0"
   },
   "dependencies": {

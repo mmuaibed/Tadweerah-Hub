@@ -251,6 +251,22 @@ export const wasteListingsTable = pgTable("waste_listings", {
    * NOT used for Google Maps search queries — display only.
    */
   material_location_notes: text("material_location_notes"),
+
+  /**
+   * Sustainability: whether this listing represents processed/recovered output
+   * from a previous recycling/processing operation, rather than original generator waste.
+   *
+   * - false → original generator waste/material → eligible for sustainability diversion reporting
+   * - true  → processed/recovered output → NOT eligible (prevents double-counting)
+   * - NULL  → unknown / pending classification → NOT eligible until explicitly classified
+   *
+   * IMPORTANT (v1.1 C1, C2):
+   * - NO DEFAULT. Do not use DEFAULT false.
+   * - For new processor/recycler/factory listings, the UI/API must force an explicit choice.
+   * - Existing listings are backfilled as NULL (unknown).
+   * - NULL is treated as "excluded from sustainability eligibility" in queries.
+   */
+  is_processed_output: boolean("is_processed_output"),
 },
 (table) => ({
   idx_listings_status_created: index("idx_listings_status_created_at").on(
