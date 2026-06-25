@@ -124,23 +124,21 @@ export async function deriveReceivedLineForShipment(shipmentId: string): Promise
 
     if (!material) return;
 
-    const finalQty = shipment.final_weight;
+    const finalQty = shipment.destination_weight;
     
-    if (!finalQty) {
-      console.warn(`[sustainability] Shipment ${shipmentId} has no final_weight. Cannot derive line.`);
-      return;
-    }
-
     if (!material.material_label || !material.unit_label) {
       console.warn(`[sustainability] Shipment ${shipmentId} material has no material_label or unit_label. Cannot derive line.`);
       return;
     }
 
-    const numericQty = Number(finalQty);
+    const numericQty = Number(finalQty) || 0;
     let isEligible = true;
     let reason = null;
 
-    if (numericQty <= 0) {
+    if (!finalQty) {
+      isEligible = false;
+      reason = "missing_buyer_quantity";
+    } else if (numericQty <= 0) {
       isEligible = false;
       reason = "non_positive_quantity";
     } else if (!material.material_category_id) {

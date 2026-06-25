@@ -16,7 +16,7 @@ import { validateAllocationDraft } from "../services/sustainability-validation";
 import { logAudit } from "../lib/audit";
 import { wasteListingsTable } from "@workspace/db";
 
-async function enrichReceivedLineQty(receivedLine: any) {
+async function enrichReceivedLineQty(receivedLine: any, allocationStatus?: string) {
   if (receivedLine.parent_entity_type === "deal" && receivedLine.parent_entity_id) {
     const [deal] = await db
       .select({
@@ -64,7 +64,7 @@ async function enrichReceivedLineQty(receivedLine: any) {
   } else if (receivedLine.parent_entity_type === "contract_shipment" && receivedLine.parent_entity_id) {
     const [shipment] = await db
       .select({ 
-        final_weight: contractShipmentsTable.final_weight,
+        destination_weight: contractShipmentsTable.destination_weight,
         reference: contractShipmentsTable.reference,
         material_category_id: contractMaterialsTable.material_category_id,
         material_label: contractMaterialsTable.material_label,
@@ -76,8 +76,30 @@ async function enrichReceivedLineQty(receivedLine: any) {
       .limit(1);
     
     if (shipment) {
-      if (shipment.final_weight) {
-        receivedLine.final_received_qty = shipment.final_weight;
+      if (allocationStatus !== "finalized") {
+        if (shipment.destination_weight) {
+          receivedLine.final_received_qty = shipment.destination_weight;
+          
+          if (Number(shipment.destination_weight) > 0 && 
+              (receivedLine.ineligibility_reason === "non_positive_quantity" || receivedLine.ineligibility_reason === "missing_buyer_quantity")) {
+            const hasCat = Boolean(receivedLine.material_category_id) || Boolean(shipment.material_category_id) || Boolean(shipment.material_label);
+            if (!hasCat) {
+              receivedLine.is_eligible = false;
+              receivedLine.ineligibility_reason = "unclassified";
+            } else {
+              receivedLine.is_eligible = true;
+              receivedLine.ineligibility_reason = null;
+            }
+          }
+        } else {
+          receivedLine.final_received_qty = "0";
+          receivedLine.is_eligible = false;
+          receivedLine.ineligibility_reason = "missing_buyer_quantity";
+        }
+      } else {
+        if (shipment.destination_weight && shipment.destination_weight !== receivedLine.final_received_qty) {
+          receivedLine.mismatch_warning = `Finalized quantity (${receivedLine.final_received_qty}) mismatches buyer received weight (${shipment.destination_weight}).`;
+        }
       }
       if (shipment.reference) {
         receivedLine.parent_reference = shipment.reference;
@@ -130,7 +152,7 @@ router.get("/sustainability/received-lines", requireAuth, requireCompany(), asyn
       listing_is_processed_output: wasteListingsTable.is_processed_output,
       listing_subcategory_id: wasteListingsTable.material_subcategory_id,
       shipment_reference: contractShipmentsTable.reference,
-      shipment_final_weight: contractShipmentsTable.final_weight,
+      shipment_destination_weight: contractShipmentsTable.destination_weight,
       shipment_material_id: contractShipmentsTable.material_line_id,
       shipment_contract_id: contractShipmentsTable.contract_id,
       shipment_material_category_id: contractMaterialsTable.material_category_id,
@@ -216,8 +238,23 @@ router.get("/sustainability/received-lines", requireAuth, requireCompany(), asyn
         parent_entity_contract_id = r.shipment_contract_id;
       }
       
-      if (r.shipment_final_weight) {
-        derived_qty = r.shipment_final_weight;
+      if (r.shipment_destination_weight) {
+        derived_qty = r.shipment_destination_weight;
+        
+        if (Number(derived_qty) > 0 && (derived_reason === "non_positive_quantity" || derived_reason === "missing_buyer_quantity")) {
+          const hasCat = Boolean(r.shipment_material_category_id) || Boolean(r.shipment_material_label);
+          if (!hasCat) {
+            derived_reason = "unclassified";
+            derived_is_eligible = false;
+          } else {
+            derived_is_eligible = true;
+            derived_reason = null;
+          }
+        }
+      } else {
+        derived_qty = "0";
+        derived_is_eligible = false;
+        derived_reason = "missing_buyer_quantity";
       }
       
       if (r.shipment_material_label) {
@@ -290,15 +327,15 @@ router.get("/sustainability/received-lines/:id/allocation", requireAuth, require
     return;
   }
 
-  await enrichReceivedLineQty(receivedLine);
-
-  const activePathways = await db.select().from(sustainabilityPathwaysTable).where(eq(sustainabilityPathwaysTable.is_active, true));
-
   const [allocation] = await db
     .select()
     .from(sustainabilityAllocationsTable)
     .where(eq(sustainabilityAllocationsTable.received_line_id, lineId))
     .limit(1);
+
+  await enrichReceivedLineQty(receivedLine, allocation?.status);
+
+  const activePathways = await db.select().from(sustainabilityPathwaysTable).where(eq(sustainabilityPathwaysTable.is_active, true));
 
   if (!allocation) {
     res.json({
@@ -370,7 +407,13 @@ router.post("/sustainability/received-lines/:id/allocation", requireAuth, requir
     return;
   }
 
-  await enrichReceivedLineQty(receivedLine);
+  const [allocation] = await db
+    .select()
+    .from(sustainabilityAllocationsTable)
+    .where(eq(sustainabilityAllocationsTable.received_line_id, lineId))
+    .limit(1);
+
+  await enrichReceivedLineQty(receivedLine, allocation?.status);
 
   if (!receivedLine.is_eligible) {
     res.status(400).json({
@@ -532,7 +575,13 @@ router.post("/sustainability/received-lines/:lineId/allocation/finalize", requir
     return;
   }
 
-  await enrichReceivedLineQty(receivedLine);
+  const [allocation] = await db
+    .select()
+    .from(sustainabilityAllocationsTable)
+    .where(eq(sustainabilityAllocationsTable.received_line_id, lineId))
+    .limit(1);
+
+  await enrichReceivedLineQty(receivedLine, allocation?.status);
 
   if (!receivedLine.is_eligible) {
     res.status(400).json({ error: "Ineligible", message: "This received line is not eligible." });
@@ -545,12 +594,7 @@ router.post("/sustainability/received-lines/:lineId/allocation/finalize", requir
     return;
   }
 
-  // 2. Load allocation
-  const [allocation] = await db
-    .select()
-    .from(sustainabilityAllocationsTable)
-    .where(eq(sustainabilityAllocationsTable.received_line_id, lineId))
-    .limit(1);
+  // 2. Load allocation (already loaded above)
 
   if (!allocation) {
     res.status(404).json({ error: "NotFound", message: "No allocation found." });
