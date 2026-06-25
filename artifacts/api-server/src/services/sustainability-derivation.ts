@@ -34,8 +34,8 @@ export async function deriveReceivedLineForDeal(dealId: string): Promise<void> {
     let finalQty = deal.actual_quantity;
     let qtySource: "platform_confirmed" | "estimated" = "platform_confirmed";
 
-    if (!finalQty) {
-      finalQty = deal.estimated_amount;
+    if (!finalQty && listing.quantity) {
+      finalQty = listing.quantity;
       qtySource = "estimated";
     }
     

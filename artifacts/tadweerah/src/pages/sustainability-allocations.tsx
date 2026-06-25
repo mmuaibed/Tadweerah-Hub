@@ -20,6 +20,7 @@ interface ReceivedLine {
   id: string;
   parent_entity_type: string;
   parent_entity_id: string;
+  parent_reference?: string;
   source_line_type: string;
   source_line_id: string;
   material_label: string;
@@ -221,12 +222,12 @@ export function SustainabilityAllocationsPage() {
                           {rl.parent_entity_type === "deal" && rl.source_line_type === "listing" && rl.source_line_id ? (
                             <Link href={`/listings/${rl.source_line_id}?deal=${rl.parent_entity_id}&returnTo=${encodeURIComponent("/sustainability/allocations")}`}>
                               <a className="text-[10px] text-primary font-semibold hover:underline font-mono bg-primary/10 px-1.5 py-0.5 rounded uppercase transition-colors" dir="ltr" title={t("sustainability.allocations.open_deal")}>
-                                {rl.parent_entity_type} / {rl.parent_entity_id?.substring(0, 8)}
+                                {rl.parent_entity_type === "deal" ? (lang === "ar" ? "صفقة" : "DEAL") : rl.parent_entity_type === "contract_shipment" ? (lang === "ar" ? "شحنة عقد" : "CONTRACT SHIPMENT") : rl.parent_entity_type} / {rl.parent_reference || (lang === "ar" ? "مرجع غير متاح" : "REF_UNAVAILABLE")}
                               </a>
                             </Link>
                           ) : (
                             <span className="text-[10px] text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded uppercase" dir="ltr">
-                              {rl.parent_entity_type} / {rl.parent_entity_id?.substring(0, 8)}
+                              {rl.parent_entity_type === "deal" ? (lang === "ar" ? "صفقة" : "DEAL") : rl.parent_entity_type === "contract_shipment" ? (lang === "ar" ? "شحنة عقد" : "CONTRACT SHIPMENT") : rl.parent_entity_type} / {rl.parent_reference || (lang === "ar" ? "مرجع غير متاح" : "REF_UNAVAILABLE")}
                             </span>
                           )}
                         </td>

@@ -5,7 +5,9 @@ import {
   sustainabilityReceivedLinesTable,
   sustainabilityAllocationsTable,
   sustainabilityAllocationLinesTable,
-  sustainabilityPathwaysTable
+  sustainabilityPathwaysTable,
+  dealsTable,
+  contractShipmentsTable
 } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requireCompany, type AuthedCompanyRequest } from "../middlewares/requireCompany";
@@ -28,18 +30,55 @@ router.get("/sustainability/received-lines", requireAuth, requireCompany(), asyn
       received_line: sustainabilityReceivedLinesTable,
       allocation_id: sustainabilityAllocationsTable.id,
       allocation_status: sustainabilityAllocationsTable.status,
+      deal_created_at: dealsTable.created_at,
+      shipment_reference: contractShipmentsTable.reference,
     })
     .from(sustainabilityReceivedLinesTable)
     .leftJoin(
       sustainabilityAllocationsTable,
       eq(sustainabilityReceivedLinesTable.id, sustainabilityAllocationsTable.received_line_id)
     )
+    .leftJoin(
+      dealsTable,
+      and(
+        eq(sustainabilityReceivedLinesTable.parent_entity_type, "deal"),
+        eq(sustainabilityReceivedLinesTable.parent_entity_id, dealsTable.id)
+      )
+    )
+    .leftJoin(
+      contractShipmentsTable,
+      and(
+        eq(sustainabilityReceivedLinesTable.parent_entity_type, "contract_shipment"),
+        eq(sustainabilityReceivedLinesTable.parent_entity_id, contractShipmentsTable.id)
+      )
+    )
     .where(eq(sustainabilityReceivedLinesTable.buyer_company_id, company.id))
     .orderBy(desc(sustainabilityReceivedLinesTable.created_at))
     .limit(limit)
     .offset(offset);
 
-  res.json(rows);
+  const formattedRows = rows.map((r) => {
+    let parent_reference = "مرجع غير متاح";
+    
+    if (r.received_line.parent_entity_type === "deal" && r.received_line.parent_entity_id) {
+      const id = r.received_line.parent_entity_id;
+      const year = r.deal_created_at ? new Date(r.deal_created_at).getFullYear() : new Date().getFullYear();
+      parent_reference = `TDW-${year}-${id.replace(/-/g, "").slice(0, 6).toUpperCase()}`;
+    } else if (r.received_line.parent_entity_type === "contract_shipment" && r.shipment_reference) {
+      parent_reference = r.shipment_reference;
+    }
+
+    return {
+      received_line: {
+        ...r.received_line,
+        parent_reference
+      },
+      allocation_id: r.allocation_id,
+      allocation_status: r.allocation_status
+    };
+  });
+
+  res.json(formattedRows);
 });
 
 /**
