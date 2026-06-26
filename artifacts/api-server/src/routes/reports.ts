@@ -839,7 +839,8 @@ router.get(
       .leftJoin(
         sustainabilityPathwaysTable,
         eq(sustainabilityPathwaysTable.id, sustainabilityAllocationLinesTable.pathway_id)
-      );
+      )
+      .where(where);
 
     if (flatRows.length === 0) {
       res.status(404).json({ error: "Not found or not authorized" });
