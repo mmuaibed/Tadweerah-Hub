@@ -1,6 +1,6 @@
 # Tadweerah Hub — PROJECT MAP
-> Last updated: 2026-06-26 | Gate SIR-3A Closed
-> Status: Phase SIR-3A Sustainability Reports MVP completed on Staging. Active backend revision: `tadweerah-api-00112-cl5`. Frontend deployed to Firebase Staging. The existing Reports hub `تقاريري` now includes a `تقارير الاستدامة` tab for finalized sustainability allocations. The endpoint `GET /api/reports/sustainability` serves canonical fields for reporting and CSV exports. Full admin-governed reopen/versioned revision workflow is deferred to SIR-2D. No production deploy, no DB mutation.
+> Last updated: 2026-06-26 | Phase SIR-3A Accepted
+> Status: Phase SIR-3A Sustainability Reports MVP accepted on Staging. Active backend revision: `tadweerah-api-00116-95g`. Frontend deployed to Firebase Staging. Dynamic pathway columns completed. CSV export is the MVP export format, with each pathway dynamically mapped to a separate column. PDF/print deferred to SIR-3B. Admin reopen/versioned governance deferred to SIR-2D. No production deploy, no DB mutation.
 
 
 > **Legend used throughout this document:**
@@ -548,3 +548,12 @@ VITE_API_URL                   # backend API base URL
 | `sendDealCompletionEmail` | Defined but not wired | Medium (Phase 2-F) |
 | Master data UI | Need UI for capability CRUD | Medium (Phase 3-A) |
 | Timer durations | Hard-coded; should be configurable | Low (Phase 3-B) |
+
+## Developer Protocol Updates
+
+### Permanent Protocol: No Waiting Approval Loops
+Effective June 2026, this is a standing project protocol for all workflows:
+- **Rule:** Do not run or request approval for commands whose only purpose is waiting, sleeping, polling, or printing that the process is still waiting (e.g., `echo "Waiting"`, `Start-Sleep`).
+- **Required Behavior:** Let long-running commands (e.g., `gcloud run deploy`, `vite build`) finish naturally in the background without separate waiting loops. Return the actual result when the task completes.
+- **Approvals:** Reserve user approval prompts for meaningful actions only: deploys, DB mutations, destructive operations, production actions, and scope changes.
+- **Stuck Processes:** If a process appears stuck, check the actual task status once using the relevant tool, return the real status, and ask whether to cancel/retry. Do not poll repeatedly.
