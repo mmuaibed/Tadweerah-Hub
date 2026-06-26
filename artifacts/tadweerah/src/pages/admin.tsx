@@ -2893,29 +2893,36 @@ export function AdminPage() {
                       <tbody className="divide-y divide-border">
                         {sustAllocations?.map((a: any) => {
                           const isPendingCorrection = !!a.pending_request_id;
+                          const alloc = a.allocation;
+                          const rl = a.received_line;
+                          if (!alloc) return null;
                           return (
-                            <tr key={a.id} className="hover:bg-muted/20 transition-colors">
+                            <tr key={alloc.id} className="hover:bg-muted/20 transition-colors">
                               <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground">
-                                {a.deal_id ? (
-                                  <Link href={`/deals/${a.deal_id}`} className="text-primary hover:underline">
-                                    {a.deal_id.slice(0, 8)}…
-                                  </Link>
+                                {rl?.parent_entity_id ? (
+                                  rl.parent_entity_type === "deal" ? (
+                                    <Link href={`/deals/${rl.parent_entity_id}`} className="text-primary hover:underline">
+                                      {rl.parent_entity_id.slice(0, 8)}…
+                                    </Link>
+                                  ) : (
+                                    <span className="font-mono text-muted-foreground">{rl.parent_entity_id.slice(0, 8)}…</span>
+                                  )
                                 ) : (
                                   "-"
                                 )}
                               </td>
-                              <td className="px-4 py-2.5 font-medium">{a.company_name}</td>
-                              <td className="px-4 py-2.5">{a.material || "-"}</td>
-                              <td className="px-4 py-2.5" dir="ltr">{a.quantity_kg} kg</td>
+                              <td className="px-4 py-2.5 font-medium">{a.buyer_name || "-"}</td>
+                              <td className="px-4 py-2.5">{rl?.material_label ? (lang === "ar" && rl.material_label === "metal" ? "معادن" : rl.material_label === "metal" ? "Metal" : rl.material_label) : "-"}</td>
+                              <td className="px-4 py-2.5" dir="ltr">{rl?.final_received_qty ? `${rl.final_received_qty} ${rl.final_received_unit || ''}` : "-"}</td>
                               <td className="px-4 py-2.5">
-                                <Badge variant={a.status === "finalized" ? "default" : a.status === "superseded" ? "secondary" : "outline"} className="text-[10px]">
+                                <Badge variant={alloc.status === "finalized" ? "default" : alloc.status === "superseded" ? "secondary" : "outline"} className="text-[10px]">
                                   {lang === "ar" 
-                                    ? (a.status === "finalized" ? "معتمد" : a.status === "superseded" ? "مستبدل" : "مسودة")
-                                    : (a.status === "finalized" ? "Finalized" : a.status === "superseded" ? "Superseded" : "Draft")
+                                    ? (alloc.status === "finalized" ? "معتمد" : alloc.status === "superseded" ? "مستبدل" : "مسودة")
+                                    : (alloc.status === "finalized" ? "Finalized" : alloc.status === "superseded" ? "Superseded" : "Draft")
                                   }
                                 </Badge>
                               </td>
-                              <td className="px-4 py-2.5 text-muted-foreground">{a.version ?? 1}</td>
+                              <td className="px-4 py-2.5 text-muted-foreground">{alloc.version ?? 1}</td>
                               <td className="px-4 py-2.5">
                                 {isPendingCorrection ? (
                                   <Badge variant="outline" className="text-amber-600 border-amber-200 bg-amber-50">
@@ -2926,20 +2933,20 @@ export function AdminPage() {
                                 )}
                               </td>
                               <td className="px-4 py-2.5 text-muted-foreground text-xs whitespace-nowrap">
-                                {a.status === "finalized" || a.status === "superseded" ? new Date(a.finalized_at).toLocaleDateString(lang === "ar" ? "ar-SA" : "en-GB") : "-"}
+                                {alloc.status === "finalized" || alloc.status === "superseded" ? new Date(alloc.finalized_at).toLocaleDateString(lang === "ar" ? "ar-SA" : "en-GB") : "-"}
                               </td>
                               <td className="px-4 py-2.5 text-end space-x-2 space-x-reverse">
                                 {isPendingCorrection ? (
                                   <>
-                                    <Button size="sm" variant="outline" className="h-7 text-xs text-green-600" onClick={() => { setSustActionType("approve"); setSustActionAlloc(a); }}>
+                                    <Button size="sm" variant="outline" className="h-7 text-xs text-green-600" onClick={() => { setSustActionType("approve"); setSustActionAlloc(alloc); }}>
                                       {lang === "ar" ? "قبول وتصحيح" : "Approve"}
                                     </Button>
-                                    <Button size="sm" variant="outline" className="h-7 text-xs text-red-600 ml-2" onClick={() => { setSustActionType("reject"); setSustActionAlloc(a); }}>
+                                    <Button size="sm" variant="outline" className="h-7 text-xs text-red-600 ml-2" onClick={() => { setSustActionType("reject"); setSustActionAlloc(alloc); }}>
                                       {lang === "ar" ? "رفض" : "Reject"}
                                     </Button>
                                   </>
-                                ) : a.status === "finalized" ? (
-                                  <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => { setSustActionType("reopen"); setSustActionAlloc(a); }}>
+                                ) : alloc.status === "finalized" ? (
+                                  <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => { setSustActionType("reopen"); setSustActionAlloc(alloc); }}>
                                     {lang === "ar" ? "إعادة فتح كمسودة" : "Reopen Draft"}
                                   </Button>
                                 ) : null}
