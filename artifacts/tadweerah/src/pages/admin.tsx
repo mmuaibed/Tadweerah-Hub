@@ -1,3 +1,5 @@
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Link } from "wouter";
 import { useState, useEffect, Fragment } from "react";
 import { useUser, useClerk } from "@clerk/react";
 import {
@@ -2852,6 +2854,106 @@ export function AdminPage() {
               </div>
             )}
 
+            {reportSubTab === "sustainability" && (
+              <div className="space-y-4 animate-in fade-in duration-200">
+                <div className="flex items-center justify-between px-1">
+                  <h3 className="text-sm font-semibold text-foreground">
+                    {lang === "ar" ? "سجلات الاستدامة" : "Sustainability Records"}
+                  </h3>
+                </div>
+
+                {sustAllocLoading ? (
+                  <div className="bg-card border border-border shadow-sm rounded-lg p-8 flex justify-center">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : sustAllocError ? (
+                  <div className="bg-card border border-border shadow-sm rounded-lg p-8 text-center text-red-500 text-sm">
+                    {sustAllocError}
+                  </div>
+                ) : sustAllocations?.length === 0 ? (
+                  <div className="bg-card border border-border shadow-sm rounded-lg px-4 py-8 text-center text-sm text-muted-foreground">
+                    {lang === "ar" ? "لا توجد سجلات استدامة حالياً" : "No sustainability records yet"}
+                  </div>
+                ) : (
+                  <div className="bg-card border border-border shadow-sm rounded-lg overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-border bg-muted/30">
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "المرجع التجاري" : "Commercial Ref"}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "الشركة" : "Company"}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "المادة" : "Material"}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "الكمية" : "Quantity"}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "الحالة" : "Status"}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "النسخة" : "Version"}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "حالة التصحيح" : "Correction Status"}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "تاريخ الاعتماد" : "Finalized Date"}</th>
+                          <th className="px-4 py-2.5 text-end text-xs font-semibold text-muted-foreground">{lang === "ar" ? "إجراءات" : "Actions"}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {sustAllocations?.map((a: any) => {
+                          const isPendingCorrection = !!a.pending_request_id;
+                          return (
+                            <tr key={a.id} className="hover:bg-muted/20 transition-colors">
+                              <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground">
+                                {a.deal_id ? (
+                                  <Link href={`/deals/${a.deal_id}`} className="text-primary hover:underline">
+                                    {a.deal_id.slice(0, 8)}…
+                                  </Link>
+                                ) : (
+                                  "-"
+                                )}
+                              </td>
+                              <td className="px-4 py-2.5 font-medium">{a.company_name}</td>
+                              <td className="px-4 py-2.5">{a.material || "-"}</td>
+                              <td className="px-4 py-2.5" dir="ltr">{a.quantity_kg} kg</td>
+                              <td className="px-4 py-2.5">
+                                <Badge variant={a.status === "finalized" ? "default" : a.status === "superseded" ? "secondary" : "outline"} className="text-[10px]">
+                                  {lang === "ar" 
+                                    ? (a.status === "finalized" ? "معتمد" : a.status === "superseded" ? "مستبدل" : "مسودة")
+                                    : (a.status === "finalized" ? "Finalized" : a.status === "superseded" ? "Superseded" : "Draft")
+                                  }
+                                </Badge>
+                              </td>
+                              <td className="px-4 py-2.5 text-muted-foreground">{a.version ?? 1}</td>
+                              <td className="px-4 py-2.5">
+                                {isPendingCorrection ? (
+                                  <Badge variant="outline" className="text-amber-600 border-amber-200 bg-amber-50">
+                                    {lang === "ar" ? "طلب معلق" : "Pending Request"}
+                                  </Badge>
+                                ) : (
+                                  <span className="text-muted-foreground">-</span>
+                                )}
+                              </td>
+                              <td className="px-4 py-2.5 text-muted-foreground text-xs whitespace-nowrap">
+                                {a.status === "finalized" || a.status === "superseded" ? new Date(a.finalized_at).toLocaleDateString(lang === "ar" ? "ar-SA" : "en-GB") : "-"}
+                              </td>
+                              <td className="px-4 py-2.5 text-end space-x-2 space-x-reverse">
+                                {isPendingCorrection ? (
+                                  <>
+                                    <Button size="sm" variant="outline" className="h-7 text-xs text-green-600" onClick={() => { setSustActionType("approve"); setSustActionAlloc(a); }}>
+                                      {lang === "ar" ? "قبول وتصحيح" : "Approve"}
+                                    </Button>
+                                    <Button size="sm" variant="outline" className="h-7 text-xs text-red-600 ml-2" onClick={() => { setSustActionType("reject"); setSustActionAlloc(a); }}>
+                                      {lang === "ar" ? "رفض" : "Reject"}
+                                    </Button>
+                                  </>
+                                ) : a.status === "finalized" ? (
+                                  <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => { setSustActionType("reopen"); setSustActionAlloc(a); }}>
+                                    {lang === "ar" ? "إعادة فتح كمسودة" : "Reopen Draft"}
+                                  </Button>
+                                ) : null}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+
             {reportSubTab === "activity" && (
               <div className="space-y-4 animate-in fade-in duration-200">
                 <div className="flex items-center justify-between px-1">
@@ -3607,6 +3709,61 @@ export function AdminPage() {
         destructive={false}
       />
 
+      {/* SIR-2D: Sustainability Admin Action Dialog */}
+      <Dialog open={sustActionAlloc !== null} onOpenChange={(o: boolean) => !o && setSustActionAlloc(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {sustActionType === "reopen"
+                ? (lang === "ar" ? "????? ??? ????? ???????" : "Reopen Correction Draft")
+                : sustActionType === "approve"
+                ? (lang === "ar" ? "???? ??? ???????" : "Approve Correction Request")
+                : (lang === "ar" ? "??? ??? ???????" : "Reject Correction Request")}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {sustActionType === "reopen" ? (
+              <p className="text-sm text-muted-foreground">
+                {lang === "ar"
+                  ? "???? ????? ????? ????? ????? ??????. ?? ??? ????? ????? ??????? ?????? ??? ??? ?????? ??????? ???????. ???? ??? ????? ????? (???????)."
+                  : "A new draft with an incremented version will be created. The current finalized record will not be modified until the new draft is finalized. Enter reason (optional)."}
+              </p>
+            ) : sustActionType === "approve" ? (
+              <p className="text-sm text-muted-foreground">
+                {lang === "ar"
+                  ? "???? ????? ????? ????? ????? ??? ??? ??????. ???? ???????? (???????)."
+                  : "A new draft will be created based on the company's request. Enter notes (optional)."}
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground text-red-600">
+                {lang === "ar"
+                  ? "???? ??? ??? ?????. ???? ????? ?????? ?????? ???????."
+                  : "Enter the rejection reason. The company will be notified."}
+              </p>
+            )}
+            
+            <textarea
+              value={sustActionReason}
+              onChange={(e: any) => setSustActionReason(e.target.value)}
+              placeholder={lang === "ar" ? "???? ????? ???..." : "Enter reason here..."}
+              className="w-full border border-border rounded-md min-h-[100px] p-2 text-sm"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSustActionAlloc(null)} disabled={sustActionLoading}>
+              {lang === "ar" ? "?????" : "Cancel"}
+            </Button>
+            <Button 
+              onClick={handleSustAction} 
+              disabled={sustActionLoading || (sustActionType === "reject" && sustActionReason.trim() === "")}
+              variant={sustActionType === "reject" ? "destructive" : "default"}
+            >
+              {sustActionLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {lang === "ar" ? "?????" : "Confirm"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -4074,3 +4231,5 @@ function AdminFindingsTab({
     </div>
   );
 }
+
+
