@@ -76,89 +76,93 @@ export function SustainabilityPrintPage() {
         </div>
       </div>
 
-      {/* Printable A4 Canvas */}
-      <div className="flex-1 p-6 print:p-0 flex justify-center">
-        <div className="w-full max-w-4xl bg-white shadow-xl print:shadow-none print:max-w-none print:w-full border border-gray-200 print:border-none rounded-lg print:rounded-none overflow-hidden"
-             style={{ minHeight: "297mm", padding: "15mm" }}>
+      {/* Printable Canvas */}
+      <div className="flex-1 p-6 print:p-0 flex justify-center print:block">
+        <div className="w-full max-w-4xl bg-white shadow-xl print:shadow-none print:max-w-none print:w-full border border-gray-200 print:border-none rounded-lg print:rounded-none overflow-hidden print:p-8">
              
           {/* Header */}
-          <header className="flex justify-between items-start mb-8 pb-6 border-b border-gray-200">
+          <header className="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
             {/* Right Side (Arabic start) - Tadweerah Logo */}
             <div className="flex flex-col">
-              <img src="/logo.svg" alt="Tadweerah" className="h-10 w-auto object-contain" />
+              <img src="/logo.png" alt="Tadweerah" className="h-8 w-auto object-contain" />
             </div>
 
             {/* Left Side (Arabic end) - Processor Card */}
-            <div className="shrink-0 flex flex-col items-start bg-gray-50 border border-gray-200 rounded-lg p-4 min-w-[200px]">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
-                {isAr ? "المعالج / Processor" : "Processor"}
-              </span>
-              <span className="text-sm font-bold text-gray-900 leading-tight">
-                {row.processor_name || "—"}
-              </span>
+            <div className="shrink-0 flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-lg p-3 min-w-[200px]">
+              <div className="w-8 h-8 rounded bg-gray-200 flex items-center justify-center shrink-0">
+                <span className="text-[8px] text-gray-400 font-bold uppercase tracking-tighter leading-none text-center">Logo</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">
+                  {isAr ? "المعالج / Processor" : "Processor"}
+                </span>
+                <span className="text-sm font-bold text-gray-900 leading-tight">
+                  {row.processor_name || "—"}
+                </span>
+              </div>
             </div>
           </header>
 
           {/* Title Block */}
-          <div className="text-center mb-10">
-            <h1 className="text-3xl font-black text-gray-900 mb-2 tracking-tight">
+          <div className="text-center mb-6">
+            <h1 className="text-2xl font-black text-gray-900 mb-1 tracking-tight">
               {isAr ? "تقرير الاستدامة" : "Sustainability Report"}
             </h1>
-            <h2 className="text-lg font-medium text-gray-700 mb-1">
+            <h2 className="text-base font-medium text-gray-700 mb-0.5">
               {isAr ? `لشركة ${row.processor_name || 'المعالج'} عبر منصة تدويرة` : `For ${row.processor_name || 'Processor'} via Tadweerah`}
             </h2>
-            <h3 className="text-sm font-normal text-gray-500">
+            <h3 className="text-xs font-normal text-gray-500">
               {isAr ? `Sustainability Report for ${row.processor_name || 'Processor'} via Tadweerah` : `تقرير الاستدامة لشركة ${row.processor_name || 'المعالج'} عبر منصة تدويرة`}
             </h3>
           </div>
 
           {/* Core Summary Grid */}
-          <section className="mb-10">
-            <div className="grid grid-cols-2 gap-4">
+          <section className="mb-6">
+            <div className="grid grid-cols-2 gap-3">
               {/* Metadata Cards */}
-              <div className="grid grid-cols-2 gap-4 bg-gray-50 rounded-lg p-5 border border-gray-100">
+              <div className="grid grid-cols-2 gap-3 bg-gray-50 rounded-lg p-4 border border-gray-100">
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{isAr ? "المرجع التجاري" : "Commercial Ref"}</span>
+                  <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">{isAr ? "المرجع التجاري" : "Commercial Ref"}</span>
                   <span className="text-sm font-medium text-gray-900 font-mono" dir="ltr" style={{ unicodeBidi: "isolate", textAlign: isAr ? "right" : "left" }}>{row.commercial_ref}</span>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{isAr ? "نوع المصدر" : "Source Type"}</span>
+                  <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">{isAr ? "نوع المصدر" : "Source Type"}</span>
                   <span className="text-sm font-medium text-gray-900">
                     {row.source_type === "deal" ? (isAr ? "صفقة" : "Deal") : row.source_type === "contract_shipment" ? (isAr ? "شحنة" : "Shipment") : row.source_type}
                   </span>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{isAr ? "تاريخ الاعتماد" : "Finalized Date"}</span>
+                  <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">{isAr ? "تاريخ الاعتماد" : "Finalized Date"}</span>
                   <span className="text-sm font-medium text-gray-900">{finalizedDate}</span>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{isAr ? "تاريخ الإصدار" : "Generated Date"}</span>
+                  <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">{isAr ? "تاريخ الإصدار" : "Generated Date"}</span>
                   <span className="text-sm font-medium text-gray-900">{generatedDate}</span>
                 </div>
               </div>
               
               {/* Entities Cards */}
-              <div className="grid grid-cols-1 gap-4 bg-gray-50 rounded-lg p-5 border border-gray-100">
+              <div className="grid grid-cols-1 gap-3 bg-gray-50 rounded-lg p-4 border border-gray-100">
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{isAr ? "المعالج" : "Processor"}</span>
+                  <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">{isAr ? "المعالج" : "Processor"}</span>
                   <span className="text-sm font-medium text-gray-900">{row.processor_name || "—"}</span>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{isAr ? "البائع / المصدر" : "Seller / Source Counterparty"}</span>
+                  <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">{isAr ? "البائع / المصدر" : "Seller / Source Counterparty"}</span>
                   <span className="text-sm font-medium text-gray-900">{row.seller_id === row.buyer_id ? "—" : row.counterparty_name}</span>
                 </div>
               </div>
 
               {/* Material & Quantity */}
-              <div className="flex flex-col bg-gray-50 rounded-lg p-5 border border-gray-100">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{isAr ? "المادة" : "Material"}</span>
+              <div className="flex flex-col bg-gray-50 rounded-lg p-4 border border-gray-100 justify-center">
+                <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">{isAr ? "المادة" : "Material"}</span>
                 <span className="text-base font-bold text-gray-900">{isAr ? row.material_ar : row.material_en}</span>
               </div>
-              <div className="flex flex-col bg-primary/5 rounded-lg p-5 border border-primary/20 items-center justify-center text-center">
-                <span className="text-[10px] font-bold text-primary uppercase tracking-widest mb-2">
-                  {isAr ? "إجمالي الكمية المستدامة المعتمدة" : "Total Finalized Sustainability Quantity"}
+              <div className="flex flex-col bg-primary/5 rounded-lg p-4 border border-primary/20 items-center justify-center text-center">
+                <span className="text-[9px] font-bold text-primary uppercase tracking-widest mb-1">
+                  {isAr ? "الكمية المستدامة المعتمدة" : "Finalized Sustainability Qty"}
                 </span>
-                <span className="text-2xl font-black text-gray-900 font-mono" dir="ltr" style={{ unicodeBidi: "isolate" }}>
+                <span className="text-xl font-black text-gray-900 font-mono" dir="ltr" style={{ unicodeBidi: "isolate" }}>
                   {Number(row.quantity).toLocaleString("en-US")} {row.unit === "ton" ? (isAr ? "طن" : "ton") : row.unit === "kg" ? (isAr ? "كجم" : "kg") : row.unit}
                 </span>
               </div>
@@ -166,21 +170,21 @@ export function SustainabilityPrintPage() {
           </section>
 
           {/* Pathway Breakdown */}
-          <section className="mb-10 break-inside-avoid">
-            <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">
+          <section className="mb-6 break-inside-avoid">
+            <h2 className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-2">
               {isAr ? "مسارات الاستدامة" : "Sustainability Pathways"}
             </h2>
             <div className="overflow-hidden rounded-lg border border-gray-200">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th scope="col" className="px-5 py-3 text-start text-xs font-bold text-gray-500">
+                    <th scope="col" className="px-4 py-2 text-start text-xs font-bold text-gray-500">
                       {isAr ? "المسار" : "Pathway"}
                     </th>
-                    <th scope="col" className="px-5 py-3 text-start text-xs font-bold text-gray-500 w-1/4">
+                    <th scope="col" className="px-4 py-2 text-start text-xs font-bold text-gray-500 w-1/4">
                       {isAr ? "الكمية" : "Quantity"}
                     </th>
-                    <th scope="col" className="px-5 py-3 text-start text-xs font-bold text-gray-500 w-1/4">
+                    <th scope="col" className="px-4 py-2 text-start text-xs font-bold text-gray-500 w-1/4">
                       {isAr ? "النسبة" : "Percentage"}
                     </th>
                   </tr>
@@ -192,14 +196,14 @@ export function SustainabilityPrintPage() {
                       const percentage = Number(pw.percentage || 0);
                       return (
                         <tr key={idx}>
-                          <td className="px-5 py-4 text-sm font-medium text-gray-900 align-middle">
+                          <td className="px-4 py-2 text-sm font-medium text-gray-900 align-middle">
                             {isAr ? pw.pathway_name_ar : pw.pathway_name_en}
                           </td>
-                          <td className="px-5 py-4 text-sm text-gray-700 font-mono align-middle">
+                          <td className="px-4 py-2 text-sm text-gray-700 font-mono align-middle">
                             <span dir="ltr" style={{ unicodeBidi: "isolate" }}>{Number(pw.quantity).toLocaleString("en-US")} {unitStr}</span>
                           </td>
-                          <td className="px-5 py-4 text-sm text-gray-700 align-middle">
-                            <div className="flex items-center gap-3">
+                          <td className="px-4 py-2 text-sm text-gray-700 align-middle">
+                            <div className="flex items-center gap-2">
                               <span className="font-mono w-8 text-end" dir="ltr" style={{ unicodeBidi: "isolate" }}>{percentage}%</span>
                               <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden print:bg-gray-100">
                                 <div className="h-full bg-primary print:bg-gray-800 rounded-full print:exact-colors" style={{ width: `${percentage}%` }}></div>
@@ -211,7 +215,7 @@ export function SustainabilityPrintPage() {
                     })
                   ) : (
                     <tr>
-                      <td colSpan={3} className="px-5 py-6 text-center text-sm text-gray-500">
+                      <td colSpan={3} className="px-4 py-4 text-center text-sm text-gray-500">
                         {isAr ? "لا توجد مسارات مسجلة" : "No pathways recorded"}
                       </td>
                     </tr>
@@ -222,15 +226,15 @@ export function SustainabilityPrintPage() {
           </section>
 
           {/* Footer Disclaimer */}
-          <footer className="mt-auto pt-6 border-t border-gray-200 text-[10px] leading-relaxed text-gray-500 break-inside-avoid">
-            <div className="flex flex-col gap-2">
+          <footer className="mt-auto pt-4 border-t border-gray-200 text-[9px] leading-relaxed text-gray-500 break-inside-avoid">
+            <div className="flex flex-col gap-1.5">
               <p className="text-justify">
                 <span className="font-bold text-gray-700 me-1">{isAr ? "إخلاء مسؤولية:" : "Disclaimer:"}</span>
                 {isAr 
                   ? "يعرض هذا التقرير بيانات الاستدامة المسجلة والمعتمدة داخل منصة تدويرة بناءً على معلومات العمليات المتاحة في المنصة. لا يمثل هذا التقرير شهادة اعتماد أو تحققاً مستقلاً أو حساباً لانبعاثات الكربون."
                   : "This report summarizes finalized sustainability data recorded within Tadweerah based on platform transaction data. It is not a certificate, independent verification, or carbon emissions calculation."}
               </p>
-              <div className="flex justify-between items-center text-gray-400 font-mono pt-2 mt-2 border-t border-gray-100">
+              <div className="flex justify-between items-center text-gray-400 font-mono pt-1.5 mt-1 border-t border-gray-100">
                 <span dir="ltr" style={{ unicodeBidi: "isolate" }}>Ref: {row.commercial_ref}</span>
                 <span>tadweerah.com</span>
               </div>
