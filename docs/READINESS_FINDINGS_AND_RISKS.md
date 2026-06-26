@@ -1,12 +1,12 @@
-# Tadweerah â€” Readiness Findings & Risks
-> Last updated: 2026-06-09 | Session: 6b53fc3f
-> Status: DOCUMENTATION ONLY â€” no application code changed
+# Tadweerah – Readiness Findings & Risks
+> Last updated: 2026-06-26 | Phase SIR-3B Accepted
+> Status: DOCUMENTATION ONLY — no application code changed in this update
 
 > **Legend:**
-> - ðŸŸ¢ Current behavior | ðŸŽ¯ Target behavior | âš ï¸ Gap
-> - ðŸ”´ High risk | ðŸŸ¡ Medium risk | ðŸŸ¢ Low risk
-> - ðŸš« Requires backend deploy | ðŸ–¥ï¸ Frontend-only fix | ðŸ“‹ Decision/documentation
-> - ðŸ” Needs manual verification
+> - 🟢 Current behavior | 🎯 Target behavior | ⚠️ Gap
+> - 🔴 High risk | 🟡 Medium risk | 🟢 Low risk
+> - 🚫 Requires backend deploy | 🖥️ Frontend-only fix | 📋 Decision/documentation
+> - 🔍 Needs manual verification
 
 ---
 
@@ -22,26 +22,26 @@ admin dashboards are correctly implemented in code.
 
 The final steps to achieve full pilot launch readiness involve:
 
-1. **Final End-to-End UAT** â€” across seller, receiver/factory, transporter, and admin.
-2. **Minor Administrative UI Additions** â€” adding the missing `force-complete` deal action to the admin panel UI.
-3. **Operational Notification Hardening** â€” adding the buyer's 3-day deal expiry warning and admin override notifications.
+1. **Final End-to-End UAT** — across seller, receiver/factory, transporter, and admin.
+2. **Minor Administrative UI Additions** — adding the missing `force-complete` deal action to the admin panel UI.
+3. **Operational Notification Hardening** — adding the buyer's 3-day deal expiry warning and admin override notifications.
 
 ---
 
 ## Section 1: Resolved Findings (Phases 2-A & 2-C)
 
-* **H1 â€” Deal Receipt Mismatch**
+* **H1 — Deal Receipt Mismatch**
   * Status: resolved in Phase 2-A.
-* **H2 â€” Admin UI Missing Override Buttons**
+* **H2 — Admin UI Missing Override Buttons**
   * Status: resolved in Phase 2-C.
   * Evidence: admin force-complete and reopen controls.
-* **H3 â€” Buyer Not Warned Before Expiry**
+* **H3 — Buyer Not Warned Before Expiry**
   * Status: implemented/deployed in Phase 2-C.
   * Note: live verification deferred unless safe DB strategy is approved.
-* **H4 â€” Admin Overrides Send No Notifications**
+* **H4 — Admin Overrides Send No Notifications**
   * Status: resolved in Phase 2-C.
   * Evidence: cancel, force-complete, reopen notifications UAT passed.
-* **M2 â€” Cannot Cancel Dispatched Deals**
+* **M2 — Cannot Cancel Dispatched Deals**
   * Status: resolved/mitigated through admin override tools and reopen recovery.
 
 ---
@@ -50,22 +50,22 @@ The final steps to achieve full pilot launch readiness involve:
 
 > **Principle:** Remaining risks after Phase 2-D must be intentional, current, and actionable.
 
-### M1 â€” Transport Quote "Select" Does Not Assign
-**Severity: ðŸŸ¢ Low / ðŸŸ¡ Medium | Phase: Post-Pilot Polish**
+### M1 — Transport Quote "Select" Does Not Assign
+**Severity: 🟢 Low / 🟡 Medium | Phase: Post-Pilot Polish**
 - **Current:** Quote status changes, but true transporter assignment is not tracked.
 - **Recommended:** Defer true assignment logic; optional label polish (e.g. "Shortlist Only") later.
 
 ---
 
-### M3 â€” Buyer Blocked Silently (No Notification)
-**Severity: ðŸŸ¡ Medium | Phase: TBD**
+### M3 — Buyer Blocked Silently (No Notification)
+**Severity: 🟡 Medium | Phase: TBD**
 - **Current:** `offer_submission_blocked = true` triggers silently.
 - **Recommended:** Needs founder/product decision on whether blocking should be automatic or manual, and whether notifications are required.
 
 ---
 
-### M4 â€” Contract Lite Notifications
-**Severity: ðŸŸ¡ Medium | Phase: Phase 2-E**
+### M4 — Contract Lite Notifications
+**Severity: 🟡 Medium | Phase: Phase 2-E**
 - **Current:** Contract Lite notification architecture patched (`283270e`) and deployed to staging (`tadweerah-api-00085-rg9`); pending manual Contract Lite UAT.
   - Contract notification documentation aligned.
   - Contract completed notification added.
@@ -74,17 +74,76 @@ The final steps to achieve full pilot launch readiness involve:
 
 ---
 
-### M5 â€” Rich Deal Completion Email Not Wired
-**Severity: ðŸŸ¡ Medium | Phase: Phase 2-F**
+### M5 — Rich Deal Completion Email Not Wired
+**Severity: 🟡 Medium | Phase: Phase 2-F**
 - **Current:** `sendDealCompletionEmail` defined but never called.
 - **Recommended:** Should-do. Likely wire in Phase 2-F unless required earlier.
 
 ---
 
-### M6 â€” Hard-Coded Timer Values
-**Severity: ðŸŸ¢ Low | Phase: Phase 3-B**
+### M6 — Hard-Coded Timer Values
+**Severity: 🟢 Low | Phase: Phase 3-B**
 - **Current:** All timers are constants.
 - **Recommended:** Known limitation. Defer post-pilot unless pilot requires configurability.
+
+---
+
+### SIR-3B — Branded Sustainability Report Print/PDF + Company Logo
+**Status: ✅ Accepted on Staging — 2026-06-26**
+
+#### What was delivered
+- Dedicated print route: `/reports/sustainability/:allocationId/print` (browser print / Save as PDF; no server-side PDF generator).
+- Arabic RTL A4 single-page layout. Report fits one A4 page for normal records.
+- Tadweerah logo rendered from central asset `/logo.png`.
+- Company logo upload added to Company Profile (`شعار الشركة / Company Logo`):
+  - Saved via `حفظ التغييرات / Save Changes` in a single unified flow.
+  - No separate upload button required.
+  - Max 2 MB, JPEG/PNG/WebP only. SVG deferred.
+  - Stored in GCS bucket `tadweerah-staging-listing-images` at `companies/{id}/logo-{timestamp}-{random}.{ext}`.
+- `companies.logo_url` nullable column added via migration `0006_add_company_logo_url.sql`. Zero impact on existing rows.
+- CORS applied to staging bucket for `https://tadweerah-staging.web.app` and `https://tadweerah.com`.
+- Processor logo rendered in print report when `logo_url` is set; falls back to company name only — no `LOGO` placeholder, no broken image icon.
+- Pathway rows, quantities, and percentages correct and unchanged.
+- No certificate / verified / certified / CO₂e / carbon wording.
+- `POST /api/companies/mine/logo` endpoint — auth: `requireAuth` + `requireCompany`; company ID sourced server-side only.
+- `GET /api/companies/mine` returns `logo_url`.
+- `GET /api/reports/sustainability/:id` returns `processor_logo_url`.
+
+#### Commits
+| Layer | Commit |
+|---|---|
+| Backend (logo upload + report endpoint) | `00ea84141f3097d1e0eefdeb50cf1321dabb2f0a` |
+| Frontend UX (integrate logo into Save Changes) | `e642089 ux(company-profile): integrate logo upload into Save Changes button` |
+
+#### Active backend revision
+`tadweerah-api-00121-8kk` — 100% traffic
+
+#### Deferred from SIR-3B
+| Item | Reason deferred |
+|---|---|
+| SIR-3C consolidated multi-material report | Not needed for single-material MVP |
+| SIR-2D admin reopen / versioned allocation governance | Separate future phase |
+| Server-side PDF generator | Browser print is sufficient for MVP |
+| CO₂e / certificates / verified / certified / assurance language | Not approved for this phase |
+| Company logo delete/cleanup of old GCS objects on replace | Low priority, not a blocker |
+| Dedicated company-assets GCS bucket | Currently reuses `listing-images` bucket |
+
+---
+
+### SIR-3C — Consolidated Multi-Material Sustainability Report (Deferred)
+**Status: ⏸ Deferred — not a current gap**
+
+- **Trigger:** Required when contract shipments support multiple material lines, or when users need a single print report for all materials under one commercial reference.
+- **Current MVP behavior (safe and accepted):**
+  - One deal → one listing → one material → one received line → one allocation → one print report.
+  - One contract shipment → one `material_line_id` → one material → one received line → one allocation → one print report.
+  - `sustainability_received_lines.line_seq` is already the extension point (currently always `1`).
+  - Users with multiple materials under one shipment reference print separate reports per material.
+- **What SIR-3C requires:**
+  - Derivation creates multiple received lines per shipment (one per contract material line).
+  - New API: `GET /reports/sustainability/by-ref/:commercialRef` returning an array of finalized allocations.
+  - Updated print page rendering a multi-material table.
+  - No DB schema migration required.
 
 ## Section 3: Phase 2-B Closed (Notification Polish & Deployment)
 

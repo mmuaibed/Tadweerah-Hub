@@ -1,6 +1,6 @@
 # Tadweerah Hub — PROJECT MAP
-> Last updated: 2026-06-26 | Phase SIR-3A Accepted
-> Status: Phase SIR-3A Sustainability Reports MVP accepted on Staging. Active backend revision: `tadweerah-api-00116-95g`. Frontend deployed to Firebase Staging. Dynamic pathway columns completed. CSV export is the MVP export format, with each pathway dynamically mapped to a separate column. PDF/print deferred to SIR-3B. Admin reopen/versioned governance deferred to SIR-2D. No production deploy, no DB mutation.
+> Last updated: 2026-06-26 | Phase SIR-3B Accepted
+> Status: SIR-3B Sustainability Report Print/PDF + Company Logo accepted on Staging. Active backend revision: `tadweerah-api-00121-8kk`. Frontend deployed to Firebase Staging. Company logo upload integrated into Company Profile Save Changes flow. Processor logo renders in sustainability print report. SIR-3C (multi-material consolidated report) deferred. SIR-2D (admin reopen/versioned governance) deferred. No production deploy, no DB migration beyond `companies.logo_url`.
 
 
 > **Legend used throughout this document:**
@@ -60,7 +60,7 @@ Tadweerah-Hub/
 | `routes/admin.ts` | `/admin/*` | Admin-key-protected operations | 🚫 Yes |
 | `routes/lookup.ts` | `/lookup/*` + `/admin/lookup/*` | Master data CRUD | 🚫 Yes |
 | `routes/listings.ts` | `/listings` | Waste listing CRUD + offer management | 🚫 Yes |
-| `routes/reports.ts` | `/reports` | Per-company deal reports + CSV export | 🚫 Yes |
+| `routes/reports.ts` | `/reports` | Per-company deal reports + CSV export + sustainability print detail endpoint (SIR-3B) | 🚫 Yes |
 | `routes/sustainability.ts` | `/sustainability` | Sustainability pathways and allocation drafts (SIR-2A/B) | 🚫 Yes |
 | `routes/transport-requests.ts` | `/transport-requests` | Transport request lifecycle | 🚫 Yes |
 | `routes/stats.ts` | `/stats` | Per-company dashboard statistics | 🚫 Yes |
@@ -80,6 +80,7 @@ Tadweerah-Hub/
 | `lib/audit.ts` | Structured audit log writes to `audit_log` table | 🚫 Yes |
 | `lib/logger.ts` | Pino structured logger | 🚫 Yes |
 | `lib/contract-ref.ts` | Sequential contract reference generator (`CTR-XXXXXX`) | 🚫 Yes |
+| `lib/gcs-upload.ts` | Google Cloud Storage upload helper — MIME/extension enforcement, cache headers, public URL return; used by `POST /companies/mine/logo` (SIR-3B) | 🚫 Yes |
 
 ### Auth
 - **Clerk** for user identity (JWT)
@@ -93,7 +94,7 @@ Tadweerah-Hub/
 ### Core Tables
 | Table | Key fields | Notes |
 |-------|-----------|-------|
-| `companies` | `id`, `name`, `license_status`, `offer_submission_blocked`, `receipt_failures_count` | Producer or buyer entity |
+| `companies` | `id`, `name`, `license_status`, `offer_submission_blocked`, `receipt_failures_count`, `logo_url` | Producer or buyer entity. `logo_url` nullable — added in SIR-3B (migration `0006_add_company_logo_url.sql`) |
 | `company_members` | `company_id`, `user_id`, `role` | Role: `owner` or `member` |
 | `waste_listings` | `id`, `status`, `material`, `city`, `material_category_id`, `is_processed_output` | open/closed/filled/cancelled. Contains `is_processed_output` flag for sustainability eligibility |
 | `listing_offers` | `listing_id`, `buyer_company_id`, `amount`, `status` | Offer state machine |
@@ -420,6 +421,7 @@ Event occurs (route handler or hourly job)
 | `pending-actions.tsx` | `/pending-actions` | Pending deal actions queue |
 | `sustainability-allocations.tsx` | `/sustainability/allocations` | List of eligible sustainability received lines and allocation drafts (SIR-2B) |
 | `sustainability-allocation-detail.tsx` | `/sustainability/allocations/:id` | Edit and save sustainability pathway allocation drafts (SIR-2B) |
+| `sustainability-print.tsx` | `/reports/sustainability/:allocationId/print` | SIR-3B branded print/PDF report for a single finalized allocation. Shows Tadweerah logo, processor company logo (if available), material, quantity, pathways. Browser print / Save as PDF only. |
 
 ---
 
@@ -430,18 +432,19 @@ Event occurs (route handler or hourly job)
   * Firebase Hosting target: `tadweerah-staging`
   * Official helper: `scripts/deploy-frontend.ps1`
   * The script builds `@workspace/tadweerah` and deploys Firebase Hosting.
-  * Frontend was deployed for commit `7422819`.
+  * Frontend last deployed for SIR-3B UX commit `e642089`.
 * **Backend**:
   * Service name: `tadweerah-api`
-  * Latest accepted backend revision from live staging baseline: `tadweerah-api-00085-rg9`
-  * Backend deploy for Phase 2-C is complete.
-  * Backend deployment path: `gcloud run deploy tadweerah-api --project=tadweerah-staging --region=europe-west1 --source=.`
+  * **Latest accepted backend revision (SIR-3B):** `tadweerah-api-00121-8kk`
+  * Source commit: `00ea84141f3097d1e0eefdeb50cf1321dabb2f0a`
+  * Backend deployment path: Cloud Build trigger `f2ce9ea5` fires automatically on push to `origin/main`.
 
 | Service | Platform | Config | Notes |
 |---------|---------|--------|-------|
-| API backend | Google Cloud Run | `tadweerah-api` service | ✅ Deployed |
-| Frontend | Firebase Hosting | `tadweerah-staging` project; also serves `tadweerah.com` | ✅ Deployed via `scripts/deploy-frontend.ps1` |
-| Database | PostgreSQL via `DATABASE_URL` — verify current provider/environment before deployment or DB changes | `DATABASE_URL` env var | 🔍 Confirm provider before schema changes |
+| API backend | Google Cloud Run | `tadweerah-api` service, revision `tadweerah-api-00121-8kk` | ✅ Deployed — SIR-3B |
+| Frontend | Firebase Hosting | `tadweerah-staging` project; also serves `tadweerah.com` | ✅ Deployed via `scripts/deploy-frontend.ps1` — SIR-3B UX commit `e642089` |
+| Database | PostgreSQL via Cloud SQL `tadweerah-pilot-db` — `DATABASE_URL` env var | Cloud SQL socket (Cloud Run) | `companies.logo_url` column added (nullable, migration `0006`) |
+| Logo storage | GCS bucket `tadweerah-staging-listing-images` | CORS configured for staging origin | Public read. Path: `companies/{id}/logo-{ts}-{rand}.{ext}`. Max 2 MB, JPEG/PNG/WebP only |
 | Auth | Clerk | `CLERK_SECRET_KEY`, `VITE_CLERK_PUBLISHABLE_KEY` | — |
 | Email | Resend | `RESEND_API_KEY` | 🔍 Verify active in Cloud Run env |
 | Job scheduler | Cloud Scheduler | Triggers hourly expire-deals job | 🔍 Verify last execution succeeded |
@@ -459,6 +462,7 @@ EMAIL_FROM              (default: تدويرة <noreply@tadweerah.com>)
 PLATFORM_URL            (default: https://tadweerah.com)
 SUPPORT_EMAIL
 TRANSPORT_REQUEST_EMAIL
+GCS_LISTING_IMAGES_BUCKET   (bucket for uploads including company logos; default: tadweerah-staging-listing-images)
 ```
 
 ### Key Frontend Environment Variables
@@ -522,6 +526,47 @@ VITE_API_URL                   # backend API base URL
 - **Scope:** Internal tracking system within the Admin Panel to log operational findings, UAT issues, customer requests, and improvements.
 - **Implementation:** Completely isolated feature using the `admin_findings` table. Supports creation, editing, manual reordering via arrows, deletion, and Arabic localization. Zero relations to active deals or shipments.
 
+### 7. SIR-3B — Branded Sustainability Report Print/PDF
+- **Status:** ✅ Accepted on Staging — 2026-06-26.
+- **Scope:** Dedicated print route `/reports/sustainability/:allocationId/print`. Browser print / Save as PDF. No server-side PDF generator.
+- **What was delivered:**
+  - Print route and page (`sustainability-print.tsx`) — Arabic RTL, A4 single-page layout.
+  - Tadweerah logo rendered from central asset `/logo.png`.
+  - Company logo upload added to Company Profile (`شعار الشركة / Company Logo`).
+  - Logo saved via `حفظ التغييرات / Save Changes` in a single unified flow — no separate button required.
+  - Company logo stored in GCS bucket `tadweerah-staging-listing-images` at path `companies/{id}/logo-{timestamp}-{random}.{ext}`.
+  - `companies.logo_url` nullable column added via migration `0006_add_company_logo_url.sql`.
+  - CORS configured on staging bucket for `https://tadweerah-staging.web.app` and `https://tadweerah.com`.
+  - Processor logo rendered in print report when available; falls back to company name only with no `LOGO` placeholder.
+  - No `LOGO` placeholder text. No broken image icon. No certificate/verified/certified/CO₂e/carbon wording.
+  - Pathway rows, quantities, and percentages correct.
+  - Report fits one A4 page for normal records.
+- **Backend commit:** `00ea84141f3097d1e0eefdeb50cf1321dabb2f0a`
+- **Frontend UX commit:** `e642089 ux(company-profile): integrate logo upload into Save Changes button`
+- **Backend revision:** `tadweerah-api-00121-8kk`
+- **Deferred from SIR-3B:**
+  - SIR-3C consolidated multi-material report (see below)
+  - SIR-2D admin reopen/versioned allocation governance
+  - Server-side PDF generator
+  - CO₂e / certificates / verified / certified / assurance language
+  - Company logo cleanup / delete old GCS objects on logo replace
+  - Dedicated company-assets GCS bucket (currently reuses listing-images bucket)
+
+### 8. SIR-3C — Consolidated Multi-Material Sustainability Report (Deferred)
+- **Status:** ⏸ Deferred — not a blocker for SIR-3B MVP.
+- **Trigger:** Required when a contract shipment supports multiple material lines, or when users need a single print report covering all materials under one commercial reference.
+- **Current MVP behavior (accepted):**
+  - One marketplace deal → one listing → one material → one received line → one allocation → one print report.
+  - One contract shipment → one `material_line_id` → one material → one received line → one allocation → one print report.
+  - `sustainability_received_lines.line_seq` is future-ready for multi-material (currently always `1`).
+  - SIR-3B print route is scoped to one `allocation_id` at a time.
+  - Users needing multiple materials under one shipment reference must print separate reports per material today.
+- **What SIR-3C would require:**
+  - Derivation update: create multiple received lines per shipment (one per contract material line).
+  - New API endpoint: `GET /reports/sustainability/by-ref/:commercialRef` — returns array of finalized allocations.
+  - Updated print page: renders a multi-material table with per-material pathway rows and totals.
+  - No schema migration needed — `line_seq` is already the extension point.
+
 ### 5. Phase 3-B — Post-Pilot Workflow Configurability & Polish
 - Configurable timers, category-targeted notifications, i18n refactor, checklist wording polish, etc.
 
@@ -548,6 +593,10 @@ VITE_API_URL                   # backend API base URL
 | `sendDealCompletionEmail` | Defined but not wired | Medium (Phase 2-F) |
 | Master data UI | Need UI for capability CRUD | Medium (Phase 3-A) |
 | Timer durations | Hard-coded; should be configurable | Low (Phase 3-B) |
+| Company logo GCS cleanup | Old logo objects not deleted on replace | Low (SIR-3C / future) |
+| Company logo bucket isolation | Reuses `listing-images` bucket; separate `company-assets` bucket preferred | Low (future) |
+| SIR-3C multi-material print | Consolidated report by commercial reference not yet built | Low (SIR-3C — deferred) |
+| SIR-2D allocation governance | Admin reopen / versioned revision workflow not yet built | Medium (SIR-2D — deferred) |
 
 ## Developer Protocol Updates
 
