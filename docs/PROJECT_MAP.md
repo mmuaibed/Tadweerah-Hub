@@ -1,6 +1,6 @@
 # Tadweerah Hub — PROJECT MAP
-> Last updated: 2026-06-26 | Gate SIR-2C Closed
-> Status: Phase SIR-2C Finalization + Lock completed on Staging. Active backend revision: `tadweerah-api-00111-jjf`. Frontend deployed to Firebase Staging. Finalized allocations are locked/read-only. `طلب تعديل التوزيع` routes through platform Issues as a temporary bridge. Full admin-governed reopen/versioned revision workflow is deferred to SIR-2D. Seller-facing Sustainability Reports tab is deferred to SIR-3A. Contract shipment parity and methodology-first sustainability quantity derivation completed. No production deploy, no DB mutation.
+> Last updated: 2026-06-26 | Gate SIR-3A Closed
+> Status: Phase SIR-3A Sustainability Reports MVP completed on Staging. Active backend revision: `tadweerah-api-00112-cl5`. Frontend deployed to Firebase Staging. The existing Reports hub `تقاريري` now includes a `تقارير الاستدامة` tab for finalized sustainability allocations. The endpoint `GET /api/reports/sustainability` serves canonical fields for reporting and CSV exports. Full admin-governed reopen/versioned revision workflow is deferred to SIR-2D. No production deploy, no DB mutation.
 
 
 > **Legend used throughout this document:**

@@ -648,3 +648,21 @@ Admin restore of shipments without DB migration relies on timestamps + audit log
 > - No DB action.
 > - No finalized allocation silently rewritten.
 > - No CO₂e, PDF, certificates, or verified/certified language.
+
+---
+
+## Section 12: Phase SIR-3A Closed (Sustainability Reports MVP)
+
+> **Status:** ✅ Completed and Staging UAT Confirmed.
+> 
+> **Completed Scope (SIR-3A MVP):**
+> - **Reports Hub Integration:** Added `تقارير الاستدامة` tab to the existing `تقاريري` reports hub page instead of creating a standalone disjointed page.
+> - **Reporting Fields:** Defined 13 canonical reporting fields via `GET /api/reports/sustainability` tailored for seller-facing data exports. Includes exact final allocation quantities, data quality levels, and pathway categorization.
+> - **CSV Export:** Implemented functional CSV export with fully localized Arabic headers.
+> - **Versioning Logic:** Enforced returning only finalized records. Implemented `SELECT DISTINCT ON (received_line_id) ... ORDER BY received_line_id, finalized_at DESC` to ensure only the latest active finalized version is reported. Excluded `superseded` and `draft` statuses from the report dataset.
+> - **Deployed to Staging:** Active backend revision: `tadweerah-api-00112-cl5`. Frontend deployed to Firebase Staging.
+>
+> **Important Deferrals / Out of Scope (For SIR-2D / Future):**
+> - Full admin-governed reopen/versioned revision workflow is deferred to SIR-2D.
+> - PDF generation, CO₂e calculations, and certificate issuance are NOT implemented.
+> - No production deploy, no DB mutation.
