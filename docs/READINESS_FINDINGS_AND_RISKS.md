@@ -1,6 +1,6 @@
 # Tadweerah – Readiness Findings & Risks
-> Last updated: 2026-06-26 | Phase SIR-3B Accepted
-> Status: DOCUMENTATION ONLY — no application code changed in this update
+> Last updated: 2026-06-26 | Phase CLT-1 Implemented (pending migration/deploy)
+> Status: CLT-1 code complete — migration + deploy pending explicit approval
 
 > **Legend:**
 > - 🟢 Current behavior | 🎯 Target behavior | ⚠️ Gap
@@ -729,3 +729,43 @@ Admin restore of shipments without DB migration relies on timestamps + audit log
 > **Versioning & Deployment Details:**
 > - **Versioning Logic:** Enforced returning only finalized records. Implemented logic to ensure only the latest active finalized version is reported. Excluded `superseded` and `draft` statuses.
 > - **Deployed to Staging:** Active backend revision: `tadweerah-api-00116-95g`. Frontend deployed to Firebase Staging.
+
+---
+
+## Section 13: Phase CLT-1 — Flexible Offer Window Foundation (فترة استقبال العروض)
+
+> **Status:** ✅ Code implemented — pending staging migration and deploy.
+>
+> **Customer-facing terminology:** Offer Window / فترة استقبال العروض
+> (No auction/bid/مزاد/مزايدة terminology used.)
+>
+> **What was implemented:**
+> - `offer_deadline` NOT NULL TIMESTAMPTZ column on `waste_listings` (migration `0007_add_offer_deadline.sql`, includes backfill).
+> - `effective_status` derived at read-time: `offer_window_closed` when `status = 'open' AND offer_deadline <= now()`. No new DB enum values.
+> - Backend listing creation: `offer_deadline` required for new listings, validated (24h min with 5m clock-drift buffer, 30d max).
+> - Marketplace filtering: expired-deadline listings excluded from `GET /listings`.
+> - Offer submission + improvement guards: 409 `OfferWindowClosed` thrown when deadline passed.
+> - `OfferWindowClosed` added to eligibility engine (`eligibility.ts`).
+> - Frontend: Offer Window preset picker (24h/3d/7d default/14d/30d/custom) in listing creation.
+> - Frontend: Deadline status display on listing cards and listing detail page.
+> - Frontend: Trust disclosure banner ("seller may accept at any time") and expired-window offer guard.
+> - 16 bilingual i18n keys (ar/en).
+>
+> **Key design decisions:**
+> - Seller can still accept submitted offers after window closes (no seller-side restriction).
+> - All existing listings backfilled: closed listings use `closed_at` or `created_at`; open listings get `now() + 7 days`.
+> - No cron job, no auto-close, no auto-reject.
+> - No admin UI to extend/modify deadline post-creation (deferred).
+>
+> **SIR-3B protection confirmed:** No sustainability, CO₂e, reports, company logo, or certificate files modified.
+>
+> **Deployment order (not yet executed):**
+> 1. Run migration `0007_add_offer_deadline.sql` on staging DB.
+> 2. Deploy api-server (backend).
+> 3. Deploy tadweerah (frontend).
+> 4. Smoke test: create listing → verify deadline persists → verify marketplace filters → verify offer guard.
+>
+> **Risk classification:**
+> - 🟢 Clock drift: mitigated by 5-minute buffer on 24h minimum.
+> - 🟢 Backfill: all existing rows receive a deadline; no NULL path remains.
+> - 🟡 No post-creation deadline edit: acceptable for MVP, admin override can be added later.

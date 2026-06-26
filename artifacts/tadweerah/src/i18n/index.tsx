@@ -1860,6 +1860,29 @@ const translations: Record<string, Record<Language, string>> = {
   "sustainability.allocations.duplicate_pathway": { ar: "المسار مضاف مسبقاً", en: "Pathway already added" },
   "sustainability.allocations.status.draft": { ar: "مسودة", en: "Draft" },
   "sustainability.allocations.status.none": { ar: "لم يبدأ", en: "Not Started" },
+
+  /* ── CLT-1: Offer Window (فترة استقبال العروض) ── */
+  "offer_window.label": { ar: "فترة استقبال العروض", en: "Offer Window" },
+  "offer_window.hint": { ar: "تستخدم معظم العروض الصناعية ٧ أيام.", en: "Most industrial lots use 7 days." },
+  "offer_window.24h": { ar: "٢٤ ساعة", en: "24 hours" },
+  "offer_window.3d": { ar: "٣ أيام", en: "3 days" },
+  "offer_window.7d": { ar: "٧ أيام", en: "7 days" },
+  "offer_window.14d": { ar: "١٤ يوماً", en: "14 days" },
+  "offer_window.30d": { ar: "٣٠ يوماً", en: "30 days" },
+  "offer_window.custom": { ar: "تاريخ مخصص", en: "Custom date" },
+  "offer_window.min_error": { ar: "يجب أن تكون فترة استقبال العروض ٢٤ ساعة على الأقل", en: "Offer window must be at least 24 hours" },
+  "offer_window.max_error": { ar: "يجب ألا تتجاوز فترة استقبال العروض ٣٠ يوماً", en: "Offer window must be within 30 days" },
+  "offer_window.receiving": { ar: "يستقبل العروض", en: "Receiving offers" },
+  "offer_window.closes_at": { ar: "يُغلق في", en: "closes" },
+  "offer_window.closed": { ar: "أُغلق استقبال العروض", en: "Offers closed" },
+  "offer_window.closed_detail": {
+    ar: "أُغلق استقبال العروض لهذا الإعلان. قد يقبل البائع أحد العروض المقدَّمة.",
+    en: "Offers have closed for this listing. The seller may still accept a submitted offer.",
+  },
+  "offer_window.trust_disclosure": {
+    ar: "قد يقبل البائع عرضاً مناسباً في أي وقت قبل إغلاق استقبال العروض — ننصح بتقديم أفضل عرض مبكراً.",
+    en: "The seller may accept a suitable offer at any time before offers close — submit your best offer early.",
+  },
 };
 
 export const I18nProvider: React.FC<{

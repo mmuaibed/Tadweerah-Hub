@@ -16,7 +16,7 @@ import {
 } from "@workspace/api-client-react";
 import {
   Loader2, ImagePlus, X, Scale, Tag, Gavel, ShoppingBag, Percent,
-  Lock, Globe, Users, Check, ChevronRight, Truck,
+  Lock, Globe, Users, Check, ChevronRight, Truck, Clock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -127,6 +127,9 @@ export function ListingNewPage() {
   const [materialLocationNotes, setMaterialLocationNotes] = useState("");
   const [googleMapsUrl, setGoogleMapsUrl] = useState("");
   const [mapsUrlError, setMapsUrlError] = useState(false);
+  // CLT-1: Offer Window
+  const [offerWindowPreset, setOfferWindowPreset] = useState<string>("7d");
+  const [offerWindowCustom, setOfferWindowCustom] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -242,6 +245,28 @@ export function ListingNewPage() {
 
     const priceNumber = priceHint.trim() ? Number(priceHint) : undefined;
 
+    // CLT-1: Compute offer_deadline from preset or custom
+    let offerDeadlineISO: string;
+    if (offerWindowPreset === "custom") {
+      if (!offerWindowCustom) { setError(t("offer_window.min_error")); return; }
+      const customDate = new Date(offerWindowCustom);
+      const minCustom = new Date(Date.now() + 23 * 60 * 60 * 1000 + 55 * 60 * 1000);
+      if (customDate < minCustom) { setError(t("offer_window.min_error")); return; }
+      const maxCustom = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+      if (customDate > maxCustom) { setError(t("offer_window.max_error")); return; }
+      offerDeadlineISO = customDate.toISOString();
+    } else {
+      const BUFFER_MS = 5 * 60 * 1000; // 5 min buffer for clock drift
+      const presetMs: Record<string, number> = {
+        "24h": 24 * 60 * 60 * 1000,
+        "3d": 3 * 24 * 60 * 60 * 1000,
+        "7d": 7 * 24 * 60 * 60 * 1000,
+        "14d": 14 * 24 * 60 * 60 * 1000,
+        "30d": 30 * 24 * 60 * 60 * 1000,
+      };
+      offerDeadlineISO = new Date(Date.now() + (presetMs[offerWindowPreset] ?? presetMs["7d"]) + BUFFER_MS).toISOString();
+    }
+
     mutate(
       {
         data: {
@@ -283,6 +308,7 @@ export function ListingNewPage() {
           ...(googleMapsUrl.trim() && googleMapsUrl.trim().startsWith("https://")
             ? { google_maps_url: googleMapsUrl.trim() }
             : {}),
+          offer_deadline: offerDeadlineISO,
         } as any,
       },
       {
@@ -719,6 +745,41 @@ export function ListingNewPage() {
                   )}
                 </div>
               )}
+
+              {/* ── CLT-1: Offer Window ── */}
+              <div className="space-y-1.5 pt-3 border-t border-border">
+                <Label><Clock className="inline h-3.5 w-3.5 me-1" />{t("offer_window.label")}</Label>
+                <p className="text-xs text-muted-foreground">{t("offer_window.hint")}</p>
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+                  {(["24h", "3d", "7d", "14d", "30d", "custom"] as const).map((preset) => {
+                    const active = offerWindowPreset === preset;
+                    return (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => setOfferWindowPreset(preset)}
+                        className={`rounded-lg border px-2 py-2 text-xs font-medium transition-colors text-center ${
+                          active
+                            ? "border-primary bg-primary/10 text-primary ring-1 ring-primary/20"
+                            : "border-border bg-card hover:border-primary/40 text-muted-foreground"
+                        }`}
+                      >
+                        {t(`offer_window.${preset}`)}
+                      </button>
+                    );
+                  })}
+                </div>
+                {offerWindowPreset === "custom" && (
+                  <Input
+                    type="datetime-local"
+                    value={offerWindowCustom}
+                    onChange={(e) => setOfferWindowCustom(e.target.value)}
+                    min={new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16)}
+                    max={new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16)}
+                    className="mt-1"
+                  />
+                )}
+              </div>
 
               {/* ── Buyer Eligibility (auction) / Eligible Company Type (direct) ── */}
               {saleType === "auction" ? (

@@ -16,6 +16,7 @@ import {
   MessageSquare,
   Calendar,
   Truck,
+  Clock,
 } from "lucide-react";
 import { useState } from "react";
 import { Link } from "wouter";
@@ -206,6 +207,28 @@ export function ListingCard({
               </span>
             </div>
           )}
+          {/* CLT-1: Offer window deadline */}
+          {(() => {
+            const offerDeadline = (listing as WasteListing & { offer_deadline?: string | null }).offer_deadline;
+            const effectiveStatus = (listing as WasteListing & { effective_status?: string }).effective_status;
+            if (!offerDeadline) return null;
+            const deadlineDate = new Date(offerDeadline);
+            const isExpired = effectiveStatus === "offer_window_closed";
+            const formattedDate = deadlineDate.toLocaleDateString(
+              lang === "ar" ? "ar-SA-u-nu-latn" : "en-US",
+              { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Riyadh" },
+            );
+            return (
+              <div className={`flex items-center gap-2 ${isExpired ? "text-destructive" : "text-secondary"}`}>
+                <Clock className="h-4 w-4 shrink-0" />
+                <span className="text-xs font-medium">
+                  {isExpired
+                    ? t("offer_window.closed")
+                    : `${t("offer_window.receiving")} — ${t("offer_window.closes_at")} ${formattedDate}`}
+                </span>
+              </div>
+            );
+          })()}
           {listing.price_hint != null && (
             <div className="flex items-center gap-2">
               <Tag className="h-4 w-4 shrink-0" />

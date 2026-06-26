@@ -449,6 +449,7 @@ router.post(
         target_company_id: wasteListingsTable.target_company_id,
         material_category_id: wasteListingsTable.material_category_id,
         eligible_company_type: wasteListingsTable.eligible_company_type,
+        offer_deadline: wasteListingsTable.offer_deadline,
       })
       .from(wasteListingsTable)
       .where(eq(wasteListingsTable.id, listingId))
@@ -488,12 +489,19 @@ router.post(
           TargetingRestricted:    [403, "This listing is a private deal and was not directed to your company"],
           MissingCapability:      [403, "Your company does not have a required service for this listing"],
           SensitiveMaterial:      [403, "This listing requires an approved license due to its sensitive material category"],
+          OfferWindowClosed:      [409, "The offer window for this listing has closed"],
         };
         const [status, message] = reasonMessages[pureResult.reason!];
         throw new HttpError(status, pureResult.reason!, message);
       }
     }
     // ── End Rules Engine ──────────────────────────────────────────────────────
+
+    // ── CLT-1: Offer window check ─────────────────────────────────────────────
+    if (listing.offer_deadline && listing.offer_deadline <= new Date()) {
+      throw new HttpError(409, "OfferWindowClosed", "The offer window for this listing has closed");
+    }
+    // ── End CLT-1 ─────────────────────────────────────────────────────────────
 
     // ── Targeting gate (category) — DB lookup ────────────────────────────────
     if (listing.targeting_type === "category") {
@@ -763,6 +771,7 @@ router.put(
         status: wasteListingsTable.status,
         pricing_model: wasteListingsTable.pricing_model,
         quantity: wasteListingsTable.quantity,
+        offer_deadline: wasteListingsTable.offer_deadline,
       })
       .from(wasteListingsTable)
       .where(eq(wasteListingsTable.id, listingId))
@@ -777,6 +786,10 @@ router.put(
         "ListingClosed",
         "This listing is no longer accepting offers",
       );
+    }
+    // CLT-1: Block offer improvement after deadline
+    if (listing.offer_deadline && listing.offer_deadline <= new Date()) {
+      throw new HttpError(409, "OfferWindowClosed", "The offer window for this listing has closed");
     }
 
     const [myOffer] = await db

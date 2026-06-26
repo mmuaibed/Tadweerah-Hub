@@ -133,6 +133,13 @@ export const wasteListingsTable = pgTable("waste_listings", {
     .notNull()
     .defaultNow(),
   closed_at: timestamp("closed_at", { withTimezone: true }),
+  /**
+   * Phase CLT-1: Offer Window deadline.
+   * When set, no new offers can be submitted after this time.
+   * All listings require this field — enforced via API validation and DB NOT NULL.
+   * Stored as UTC timestamptz. Displayed in KSA/AST timezone on frontend.
+   */
+  offer_deadline: timestamp("offer_deadline", { withTimezone: true }).notNull(),
   image_url: text("image_url"),
 
   /**

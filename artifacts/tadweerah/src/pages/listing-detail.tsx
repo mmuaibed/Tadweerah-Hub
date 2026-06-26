@@ -545,6 +545,7 @@ function BuyerOfferSection({
   wasteListingId,
   listingQuantity,
   isOpen,
+  isOfferWindowClosed,
   pricingModel,
   unit,
   onSuccess,
@@ -552,6 +553,7 @@ function BuyerOfferSection({
   wasteListingId: string;
   listingQuantity: number;
   isOpen: boolean;
+  isOfferWindowClosed: boolean;
   pricingModel?: string | null;
   unit?: string;
   onSuccess: () => void;
@@ -890,6 +892,17 @@ function BuyerOfferSection({
 
   return (
     <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+      {/* CLT-1: Trust disclosure — non-dismissible */}
+      <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-relaxed dark:border-amber-800 dark:bg-amber-950/50">
+        <p className="text-amber-800 dark:text-amber-200">{t("offer_window.trust_disclosure")}</p>
+      </div>
+      {/* CLT-1: Offer window expired guard */}
+      {isOfferWindowClosed ? (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-xs text-destructive">
+          {t("offer_window.closed_detail")}
+        </div>
+      ) : (
+      <>
       <div className="flex items-center gap-2">
         <TrendingUp className="h-4 w-4 text-primary" />
         <span className="text-sm font-semibold text-foreground">
@@ -964,6 +977,8 @@ function BuyerOfferSection({
           {isSubmitting ? t("offer.form.submitting") : t("offer.form.submit")}
         </Button>
       </form>
+      </>
+      )}
     </div>
   );
 }
@@ -1697,6 +1712,29 @@ export function ListingDetailPage() {
                 {t(`status.${listing.status}`)}
               </Badge>
             </div>
+            {/* CLT-1: Offer window status */}
+            {(() => {
+              const effectiveStatus = (listing as any).effective_status;
+              const offerDeadline = (listing as any).offer_deadline;
+              if (!offerDeadline) return null;
+              const deadlineDate = new Date(offerDeadline);
+              const isExpired = effectiveStatus === "offer_window_closed";
+              const formattedDate = deadlineDate.toLocaleDateString(
+                lang === "ar" ? "ar-SA-u-nu-latn" : "en-US",
+                { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Riyadh" },
+              );
+              return (
+                <div className={`rounded-lg border px-3 py-2 text-xs font-medium ${
+                  isExpired
+                    ? "border-destructive/30 bg-destructive/10 text-destructive"
+                    : "border-secondary/30 bg-secondary/10 text-secondary"
+                }`}>
+                  {isExpired
+                    ? t("offer_window.closed")
+                    : `${t("offer_window.receiving")} — ${t("offer_window.closes_at")} ${formattedDate}`}
+                </div>
+              );
+            })()}
             {/* Offer summary — hero price */}
             <OfferPriceHero
               wasteListingId={wasteListingId}
@@ -1864,6 +1902,7 @@ export function ListingDetailPage() {
                   wasteListingId={wasteListingId}
                   listingQuantity={quantity}
                   isOpen={!!isOpen}
+                  isOfferWindowClosed={(listing as any).effective_status === "offer_window_closed"}
                   pricingModel={listing.pricing_model}
                   unit={listing.unit ?? undefined}
                   onSuccess={() => {

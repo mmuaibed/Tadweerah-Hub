@@ -17,6 +17,7 @@ export type EligibilityReason =
   | "LicenseExpired"        // listing is LICENSED_ONLY, license expiryDate has passed
   | "MissingCapability"     // company doesn't have a required service capability
   | "SensitiveMaterial"     // material category is sensitive and requires a license
+  | "OfferWindowClosed"     // offer window deadline has passed
   | "TargetingRestricted";  // listing is targeted and this company is excluded
 
 export interface EligibilityResult {
@@ -34,6 +35,7 @@ export interface EligibilityListing {
   eligible_company_type?: string | null;
   targeting_type?: string | null;
   target_company_id?: string | null;
+  offer_deadline?: Date | null; // Always set in DB (NOT NULL); optional here as defensive guard
 }
 
 export interface EligibilityCompany {
@@ -67,6 +69,9 @@ export function checkPureEligibility(
 
   // 2. Listing must be open
   if (listing.status !== "open") return deny("ListingClosed");
+
+  // 2b. Offer window has closed
+  if (listing.offer_deadline && listing.offer_deadline <= new Date()) return deny("OfferWindowClosed");
 
   // 3. T&C acceptance
   if (!company.accepted_terms_at) return deny("TermsNotAccepted");

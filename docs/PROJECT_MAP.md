@@ -1,5 +1,5 @@
 # Tadweerah Hub — PROJECT MAP
-> Last updated: 2026-06-26 | Phase SIR-3B Accepted
+> Last updated: 2026-06-26 | Phase CLT-1 Implemented (pending migration/deploy)
 > Status: SIR-3B Sustainability Report Print/PDF + Company Logo accepted on Staging. Active backend revision: `tadweerah-api-00121-8kk`. Frontend deployed to Firebase Staging. Company logo upload integrated into Company Profile Save Changes flow. Processor logo renders in sustainability print report. SIR-3C (multi-material consolidated report) deferred. SIR-2D (admin reopen/versioned governance) deferred. No production deploy, no DB migration beyond `companies.logo_url`.
 
 
@@ -96,7 +96,7 @@ Tadweerah-Hub/
 |-------|-----------|-------|
 | `companies` | `id`, `name`, `license_status`, `offer_submission_blocked`, `receipt_failures_count`, `logo_url` | Producer or buyer entity. `logo_url` nullable — added in SIR-3B (migration `0006_add_company_logo_url.sql`) |
 | `company_members` | `company_id`, `user_id`, `role` | Role: `owner` or `member` |
-| `waste_listings` | `id`, `status`, `material`, `city`, `material_category_id`, `is_processed_output` | open/closed/filled/cancelled. Contains `is_processed_output` flag for sustainability eligibility |
+| `waste_listings` | `id`, `status`, `material`, `city`, `material_category_id`, `is_processed_output`, `offer_deadline` | open/closed/filled/cancelled. `offer_deadline` (NOT NULL TIMESTAMPTZ) added in CLT-1 — offers blocked after deadline. `effective_status` derived at read-time: `offer_window_closed` when `status='open' AND offer_deadline <= now()`. All existing rows backfilled via migration `0007`. Contains `is_processed_output` flag for sustainability eligibility |
 | `listing_offers` | `listing_id`, `buyer_company_id`, `amount`, `status` | Offer state machine |
 | `deals` | (see §4 below) | Core transactional entity |
 | `contracts` | `id`, `reference`, `status`, `seller_company_id`, `buyer_company_id`, `weight_policy` | Contract Lite |
@@ -403,8 +403,8 @@ Event occurs (route handler or hourly job)
 |-----------|-------|-------------|
 | `home.tsx` | `/` | Landing / unauthenticated home |
 | `marketplace.tsx` | `/marketplace` | Browse open listings |
-| `listing-detail.tsx` | `/listings/:id` | Listing + offer submission + deal panel |
-| `listing-new.tsx` | `/listings/new` | Create new waste listing |
+| `listing-detail.tsx` | `/listings/:id` | Listing + offer submission + deal panel. CLT-1: shows offer window status, trust disclosure, and disables offer form when deadline has passed |
+| `listing-new.tsx` | `/listings/new` | Create new waste listing. CLT-1: Offer Window preset picker (24h/3d/7d/14d/30d/custom) |
 | `my-listings.tsx` | `/my-listings` | Producer's own listings |
 | `dashboard.tsx` | `/dashboard` | Both-party deal dashboard with status overviews and sustainability allocation draft card (SIR-2B) |
 | `participations.tsx` | `/participations` | Buyer's submitted offers + deal status |
@@ -569,6 +569,26 @@ VITE_API_URL                   # backend API base URL
 
 ### 5. Phase 3-B — Post-Pilot Workflow Configurability & Polish
 - Configurable timers, category-targeted notifications, i18n refactor, checklist wording polish, etc.
+
+### Phase CLT-1 — Flexible Offer Window Foundation (فترة استقبال العروض)
+- **Status:** ✅ Implemented — pending staging migration and deploy.
+- **Customer-facing name:** Offer Window / فترة استقبال العروض
+- **Scope:**
+  - `offer_deadline` NOT NULL TIMESTAMPTZ column on `waste_listings` (migration `0007_add_offer_deadline.sql`, includes backfill).
+  - `effective_status = 'offer_window_closed'` derived at read-time when `status = 'open' AND offer_deadline <= now()`.
+  - No new DB status enum values. No cron. No auto-close. No auto-reject.
+  - Backend: POST validation (24h min, 30d max, 5m clock-drift buffer), marketplace filter, offer submit/improve guards.
+  - Frontend: Offer Window picker in listing creation (7d default), deadline display on cards and detail, trust disclosure, expired-window offer guard.
+  - Eligibility engine: `OfferWindowClosed` reason added.
+  - 16 bilingual i18n keys (ar/en).
+  - All existing listings backfilled: closed listings use `closed_at` or `created_at`; open listings get `now() + 7 days`.
+  - SIR-3B surfaces untouched.
+  - Seller can still accept offers after window closes (no seller-side restrictions).
+- **Not implemented (by design):**
+  - No admin UI to extend/modify deadline post-creation.
+  - No auction mechanics, cron jobs, or auto-close.
+  - No real-time countdown timer or WebSocket push.
+- **Deployment order:** Migration → backend → frontend.
 
 ### 6. Phase 3-C — Multi-Branch / Multi-Site Operational Routing
 - **Status:** Not implemented (deferred to Phase 3).

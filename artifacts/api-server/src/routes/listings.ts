@@ -137,6 +137,11 @@ function serialize(
     material_location_notes: (row as Row).material_location_notes ?? null,
     created_at: row.created_at.toISOString(),
     closed_at: row.closed_at?.toISOString() ?? undefined,
+    offer_deadline: (row as any).offer_deadline?.toISOString() ?? null,
+    effective_status:
+      row.status === "open" && (row as any).offer_deadline && (row as any).offer_deadline <= new Date()
+        ? "offer_window_closed"
+        : row.status,
     offer_count: row.offer_count ?? undefined,
     highest_subtotal_amount:
       row.highest_subtotal_amount != null ? Number(row.highest_subtotal_amount) : undefined,
@@ -243,6 +248,7 @@ const baseSelect = {
   is_processed_output: wasteListingsTable.is_processed_output,
   created_at: wasteListingsTable.created_at,
   closed_at: wasteListingsTable.closed_at,
+  offer_deadline: wasteListingsTable.offer_deadline,
   company_name: companiesTable.name,
 } as const;
 
@@ -322,6 +328,11 @@ router.get(
       // P6: never show the viewer's own listings in the marketplace
       ne(wasteListingsTable.company_id, company.id),
       targetingFilter,
+      // CLT-1: Exclude listings whose offer window has closed
+      or(
+        sql`${wasteListingsTable.offer_deadline} IS NULL`,
+        sql`${wasteListingsTable.offer_deadline} > now()`,
+      )!,
     ];
     if (material) {
       conditions.push(eq(wasteListingsTable.material, material));
@@ -664,6 +675,30 @@ router.post(
         ? req.body.material_location_notes.trim().slice(0, 500)
         : null;
 
+    // ── CLT-1: Offer Window deadline ──────────────────────────────────────────
+    const rawOfferDeadline: unknown = req.body.offer_deadline;
+    let offerDeadline: Date | null = null;
+    if (typeof rawOfferDeadline === "string" && rawOfferDeadline.trim()) {
+      const parsedDeadline = new Date(rawOfferDeadline);
+      if (isNaN(parsedDeadline.getTime())) {
+        throw new HttpError(400, "ValidationError", "offer_deadline must be a valid ISO-8601 timestamp");
+      }
+      const now = new Date();
+      // 23h55m minimum to absorb clock drift while preserving 24h commercial rule
+      const minDeadline = new Date(now.getTime() + (23 * 60 + 55) * 60 * 1000);
+      const maxDeadline = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      if (parsedDeadline < minDeadline) {
+        throw new HttpError(400, "ValidationError", "offer_deadline must be at least 24 hours from now");
+      }
+      if (parsedDeadline > maxDeadline) {
+        throw new HttpError(400, "ValidationError", "offer_deadline must be within 30 days from now");
+      }
+      offerDeadline = parsedDeadline;
+    } else {
+      throw new HttpError(400, "ValidationError", "offer_deadline is required");
+    }
+    // ── End CLT-1 ─────────────────────────────────────────────────────────────
+
     const [created] = await db
       .insert(wasteListingsTable)
       .values({
@@ -689,6 +724,7 @@ router.post(
         material_location_address: materialLocationAddress,
         google_maps_url: googleMapsUrl,
         material_location_notes: materialLocationNotes,
+        offer_deadline: offerDeadline,
       })
       .returning();
 

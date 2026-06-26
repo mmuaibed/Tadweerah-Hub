@@ -161,7 +161,8 @@ async function main() {
         transport_responsibility: "buyer",
         vat_applicable: true,
         material_location_address: "Industrial Area 2, Riyadh",
-        material_location_notes: "Gate 4, ask for Ahmed"
+        material_location_notes: "Gate 4, ask for Ahmed",
+        offer_deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // CLT-1: 7 days from now
       }).returning();
       listing = insertedListing;
       console.log(`✅ Created Pilot Listing: ID ${listing.id}`);
