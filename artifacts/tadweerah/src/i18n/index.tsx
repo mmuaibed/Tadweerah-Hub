@@ -336,6 +336,7 @@ const translations: Record<string, Record<Language, string>> = {
   "listing.detail.subtitle": { ar: "كل تفاصيل العرض المنشور", en: "Full details of this listing" },
   "listing.detail.publishedBy": { ar: "نشرها", en: "Published by" },
   "listing.detail.description": { ar: "الوصف", en: "Description" },
+  "listing.detail.status": { ar: "الحالة", en: "Status" },
 
   "listing.close.confirm.title": { ar: "تأكيد إغلاق العرض", en: "Confirm Closing" },
   "listing.close.confirm.desc": {
