@@ -532,6 +532,7 @@ router.get(
         
         // Pathway line details
         line_id: sustainabilityAllocationLinesTable.id,
+        pathway_id: sustainabilityPathwaysTable.id,
         pathway_qty: sustainabilityAllocationLinesTable.quantity,
         pathway_pct: sustainabilityAllocationLinesTable.percentage,
         pathway_name_ar: sustainabilityPathwaysTable.name_ar,
@@ -648,6 +649,7 @@ router.get(
       // Only add pathway to the latest allocation we decided to keep
       if (row.line_id && groupedMap.get(row.received_line_id).allocation_id === row.allocation_id) {
         groupedMap.get(row.received_line_id).pathways.push({
+          pathway_id: row.pathway_id,
           pathway_name_ar: row.pathway_name_ar,
           pathway_name_en: row.pathway_name_en,
           quantity: Number(row.pathway_qty).toString(),
@@ -658,11 +660,25 @@ router.get(
 
     const serialized = Array.from(groupedMap.values()).slice(offset, offset + (format === "csv" ? 5000 : limit));
 
+    // Fetch active pathways for dynamic columns
+    const activePathways = await db
+      .select({
+        id: sustainabilityPathwaysTable.id,
+        name_ar: sustainabilityPathwaysTable.name_ar,
+        name_en: sustainabilityPathwaysTable.name_en,
+      })
+      .from(sustainabilityPathwaysTable)
+      .where(eq(sustainabilityPathwaysTable.is_active, true))
+      .orderBy(sustainabilityPathwaysTable.sort_order);
+
     if (format === "csv") {
       const isArabic = req.query.lang !== "en";
-      const headers = isArabic 
-        ? ["تاريخ الاعتماد", "المصدر", "المرجع التجاري", "دوري", "الطرف الآخر", "المادة", "الكمية المستلمة", "الوحدة", "مسارات الاستدامة", "الحالة"]
-        : SUST_CSV_HEADERS;
+      const baseHeaders = isArabic 
+        ? ["تاريخ الاعتماد", "المصدر", "المرجع التجاري", "دوري", "الطرف الآخر", "المادة", "الكمية المستلمة", "الوحدة"]
+        : ["Finalized Date", "Source", "Commercial Ref", "My Role", "Counterparty", "Material", "Received Qty", "Unit"];
+      
+      const pathwayHeaders = activePathways.map(p => isArabic ? `مسار: ${p.name_ar}` : `Pathway: ${p.name_en}`);
+      const headers = [...baseHeaders, ...pathwayHeaders, isArabic ? "الحالة" : "Status"];
 
       const formatQty = (v: any) => {
         const n = parseFloat(v);
@@ -671,7 +687,12 @@ router.get(
 
       const csvRows = serialized.map((r) => {
         const unitLabel = r.unit === "ton" ? (isArabic ? "طن" : "ton") : r.unit === "kg" ? (isArabic ? "كجم" : "kg") : r.unit;
-        const pathwaysStr = r.pathways.map((p: any) => `${isArabic ? p.pathway_name_ar : p.pathway_name_en}: ${formatQty(p.quantity)} ${unitLabel}`).join(isArabic ? "، " : ", ");
+        
+        const pathwayCells = activePathways.map(pw => {
+          const match = r.pathways.find((p: any) => p.pathway_id === pw.id);
+          return match ? formatQty(match.quantity) : "0";
+        });
+
         const sourceLabel = r.source_type === "deal" ? (isArabic ? "صفقة" : "Deal") : r.source_type === "contract_shipment" ? (isArabic ? "شحنة" : "Shipment") : r.source_type;
         const roleLabel = r.my_role === "seller" ? (isArabic ? "البائع / المصدر" : "Seller / Source") : (isArabic ? "المشتري / المعالج" : "Buyer / Processor");
         return [
@@ -683,7 +704,7 @@ router.get(
           isArabic ? r.material_ar : r.material_en,
           formatQty(r.quantity),
           unitLabel,
-          pathwaysStr,
+          ...pathwayCells,
           isArabic ? "معتمد" : "Finalized"
         ];
       });
@@ -701,7 +722,7 @@ router.get(
       return;
     }
 
-    res.json({ rows: serialized, count: serialized.length });
+    res.json({ rows: serialized, pathways: activePathways, count: serialized.length });
   }
 );
 

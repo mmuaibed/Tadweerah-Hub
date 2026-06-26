@@ -83,6 +83,7 @@ interface SustainabilityReportRow {
   quantity: string;
   unit: string;
   pathways: Array<{
+    pathway_id: string;
     pathway_name_ar: string;
     pathway_name_en: string;
     quantity: string;
@@ -92,6 +93,7 @@ interface SustainabilityReportRow {
 
 interface SustainabilityReportResponse {
   rows: SustainabilityReportRow[];
+  pathways: Array<{ id: string; name_ar: string; name_en: string }>;
   count: number;
 }
 
@@ -960,7 +962,9 @@ export function ReportsPage() {
                           <Th>{lang === "ar" ? "الطرف الآخر" : "Counterparty"}</Th>
                           <Th>{lang === "ar" ? "المادة" : "Material"}</Th>
                           <Th>{lang === "ar" ? "الكمية المستلمة" : "Received Qty"}</Th>
-                          <Th>{lang === "ar" ? "مسارات الاستدامة" : "Pathways"}</Th>
+                          {sustReport.pathways?.map(pw => (
+                            <Th key={pw.id}>{lang === "ar" ? pw.name_ar : pw.name_en}</Th>
+                          ))}
                           <Th>{lang === "ar" ? "الحالة" : "Status"}</Th>
                         </tr>
                       </thead>
@@ -1000,15 +1004,18 @@ export function ReportsPage() {
                               <Td>{row.counterparty_name ?? "—"}</Td>
                               <Td>{lang === "ar" ? row.material_ar : row.material_en}</Td>
                               <Td mono bold>{fmtNumber(row.quantity)} {unitLabel}</Td>
-                              <Td>
-                                <div className="flex flex-col gap-1 max-w-[200px] whitespace-normal">
-                                  {row.pathways.map((p, pIdx) => (
-                                    <span key={pIdx} className="text-xs text-muted-foreground leading-tight">
-                                      {lang === "ar" ? p.pathway_name_ar : p.pathway_name_en}: {fmtNumber(p.quantity)} {unitLabel}
-                                    </span>
-                                  ))}
-                                </div>
-                              </Td>
+                              {sustReport.pathways?.map(pw => {
+                                const match = row.pathways.find(p => p.pathway_id === pw.id);
+                                return (
+                                  <Td key={pw.id} mono>
+                                    {match ? (
+                                      <span>{fmtNumber(match.quantity)} {unitLabel}</span>
+                                    ) : (
+                                      <span className="text-muted-foreground/50">0</span>
+                                    )}
+                                  </Td>
+                                );
+                              })}
                               <Td>
                                 <span className="inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold bg-green-100 text-green-800">
                                   {lang === "ar" ? "معتمد" : "Finalized"}
