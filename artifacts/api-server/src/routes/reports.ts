@@ -731,7 +731,7 @@ router.get(
  * Fetches a single finalized sustainability report row formatted identically to the list.
  */
 router.get(
-  "/sustainability/:id",
+  "/reports/sustainability/:id",
   requireAuth,
   requireCompany(),
   async (req, res) => {
