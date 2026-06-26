@@ -18,7 +18,6 @@ import {
   Users,
   Settings,
   ImagePlus,
-  CheckCircle2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -123,8 +122,6 @@ export function CompanyProfilePage() {
   const logoInputRef = useRef<HTMLInputElement>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [logoUploading, setLogoUploading] = useState(false);
-  const [logoSaved, setLogoSaved] = useState(false);
   const [logoError, setLogoError] = useState<string | null>(null);
   const MAX_LOGO_BYTES = 2 * 1024 * 1024; // 2 MB
   const ALLOWED_LOGO_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -133,7 +130,6 @@ export function CompanyProfilePage() {
   function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0] ?? null;
     setLogoError(null);
-    setLogoSaved(false);
     if (!file) return;
     const ext = "." + (file.name.split(".").pop()?.toLowerCase() ?? "");
     if (!ALLOWED_LOGO_TYPES.has(file.type) || !ALLOWED_LOGO_EXTS.has(ext)) {
@@ -150,40 +146,6 @@ export function CompanyProfilePage() {
     const reader = new FileReader();
     reader.onload = (ev) => setLogoPreview(ev.target?.result as string);
     reader.readAsDataURL(file);
-  }
-
-  async function uploadLogo() {
-    if (!logoFile) return;
-    setLogoUploading(true);
-    setLogoError(null);
-    setLogoSaved(false);
-    try {
-      const token = await getToken();
-      const form = new FormData();
-      form.append("image", logoFile);
-      const res = await fetch("/api/companies/mine/logo", {
-        method: "POST",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        credentials: "include",
-        body: form,
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setLogoError((data as { message?: string }).message ?? (lang === "ar" ? "فشل رفع الشعار" : "Logo upload failed"));
-        return;
-      }
-      const result = await res.json() as { logo_url: string };
-      setProfile((prev) => prev ? { ...prev, logo_url: result.logo_url } : prev);
-      setLogoPreview(result.logo_url);
-      setLogoFile(null);
-      if (logoInputRef.current) logoInputRef.current.value = "";
-      setLogoSaved(true);
-      setTimeout(() => setLogoSaved(false), 5000);
-    } catch {
-      setLogoError(lang === "ar" ? "فشل رفع الشعار" : "Logo upload failed");
-    } finally {
-      setLogoUploading(false);
-    }
   }
 
   const toggleRole = (role: MwanRole) => {
@@ -279,6 +241,7 @@ export function CompanyProfilePage() {
     e.preventDefault();
     setError(null);
     setSaved(false);
+    setLogoError(null);
 
     if (!name.trim() || name.trim().length < 2) {
       setError(t("onboarding.form.name") + " " + t("profile.error.required"));
@@ -295,6 +258,7 @@ export function CompanyProfilePage() {
 
     setIsPending(true);
     try {
+      // 1. Save profile fields
       const token = await getToken();
       const res = await fetch("/api/companies/mine", {
         method: "PUT",
@@ -322,6 +286,44 @@ export function CompanyProfilePage() {
       const updated = await res.json() as CompanyProfile;
       setProfile((prev) => prev ? { ...prev, ...updated } : updated);
       await queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
+
+      // 2. Upload pending logo if one was selected
+      if (logoFile) {
+        try {
+          const logoToken = await getToken();
+          const form = new FormData();
+          form.append("image", logoFile);
+          const logoRes = await fetch("/api/companies/mine/logo", {
+            method: "POST",
+            headers: logoToken ? { Authorization: `Bearer ${logoToken}` } : {},
+            credentials: "include",
+            body: form,
+          });
+          if (!logoRes.ok) {
+            const logoData = await logoRes.json().catch(() => ({}));
+            setLogoError(
+              (logoData as { message?: string }).message ??
+              (lang === "ar" ? "تم حفظ البيانات لكن فشل رفع الشعار. يرجى المحاولة مجدداً." : "Profile saved but logo upload failed. Please try again.")
+            );
+            // Profile is saved; show a partial success without the logo
+            setSaved(true);
+            setTimeout(() => setSaved(false), 5000);
+            return;
+          }
+          const logoResult = await logoRes.json() as { logo_url: string };
+          setProfile((prev) => prev ? { ...prev, logo_url: logoResult.logo_url } : prev);
+          setLogoPreview(logoResult.logo_url);
+          setLogoFile(null);
+          if (logoInputRef.current) logoInputRef.current.value = "";
+        } catch {
+          setLogoError(lang === "ar" ? "تم حفظ البيانات لكن فشل رفع الشعار. يرجى المحاولة مجدداً." : "Profile saved but logo upload failed. Please try again.");
+          setSaved(true);
+          setTimeout(() => setSaved(false), 5000);
+          return;
+        }
+      }
+
+      // 3. All succeeded
       setSaved(true);
       setTimeout(() => setSaved(false), 4000);
     } catch {
@@ -503,34 +505,16 @@ export function CompanyProfilePage() {
                 />
                 <p className="text-xs text-muted-foreground">
                   {lang === "ar"
-                    ? "يُقبل: jpg, png, webp · الحد الأقصى: 2 ميجابايت · الشعار اختياري"
-                    : "Accepted: jpg, png, webp · Max: 2 MB · Logo is optional"}
+                    ? "يُقبل: jpg, png, webp · الحد الأقصى: 2 ميجابايت · سيتم رفع الشعار عند حفظ التغييرات"
+                    : "Accepted: jpg, png, webp · Max: 2 MB · Logo will be uploaded when saving changes"}
                 </p>
+                {logoFile && (
+                  <p className="text-xs text-primary font-medium">
+                    {lang === "ar" ? `✓ تم اختيار الملف: ${logoFile.name}` : `✓ Selected: ${logoFile.name}`}
+                  </p>
+                )}
                 {logoError && (
                   <p className="text-xs text-destructive">{logoError}</p>
-                )}
-                {logoSaved && (
-                  <div className="flex items-center gap-1.5 text-xs text-emerald-600">
-                    <CheckCircle2 className="h-3.5 w-3.5" />
-                    {lang === "ar" ? "تم حفظ الشعار بنجاح" : "Logo saved successfully"}
-                  </div>
-                )}
-                {logoFile && !logoUploading && (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    className="gap-1.5 mt-1"
-                    onClick={uploadLogo}
-                  >
-                    {lang === "ar" ? "رفع الشعار" : "Upload Logo"}
-                  </Button>
-                )}
-                {logoUploading && (
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    {lang === "ar" ? "جارٍ الرفع..." : "Uploading..."}
-                  </div>
                 )}
               </div>
             </div>
