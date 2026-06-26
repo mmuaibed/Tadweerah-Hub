@@ -268,7 +268,9 @@ const translations: Record<string, Record<Language, string>> = {
   "listing.location.site_details": { ar: "تفاصيل الموقع", en: "Site details" },
   "listing.location.open_maps": { ar: "فتح الموقع على Google Maps", en: "Open in Google Maps" },
   "listing.form.description": { ar: "وصف مختصر (اختياري)", en: "Short Description (Optional)" },
-  "listing.form.priceHint": { ar: "السعر الإرشادي (ريال) — اختياري", en: "Price Hint (SAR) — Optional" },
+  "listing.form.priceHint.auction": { ar: "السعر الإرشادي المتوقع — اختياري", en: "Expected guide price — optional" },
+  "listing.form.priceHint.auction.helper": { ar: "يساعد المشترين على تقديم عروض أقرب لتوقعاتك، ولا يُعد سعراً نهائياً ملزماً.", en: "Helps buyers submit offers closer to your expectations. It is not a final binding price." },
+  "listing.form.priceHint.direct": { ar: "السعر (ريال) — اختياري", en: "Price (SAR) — Optional" },
   "listing.form.pricingModel": { ar: "نوع التسعير", en: "Pricing Model" },
   "listing.form.pricingModel.fixed.hint": {
     ar: "السعر ثابت ولا يتغير بعد الاتفاق — الأنسب لمعظم صفقات المواد المعاد تدويرها.",
@@ -776,7 +778,7 @@ const translations: Record<string, Record<Language, string>> = {
   },
 
   // Item 6 — Sale type
-  "listing.sale_type.auction": { ar: "مزاد مفتوح", en: "Open Auction" },
+  "listing.sale_type.auction": { ar: "استقبال عروض", en: "Receive Offers" },
   "listing.sale_type.direct": { ar: "بيع مباشر", en: "Direct Sale" },
   "listing.form.eligibleCompanyType": { ar: "من يمكنه التقديم على هذا الإعلان؟", en: "Who can submit offers on this listing?" },
   "listing.form.eligibleCompanyType.hint": { ar: "يمكنك تخصيص الإعلان للشركات المرخصة من موان فقط، أو فتحه لجميع الشركات المسجلة", en: "You can restrict this listing to MWAN-licensed companies or open it to all registered companies" },
@@ -821,12 +823,12 @@ const translations: Record<string, Record<Language, string>> = {
   "eligibility.SensitiveMaterial.desc":       { ar: "هذا الإعلان يحتوي على مادة تتطلب ترخيصاً معتمداً من موان للتعامل معها.", en: "This listing contains a material category that requires an approved MWAN license to handle." },
   "listing.form.saleType": { ar: "نوع البيع", en: "Sale Type" },
   "listing.form.saleType.auction.hint": {
-    ar: "يتنافس المشترون بأسعار متزايدة — المنتج يختار أفضل عرض.",
-    en: "Buyers compete with increasing prices — producer selects the best offer.",
+    ar: "يستقبل الإعلان عروض المشترين خلال فترة محددة — ويمكن للبائع قبول عرض مناسب قبل إغلاق استقبال العروض.",
+    en: "The listing receives buyer offers during a defined offer window — the seller may accept a suitable offer before offers close.",
   },
   "listing.form.saleType.direct.hint": {
-    ar: "يشتري المشتري بالسعر الإرشادي مباشرة دون منافسة.",
-    en: "Buyer purchases at the listed price directly without competition.",
+    ar: "يعرض البائع سعراً محدداً للبيع المباشر.",
+    en: "The seller sets a fixed price for direct sale.",
   },
 
   // Item 4 — Company category

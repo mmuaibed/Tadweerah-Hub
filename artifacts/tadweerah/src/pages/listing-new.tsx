@@ -608,7 +608,11 @@ export function ListingNewPage() {
 
               <div className={`grid gap-3 ${saleType === "direct" ? "sm:grid-cols-2" : ""}`}>
                 <div className="space-y-1.5">
-                  <Label htmlFor="priceHint">{t("listing.form.priceHint")}</Label>
+                  <Label htmlFor="priceHint">
+                    {saleType === "direct"
+                      ? t("listing.form.priceHint.direct")
+                      : t("listing.form.priceHint.auction")}
+                  </Label>
                   <Input
                     id="priceHint"
                     type="number"
@@ -618,6 +622,11 @@ export function ListingNewPage() {
                     value={priceHint}
                     onChange={(e) => setPriceHint(e.target.value)}
                   />
+                  {saleType === "auction" && (
+                    <p className="text-xs text-muted-foreground">
+                      {t("listing.form.priceHint.auction.helper")}
+                    </p>
+                  )}
                 </div>
 
                 {saleType === "direct" && (
