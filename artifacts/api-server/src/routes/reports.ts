@@ -664,9 +664,14 @@ router.get(
         ? ["تاريخ الاعتماد", "المصدر", "المرجع التجاري", "دوري", "الطرف الآخر", "المادة", "الكمية المستلمة", "الوحدة", "مسارات الاستدامة", "الحالة"]
         : SUST_CSV_HEADERS;
 
+      const formatQty = (v: any) => {
+        const n = parseFloat(v);
+        return isNaN(n) ? String(v) : new Intl.NumberFormat("en-US", { maximumFractionDigits: 4 }).format(n);
+      };
+
       const csvRows = serialized.map((r) => {
         const unitLabel = r.unit === "ton" ? (isArabic ? "طن" : "ton") : r.unit === "kg" ? (isArabic ? "كجم" : "kg") : r.unit;
-        const pathwaysStr = r.pathways.map((p: any) => `${isArabic ? p.pathway_name_ar : p.pathway_name_en}: ${p.quantity} ${unitLabel}`).join(isArabic ? "، " : ", ");
+        const pathwaysStr = r.pathways.map((p: any) => `${isArabic ? p.pathway_name_ar : p.pathway_name_en}: ${formatQty(p.quantity)} ${unitLabel}`).join(isArabic ? "، " : ", ");
         const sourceLabel = r.source_type === "deal" ? (isArabic ? "صفقة" : "Deal") : r.source_type === "contract_shipment" ? (isArabic ? "شحنة" : "Shipment") : r.source_type;
         const roleLabel = r.my_role === "seller" ? (isArabic ? "البائع / المصدر" : "Seller / Source") : (isArabic ? "المشتري / المعالج" : "Buyer / Processor");
         return [
@@ -676,7 +681,7 @@ router.get(
           roleLabel,
           r.counterparty_name || "",
           isArabic ? r.material_ar : r.material_en,
-          r.quantity,
+          formatQty(r.quantity),
           unitLabel,
           pathwaysStr,
           isArabic ? "معتمد" : "Finalized"
@@ -692,8 +697,7 @@ router.get(
         "Content-Disposition",
         `attachment; filename="sustainability-report-${df}-${dt}.csv"`
       );
-      // UTF-8 BOM
-      res.send('\\uFEFF' + csv);
+      res.send(csv);
       return;
     }
 

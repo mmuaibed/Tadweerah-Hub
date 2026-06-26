@@ -999,12 +999,12 @@ export function ReportsPage() {
                               </Td>
                               <Td>{row.counterparty_name ?? "—"}</Td>
                               <Td>{lang === "ar" ? row.material_ar : row.material_en}</Td>
-                              <Td mono bold>{row.quantity} {unitLabel}</Td>
+                              <Td mono bold>{fmtNumber(row.quantity)} {unitLabel}</Td>
                               <Td>
                                 <div className="flex flex-col gap-1 max-w-[200px] whitespace-normal">
                                   {row.pathways.map((p, pIdx) => (
                                     <span key={pIdx} className="text-xs text-muted-foreground leading-tight">
-                                      {lang === "ar" ? p.pathway_name_ar : p.pathway_name_en}: {p.quantity} {unitLabel}
+                                      {lang === "ar" ? p.pathway_name_ar : p.pathway_name_en}: {fmtNumber(p.quantity)} {unitLabel}
                                     </span>
                                   ))}
                                 </div>
