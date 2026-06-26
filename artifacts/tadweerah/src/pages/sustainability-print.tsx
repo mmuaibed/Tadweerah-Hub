@@ -121,6 +121,20 @@ export function SustainabilityPrintPage() {
             </h3>
           </div>
 
+          {/* SIR-2D: Superseded / version label */}
+          {row.status === "superseded" && (
+            <div className="flex justify-center mb-4 print:mb-3">
+              <span className="inline-flex items-center gap-2 rounded-full border border-gray-300 bg-gray-100 px-4 py-1.5 text-xs font-semibold text-gray-600 print:text-gray-500">
+                <svg className="h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {isAr
+                  ? `النسخة ${row.version ?? 1} — مُستبدَلة`
+                  : `Version ${row.version ?? 1} — Superseded`}
+              </span>
+            </div>
+          )}
+
           {/* Core Summary Grid */}
           <section className="mb-6">
             <div className="grid grid-cols-2 gap-3">

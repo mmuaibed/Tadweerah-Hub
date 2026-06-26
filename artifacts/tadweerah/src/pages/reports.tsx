@@ -13,10 +13,13 @@ import {
   BarChart3,
   Banknote,
   ShieldCheck,
+  Leaf,
+  X,
 } from "lucide-react";
 import { AppLayout } from "@/components/app-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { useT } from "@/i18n";
@@ -215,6 +218,44 @@ export function ReportsPage() {
   const [sustError, setSustError] = useState<string | null>(null);
   const [sustExporting, setSustExporting] = useState(false);
   const [sustRefFilter, setSustRefFilter] = useState("");
+
+  /* SIR-2D: Correction request state (reports.tsx) */
+  const [corrReqRow, setCorrReqRow] = useState<SustainabilityReportRow | null>(null);
+  const [corrReqReason, setCorrReqReason] = useState("");
+  const [corrReqSubmitting, setCorrReqSubmitting] = useState(false);
+  const [corrReqSuccess, setCorrReqSuccess] = useState(false);
+  const [corrReqError, setCorrReqError] = useState<string | null>(null);
+
+  async function submitCorrReq() {
+    if (!corrReqRow || !corrReqReason.trim()) return;
+    setCorrReqSubmitting(true);
+    setCorrReqError(null);
+    try {
+      const token = await getToken();
+      const res = await fetch("/api/sustainability/correction-requests", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        credentials: "include",
+        body: JSON.stringify({ allocation_id: corrReqRow.allocation_id, reason: corrReqReason.trim() }),
+      });
+      if (res.status === 409) {
+        setCorrReqError(lang === "ar" ? "يوجد طلب تصحيح معلّق بالفعل لهذا السجل" : "A pending correction request already exists for this record.");
+        return;
+      }
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({})) as any;
+        throw new Error(err?.message ?? `HTTP ${res.status}`);
+      }
+      setCorrReqSuccess(true);
+    } catch (e) {
+      setCorrReqError(e instanceof Error ? e.message : "Failed to submit request");
+    } finally {
+      setCorrReqSubmitting(false);
+    }
+  }
 
   /* ── Build query string ── */
   function buildParams(extraFormat?: string): string {
@@ -966,6 +1007,7 @@ export function ReportsPage() {
                             <Th key={pw.id}>{lang === "ar" ? pw.name_ar : pw.name_en}</Th>
                           ))}
                           <Th>{lang === "ar" ? "الحالة" : "Status"}</Th>
+                          <Th>{lang === "ar" ? "طلب تصحيح" : "Request Correction"}</Th>
                           <th className="w-10 px-4 py-3 border-b border-border bg-muted/30"></th>
                         </tr>
                       </thead>
@@ -1022,6 +1064,17 @@ export function ReportsPage() {
                                   {lang === "ar" ? "معتمد" : "Finalized"}
                                 </span>
                               </Td>
+                               <Td>
+                                 {row.status === "finalized" && (
+                                   <button
+                                     onClick={() => { setCorrReqRow(row); setCorrReqReason(""); setCorrReqSuccess(false); setCorrReqError(null); }}
+                                     className="h-7 px-2.5 rounded-md text-[11px] font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors border border-blue-200 whitespace-nowrap flex items-center gap-1"
+                                   >
+                                     <Leaf className="h-3 w-3" />
+                                     {lang === "ar" ? "طلب تصحيح" : "Request Correction"}
+                                   </button>
+                                 )}
+                               </Td>
                               <Td>
                                 <Link href={`/reports/sustainability/${row.allocation_id}/print`}>
                                   <a target="_blank" rel="noopener noreferrer" className="p-1.5 hover:bg-muted rounded text-muted-foreground hover:text-primary transition-colors flex items-center justify-center" title={lang === "ar" ? "طباعة التقرير" : "Print Report"}>
@@ -1043,6 +1096,76 @@ export function ReportsPage() {
           </>
         )}
       </div>
+
+  {/* SIR-2D: Correction Request Dialog */}
+  {corrReqRow && (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" dir={dir}>
+      <div className="bg-card rounded-2xl border border-border shadow-xl p-6 max-w-md w-full space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <Leaf className="h-4 w-4 text-green-600" />
+            {lang === "ar" ? "طلب إعادة فتح كمسودة تصحيحية" : "Request Correction Draft"}
+          </h3>
+          <button onClick={() => setCorrReqRow(null)} className="text-muted-foreground hover:text-foreground">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {lang === "ar"
+            ? "سيُرسَل طلبك إلى المسؤول لمراجعته. يرجى ذكر سبب التصحيح بوضوح."
+            : "Your request will be sent to an admin for review. Please describe the correction reason clearly."}
+        </p>
+        <div className="text-[11px] text-muted-foreground bg-muted/30 rounded-lg px-3 py-2 font-mono" dir="ltr">
+          {corrReqRow.commercial_ref}
+        </div>
+        {corrReqSuccess ? (
+          <div className="flex items-start gap-3 rounded-xl border border-green-200 bg-green-50 p-4">
+            <Leaf className="h-5 w-5 text-green-600 mt-0.5 shrink-0" />
+            <p className="text-sm text-green-800">
+              {lang === "ar" ? "تم إرسال طلب التصحيح بنجاح. سيتواصل معك المسؤول قريباً." : "Correction request submitted. An admin will review it shortly."}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {corrReqError && (
+              <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-xs text-destructive">
+                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />{corrReqError}
+              </div>
+            )}
+            <label className="text-xs font-medium text-foreground block">
+              {lang === "ar" ? "سبب التصحيح (مطلوب)" : "Correction reason (required)"}
+            </label>
+            <Textarea
+              value={corrReqReason}
+              onChange={e => setCorrReqReason(e.target.value)}
+              placeholder={lang === "ar" ? "اكتب سبب طلب التصحيح..." : "Describe why a correction is needed..."}
+              className="h-28 resize-none text-sm"
+              disabled={corrReqSubmitting}
+            />
+          </div>
+        )}
+        <div className="flex gap-2 justify-end">
+          <button
+            onClick={() => setCorrReqRow(null)}
+            className="h-9 px-4 rounded-lg border border-border text-sm font-medium hover:bg-muted/50 transition-colors"
+          >
+            {corrReqSuccess ? (lang === "ar" ? "إغلاق" : "Close") : (lang === "ar" ? "إلغاء" : "Cancel")}
+          </button>
+          {!corrReqSuccess && (
+            <button
+              onClick={() => void submitCorrReq()}
+              disabled={corrReqSubmitting || !corrReqReason.trim()}
+              className="h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium transition-colors hover:bg-primary/90 disabled:opacity-50 flex items-center gap-1.5"
+            >
+              {corrReqSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              {lang === "ar" ? "إرسال الطلب" : "Submit Request"}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  )}
+
     </AppLayout>
 
   );

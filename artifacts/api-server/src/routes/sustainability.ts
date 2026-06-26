@@ -6,6 +6,7 @@ import {
   sustainabilityAllocationsTable,
   sustainabilityAllocationLinesTable,
   sustainabilityPathwaysTable,
+  sustainabilityCorrectionRequestsTable,
   dealsTable,
   contractShipmentsTable,
   contractMaterialsTable,
@@ -15,6 +16,8 @@ import { requireAuth } from "../middlewares/requireAuth";
 import { requireCompany, type AuthedCompanyRequest } from "../middlewares/requireCompany";
 import { validateAllocationDraft } from "../services/sustainability-validation";
 import { logAudit } from "../lib/audit";
+import { notifyAdminCorrectionRequested } from "../lib/admin-notify";
+import { notifyCorrectionApproved, notifyCorrectionRejected } from "../lib/notify";
 import { wasteListingsTable } from "@workspace/db";
 
 async function enrichReceivedLineQty(receivedLine: any, allocationStatus?: string) {
@@ -769,7 +772,159 @@ router.post("/sustainability/received-lines/:lineId/allocation/finalize", requir
     actorRole: "user"
   });
 
+  // SIR-2D: If this is a correction draft, supersede the source allocation
+  if (allocation.source_allocation_id) {
+    try {
+      await db
+        .update(sustainabilityAllocationsTable)
+        .set({
+          status: "superseded",
+          superseded_by_allocation_id: allocation.id,
+          superseded_at: now,
+          updated_at: now,
+        })
+        .where(
+          and(
+            eq(sustainabilityAllocationsTable.id, allocation.source_allocation_id),
+            eq(sustainabilityAllocationsTable.status, "finalized")
+          )
+        );
+
+      void logAudit({
+        action: "sustainability.allocation_superseded",
+        entityType: "sustainability_allocation",
+        entityId: allocation.source_allocation_id,
+        actorRole: "system",
+        statusBefore: "finalized",
+        statusAfter: "superseded",
+        details: {
+          superseded_by_allocation_id: allocation.id,
+          version: allocation.version,
+        },
+      });
+    } catch (err) {
+      // Log but do not roll back — finalization already succeeded
+      console.error("[sustainability] Failed to supersede source allocation", {
+        source_allocation_id: allocation.source_allocation_id,
+        err,
+      });
+    }
+  }
+
   res.json({ success: true, allocation_id: allocation.id, finalized_at: now });
 });
 
+// ── SIR-2D: Company correction request endpoints ─────────────────────────────
+
+/**
+ * POST /sustainability/correction-requests
+ * Company submits a correction request for its own finalized allocation.
+ * Body: { allocation_id, reason }
+ */
+router.post("/sustainability/correction-requests", requireAuth, requireCompany(), async (req, res) => {
+  const { company, userId } = req as AuthedCompanyRequest;
+  const { allocation_id, reason } = req.body as { allocation_id?: string; reason?: string };
+
+  if (!allocation_id || !reason?.trim()) {
+    res.status(400).json({ error: "ValidationError", message: "allocation_id and reason are required." });
+    return;
+  }
+
+  // Load allocation — must be finalized and belong to this company
+  const [allocation] = await db
+    .select({
+      id: sustainabilityAllocationsTable.id,
+      status: sustainabilityAllocationsTable.status,
+      received_line_id: sustainabilityAllocationsTable.received_line_id,
+      version: sustainabilityAllocationsTable.version,
+    })
+    .from(sustainabilityAllocationsTable)
+    .innerJoin(
+      sustainabilityReceivedLinesTable,
+      eq(sustainabilityReceivedLinesTable.id, sustainabilityAllocationsTable.received_line_id)
+    )
+    .where(
+      and(
+        eq(sustainabilityAllocationsTable.id, allocation_id),
+        eq(sustainabilityAllocationsTable.status, "finalized"),
+        eq(sustainabilityReceivedLinesTable.buyer_company_id, company.id)
+      )
+    )
+    .limit(1);
+
+  if (!allocation) {
+    res.status(404).json({ error: "NotFound", message: "Finalized allocation not found or not owned by your company." });
+    return;
+  }
+
+  // Route-level duplicate check (DB partial unique index also enforces this)
+  const [existingPending] = await db
+    .select({ id: sustainabilityCorrectionRequestsTable.id })
+    .from(sustainabilityCorrectionRequestsTable)
+    .where(
+      and(
+        eq(sustainabilityCorrectionRequestsTable.allocation_id, allocation_id),
+        eq(sustainabilityCorrectionRequestsTable.status, "pending")
+      )
+    )
+    .limit(1);
+
+  if (existingPending) {
+    res.status(409).json({ error: "DuplicateRequest", message: "A pending correction request already exists for this allocation." });
+    return;
+  }
+
+  const [newRequest] = await db
+    .insert(sustainabilityCorrectionRequestsTable)
+    .values({
+      allocation_id,
+      received_line_id: allocation.received_line_id,
+      reason: reason.trim(),
+      status: "pending",
+      requested_by_user_id: userId,
+      requested_by_company_id: company.id,
+      requested_by_role: "company",
+    })
+    .returning({ id: sustainabilityCorrectionRequestsTable.id });
+
+  void logAudit({
+    action: "sustainability.correction_requested",
+    entityType: "sustainability_allocation",
+    entityId: allocation_id,
+    actorRole: "buyer",
+    companyId: company.id,
+    userId,
+    details: { reason, version: allocation.version },
+  });
+
+  // Notify admin (fire-and-forget; failure does not affect request)
+  void notifyAdminCorrectionRequested({
+    allocationId: allocation_id,
+    receivedLineId: allocation.received_line_id,
+    companyName: company.name,
+    reason: reason.trim(),
+    commercialRef: allocation_id.slice(0, 8).toUpperCase(),
+  });
+
+  res.status(201).json({ success: true, request_id: newRequest.id });
+});
+
+/**
+ * GET /sustainability/correction-requests
+ * Company views its own correction requests.
+ */
+router.get("/sustainability/correction-requests", requireAuth, requireCompany(), async (req, res) => {
+  const { company } = req as AuthedCompanyRequest;
+
+  const rows = await db
+    .select()
+    .from(sustainabilityCorrectionRequestsTable)
+    .where(eq(sustainabilityCorrectionRequestsTable.requested_by_company_id, company.id))
+    .orderBy(desc(sustainabilityCorrectionRequestsTable.created_at))
+    .limit(100);
+
+  res.json(rows);
+});
+
 export default router;
+

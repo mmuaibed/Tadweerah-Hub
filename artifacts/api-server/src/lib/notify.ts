@@ -501,3 +501,82 @@ export async function notifyContractCompleted(companyId: string, contractId: str
     actionText_en: "View Contract",
   });
 }
+
+// ── SIR-2D: Sustainability Correction Notifications ──────────────────────────
+
+export async function notifyCorrectionApproved({
+  companyId,
+  allocationId,
+  commercialRef,
+}: {
+  companyId: string;
+  allocationId: string;
+  commercialRef: string;
+}): Promise<void> {
+  const url = `${BASE_URL}/sustainability/allocations`;
+  await createNotification({
+    companyId,
+    type: "sustainability.correction_approved",
+    title_ar: `تمت الموافقة على طلب التصحيح: ${commercialRef}`,
+    title_en: `Correction request approved: ${commercialRef}`,
+    body_ar: `تمت الموافقة على طلب إعادة فتح التخصيص ${commercialRef} كمسودة تصحيحية. يمكنك الآن تعديل المسودة واعتمادها.`,
+    body_en: `Your correction request for allocation ${commercialRef} has been approved. You can now edit and finalize the correction draft.`,
+    relatedEntityType: "sustainability_allocation",
+    relatedEntityId: allocationId,
+    sendMail: true,
+    actionUrl: url,
+    actionText_ar: "عرض مسودة التصحيح",
+    actionText_en: "View Correction Draft",
+  });
+}
+
+export async function notifyCorrectionRejected({
+  companyId,
+  allocationId,
+  commercialRef,
+  rejectionReason,
+}: {
+  companyId: string;
+  allocationId: string;
+  commercialRef: string;
+  rejectionReason: string;
+}): Promise<void> {
+  await createNotification({
+    companyId,
+    type: "sustainability.correction_rejected",
+    title_ar: `تم رفض طلب التصحيح: ${commercialRef}`,
+    title_en: `Correction request rejected: ${commercialRef}`,
+    body_ar: `تم رفض طلب إعادة فتح التخصيص ${commercialRef}.\n\nالسبب: ${rejectionReason}`,
+    body_en: `Your correction request for allocation ${commercialRef} was rejected.\n\nReason: ${rejectionReason}`,
+    relatedEntityType: "sustainability_allocation",
+    relatedEntityId: allocationId,
+    sendMail: true,
+  });
+}
+
+export async function notifyAdminInitiatedCorrection({
+  companyId,
+  allocationId,
+  commercialRef,
+}: {
+  companyId: string;
+  allocationId: string;
+  commercialRef: string;
+}): Promise<void> {
+  const url = `${BASE_URL}/sustainability/allocations`;
+  await createNotification({
+    companyId,
+    type: "sustainability.admin_initiated_correction",
+    title_ar: `تم فتح مسودة تصحيحية بواسطة المسؤول: ${commercialRef}`,
+    title_en: `Admin opened a correction draft: ${commercialRef}`,
+    body_ar: `قام المسؤول بإنشاء مسودة تصحيحية للتخصيص ${commercialRef}. يمكنك مراجعة التعديلات واعتمادها.`,
+    body_en: `An admin created a correction draft for allocation ${commercialRef}. You can review and finalize the correction.`,
+    relatedEntityType: "sustainability_allocation",
+    relatedEntityId: allocationId,
+    sendMail: true,
+    actionUrl: url,
+    actionText_ar: "عرض مسودة التصحيح",
+    actionText_en: "View Correction Draft",
+  });
+}
+

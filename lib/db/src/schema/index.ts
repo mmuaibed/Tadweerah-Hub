@@ -32,3 +32,5 @@ export * from "./sustainability-allocations";
 export * from "./sustainability-allocation-lines";
 export * from "./sustainability-report-field-config";
 export * from "./sustainability-reports";
+export * from "./admin-notifications";
+export * from "./sustainability-correction-requests";

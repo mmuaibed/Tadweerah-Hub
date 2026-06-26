@@ -20,8 +20,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useGetMaterialCategories } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { useT } from "@/i18n";
-import { ReportIssueModal } from "@/components/report-issue-modal";
 import { fmtNumber, fmtDate } from "@/lib/format";
+
 import {
   Dialog,
   DialogContent,
@@ -107,6 +107,44 @@ export function SustainabilityAllocationDetailPage() {
   const [isInitialized, setIsInitialized] = useState(false);
   const [showFinalizeModal, setShowFinalizeModal] = useState(false);
   const [showRequestChangeModal, setShowRequestChangeModal] = useState(false);
+  const [correctionReason, setCorrectionReason] = useState("");
+  const [correctionSubmitting, setCorrectionSubmitting] = useState(false);
+  const [correctionSuccess, setCorrectionSuccess] = useState(false);
+  const [correctionError, setCorrectionError] = useState<string | null>(null);
+
+  async function submitCorrectionRequest() {
+    const allocationId = data?.allocation?.id;
+    if (!correctionReason.trim() || !allocationId) return;
+    setCorrectionSubmitting(true);
+    setCorrectionError(null);
+    try {
+      const token = await getToken();
+      const res = await fetch(`/api/sustainability/correction-requests`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        credentials: "include",
+        body: JSON.stringify({ allocation_id: allocationId, reason: correctionReason.trim() }),
+      });
+      if (res.status === 409) {
+        setCorrectionError(t("sustainability.correction.duplicate"));
+        return;
+      }
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({})) as any;
+        throw new Error(err?.message ?? `HTTP ${res.status}`);
+      }
+      setCorrectionSuccess(true);
+      toast({ title: t("sustainability.correction.success") });
+      queryClient.invalidateQueries({ queryKey: ["sustainability-allocation", id] });
+    } catch (e) {
+      setCorrectionError(e instanceof Error ? e.message : "Failed to submit request");
+    } finally {
+      setCorrectionSubmitting(false);
+    }
+  }
 
   const { data, isLoading, error } = useQuery<AllocationDetailRes>({
     queryKey: ["sustainability-allocation", id],
@@ -663,22 +701,64 @@ export function SustainabilityAllocationDetailPage() {
         </DialogContent>
       </Dialog>
 
-      <ReportIssueModal 
-        open={showRequestChangeModal} 
-        onOpenChange={setShowRequestChangeModal}
-        initialSubject={lang === "ar" ? `طلب تعديل توزيع الاستدامة - ${rl.parent_reference || ''}` : `Request to change Sustainability Allocation - ${rl.parent_reference || ''}`}
-        initialMessage={lang === "ar" ? `أرغب في تعديل التوزيع للمرجعية التالية:
-المرجعية: ${rl.parent_reference || ''}
-المادة: ${rl.material_label || ''}
-تاريخ الاعتماد: ${allocation?.finalized_at ? fmtDate(allocation.finalized_at, lang) : ''}
+      {/* SIR-2D: Correction Request Dialog */}
+      <Dialog
+        open={showRequestChangeModal}
+        onOpenChange={(open) => {
+          setShowRequestChangeModal(open);
+          if (!open) { setCorrectionReason(""); setCorrectionError(null); setCorrectionSuccess(false); }
+        }}
+      >
+        <DialogContent className="max-w-md" dir={dir}>
+          <DialogHeader>
+            <DialogTitle>{t("sustainability.correction.request_title")}</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground mt-1.5">
+              {t("sustainability.correction.request_desc")}
+            </DialogDescription>
+          </DialogHeader>
 
-السبب: ` : `I would like to request a change for the following allocation:
-Reference: ${rl.parent_reference || ''}
-Material: ${rl.material_label || ''}
-Finalized Date: ${allocation?.finalized_at ? fmtDate(allocation.finalized_at, lang) : ''}
+          {correctionSuccess ? (
+            <div className="flex items-start gap-3 rounded-xl border border-green-200 bg-green-50 p-4">
+              <Leaf className="h-5 w-5 text-green-600 mt-0.5 shrink-0" />
+              <p className="text-sm text-green-800">{t("sustainability.correction.success")}</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {correctionError && (
+                <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-xs text-destructive">
+                  <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />{correctionError}
+                </div>
+              )}
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-foreground">{t("sustainability.correction.reason_label")}</label>
+                <Textarea
+                  value={correctionReason}
+                  onChange={e => setCorrectionReason(e.target.value)}
+                  placeholder={t("sustainability.correction.reason_placeholder")}
+                  className="h-28 resize-none text-sm"
+                  disabled={correctionSubmitting}
+                />
+              </div>
+            </div>
+          )}
 
-Reason: `}
-      />
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setShowRequestChangeModal(false)}>
+              {correctionSuccess ? t("action.close") : t("action.cancel")}
+            </Button>
+            {!correctionSuccess && (
+              <Button
+                onClick={() => void submitCorrectionRequest()}
+                disabled={correctionSubmitting || !correctionReason.trim()}
+              >
+                {correctionSubmitting ? (
+                  <><Loader2 className="h-4 w-4 me-2 animate-spin" />{t("sustainability.correction.submitting")}</>
+                ) : t("sustainability.correction.submit")}
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }

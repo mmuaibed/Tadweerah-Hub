@@ -122,7 +122,7 @@ The final steps to achieve full pilot launch readiness involve:
 | Item | Reason deferred |
 |---|---|
 | SIR-3C consolidated multi-material report | Not needed for single-material MVP |
-| SIR-2D admin reopen / versioned allocation governance | Separate future phase |
+| SIR-2D admin reopen / versioned allocation governance | ✅ Implemented locally — pending staging migration + deploy |
 | Server-side PDF generator | Browser print is sufficient for MVP |
 | CO₂e / certificates / verified / certified / assurance language | Not approved for this phase |
 | Company logo delete/cleanup of old GCS objects on replace | Low priority, not a blocker |
@@ -700,7 +700,7 @@ Admin restore of shipments without DB migration relies on timestamps + audit log
 > - **Existing finalized mismatches** are not silently rewritten and are deferred to SIR-2D governance.
 >
 > **Important Deferrals / Out of Scope (For SIR-2D/SIR-3A / Future):**
-> - Full admin-governed reopen/versioned revision workflow is deferred to SIR-2D.
+> - Full admin-governed reopen/versioned revision workflow: **implemented in SIR-2D** (pending staging deploy).
 > - Seller-facing Sustainability Reports tab is deferred to SIR-3A.
 > - No production deploy.
 > - No git push.
@@ -769,3 +769,38 @@ Admin restore of shipments without DB migration relies on timestamps + audit log
 > - 🟢 Clock drift: mitigated by 5-minute buffer on 24h minimum.
 > - 🟢 Backfill: all existing rows receive a deadline; no NULL path remains.
 > - 🟡 No post-creation deadline edit: acceptable for MVP, admin override can be added later.
+
+---
+
+## SIR-2D — Admin Sustainability Governance & Versioned Corrections (Implemented)
+
+> **Status:** Implemented locally. Pending staging DB migration (`0008_add_sustainability_corrections.sql`) and backend/frontend deploy.
+
+### New tables
+| Table | Description |
+|---|---|
+| `admin_notifications` | Admin in-app notification inbox. Fields: `id`, `type`, `title_ar/en`, `body_ar/en`, `is_read`, `read_at`, `related_entity_type/id`, `created_at`. |
+| `sustainability_correction_requests` | Company correction requests. Fields: `id`, `allocation_id` (FK), `requester_company_id` (FK), `requester_user_id`, `reason`, `status` (pending/approved/rejected), `rejection_reason`, `correction_allocation_id` (FK, nullable — set on approve), `resolved_by_user_id`, `resolved_at`. Partial unique index: only one `pending` request per allocation. |
+
+### New columns on `sustainability_allocations`
+| Column | Type | Description |
+|---|---|---|
+| `source_allocation_id` | uuid nullable FK | Points to the original finalized allocation that spawned this correction draft. |
+| `superseded_by_allocation_id` | uuid nullable FK | Points to the correction draft that replaced this allocation. Set atomically when a correction draft is approved. |
+| `superseded_at` | timestamptz nullable | When this allocation was superseded. |
+
+### Versioning model
+- Only one path: **Reopen as Correction Draft** (never direct edit of finalized data).
+- Correction draft is created by admin on approval of a company correction request.
+- Draft uses existing draft → finalized lifecycle.
+- On finalization of correction draft: original is marked `superseded`, `superseded_at` written, `superseded_by_allocation_id` set.
+- Finalized originals remain retrievable and printable (detail endpoint widened to include `superseded`).
+- Partial unique index enforces at most one pending correction request per allocation at DB level.
+
+### Snapshot archival — deferred
+`sustainability_reports.report_data_snapshot` column exists in schema but is **not currently populated**. Snapshot archival at finalization time is deferred to a future phase.
+
+### SIR-3B protected surfaces
+- Tadweerah logo, processor logo, print layout, no CO₂e/certificate/verified/certified language — all unchanged.
+- `sustainability-print.tsx` only adds a tiny `Version N — Superseded` label below the title block when `status === "superseded"`.
+

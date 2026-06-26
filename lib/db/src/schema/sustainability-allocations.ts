@@ -19,6 +19,11 @@ import { sustainabilityReceivedLinesTable } from "./sustainability-received-line
  *
  * needs_review → finalized (admin approves revised allocation)
  * superseded is terminal — old version preserved for audit trail.
+ *
+ * SIR-2D Correction model:
+ * - Admin approves correction request → new draft created at version+1 with source_allocation_id
+ * - Original allocation remains finalized until correction draft is finalized
+ * - On correction draft finalization: original → superseded (sets superseded_by_allocation_id + superseded_at)
  */
 export const allocationStatusEnum = pgEnum("sustainability_allocation_status", [
   "draft",
@@ -127,6 +132,28 @@ export const sustainabilityAllocationsTable = pgTable(
 
     /** When this allocation was finalized */
     finalized_at: timestamp("finalized_at", { withTimezone: true }),
+
+    // ── Correction chain (SIR-2D) ────────────────────────────────────
+
+    /**
+     * For correction drafts (version > 1): the allocation this corrects.
+     * Null for original allocations (version = 1).
+     * Provides explicit forward link in the correction chain.
+     */
+    source_allocation_id: uuid("source_allocation_id"),
+
+    /**
+     * Set when this allocation is superseded by a newer correction.
+     * Points to the replacement allocation that made this one obsolete.
+     * Null until superseded.
+     */
+    superseded_by_allocation_id: uuid("superseded_by_allocation_id"),
+
+    /**
+     * When this allocation was superseded.
+     * Null until superseded.
+     */
+    superseded_at: timestamp("superseded_at", { withTimezone: true }),
 
     // ── Timestamps ──────────────────────────────────────────────────
 

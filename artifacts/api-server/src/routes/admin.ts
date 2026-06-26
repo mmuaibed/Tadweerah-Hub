@@ -19,9 +19,12 @@ import {
   companyMembersTable,
   companyInvitationsTable,
   sustainabilityReceivedLinesTable,
+  sustainabilityAllocationsTable,
+  sustainabilityAllocationLinesTable,
+  sustainabilityCorrectionRequestsTable,
+  adminNotificationsTable,
   contractShipmentsTable,
   contractsTable,
-  sustainabilityAllocationsTable,
   contractMaterialsTable,
   issueReportsTable,
   auditLogTable,
@@ -35,7 +38,8 @@ import {
 } from "@workspace/db";
 import { buildCsv } from "../lib/csv";
 import { logAudit } from "../lib/audit";
-import { notifyDealStageChange } from "../lib/notify";
+import { notifyDealStageChange, notifyCorrectionApproved, notifyCorrectionRejected, notifyAdminInitiatedCorrection } from "../lib/notify";
+import { createAdminNotification } from "../lib/admin-notify";
 import { dealRef } from "../lib/listing-ref";
 
 const router = Router();
@@ -2231,4 +2235,466 @@ router.get("/admin/sustainability/contract-shipments/missing-received-lines", re
   });
 });
 
+// ── SIR-2D: Admin Sustainability Correction Workflow ──────────────────────────
+
+/**
+ * GET /admin/sustainability/allocations
+ * Platform-wide allocations list with company info, pending correction request join.
+ * Query params: status, company_search, date_from, date_to, pending_only, limit, offset
+ */
+router.get("/admin/sustainability/allocations", requireAdminKey, async (req, res) => {
+  const limit = Math.min(Number(req.query.limit) || 50, 200);
+  const offset = Number(req.query.offset) || 0;
+  const statusFilter = req.query.status as string | undefined;
+  const pendingOnly = req.query.pending_only === "true";
+
+  const conditions = [];
+  if (statusFilter) conditions.push(eq(sustainabilityAllocationsTable.status, statusFilter as any));
+
+  const rows = await db
+    .select({
+      allocation: sustainabilityAllocationsTable,
+      received_line: {
+        id: sustainabilityReceivedLinesTable.id,
+        parent_entity_type: sustainabilityReceivedLinesTable.parent_entity_type,
+        parent_entity_id: sustainabilityReceivedLinesTable.parent_entity_id,
+        material_label: sustainabilityReceivedLinesTable.material_label,
+        final_received_qty: sustainabilityReceivedLinesTable.final_received_qty,
+        final_received_unit: sustainabilityReceivedLinesTable.final_received_unit,
+        buyer_company_id: sustainabilityReceivedLinesTable.buyer_company_id,
+      },
+      buyer_name: sql<string | null>`buyer.name`,
+      pending_request_id: sustainabilityCorrectionRequestsTable.id,
+      pending_request_reason: sustainabilityCorrectionRequestsTable.reason,
+    })
+    .from(sustainabilityAllocationsTable)
+    .innerJoin(
+      sustainabilityReceivedLinesTable,
+      eq(sustainabilityReceivedLinesTable.id, sustainabilityAllocationsTable.received_line_id)
+    )
+    .leftJoin(sql`companies buyer`, sql`buyer.id = ${sustainabilityReceivedLinesTable.buyer_company_id}`)
+    .leftJoin(
+      sustainabilityCorrectionRequestsTable,
+      and(
+        eq(sustainabilityCorrectionRequestsTable.allocation_id, sustainabilityAllocationsTable.id),
+        eq(sustainabilityCorrectionRequestsTable.status, "pending")
+      )
+    )
+    .where(conditions.length ? and(...conditions) : undefined)
+    .orderBy(
+      // Pending correction requests first (has pending_request_id), then by finalized_at desc
+      asc(sql`CASE WHEN ${sustainabilityCorrectionRequestsTable.id} IS NOT NULL THEN 0 ELSE 1 END`),
+      desc(sustainabilityAllocationsTable.finalized_at)
+    )
+    .limit(limit)
+    .offset(offset);
+
+  const filtered = pendingOnly ? rows.filter(r => r.pending_request_id != null) : rows;
+  res.json(filtered);
+});
+
+/**
+ * GET /admin/sustainability/correction-requests
+ * List all correction requests, pending first.
+ */
+router.get("/admin/sustainability/correction-requests", requireAdminKey, async (req, res) => {
+  const limit = Math.min(Number(req.query.limit) || 100, 500);
+  const statusFilter = req.query.status as string | undefined;
+
+  const conditions = statusFilter ? [eq(sustainabilityCorrectionRequestsTable.status, statusFilter)] : [];
+
+  const rows = await db
+    .select({
+      request: sustainabilityCorrectionRequestsTable,
+      buyer_name: sql<string | null>`buyer.name`,
+    })
+    .from(sustainabilityCorrectionRequestsTable)
+    .leftJoin(sql`companies buyer`, sql`buyer.id = ${sustainabilityCorrectionRequestsTable.requested_by_company_id}`)
+    .where(conditions.length ? and(...conditions) : undefined)
+    .orderBy(
+      // pending first, then by created_at desc
+      asc(
+        sql`CASE WHEN ${sustainabilityCorrectionRequestsTable.status} = 'pending' THEN 0 ELSE 1 END`
+      ),
+      desc(sustainabilityCorrectionRequestsTable.created_at)
+    )
+    .limit(limit);
+
+  res.json(rows);
+});
+
+/**
+ * Shared helper: create a correction draft from a finalized allocation.
+ * Clones the allocation and its lines at version + 1.
+ * Does NOT supersede the original — that happens when the draft is finalized.
+ */
+async function createCorrectionDraft({
+  originalAllocationId,
+  reason,
+}: {
+  originalAllocationId: string;
+  reason: string;
+}): Promise<{ newAllocationId: string; version: number }> {
+  // Load original allocation
+  const [original] = await db
+    .select()
+    .from(sustainabilityAllocationsTable)
+    .where(
+      and(
+        eq(sustainabilityAllocationsTable.id, originalAllocationId),
+        eq(sustainabilityAllocationsTable.status, "finalized")
+      )
+    )
+    .limit(1);
+
+  if (!original) throw new Error("NotFound: Original finalized allocation not found");
+
+  const newVersion = (original.version ?? 1) + 1;
+
+  // Load original lines
+  const originalLines = await db
+    .select()
+    .from(sustainabilityAllocationLinesTable)
+    .where(eq(sustainabilityAllocationLinesTable.allocation_id, originalAllocationId));
+
+  // Create correction draft
+  const [newAllocation] = await db
+    .insert(sustainabilityAllocationsTable)
+    .values({
+      received_line_id: original.received_line_id,
+      status: "draft",
+      version: newVersion,
+      revision_reason: reason,
+      source_allocation_id: originalAllocationId,
+      // Inherit tolerance from original
+      allocation_tolerance_pct: original.allocation_tolerance_pct,
+    } as any)
+    .returning({ id: sustainabilityAllocationsTable.id });
+
+  // Clone allocation lines
+  if (originalLines.length > 0) {
+    await db.insert(sustainabilityAllocationLinesTable).values(
+      originalLines.map(line => ({
+        allocation_id: newAllocation.id,
+        pathway_id: line.pathway_id,
+        quantity: line.quantity,
+        percentage: line.percentage,
+        explanation_text: line.explanation_text,
+      }))
+    );
+  }
+
+  return { newAllocationId: newAllocation.id, version: newVersion };
+}
+
+/**
+ * POST /admin/sustainability/correction-requests
+ * Admin-initiated correction (skips request/approval step — creates draft directly).
+ * Body: { allocation_id, reason }
+ */
+router.post("/admin/sustainability/correction-requests", requireAdminKey, async (req, res) => {
+  const { allocation_id, reason } = req.body as { allocation_id?: string; reason?: string };
+  const adminUserId = (Array.isArray(req.headers["x-admin-user-id"]) ? req.headers["x-admin-user-id"][0] : req.headers["x-admin-user-id"]) ?? "admin";
+
+  if (!allocation_id || !reason?.trim()) {
+    res.status(400).json({ error: "ValidationError", message: "allocation_id and reason are required." });
+    return;
+  }
+
+  // Check for existing pending request
+  const [existingPending] = await db
+    .select({ id: sustainabilityCorrectionRequestsTable.id })
+    .from(sustainabilityCorrectionRequestsTable)
+    .where(
+      and(
+        eq(sustainabilityCorrectionRequestsTable.allocation_id, allocation_id),
+        eq(sustainabilityCorrectionRequestsTable.status, "pending")
+      )
+    )
+    .limit(1);
+
+  if (existingPending) {
+    res.status(409).json({ error: "DuplicateRequest", message: "A pending correction request already exists. Approve it first." });
+    return;
+  }
+
+  let newAllocationId: string;
+  let version: number;
+
+  try {
+    const result = await createCorrectionDraft({ originalAllocationId: allocation_id, reason: reason.trim() });
+    newAllocationId = result.newAllocationId;
+    version = result.version;
+  } catch (err: any) {
+    if (err?.message?.startsWith("NotFound")) {
+      res.status(404).json({ error: "NotFound", message: "Finalized allocation not found." });
+      return;
+    }
+    throw err;
+  }
+
+  // Create auto-approved request record for audit trail
+  const [request] = await db
+    .insert(sustainabilityCorrectionRequestsTable)
+    .values({
+      allocation_id,
+      received_line_id: (await db.select({ received_line_id: sustainabilityAllocationsTable.received_line_id })
+        .from(sustainabilityAllocationsTable).where(eq(sustainabilityAllocationsTable.id, allocation_id)).limit(1))[0].received_line_id,
+      reason: reason.trim(),
+      status: "approved",
+      requested_by_user_id: adminUserId,
+      requested_by_role: "admin",
+      resolved_by_user_id: adminUserId,
+      resolved_at: new Date(),
+      correction_allocation_id: newAllocationId,
+    })
+    .returning({ id: sustainabilityCorrectionRequestsTable.id });
+
+  void logAudit({
+    action: "sustainability.correction_draft_created",
+    entityType: "sustainability_allocation",
+    entityId: newAllocationId,
+    actorRole: "admin",
+    userId: adminUserId,
+    details: { source_allocation_id: allocation_id, version, reason },
+  });
+
+  // Notify company (load buyer company from received line)
+  const [lineInfo] = await db
+    .select({
+      buyer_company_id: sustainabilityReceivedLinesTable.buyer_company_id,
+    })
+    .from(sustainabilityAllocationsTable)
+    .innerJoin(
+      sustainabilityReceivedLinesTable,
+      eq(sustainabilityReceivedLinesTable.id, sustainabilityAllocationsTable.received_line_id)
+    )
+    .where(eq(sustainabilityAllocationsTable.id, newAllocationId))
+    .limit(1);
+
+  if (lineInfo?.buyer_company_id) {
+    void notifyAdminInitiatedCorrection({
+      companyId: lineInfo.buyer_company_id,
+      allocationId: newAllocationId,
+      commercialRef: allocation_id.slice(0, 8).toUpperCase(),
+    });
+  }
+
+  res.status(201).json({ success: true, request_id: request.id, correction_allocation_id: newAllocationId, version });
+});
+
+/**
+ * PATCH /admin/sustainability/correction-requests/:id/approve
+ * Approve a pending correction request → create correction draft.
+ */
+router.patch("/admin/sustainability/correction-requests/:id/approve", requireAdminKey, async (req, res) => {
+  const requestId = String(req.params.id);
+  const adminUserId = (Array.isArray(req.headers["x-admin-user-id"]) ? req.headers["x-admin-user-id"][0] : req.headers["x-admin-user-id"]) ?? "admin";
+
+  const [request] = await db
+    .select()
+    .from(sustainabilityCorrectionRequestsTable)
+    .where(
+      and(
+        eq(sustainabilityCorrectionRequestsTable.id, requestId),
+        eq(sustainabilityCorrectionRequestsTable.status, "pending")
+      )
+    )
+    .limit(1);
+
+  if (!request) {
+    res.status(404).json({ error: "NotFound", message: "Pending correction request not found." });
+    return;
+  }
+
+  let newAllocationId: string;
+  let version: number;
+
+  try {
+    const result = await createCorrectionDraft({ originalAllocationId: request.allocation_id, reason: request.reason });
+    newAllocationId = result.newAllocationId;
+    version = result.version;
+  } catch (err: any) {
+    if (err?.message?.startsWith("NotFound")) {
+      res.status(404).json({ error: "NotFound", message: "Original finalized allocation not found." });
+      return;
+    }
+    throw err;
+  }
+
+  const now = new Date();
+  await db
+    .update(sustainabilityCorrectionRequestsTable)
+    .set({
+      status: "approved",
+      resolved_by_user_id: adminUserId,
+      resolved_at: now,
+      correction_allocation_id: newAllocationId,
+      updated_at: now,
+    })
+    .where(eq(sustainabilityCorrectionRequestsTable.id, requestId));
+
+  void logAudit({
+    action: "sustainability.correction_approved",
+    entityType: "sustainability_correction_request",
+    entityId: requestId,
+    actorRole: "admin",
+    userId: adminUserId,
+    statusBefore: "pending",
+    statusAfter: "approved",
+    details: {
+      original_allocation_id: request.allocation_id,
+      new_allocation_id: newAllocationId,
+      new_version: version,
+    },
+  });
+
+  void logAudit({
+    action: "sustainability.correction_draft_created",
+    entityType: "sustainability_allocation",
+    entityId: newAllocationId,
+    actorRole: "admin",
+    userId: adminUserId,
+    details: { source_allocation_id: request.allocation_id, version, reason: request.reason },
+  });
+
+  // Notify requesting company (fire-and-forget)
+  if (request.requested_by_company_id) {
+    void notifyCorrectionApproved({
+      companyId: request.requested_by_company_id,
+      allocationId: newAllocationId,
+      commercialRef: request.allocation_id.slice(0, 8).toUpperCase(),
+    });
+  }
+
+  res.json({ success: true, correction_allocation_id: newAllocationId, version });
+});
+
+/**
+ * PATCH /admin/sustainability/correction-requests/:id/reject
+ * Reject a pending correction request. Rejection reason required.
+ */
+router.patch("/admin/sustainability/correction-requests/:id/reject", requireAdminKey, async (req, res) => {
+  const requestId = String(req.params.id);
+  const adminUserId = (Array.isArray(req.headers["x-admin-user-id"]) ? req.headers["x-admin-user-id"][0] : req.headers["x-admin-user-id"]) ?? "admin";
+  const { rejection_reason } = req.body as { rejection_reason?: string };
+
+  if (!rejection_reason?.trim()) {
+    res.status(400).json({ error: "ValidationError", message: "rejection_reason is required." });
+    return;
+  }
+
+  const [request] = await db
+    .select()
+    .from(sustainabilityCorrectionRequestsTable)
+    .where(
+      and(
+        eq(sustainabilityCorrectionRequestsTable.id, requestId),
+        eq(sustainabilityCorrectionRequestsTable.status, "pending")
+      )
+    )
+    .limit(1);
+
+  if (!request) {
+    res.status(404).json({ error: "NotFound", message: "Pending correction request not found." });
+    return;
+  }
+
+  const now = new Date();
+  await db
+    .update(sustainabilityCorrectionRequestsTable)
+    .set({
+      status: "rejected",
+      resolved_by_user_id: adminUserId,
+      resolved_at: now,
+      rejection_reason: rejection_reason.trim(),
+      updated_at: now,
+    })
+    .where(eq(sustainabilityCorrectionRequestsTable.id, requestId));
+
+  void logAudit({
+    action: "sustainability.correction_rejected",
+    entityType: "sustainability_correction_request",
+    entityId: requestId,
+    actorRole: "admin",
+    userId: adminUserId,
+    statusBefore: "pending",
+    statusAfter: "rejected",
+    details: { rejection_reason: rejection_reason.trim() },
+  });
+
+  // Notify requesting company (fire-and-forget)
+  if (request.requested_by_company_id) {
+    void notifyCorrectionRejected({
+      companyId: request.requested_by_company_id,
+      allocationId: request.allocation_id,
+      commercialRef: request.allocation_id.slice(0, 8).toUpperCase(),
+      rejectionReason: rejection_reason.trim(),
+    });
+  }
+
+  res.json({ success: true });
+});
+
+// ── SIR-2D: Admin Notifications ───────────────────────────────────────────────
+
+/**
+ * GET /admin/notifications
+ * List admin notifications, most recent first.
+ */
+router.get("/admin/notifications", requireAdminKey, async (req, res) => {
+  const limit = Math.min(Number(req.query.limit) || 50, 200);
+  const offset = Number(req.query.offset) || 0;
+
+  const rows = await db
+    .select()
+    .from(adminNotificationsTable)
+    .orderBy(desc(adminNotificationsTable.created_at))
+    .limit(limit)
+    .offset(offset);
+
+  res.json(rows);
+});
+
+/**
+ * GET /admin/notifications/unread-count
+ * Returns the count of unread admin notifications.
+ */
+router.get("/admin/notifications/unread-count", requireAdminKey, async (req, res) => {
+  const [result] = await db
+    .select({ count: count() })
+    .from(adminNotificationsTable)
+    .where(eq(adminNotificationsTable.is_read, false));
+
+  res.json({ count: result?.count ?? 0 });
+});
+
+/**
+ * PATCH /admin/notifications/:id/read
+ * Mark an admin notification as read.
+ */
+router.patch("/admin/notifications/:id/read", requireAdminKey, async (req, res) => {
+  const id = String(req.params.id);
+  await db
+    .update(adminNotificationsTable)
+    .set({ is_read: true, read_at: new Date() })
+    .where(eq(adminNotificationsTable.id, id));
+
+  res.json({ success: true });
+});
+
+/**
+ * PATCH /admin/notifications/mark-all-read
+ * Mark all admin notifications as read.
+ */
+router.patch("/admin/notifications/mark-all-read", requireAdminKey, async (req, res) => {
+  await db
+    .update(adminNotificationsTable)
+    .set({ is_read: true, read_at: new Date() })
+    .where(eq(adminNotificationsTable.is_read, false));
+
+  res.json({ success: true });
+});
+
 export default router;
+

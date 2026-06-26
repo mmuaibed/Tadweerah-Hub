@@ -22,6 +22,9 @@ import {
   ArrowUp,
   ArrowDown,
   Trash2,
+  Leaf,
+  Bell,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -409,7 +412,24 @@ export function AdminPage() {
   const [reportCity, setReportCity] = useState("");
   const [reportCompanyId, setReportCompanyId] = useState("");
   const [reportExporting, setReportExporting] = useState(false);
-  const [reportSubTab, setReportSubTab] = useState<"deals" | "contracts" | "shipments" | "companies" | "activity">("deals");
+  const [reportSubTab, setReportSubTab] = useState<"deals" | "contracts" | "shipments" | "companies" | "activity" | "sustainability">("deals");
+
+  /* SIR-2D: Sustainability allocations state */
+  const [sustAllocations, setSustAllocations] = useState<any[] | null>(null);
+  const [sustAllocLoading, setSustAllocLoading] = useState(false);
+  const [sustAllocError, setSustAllocError] = useState<string | null>(null);
+  const [sustPendingOnly, setSustPendingOnly] = useState(false);
+  const [sustStatusFilter, setSustStatusFilter] = useState("");
+  const [sustActionAlloc, setSustActionAlloc] = useState<any | null>(null);
+  const [sustActionType, setSustActionType] = useState<"reopen" | "approve" | "reject" | null>(null);
+  const [sustActionReason, setSustActionReason] = useState("");
+  const [sustActionLoading, setSustActionLoading] = useState(false);
+  const [sustPendingRequests, setSustPendingRequests] = useState<any[]>([]);
+
+  /* SIR-2D: Admin notification bell state */
+  const [adminNotifUnread, setAdminNotifUnread] = useState(0);
+  const [adminNotifOpen, setAdminNotifOpen] = useState(false);
+  const [adminNotifList, setAdminNotifList] = useState<any[]>([]);
 
   /* Contracts state */
   const [contracts, setContracts] = useState<AdminContract[] | null>(null);
@@ -470,9 +490,82 @@ export function AdminPage() {
         void fetchShipments();
       } else if (reportSubTab === "companies" && companies === null) {
         void fetchCompanies();
+      } else if (reportSubTab === "sustainability" && sustAllocations === null) {
+        void fetchSustAllocations();
       }
     }
-  }, [tab, reportSubTab, adminKey, reportRows, contracts, shipments, companies]);
+  }, [tab, reportSubTab, adminKey, reportRows, contracts, shipments, companies, sustAllocations]);
+
+  // SIR-2D: Load admin notification unread count when admin key is available
+  useEffect(() => {
+    if (adminKey.trim()) {
+      void callAdmin("/notifications/unread-count")
+        .then(r => r.ok ? r.json() : { count: 0 })
+        .then((d: any) => setAdminNotifUnread(d.count ?? 0))
+        .catch(() => {});
+    }
+  }, [adminKey]);
+
+
+  async function fetchSustAllocations() {
+    setSustAllocLoading(true);
+    setSustAllocError(null);
+    try {
+      const params = new URLSearchParams();
+      if (sustStatusFilter) params.set("status", sustStatusFilter);
+      if (sustPendingOnly) params.set("pending_only", "true");
+      params.set("limit", "100");
+      const res = await callAdmin(`/sustainability/allocations?${params}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setSustAllocations(data);
+      const reqRes = await callAdmin("/sustainability/correction-requests?status=pending&limit=100");
+      if (reqRes.ok) {
+        const reqData = await reqRes.json();
+        setSustPendingRequests(Array.isArray(reqData) ? reqData : []);
+      }
+    } catch (e) {
+      setSustAllocError(e instanceof Error ? e.message : "Failed to load");
+    } finally {
+      setSustAllocLoading(false);
+    }
+  }
+
+  async function handleSustAction() {
+    if (!sustActionAlloc || !sustActionType) return;
+    setSustActionLoading(true);
+    try {
+      let url = "";
+      let method = "POST";
+      const body: Record<string, string> = {};
+      if (sustActionType === "reopen") {
+        url = "/sustainability/correction-requests";
+        body.allocation_id = sustActionAlloc.allocation?.id ?? sustActionAlloc.id;
+        body.reason = sustActionReason;
+      } else if (sustActionType === "approve") {
+        url = `/sustainability/correction-requests/${sustActionAlloc.pending_request_id}/approve`;
+        method = "PATCH";
+      } else if (sustActionType === "reject") {
+        url = `/sustainability/correction-requests/${sustActionAlloc.pending_request_id}/reject`;
+        method = "PATCH";
+        body.rejection_reason = sustActionReason;
+      }
+      const res = await callAdmin(url, { method, body: Object.keys(body).length ? JSON.stringify(body) : undefined });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({})) as any;
+        throw new Error(err?.message ?? `HTTP ${res.status}`);
+      }
+      setSustActionAlloc(null);
+      setSustActionType(null);
+      setSustActionReason("");
+      setSustAllocations(null);
+      void fetchSustAllocations();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Action failed");
+    } finally {
+      setSustActionLoading(false);
+    }
+  }
 
   async function fetchContracts(overrideStatusFilter?: string) {
     setContractsLoading(true);
@@ -2207,6 +2300,11 @@ export function AdminPage() {
                 { key: "shipments", label: lang === "ar" ? "الشحنات" : "Shipments", icon: Truck },
                 { key: "companies", label: lang === "ar" ? "الشركات" : "Companies", icon: Building2 },
                 { key: "activity", label: lang === "ar" ? "نشاط المنصة" : "Platform Activity", icon: BarChart3 },
+                {
+                  key: "sustainability",
+                  label: `${lang === "ar" ? "الاستدامة" : "Sustainability"}${sustPendingRequests.length > 0 ? ` (${sustPendingRequests.length})` : ""}`,
+                  icon: Leaf,
+                },
               ].map((sub) => {
                 const Icon = sub.icon;
                 const isSelected = reportSubTab === sub.key;

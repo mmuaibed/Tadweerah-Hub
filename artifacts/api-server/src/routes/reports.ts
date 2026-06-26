@@ -16,7 +16,7 @@
  * are ever returned.  Cross-company leakage is structurally impossible.
  */
 import { Router, type IRouter } from "express";
-import { and, count, desc, eq, gte, ilike, lte, or, sql } from "drizzle-orm";
+import { and, count, desc, eq, gte, ilike, inArray, lte, or, sql } from "drizzle-orm";
 import {
   db,
   dealsTable,
@@ -739,9 +739,10 @@ router.get(
     const cid = company.id;
     const allocationId = String(req.params.id);
 
+    // SIR-2D: Also allow superseded allocations (version history retrievability)
     const where = and(
       eq(sustainabilityAllocationsTable.id, allocationId),
-      eq(sustainabilityAllocationsTable.status, "finalized"),
+      inArray(sustainabilityAllocationsTable.status, ["finalized", "superseded"]),
       or(
         eq(sustainabilityReceivedLinesTable.buyer_company_id, cid),
         eq(sustainabilityReceivedLinesTable.seller_company_id, cid)
@@ -763,6 +764,7 @@ router.get(
         allocation_id: sustainabilityAllocationsTable.id,
         finalized_at: sustainabilityAllocationsTable.finalized_at,
         status: sustainabilityAllocationsTable.status,
+        version: sustainabilityAllocationsTable.version,
         received_line_id: sustainabilityReceivedLinesTable.id,
         parent_entity_type: sustainabilityReceivedLinesTable.parent_entity_type,
         parent_entity_id: sustainabilityReceivedLinesTable.parent_entity_id,
@@ -885,6 +887,7 @@ router.get(
           received_line_id: row.received_line_id,
           finalized_at: row.finalized_at ? row.finalized_at.toISOString() : null,
           status: row.status,
+          version: (row as any).version ?? 1,
           source_type: sourceType,
           commercial_ref: commercialRef,
           deal_id: row.deal_id,

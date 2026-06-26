@@ -115,7 +115,7 @@ Tadweerah-Hub/
 | `manifest_records` | `deal_id` | MWAN waste manifest references |
 | `sustainability_pathways` | `id`, `key`, `name_ar`, `name_en`, `category`, `is_circular_diversion`, `is_active` | GRI 306 pathways taxonomy lookup (seeded) |
 | `sustainability_received_lines` | `id`, `parent_entity_type`, `parent_entity_id`, `final_received_qty`, `is_eligible` | Canonical multi-line-ready grain for sustainability reporting |
-| `sustainability_allocations` | `id`, `received_line_id`, `status`, `version`, `data_quality_level` | Lifecycle of pathway allocations for a received line |
+| `sustainability_allocations` | `id`, `received_line_id`, `status` (draft/finalized/superseded), `version` (integer, default 1), `revision_reason`, `superseded` (bool), `finalized_at`, `allocation_tolerance_pct`, `source_allocation_id` (FK, nullable), `superseded_by_allocation_id` (FK, nullable), `superseded_at` (nullable) | Per-line allocation record. SIR-2D adds versioning columns: source/superseded FKs, superseded_at. Unique index on `(received_line_id, version)`. |
 | `sustainability_allocation_lines` | `id`, `allocation_id`, `pathway_id`, `quantity`, `percentage` | Breakdown of pathways per allocation |
 | `sustainability_report_field_config` | `id`, `field_key`, `is_visible`, `is_system_field` | Thin report field registry (13 protected fields) |
 | `sustainability_reports` | `id`, `report_number`, `parent_entity_type`, `parent_entity_id`, `report_data_snapshot` | Parent transaction level reports and snapshots |
@@ -421,7 +421,7 @@ Event occurs (route handler or hourly job)
 | `pending-actions.tsx` | `/pending-actions` | Pending deal actions queue |
 | `sustainability-allocations.tsx` | `/sustainability/allocations` | List of eligible sustainability received lines and allocation drafts (SIR-2B) |
 | `sustainability-allocation-detail.tsx` | `/sustainability/allocations/:id` | Edit and save sustainability pathway allocation drafts (SIR-2B) |
-| `sustainability-print.tsx` | `/reports/sustainability/:allocationId/print` | SIR-3B branded print/PDF report for a single finalized allocation. Shows Tadweerah logo, processor company logo (if available), material, quantity, pathways. Browser print / Save as PDF only. |
+| `sustainability-print.tsx` | `/reports/sustainability/:allocationId/print` | SIR-3B branded print/PDF report for a single finalized allocation. Shows Tadweerah logo, processor company logo (if available), material, quantity, pathways. Browser print / Save as PDF only. SIR-2D: shows `Version N — Superseded` label when `status === "superseded"`. |
 
 ---
 
@@ -552,6 +552,42 @@ VITE_API_URL                   # backend API base URL
   - Company logo cleanup / delete old GCS objects on logo replace
   - Dedicated company-assets GCS bucket (currently reuses listing-images bucket)
 
+
+### 9. SIR-2D — Admin Sustainability Governance & Versioned Correction Drafts
+- **Status:** ✅ Implemented locally — pending staging migration + deploy.
+- **Scope:** Admin-governed correction workflow for finalized sustainability allocations. Company-facing correction request entry. Versioned correction drafts. Admin in-app notifications. No CO₂e / certificates / verified / certified language. SIR-3B print surfaces protected (logo/layout unchanged).
+- **New tables:**
+  - `admin_notifications` — in-app notification inbox for admin panel.
+  - `sustainability_correction_requests` — company-submitted correction requests, single pending per allocation enforced by partial unique index.
+- **New columns on `sustainability_allocations`:**
+  - `source_allocation_id` — FK to the original finalized allocation that spawned this correction draft.
+  - `superseded_by_allocation_id` — FK to the new correction draft that superseded this allocation.
+  - `superseded_at` — timestamp when superseded.
+- **New migration:** `0008_add_sustainability_corrections.sql`
+- **Backend changes:**
+  - `lib/admin-notify.ts` — admin notification helper (in-app + optional email via `ADMIN_NOTIFICATION_EMAILS`).
+  - `lib/notify.ts` — extended with `notifyAdminCorrectionRequested`.
+  - `routes/admin.ts` — new endpoints: `GET /admin/sustainability/allocations`, `PATCH /admin/sustainability/correction-requests/:id/approve`, `PATCH /admin/sustainability/correction-requests/:id/reject`, `POST /admin/sustainability/correction-requests`, `GET /admin/notifications`, `GET /admin/notifications/unread-count`, `PATCH /admin/notifications/:id/read`, `PATCH /admin/notifications/mark-all-read`.
+  - `routes/sustainability.ts` — company correction request: `POST /sustainability/correction-requests` (company auth, duplicate check, notifies admin). Admin correction draft creation via `createCorrectionDraft` helper (versioning, status transitions, superseded_at).
+  - `routes/reports.ts` — widened print detail endpoint (`/reports/sustainability/:id`) to include `superseded` allocations (for version history retrievability).
+- **Frontend changes:**
+  - `admin.tsx` — Sustainability sub-tab in admin panel: allocations table with pending correction badges, approve/reject/reopen action dialogs, notification bell state.
+  - `reports.tsx` — "Request Correction / طلب تصحيح" button on finalized sustainability rows, reason dialog, duplicate handling.
+  - `sustainability-allocation-detail.tsx` — upgraded "Request Change" button to use real SIR-2D correction request API (replaces old ReportIssueModal).
+  - `sustainability-print.tsx` — small `Version N — Superseded` label shown only when `status === "superseded"`. No layout/logo change.
+  - `i18n/index.tsx` — all SIR-2D i18n keys added.
+- **Versioning model:**
+  - Reopen as Correction Draft only (never directly edit finalized data).
+  - Draft → finalized lifecycle reused.
+  - Finalized originals marked `superseded`, `superseded_at` set, `superseded_by_allocation_id` written.
+  - Correction draft records `source_allocation_id` pointing to original.
+  - Partial unique index prevents multiple pending correction requests per allocation.
+- **Admin notifications:** Mandatory in-app via `admin_notifications` table. Optional email via `ADMIN_NOTIFICATION_EMAILS` env var (fallback to `ADMIN_EMAIL`).
+- **Protected surfaces (SIR-3B):** Print layout, Tadweerah logo, processor logo, no CO₂e/certificate claims — all unchanged.
+- **Deferred:**
+  - `sustainability_reports.report_data_snapshot` exists in schema but is NOT currently populated. Snapshot archival at finalization time is deferred.
+  - SIR-3C consolidated multi-material report.
+
 ### 8. SIR-3C — Consolidated Multi-Material Sustainability Report (Deferred)
 - **Status:** ⏸ Deferred — not a blocker for SIR-3B MVP.
 - **Trigger:** Required when a contract shipment supports multiple material lines, or when users need a single print report covering all materials under one commercial reference.
@@ -616,7 +652,7 @@ VITE_API_URL                   # backend API base URL
 | Company logo GCS cleanup | Old logo objects not deleted on replace | Low (SIR-3C / future) |
 | Company logo bucket isolation | Reuses `listing-images` bucket; separate `company-assets` bucket preferred | Low (future) |
 | SIR-3C multi-material print | Consolidated report by commercial reference not yet built | Low (SIR-3C — deferred) |
-| SIR-2D allocation governance | Admin reopen / versioned revision workflow not yet built | Medium (SIR-2D — deferred) |
+| SIR-2D allocation governance | Admin reopen / versioned correction workflow | ✅ Implemented (SIR-2D — pending staging deploy) |
 
 ## Developer Protocol Updates
 
