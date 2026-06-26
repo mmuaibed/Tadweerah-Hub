@@ -516,7 +516,19 @@ router.get(
         
         // Commercial references
         deal_id: dealsTable.id,
+        listing_id: dealsTable.listing_id,
         shipment_ref: contractShipmentsTable.reference,
+        contract_id: contractShipmentsTable.contract_id,
+        shipment_id: contractShipmentsTable.id,
+        
+        // Enrichment
+        listing_unit: wasteListingsTable.unit,
+        subcategory_name_ar: materialCategoriesTable.name_ar,
+        subcategory_name_en: materialCategoriesTable.name_en,
+        parent_subcategory_name_ar: sql<string | null>`parent_category.name_ar`,
+        parent_subcategory_name_en: sql<string | null>`parent_category.name_en`,
+        contract_material_label: contractMaterialsTable.material_label,
+        contract_unit_label: contractMaterialsTable.unit_label,
         
         // Pathway line details
         line_id: sustainabilityAllocationLinesTable.id,
@@ -539,11 +551,30 @@ router.get(
         )
       )
       .leftJoin(
+        wasteListingsTable,
+        eq(dealsTable.listing_id, wasteListingsTable.id)
+      )
+      .leftJoin(
         contractShipmentsTable,
         and(
           eq(sustainabilityReceivedLinesTable.parent_entity_type, "contract_shipment"),
           eq(sustainabilityReceivedLinesTable.parent_entity_id, contractShipmentsTable.id)
         )
+      )
+      .leftJoin(
+        contractMaterialsTable,
+        eq(contractShipmentsTable.material_line_id, contractMaterialsTable.id)
+      )
+      .leftJoin(
+        materialCategoriesTable,
+        or(
+          eq(wasteListingsTable.material_subcategory_id, materialCategoriesTable.id),
+          eq(contractMaterialsTable.material_category_id, materialCategoriesTable.id)
+        )
+      )
+      .leftJoin(
+        sql`material_categories parent_category`,
+        sql`parent_category.id = ${materialCategoriesTable.parent_id}`
       )
       .leftJoin(sql`companies seller`, sql`seller.id = ${sustainabilityReceivedLinesTable.seller_company_id}`)
       .leftJoin(sql`companies buyer`, sql`buyer.id = ${sustainabilityReceivedLinesTable.buyer_company_id}`)
@@ -572,6 +603,27 @@ router.get(
           commercialRef = row.shipment_ref;
         }
 
+        let materialLabelAr = row.material_label;
+        let materialLabelEn = row.material_label;
+
+        if (sourceType === "deal") {
+           const subAr = row.subcategory_name_ar;
+           const subEn = row.subcategory_name_en;
+           const parentAr = row.parent_subcategory_name_ar;
+           const parentEn = row.parent_subcategory_name_en;
+           if (subAr) {
+             materialLabelAr = parentAr ? `${parentAr} / ${subAr}` : subAr;
+             materialLabelEn = parentEn ? `${parentEn} / ${subEn}` : (subEn || subAr);
+           }
+        } else if (sourceType === "contract_shipment") {
+           materialLabelAr = row.contract_material_label || row.material_label;
+           materialLabelEn = materialLabelAr;
+        }
+
+        let u = (row.contract_unit_label || row.listing_unit || row.final_received_unit || "").toLowerCase().trim();
+        if (u === "طن" || u === "ton") u = "ton";
+        else if (u === "كجم" || u === "kg") u = "kg";
+
         groupedMap.set(row.received_line_id, {
           allocation_id: row.allocation_id,
           received_line_id: row.received_line_id,
@@ -579,11 +631,16 @@ router.get(
           status: row.status,
           source_type: sourceType,
           commercial_ref: commercialRef,
+          deal_id: row.deal_id,
+          listing_id: row.listing_id,
+          contract_id: row.contract_id,
+          shipment_id: row.shipment_id,
           my_role: row.seller_id === cid ? "seller" : "buyer",
           counterparty_name: row.seller_id === cid ? row.buyer_name : row.seller_name,
-          material: row.material_label,
-          quantity: row.final_received_qty,
-          unit: row.final_received_unit,
+          material_ar: materialLabelAr,
+          material_en: materialLabelEn,
+          quantity: Number(row.final_received_qty).toString(),
+          unit: u,
           pathways: []
         });
       }
@@ -593,8 +650,8 @@ router.get(
         groupedMap.get(row.received_line_id).pathways.push({
           pathway_name_ar: row.pathway_name_ar,
           pathway_name_en: row.pathway_name_en,
-          quantity: row.pathway_qty,
-          percentage: row.pathway_pct,
+          quantity: Number(row.pathway_qty).toString(),
+          percentage: Number(row.pathway_pct).toString(),
         });
       }
     }
@@ -602,25 +659,31 @@ router.get(
     const serialized = Array.from(groupedMap.values()).slice(offset, offset + (format === "csv" ? 5000 : limit));
 
     if (format === "csv") {
+      const isArabic = req.query.lang !== "en";
+      const headers = isArabic 
+        ? ["تاريخ الاعتماد", "المصدر", "المرجع التجاري", "دوري", "الطرف الآخر", "المادة", "الكمية المستلمة", "الوحدة", "مسارات الاستدامة", "الحالة"]
+        : SUST_CSV_HEADERS;
+
       const csvRows = serialized.map((r) => {
-        const pathwaysStr = r.pathways.map((p: any) => `${p.pathway_name_ar}: ${p.quantity} ${r.unit}`).join("، ");
-        const sourceLabel = r.source_type === "deal" ? "صفقة" : r.source_type === "contract_shipment" ? "شحنة" : r.source_type;
-        const roleLabel = r.my_role === "seller" ? "البائع / المصدر" : "المشتري / المستلم";
+        const unitLabel = r.unit === "ton" ? (isArabic ? "طن" : "ton") : r.unit === "kg" ? (isArabic ? "كجم" : "kg") : r.unit;
+        const pathwaysStr = r.pathways.map((p: any) => `${isArabic ? p.pathway_name_ar : p.pathway_name_en}: ${p.quantity} ${unitLabel}`).join(isArabic ? "، " : ", ");
+        const sourceLabel = r.source_type === "deal" ? (isArabic ? "صفقة" : "Deal") : r.source_type === "contract_shipment" ? (isArabic ? "شحنة" : "Shipment") : r.source_type;
+        const roleLabel = r.my_role === "seller" ? (isArabic ? "البائع / المصدر" : "Seller / Source") : (isArabic ? "المشتري / المعالج" : "Buyer / Processor");
         return [
           r.finalized_at ? new Date(r.finalized_at).toLocaleDateString("en-GB") : "",
           sourceLabel,
           r.commercial_ref,
           roleLabel,
           r.counterparty_name || "",
-          r.material,
+          isArabic ? r.material_ar : r.material_en,
           r.quantity,
-          r.unit,
+          unitLabel,
           pathwaysStr,
-          "معتمد"
+          isArabic ? "معتمد" : "Finalized"
         ];
       });
 
-      const csv = buildCsv(SUST_CSV_HEADERS, csvRows);
+      const csv = buildCsv(headers, csvRows);
       res.setHeader("Content-Type", "text/csv; charset=utf-8");
 
       const df = dateFromRaw || "all";
@@ -629,7 +692,8 @@ router.get(
         "Content-Disposition",
         `attachment; filename="sustainability-report-${df}-${dt}.csv"`
       );
-      res.send(csv);
+      // UTF-8 BOM
+      res.send('\\uFEFF' + csv);
       return;
     }
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@clerk/react";
 import { Link } from "wouter";
 import {
@@ -72,9 +72,14 @@ interface SustainabilityReportRow {
   status: string;
   source_type: string;
   commercial_ref: string;
+  deal_id?: string;
+  listing_id?: string;
+  contract_id?: string;
+  shipment_id?: string;
   my_role: "seller" | "buyer";
   counterparty_name: string | null;
-  material: string;
+  material_ar: string;
+  material_en: string;
   quantity: string;
   unit: string;
   pathways: Array<{
@@ -166,6 +171,18 @@ export function ReportsPage() {
 
   /* ── Tab State ── */
   const [tab, setTab] = useState<"deals" | "contracts" | "sustainability">("deals");
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlTab = params.get("tab");
+    if (urlTab === "deals" || urlTab === "contracts" || urlTab === "sustainability") {
+      setTab(urlTab);
+      if (urlTab === "contracts") setStatus("closed");
+      if (urlTab === "sustainability") {
+        // optionally trigger loadSustReport() but the user usually clicks the load button
+      }
+    }
+  }, []);
 
   /* Filters */
   const [role, setRole] = useState<"all" | "seller" | "buyer">("all");
@@ -343,7 +360,7 @@ export function ReportsPage() {
     setSustExporting(true);
     try {
       const token = await getToken();
-      const res = await fetch(`/api/reports/sustainability?${buildSustParams("csv")}`, {
+      const res = await fetch(`/api/reports/sustainability?${buildSustParams("csv")}&lang=${lang}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         credentials: "include",
       });
@@ -408,7 +425,7 @@ export function ReportsPage() {
             >
               {sustExporting
                 ? <><Loader2 className="h-4 w-4 me-2 animate-spin" />{t("reports.action.exporting")}</>
-                : <><Download className="h-4 w-4 me-2" />{lang === "ar" ? "تصدير ملف" : "Export File"}</>
+                : <><Download className="h-4 w-4 me-2" />{lang === "ar" ? "تصدير CSV" : "Export CSV"}</>
               }
             </Button>
           )
@@ -949,27 +966,45 @@ export function ReportsPage() {
                       </thead>
                       <tbody className="divide-y divide-border">
                         {sustReport.rows.map((row, i) => {
-                          const sourceLabel = row.source_type === "deal" ? (lang === "ar" ? "صفقة" : "Deal") : row.source_type === "contract_shipment" ? (lang === "ar" ? "شحنة" : "Shipment") : row.source_type;
+                          const unitLabel = row.unit === "ton" ? (lang === "ar" ? "طن" : "ton") : row.unit === "kg" ? (lang === "ar" ? "كجم" : "kg") : row.unit;
                           return (
                             <tr key={i} className="hover:bg-muted/20 transition-colors">
                               <Td mono>{row.finalized_at ? fmtDate(row.finalized_at, lang) : "—"}</Td>
-                              <Td>{sourceLabel}</Td>
-                              <Td mono>{row.commercial_ref}</Td>
+                              <Td>{row.source_type === "deal" ? (lang === "ar" ? "صفقة" : "Deal") : row.source_type === "contract_shipment" ? (lang === "ar" ? "شحنة" : "Shipment") : row.source_type}</Td>
+                              <Td>
+                                {row.source_type === "deal" && row.deal_id && row.listing_id ? (
+                                  <Link href={`/listings/${row.listing_id}?deal=${row.deal_id}&returnTo=${encodeURIComponent("/reports?tab=sustainability")}`}>
+                                    <a className="text-[11px] text-primary font-semibold hover:underline font-mono bg-primary/10 px-1.5 py-0.5 rounded transition-colors" dir="ltr" title={lang === "ar" ? "فتح صفقة" : "Open Deal"}>
+                                      {row.commercial_ref}
+                                    </a>
+                                  </Link>
+                                ) : row.source_type === "contract_shipment" && row.contract_id && row.shipment_id ? (
+                                  <Link href={`/contracts/${row.contract_id}?shipment=${row.shipment_id}&returnTo=${encodeURIComponent("/reports?tab=sustainability")}#shipment-${row.shipment_id}`}>
+                                    <a className="text-[11px] text-primary font-semibold hover:underline font-mono bg-primary/10 px-1.5 py-0.5 rounded transition-colors" dir="ltr" title={lang === "ar" ? "فتح الشحنة" : "Open Shipment"}>
+                                      {row.commercial_ref}
+                                    </a>
+                                  </Link>
+                                ) : (
+                                  <span className="text-[11px] text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded" dir="ltr">
+                                    {row.commercial_ref}
+                                  </span>
+                                )}
+                              </Td>
                               <Td>
                                 <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${
                                   row.my_role === "seller" ? "bg-blue-100 text-blue-800" : "bg-teal-100 text-teal-800"
                                 }`}>
-                                  {row.my_role === "seller" ? (lang === "ar" ? "البائع / المصدر" : "Seller / Source") : (lang === "ar" ? "المشتري / المستلم" : "Buyer / Processor")}
+                                  {row.my_role === "seller" ? (lang === "ar" ? "البائع / المصدر" : "Seller / Source") : (lang === "ar" ? "المشتري / المعالج" : "Buyer / Processor")}
                                 </span>
                               </Td>
                               <Td>{row.counterparty_name ?? "—"}</Td>
-                              <Td>{row.material}</Td>
-                              <Td mono bold>{row.quantity} {row.unit}</Td>
+                              <Td>{lang === "ar" ? row.material_ar : row.material_en}</Td>
+                              <Td mono bold>{row.quantity} {unitLabel}</Td>
                               <Td>
                                 <div className="flex flex-col gap-1 max-w-[200px] whitespace-normal">
                                   {row.pathways.map((p, pIdx) => (
                                     <span key={pIdx} className="text-xs text-muted-foreground leading-tight">
-                                      {lang === "ar" ? p.pathway_name_ar : p.pathway_name_en}: {p.quantity} {row.unit}
+                                      {lang === "ar" ? p.pathway_name_ar : p.pathway_name_en}: {p.quantity} {unitLabel}
                                     </span>
                                   ))}
                                 </div>
