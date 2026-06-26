@@ -89,9 +89,14 @@ export function SustainabilityPrintPage() {
 
             {/* Left Side (Arabic end) - Processor Card */}
             <div className="shrink-0 flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-lg p-3 min-w-[200px]">
-              <div className="w-8 h-8 rounded bg-gray-200 flex items-center justify-center shrink-0">
-                <span className="text-[8px] text-gray-400 font-bold uppercase tracking-tighter leading-none text-center">Logo</span>
-              </div>
+              {row.processor_logo_url && (
+                <img
+                  src={row.processor_logo_url}
+                  alt={row.processor_name || ""}
+                  className="h-8 w-8 object-contain shrink-0 rounded"
+                  crossOrigin="anonymous"
+                />
+              )}
               <div className="flex flex-col">
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">
                   {isAr ? "المعالج / Processor" : "Processor"}

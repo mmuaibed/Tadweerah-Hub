@@ -77,6 +77,9 @@ export const companiesTable = pgTable("companies", {
   /** Optional override for email notification routing instead of defaulting to the owner. */
   notification_recipient_user_id: text("notification_recipient_user_id"),
 
+  /** Company logo URL stored in GCS. Null if no logo has been uploaded. */
+  logo_url: text("logo_url"),
+
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

@@ -1,5 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, and, ne, ilike, asc } from "drizzle-orm";
+import multer from "multer";
+import path from "path";
 import {
   db,
   companiesTable,
@@ -16,6 +18,23 @@ import { requireAuth, type AuthedRequest } from "../middlewares/requireAuth";
 import { requireCompany, type AuthedCompanyRequest } from "../middlewares/requireCompany";
 import { logAudit } from "../lib/audit";
 import { computeCompanyLicenseValidity } from "../lib/license-validity";
+import { uploadToGcs } from "../lib/gcs-upload";
+import { HttpError } from "../middlewares/errorHandler";
+
+// Multer memory storage for logo uploads — 2 MB limit, jpg/png/webp only
+const logoUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 2 * 1024 * 1024 }, // 2 MB
+  fileFilter: (_req, file, cb) => {
+    const allowedMimes = ["image/jpeg", "image/png", "image/webp"];
+    const allowedExts = new Set([".jpg", ".jpeg", ".png", ".webp"]);
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (!allowedMimes.includes(file.mimetype) || !allowedExts.has(ext)) {
+      return cb(new Error("Only jpeg, png, and webp images (≤2 MB) are allowed"));
+    }
+    cb(null, true);
+  },
+});
 
 const router: IRouter = Router();
 
@@ -310,6 +329,7 @@ router.get(
         company_category_id: companiesTable.company_category_id,
         accepted_terms_at: companiesTable.accepted_terms_at,
         createdAt: companiesTable.createdAt,
+        logo_url: companiesTable.logo_url,
         category_name_ar: companyCategoriesTable.name_ar,
         category_name_en: companyCategoriesTable.name_en,
       })
@@ -358,6 +378,7 @@ router.get(
       category_name_ar: r.category_name_ar ?? undefined,
       category_name_en: r.category_name_en ?? undefined,
       accepted_terms_at: r.accepted_terms_at?.toISOString() ?? undefined,
+      logo_url: r.logo_url ?? undefined,
       roles,
       createdAt: r.createdAt.toISOString(),
     });
@@ -559,6 +580,57 @@ router.get(
       .limit(10);
     res.json(rows);
   },
+);
+
+/**
+ * POST /companies/mine/logo
+ * Uploads a company logo image and stores the public GCS URL in companies.logo_url.
+ * Requires auth. Company ID comes from the secure server-side session (never from client).
+ * Allowed types: jpeg, png, webp. Max size: 2 MB.
+ *
+ * TODO: delete previous logo_url from GCS before overwriting.
+ */
+router.post(
+  "/companies/mine/logo",
+  requireAuth,
+  requireCompany({ allowUnapproved: true }),
+  logoUpload.single("image"),
+  async (req, res) => {
+    const { company } = req as AuthedCompanyRequest;
+
+    if (!req.file) {
+      throw new HttpError(400, "ValidationError", "No image file provided");
+    }
+
+    const file = req.file;
+    const ext = path.extname(file.originalname).toLowerCase() || ".jpg";
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).slice(2, 8);
+    const destinationPath = `companies/${company.id}/logo-${timestamp}-${random}${ext}`;
+
+    const { publicUrl } = await uploadToGcs({
+      buffer: file.buffer,
+      originalname: file.originalname,
+      mimetype: file.mimetype,
+      destinationPath,
+    });
+
+    await db
+      .update(companiesTable)
+      .set({ logo_url: publicUrl })
+      .where(eq(companiesTable.id, company.id));
+
+    void logAudit({
+      userId: (req as AuthedCompanyRequest).userId,
+      companyId: company.id,
+      action: "company.logo_updated",
+      entityType: "company",
+      entityId: company.id,
+      details: { logo_url: publicUrl },
+    });
+
+    res.json({ logo_url: publicUrl });
+  }
 );
 
 export default router;

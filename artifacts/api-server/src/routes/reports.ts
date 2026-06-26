@@ -773,6 +773,7 @@ router.get(
         buyer_id: sustainabilityReceivedLinesTable.buyer_company_id,
         seller_name: sql<string | null>`seller.name`,
         buyer_name: sql<string | null>`buyer.name`,
+        buyer_logo_url: sql<string | null>`buyer.logo_url`,
         deal_id: dealsTable.id,
         listing_id: dealsTable.listing_id,
         shipment_ref: contractShipmentsTable.reference,
@@ -893,6 +894,7 @@ router.get(
           my_role: row.seller_id === cid ? "seller" : "buyer",
           counterparty_name: row.seller_id === cid ? row.buyer_name : row.seller_name,
           processor_name: row.buyer_name, // Provide processor explicitly
+          processor_logo_url: row.buyer_logo_url ?? null,
           material_ar: materialLabelAr,
           material_en: materialLabelEn,
           quantity: row.final_received_qty,

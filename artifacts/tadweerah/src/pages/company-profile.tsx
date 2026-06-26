@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, useRef, type FormEvent } from "react";
 import { Link } from "wouter";
 import { useAuth } from "@clerk/react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -17,6 +17,8 @@ import {
   AlertTriangle,
   Users,
   Settings,
+  ImagePlus,
+  CheckCircle2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -51,6 +53,7 @@ interface CompanyProfile {
   accepted_terms_at?: string;
   createdAt: string;
   roles?: MwanRole[];
+  logo_url?: string;
 }
 
 function LicenseStatusBadge({
@@ -115,6 +118,73 @@ export function CompanyProfilePage() {
   const [rolesSaving, setRolesSaving] = useState(false);
   const [rolesSaved, setRolesSaved] = useState(false);
   const [rolesError, setRolesError] = useState<string | null>(null);
+
+  // ── Logo ────────────────────────────────────────────────────────────────────
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoSaved, setLogoSaved] = useState(false);
+  const [logoError, setLogoError] = useState<string | null>(null);
+  const MAX_LOGO_BYTES = 2 * 1024 * 1024; // 2 MB
+  const ALLOWED_LOGO_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+  const ALLOWED_LOGO_EXTS = new Set([".jpg", ".jpeg", ".png", ".webp"]);
+
+  function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0] ?? null;
+    setLogoError(null);
+    setLogoSaved(false);
+    if (!file) return;
+    const ext = "." + (file.name.split(".").pop()?.toLowerCase() ?? "");
+    if (!ALLOWED_LOGO_TYPES.has(file.type) || !ALLOWED_LOGO_EXTS.has(ext)) {
+      setLogoError(lang === "ar" ? "يُسمح فقط بصيغ jpeg وpng وwebp" : "Only jpeg, png, and webp files are allowed");
+      if (logoInputRef.current) logoInputRef.current.value = "";
+      return;
+    }
+    if (file.size > MAX_LOGO_BYTES) {
+      setLogoError(lang === "ar" ? "الحد الأقصى لحجم الشعار 2 ميجابايت" : "Logo must be under 2 MB");
+      if (logoInputRef.current) logoInputRef.current.value = "";
+      return;
+    }
+    setLogoFile(file);
+    const reader = new FileReader();
+    reader.onload = (ev) => setLogoPreview(ev.target?.result as string);
+    reader.readAsDataURL(file);
+  }
+
+  async function uploadLogo() {
+    if (!logoFile) return;
+    setLogoUploading(true);
+    setLogoError(null);
+    setLogoSaved(false);
+    try {
+      const token = await getToken();
+      const form = new FormData();
+      form.append("image", logoFile);
+      const res = await fetch("/api/companies/mine/logo", {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: "include",
+        body: form,
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setLogoError((data as { message?: string }).message ?? (lang === "ar" ? "فشل رفع الشعار" : "Logo upload failed"));
+        return;
+      }
+      const result = await res.json() as { logo_url: string };
+      setProfile((prev) => prev ? { ...prev, logo_url: result.logo_url } : prev);
+      setLogoPreview(result.logo_url);
+      setLogoFile(null);
+      if (logoInputRef.current) logoInputRef.current.value = "";
+      setLogoSaved(true);
+      setTimeout(() => setLogoSaved(false), 5000);
+    } catch {
+      setLogoError(lang === "ar" ? "فشل رفع الشعار" : "Logo upload failed");
+    } finally {
+      setLogoUploading(false);
+    }
+  }
 
   const toggleRole = (role: MwanRole) => {
     setSelectedRoles((prev) => {
@@ -187,6 +257,7 @@ export function CompanyProfilePage() {
           setCr(data.commercialRegistration ?? "");
           setLicenseNumber(data.license_number ?? "");
           setCategoryId(data.company_category_id ?? "");
+          if (data.logo_url) setLogoPreview(data.logo_url);
           if (data.roles && data.roles.length > 0) {
             setSelectedRoles(new Set(data.roles));
           }
@@ -394,6 +465,74 @@ export function CompanyProfilePage() {
                 onChange={(e) => setLicenseNumber(e.target.value)}
               />
               <p className="text-xs text-muted-foreground">{t("onboarding.form.license_section.hint")}</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Company Logo */}
+        <Card className="border-card-border bg-card">
+          <CardContent className="space-y-4 p-6">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {lang === "ar" ? "شعار الشركة" : "Company Logo"}
+            </p>
+
+            <div className="flex items-start gap-5">
+              {/* Preview */}
+              <div className="shrink-0 h-20 w-20 rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 flex items-center justify-center overflow-hidden">
+                {logoPreview ? (
+                  <img
+                    src={logoPreview}
+                    alt={lang === "ar" ? "شعار الشركة" : "Company Logo"}
+                    className="h-full w-full object-contain"
+                    crossOrigin="anonymous"
+                  />
+                ) : (
+                  <ImagePlus className="h-7 w-7 text-muted-foreground/40" />
+                )}
+              </div>
+
+              {/* Controls */}
+              <div className="flex-1 space-y-2">
+                <input
+                  ref={logoInputRef}
+                  id="logo-upload"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="block w-full text-sm text-muted-foreground file:mr-3 file:rounded file:border-0 file:bg-primary/10 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-primary hover:file:bg-primary/20 transition-colors cursor-pointer"
+                  onChange={handleLogoChange}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {lang === "ar"
+                    ? "يُقبل: jpg, png, webp · الحد الأقصى: 2 ميجابايت · الشعار اختياري"
+                    : "Accepted: jpg, png, webp · Max: 2 MB · Logo is optional"}
+                </p>
+                {logoError && (
+                  <p className="text-xs text-destructive">{logoError}</p>
+                )}
+                {logoSaved && (
+                  <div className="flex items-center gap-1.5 text-xs text-emerald-600">
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    {lang === "ar" ? "تم حفظ الشعار بنجاح" : "Logo saved successfully"}
+                  </div>
+                )}
+                {logoFile && !logoUploading && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5 mt-1"
+                    onClick={uploadLogo}
+                  >
+                    {lang === "ar" ? "رفع الشعار" : "Upload Logo"}
+                  </Button>
+                )}
+                {logoUploading && (
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    {lang === "ar" ? "جارٍ الرفع..." : "Uploading..."}
+                  </div>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
