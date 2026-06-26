@@ -726,4 +726,194 @@ router.get(
   }
 );
 
+/**
+ * SIR-3B Print Detail Endpoint
+ * Fetches a single finalized sustainability report row formatted identically to the list.
+ */
+router.get(
+  "/sustainability/:id",
+  requireAuth,
+  requireCompany(),
+  async (req, res) => {
+    const { company } = req as AuthedCompanyRequest;
+    const cid = company.id;
+    const allocationId = String(req.params.id);
+
+    const where = and(
+      eq(sustainabilityAllocationsTable.id, allocationId),
+      eq(sustainabilityAllocationsTable.status, "finalized"),
+      or(
+        eq(sustainabilityReceivedLinesTable.buyer_company_id, cid),
+        eq(sustainabilityReceivedLinesTable.seller_company_id, cid)
+      )
+    );
+
+    const activePathways = await db
+      .select({
+        id: sustainabilityPathwaysTable.id,
+        name_ar: sustainabilityPathwaysTable.name_ar,
+        name_en: sustainabilityPathwaysTable.name_en,
+      })
+      .from(sustainabilityPathwaysTable)
+      .where(eq(sustainabilityPathwaysTable.is_active, true))
+      .orderBy(sustainabilityPathwaysTable.sort_order);
+
+    const flatRows = await db
+      .select({
+        allocation_id: sustainabilityAllocationsTable.id,
+        finalized_at: sustainabilityAllocationsTable.finalized_at,
+        status: sustainabilityAllocationsTable.status,
+        received_line_id: sustainabilityReceivedLinesTable.id,
+        parent_entity_type: sustainabilityReceivedLinesTable.parent_entity_type,
+        parent_entity_id: sustainabilityReceivedLinesTable.parent_entity_id,
+        material_label: sustainabilityReceivedLinesTable.material_label,
+        final_received_qty: sustainabilityReceivedLinesTable.final_received_qty,
+        final_received_unit: sustainabilityReceivedLinesTable.final_received_unit,
+        seller_id: sustainabilityReceivedLinesTable.seller_company_id,
+        buyer_id: sustainabilityReceivedLinesTable.buyer_company_id,
+        seller_name: sql<string | null>`seller.name`,
+        buyer_name: sql<string | null>`buyer.name`,
+        deal_id: dealsTable.id,
+        listing_id: dealsTable.listing_id,
+        shipment_ref: contractShipmentsTable.reference,
+        contract_id: contractShipmentsTable.contract_id,
+        shipment_id: contractShipmentsTable.id,
+        listing_unit: wasteListingsTable.unit,
+        subcategory_name_ar: materialCategoriesTable.name_ar,
+        subcategory_name_en: materialCategoriesTable.name_en,
+        parent_subcategory_name_ar: sql<string | null>`parent_category.name_ar`,
+        parent_subcategory_name_en: sql<string | null>`parent_category.name_en`,
+        contract_material_label: contractMaterialsTable.material_label,
+        contract_unit_label: contractMaterialsTable.unit_label,
+        line_id: sustainabilityAllocationLinesTable.id,
+        pathway_id: sustainabilityPathwaysTable.id,
+        pathway_qty: sustainabilityAllocationLinesTable.quantity,
+        pathway_pct: sustainabilityAllocationLinesTable.percentage,
+        pathway_name_ar: sustainabilityPathwaysTable.name_ar,
+        pathway_name_en: sustainabilityPathwaysTable.name_en,
+      })
+      .from(sustainabilityAllocationsTable)
+      .innerJoin(
+        sustainabilityReceivedLinesTable,
+        eq(sustainabilityReceivedLinesTable.id, sustainabilityAllocationsTable.received_line_id)
+      )
+      .leftJoin(
+        dealsTable,
+        and(
+          eq(sustainabilityReceivedLinesTable.parent_entity_type, "deal"),
+          eq(sustainabilityReceivedLinesTable.parent_entity_id, dealsTable.id)
+        )
+      )
+      .leftJoin(
+        wasteListingsTable,
+        eq(dealsTable.listing_id, wasteListingsTable.id)
+      )
+      .leftJoin(
+        contractShipmentsTable,
+        and(
+          eq(sustainabilityReceivedLinesTable.parent_entity_type, "contract_shipment"),
+          eq(sustainabilityReceivedLinesTable.parent_entity_id, contractShipmentsTable.id)
+        )
+      )
+      .leftJoin(
+        contractMaterialsTable,
+        eq(contractShipmentsTable.material_line_id, contractMaterialsTable.id)
+      )
+      .leftJoin(
+        materialCategoriesTable,
+        or(
+          eq(wasteListingsTable.material_subcategory_id, materialCategoriesTable.id),
+          eq(contractMaterialsTable.material_category_id, materialCategoriesTable.id)
+        )
+      )
+      .leftJoin(
+        sql`material_categories parent_category`,
+        sql`parent_category.id = ${materialCategoriesTable.parent_id}`
+      )
+      .leftJoin(sql`companies seller`, sql`seller.id = ${sustainabilityReceivedLinesTable.seller_company_id}`)
+      .leftJoin(sql`companies buyer`, sql`buyer.id = ${sustainabilityReceivedLinesTable.buyer_company_id}`)
+      .leftJoin(
+        sustainabilityAllocationLinesTable,
+        eq(sustainabilityAllocationLinesTable.allocation_id, sustainabilityAllocationsTable.id)
+      )
+      .leftJoin(
+        sustainabilityPathwaysTable,
+        eq(sustainabilityPathwaysTable.id, sustainabilityAllocationLinesTable.pathway_id)
+      );
+
+    if (flatRows.length === 0) {
+      res.status(404).json({ error: "Not found or not authorized" });
+      return;
+    }
+
+    const groupedMap = new Map<string, any>();
+    for (const row of flatRows) {
+      if (!groupedMap.has(row.received_line_id)) {
+        let commercialRef = "—";
+        let sourceType = row.parent_entity_type;
+        if (sourceType === "deal" && row.deal_id) {
+          commercialRef = `TDW-${new Date(row.finalized_at || new Date()).getFullYear()}-${row.deal_id.slice(0, 6)}`;
+        } else if (sourceType === "contract_shipment" && row.shipment_ref) {
+          commercialRef = row.shipment_ref;
+        }
+
+        let materialLabelAr = row.material_label;
+        let materialLabelEn = row.material_label;
+
+        if (sourceType === "deal") {
+           const subAr = row.subcategory_name_ar;
+           const subEn = row.subcategory_name_en;
+           const parentAr = row.parent_subcategory_name_ar;
+           const parentEn = row.parent_subcategory_name_en;
+           if (subAr) {
+             materialLabelAr = parentAr ? `${parentAr} / ${subAr}` : subAr;
+             materialLabelEn = parentEn ? `${parentEn} / ${subEn}` : (subEn || subAr);
+           }
+        } else if (sourceType === "contract_shipment") {
+           materialLabelAr = row.contract_material_label || row.material_label;
+           materialLabelEn = materialLabelAr;
+        }
+
+        let u = (row.contract_unit_label || row.listing_unit || row.final_received_unit || "").toLowerCase().trim();
+        if (u === "طن" || u === "ton") u = "ton";
+        else if (u === "كجم" || u === "kg") u = "kg";
+
+        groupedMap.set(row.received_line_id, {
+          allocation_id: row.allocation_id,
+          received_line_id: row.received_line_id,
+          finalized_at: row.finalized_at ? row.finalized_at.toISOString() : null,
+          status: row.status,
+          source_type: sourceType,
+          commercial_ref: commercialRef,
+          deal_id: row.deal_id,
+          listing_id: row.listing_id,
+          contract_id: row.contract_id,
+          shipment_id: row.shipment_id,
+          my_role: row.seller_id === cid ? "seller" : "buyer",
+          counterparty_name: row.seller_id === cid ? row.buyer_name : row.seller_name,
+          processor_name: row.buyer_name, // Provide processor explicitly
+          material_ar: materialLabelAr,
+          material_en: materialLabelEn,
+          quantity: row.final_received_qty,
+          unit: u,
+          pathways: []
+        });
+      }
+
+      if (row.line_id && row.pathway_id) {
+        groupedMap.get(row.received_line_id).pathways.push({
+          pathway_id: row.pathway_id,
+          pathway_name_ar: row.pathway_name_ar,
+          pathway_name_en: row.pathway_name_en,
+          quantity: row.pathway_qty,
+          percentage: row.pathway_pct
+        });
+      }
+    }
+
+    const item = Array.from(groupedMap.values())[0];
+    res.json({ row: item, pathways: activePathways });
+  }
+);
+
 export default router;

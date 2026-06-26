@@ -966,6 +966,7 @@ export function ReportsPage() {
                             <Th key={pw.id}>{lang === "ar" ? pw.name_ar : pw.name_en}</Th>
                           ))}
                           <Th>{lang === "ar" ? "الحالة" : "Status"}</Th>
+                          <th className="w-10 px-4 py-3 border-b border-border bg-muted/30"></th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border">
@@ -1020,6 +1021,15 @@ export function ReportsPage() {
                                 <span className="inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold bg-green-100 text-green-800">
                                   {lang === "ar" ? "معتمد" : "Finalized"}
                                 </span>
+                              </Td>
+                              <Td>
+                                <Link href={`/reports/sustainability/${row.allocation_id}/print`}>
+                                  <a target="_blank" rel="noopener noreferrer" className="p-1.5 hover:bg-muted rounded text-muted-foreground hover:text-primary transition-colors flex items-center justify-center" title={lang === "ar" ? "طباعة التقرير" : "Print Report"}>
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                                    </svg>
+                                  </a>
+                                </Link>
                               </Td>
                             </tr>
                           );

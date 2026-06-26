@@ -37,6 +37,7 @@ import { PendingActionsPage } from "@/pages/pending-actions";
 import { AdminPage } from "@/pages/admin";
 import { SustainabilityAllocationsPage } from "@/pages/sustainability-allocations";
 import { SustainabilityAllocationDetailPage } from "@/pages/sustainability-allocation-detail";
+import { SustainabilityPrintPage } from "@/pages/sustainability-print";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -268,6 +269,9 @@ function ClerkProviderWithRoutes() {
             </Route>
             <Route path="/sustainability/allocations/:id">
               <CompanyRoute><SustainabilityAllocationDetailPage /></CompanyRoute>
+            </Route>
+            <Route path="/reports/sustainability/:id/print">
+              <CompanyRoute><SustainabilityPrintPage /></CompanyRoute>
             </Route>
             <Route path="/company/capabilities">
               <CompanyRoute><CompanyCapabilitiesPage /></CompanyRoute>
