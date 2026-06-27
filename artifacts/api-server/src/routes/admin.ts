@@ -2795,5 +2795,51 @@ router.patch("/admin/notifications/mark-all-read", requireAdminKey, async (req, 
   res.json({ success: true });
 });
 
+
+  /**
+   * GET /admin/sustainability/allocations/:id/details
+   * Fetch details for a specific allocation, including its pathways.
+   */
+  router.get("/admin/sustainability/allocations/:id/details", requireAdminKey, async (req, res) => {
+    const id = req.params.id as string;
+    
+    const [allocation] = await db
+      .select()
+      .from(sustainabilityAllocationsTable)
+      .where(eq(sustainabilityAllocationsTable.id, id))
+      .limit(1);
+
+    if (!allocation) {
+      res.status(404).json({ error: "Allocation not found" });
+      return;
+    }
+
+    const { sustainabilityAllocationLinesTable, sustainabilityPathwaysTable } = require("../db/schema/sustainability");
+    
+    const lines = await db
+      .select({
+        line: sustainabilityAllocationLinesTable,
+        pathway: sustainabilityPathwaysTable
+      })
+      .from(sustainabilityAllocationLinesTable)
+      .innerJoin(
+        sustainabilityPathwaysTable,
+        eq(sustainabilityPathwaysTable.id, sustainabilityAllocationLinesTable.pathway_id)
+      )
+      .where(eq(sustainabilityAllocationLinesTable.allocation_id, id));
+
+    const pathways = lines.map(l => ({
+      ...l.pathway,
+      percentage: l.line.percentage,
+      quantity: l.line.quantity,
+      explanation_text: l.line.explanation_text
+    }));
+
+    res.json({
+      allocation,
+      pathways,
+    });
+  });
+
 export default router;
 
