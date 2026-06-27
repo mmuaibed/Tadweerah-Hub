@@ -20,6 +20,7 @@ import {
   companyInvitationsTable,
   sustainabilityReceivedLinesTable,
   sustainabilityAllocationsTable,
+  sustainabilityPathwaysTable,
   sustainabilityAllocationLinesTable,
   sustainabilityCorrectionRequestsTable,
   adminNotificationsTable,
@@ -2814,7 +2815,7 @@ router.patch("/admin/notifications/mark-all-read", requireAdminKey, async (req, 
       return;
     }
 
-    const { sustainabilityAllocationLinesTable, sustainabilityPathwaysTable } = require("../db/schema/sustainability");
+    
     
     const lines = await db
       .select({
