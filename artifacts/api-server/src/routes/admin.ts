@@ -2243,76 +2243,154 @@ router.get("/admin/sustainability/contract-shipments/missing-received-lines", re
  * Query params: status, company_search, date_from, date_to, pending_only, limit, offset
  */
 router.get("/admin/sustainability/allocations", requireAdminKey, async (req, res) => {
-  const limit = Math.min(Number(req.query.limit) || 50, 200);
-  const offset = Number(req.query.offset) || 0;
-  const statusFilter = req.query.status as string | undefined;
-  const pendingOnly = req.query.pending_only === "true";
-
-  const conditions = [];
-  if (statusFilter) conditions.push(eq(sustainabilityAllocationsTable.status, statusFilter as any));
-
-  const rows = await db
-    .select({
-      allocation: sustainabilityAllocationsTable,
-      received_line: {
-        id: sustainabilityReceivedLinesTable.id,
-        parent_entity_type: sustainabilityReceivedLinesTable.parent_entity_type,
-        parent_entity_id: sustainabilityReceivedLinesTable.parent_entity_id,
-        material_label: sustainabilityReceivedLinesTable.material_label,
-        final_received_qty: sustainabilityReceivedLinesTable.final_received_qty,
-        final_received_unit: sustainabilityReceivedLinesTable.final_received_unit,
-        buyer_company_id: sustainabilityReceivedLinesTable.buyer_company_id,
-      },
-      buyer_name: sql<string | null>`buyer.name`,
-      commercial_ref: sql<string | null>`
-        COALESCE(
-          CASE WHEN ${sustainabilityReceivedLinesTable.parent_entity_type} = 'deal' THEN ${transportRequestsTable.manifest_ref} ELSE NULL END,
-          CASE WHEN ${sustainabilityReceivedLinesTable.parent_entity_type} = 'contract_shipment' THEN ${contractShipmentsTable.reference} ELSE NULL END,
-          ${sustainabilityReceivedLinesTable.parent_entity_id}::text
+    const subcat = aliasedTable(materialCategoriesTable, "subcat");
+    const maincat = aliasedTable(materialCategoriesTable, "maincat");
+    const format = typeof req.query.format === "string" ? req.query.format : "json";
+    const limit = format === "csv" ? 5000 : Math.min(Number(req.query.limit) || 50, 200);
+    const offset = format === "csv" ? 0 : Number(req.query.offset) || 0;
+    const statusFilter = req.query.status as string | undefined;
+    const pendingOnly = req.query.pending_only === "true";
+  
+    const conditions = [];
+    if (statusFilter) conditions.push(eq(sustainabilityAllocationsTable.status, statusFilter as any));
+  
+    const rows = await db
+      .select({
+        allocation: sustainabilityAllocationsTable,
+        received_line: {
+          id: sustainabilityReceivedLinesTable.id,
+          parent_entity_type: sustainabilityReceivedLinesTable.parent_entity_type,
+          parent_entity_id: sustainabilityReceivedLinesTable.parent_entity_id,
+          material_label: sustainabilityReceivedLinesTable.material_label,
+          final_received_qty: sustainabilityReceivedLinesTable.final_received_qty,
+          final_received_unit: sustainabilityReceivedLinesTable.final_received_unit,
+          buyer_company_id: sustainabilityReceivedLinesTable.buyer_company_id,
+        },
+        main_category_en: maincat.name_en,
+        main_category_ar: maincat.name_ar,
+        sub_category_en: subcat.name_en,
+        sub_category_ar: subcat.name_ar,
+        buyer_name: sql<string | null>`buyer.name`,
+        commercial_ref: sql<string | null>`
+          COALESCE(
+            CASE WHEN ${sustainabilityReceivedLinesTable.parent_entity_type} = 'deal' THEN ${transportRequestsTable.manifest_ref} ELSE NULL END,
+            CASE WHEN ${sustainabilityReceivedLinesTable.parent_entity_type} = 'contract_shipment' THEN ${contractShipmentsTable.reference} ELSE NULL END,
+            ${sustainabilityReceivedLinesTable.parent_entity_id}::text
+          )
+        `,
+        pending_request_id: sustainabilityCorrectionRequestsTable.id,
+        pending_request_reason: sustainabilityCorrectionRequestsTable.reason,
+      })
+      .from(sustainabilityAllocationsTable)
+      .innerJoin(
+        sustainabilityReceivedLinesTable,
+        eq(sustainabilityReceivedLinesTable.id, sustainabilityAllocationsTable.received_line_id)
+      )
+      .leftJoin(sql`companies buyer`, sql`buyer.id = ${sustainabilityReceivedLinesTable.buyer_company_id}`)
+      .leftJoin(subcat, eq(subcat.id, sustainabilityReceivedLinesTable.material_category_id))
+      .leftJoin(maincat, eq(maincat.id, subcat.parent_id))
+      .leftJoin(
+        transportRequestsTable,
+        and(
+          eq(transportRequestsTable.deal_id, sustainabilityReceivedLinesTable.parent_entity_id),
+          eq(sustainabilityReceivedLinesTable.parent_entity_type, 'deal')
         )
-      `,
-      pending_request_id: sustainabilityCorrectionRequestsTable.id,
-      pending_request_reason: sustainabilityCorrectionRequestsTable.reason,
-    })
-    .from(sustainabilityAllocationsTable)
-    .innerJoin(
-      sustainabilityReceivedLinesTable,
-      eq(sustainabilityReceivedLinesTable.id, sustainabilityAllocationsTable.received_line_id)
-    )
-    .leftJoin(sql`companies buyer`, sql`buyer.id = ${sustainabilityReceivedLinesTable.buyer_company_id}`)
-    .leftJoin(
-      transportRequestsTable,
-      and(
-        eq(transportRequestsTable.deal_id, sustainabilityReceivedLinesTable.parent_entity_id),
-        eq(sustainabilityReceivedLinesTable.parent_entity_type, 'deal')
       )
-    )
-    .leftJoin(
-      contractShipmentsTable,
-      and(
-        eq(contractShipmentsTable.id, sustainabilityReceivedLinesTable.parent_entity_id),
-        eq(sustainabilityReceivedLinesTable.parent_entity_type, 'contract_shipment')
+      .leftJoin(
+        contractShipmentsTable,
+        and(
+          eq(contractShipmentsTable.id, sustainabilityReceivedLinesTable.parent_entity_id),
+          eq(sustainabilityReceivedLinesTable.parent_entity_type, 'contract_shipment')
+        )
       )
-    )
-    .leftJoin(
-      sustainabilityCorrectionRequestsTable,
-      and(
-        eq(sustainabilityCorrectionRequestsTable.allocation_id, sustainabilityAllocationsTable.id),
-        eq(sustainabilityCorrectionRequestsTable.status, "pending")
+      .leftJoin(
+        sustainabilityCorrectionRequestsTable,
+        and(
+          eq(sustainabilityCorrectionRequestsTable.allocation_id, sustainabilityAllocationsTable.id),
+          eq(sustainabilityCorrectionRequestsTable.status, "pending")
+        )
       )
-    )
-    .where(conditions.length ? and(...conditions) : undefined)
-    .orderBy(
-      // Pending correction requests first (has pending_request_id), then by finalized_at desc
-      asc(sql`CASE WHEN ${sustainabilityCorrectionRequestsTable.id} IS NOT NULL THEN 0 ELSE 1 END`),
-      desc(sustainabilityAllocationsTable.finalized_at)
-    )
-    .limit(limit)
-    .offset(offset);
+      .where(conditions.length ? and(...conditions) : undefined)
+      .orderBy(
+        // Pending correction requests first (has pending_request_id), then by finalized_at desc
+        asc(sql`CASE WHEN ${sustainabilityCorrectionRequestsTable.id} IS NOT NULL THEN 0 ELSE 1 END`),
+        desc(sustainabilityAllocationsTable.finalized_at)
+      )
+      .limit(limit)
+      .offset(offset);
+  
+    const filtered = pendingOnly ? rows.filter(r => r.pending_request_id != null) : rows;
 
-  const filtered = pendingOnly ? rows.filter(r => r.pending_request_id != null) : rows;
-  res.json(filtered);
-});
+    const serialized = filtered.map((r) => {
+      let mat_main_en = r.main_category_en;
+      let mat_sub_en = r.sub_category_en;
+      let mat_main_ar = r.main_category_ar;
+      let mat_sub_ar = r.sub_category_ar;
+      
+      if (mat_sub_en && !mat_main_en) {
+        mat_main_en = mat_sub_en;
+        mat_sub_en = null;
+        mat_main_ar = mat_sub_ar;
+        mat_sub_ar = null;
+      }
+
+      return {
+        ...r,
+        allocation: r.allocation,
+        received_line: {
+          ...r.received_line,
+          material_main_category_en: mat_main_en || null,
+          material_main_category_ar: mat_main_ar || null,
+          material_sub_category_en: mat_sub_en || null,
+          material_sub_category_ar: mat_sub_ar || null,
+        }
+      };
+    });
+
+    if (format === "csv") {
+      const headers = [
+        "Commercial Ref",
+        "Company",
+        "Material Main Category",
+        "Material Subcategory",
+        "Quantity",
+        "Unit",
+        "Status",
+        "Version",
+        "Correction Status",
+        "Finalized Date",
+        "Pending Request Reason",
+        "Superseded By"
+      ];
+      const csvRows = serialized.map(r => {
+        let unitAr = r.received_line.final_received_unit;
+        if (unitAr === "ton" || unitAr === "tons") unitAr = "طن";
+        if (unitAr === "kg" || unitAr === "kgs") unitAr = "كجم";
+
+        return [
+          r.commercial_ref || "",
+          r.buyer_name || "",
+          r.received_line.material_main_category_en || r.received_line.material_label,
+          r.received_line.material_sub_category_en || "",
+          r.received_line.final_received_qty || "",
+          unitAr || "",
+          r.allocation.status,
+          String(r.allocation.version),
+          r.pending_request_id ? "Pending" : "",
+          r.allocation.finalized_at ? new Date(r.allocation.finalized_at).toLocaleDateString("en-GB") : "",
+          r.pending_request_reason || "",
+          r.allocation.superseded_by_allocation_id || ""
+        ];
+      });
+      const csv = buildCsv(headers, csvRows);
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader("Content-Disposition", `attachment; filename="admin-sustainability-allocations-${new Date().toISOString().slice(0, 10)}.csv"`);
+      res.send(csv);
+      return;
+    }
+  
+    res.json(serialized);
+  });
 
 /**
  * GET /admin/sustainability/correction-requests

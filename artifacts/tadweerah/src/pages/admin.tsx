@@ -944,7 +944,7 @@ export function AdminPage() {
         setExpandedDetails(await detailsRes.json() as AdminCompanyDetails);
       }
     } catch (e) {
-      alert(lang === "ar" ? "??  ????? ?3?,? ?,?+??" : "Failed to update notification recipient");
+      alert(lang === "ar" ? "فشل التحديث" : "Failed to update notification recipient");
       console.error(e);
     } finally {
       setRecipientUpdateLoading(false);
@@ -2958,8 +2958,17 @@ export function AdminPage() {
                                 )}
                               </td>
                               <td className="px-4 py-2.5 font-medium">{a.buyer_name || "-"}</td>
-                              <td className="px-4 py-2.5">{rl?.material_label ? (lang === "ar" && rl.material_label === "metal" ? "معادن" : rl.material_label === "metal" ? "Metal" : rl.material_label) : "-"}</td>
-                              <td className="px-4 py-2.5" dir="ltr">{rl?.final_received_qty ? `${Number(rl.final_received_qty).toLocaleString(undefined, { maximumFractionDigits: 3 })} ${rl.final_received_unit || ''}` : "-"}</td>
+                              <td className="px-4 py-2.5">{rl?.material_main_category_en 
+  ? (lang === "ar" 
+    ? `${rl.material_main_category_ar || ""} ${rl.material_sub_category_ar ? ' / ' + rl.material_sub_category_ar : ''}`
+    : `${rl.material_main_category_en || ""} ${rl.material_sub_category_en ? ' / ' + rl.material_sub_category_en : ''}`)
+  : (rl?.material_label ? (lang === "ar" && rl.material_label === "metal" ? "معادن" : rl.material_label === "metal" ? "Metal" : rl.material_label) : "-")
+}</td>
+                              <td className="px-4 py-2.5" dir="ltr">{rl?.final_received_qty ? `${Number(rl.final_received_qty).toLocaleString("en-US", { maximumFractionDigits: 3 })} ${
+  lang === "ar" && (rl.final_received_unit === "ton" || rl.final_received_unit === "tons") ? "طن" :
+  lang === "ar" && (rl.final_received_unit === "kg" || rl.final_received_unit === "kgs") ? "كجم" :
+  rl.final_received_unit || ""
+}` : "-"}</td>
                               <td className="px-4 py-2.5">
                                 <Badge variant={alloc.status === "finalized" ? "default" : alloc.status === "superseded" ? "secondary" : "outline"} className="text-[10px]">
                                   {lang === "ar" 
@@ -3826,59 +3835,65 @@ export function AdminPage() {
 
       {/* SIR-2D: Sustainability Admin Action Dialog */}
       <Dialog open={sustActionAlloc !== null} onOpenChange={(o: boolean) => !o && setSustActionAlloc(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {sustActionType === "reopen"
-                ? (lang === "ar" ? "????? ??? ????? ???????" : "Reopen Correction Draft")
-                : sustActionType === "approve"
-                ? (lang === "ar" ? "???? ??? ???????" : "Approve Correction Request")
-                : (lang === "ar" ? "??? ??? ???????" : "Reject Correction Request")}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            {sustActionType === "reopen" ? (
-              <p className="text-sm text-muted-foreground">
-                {lang === "ar"
-                  ? "???? ????? ????? ????? ????? ??????. ?? ??? ????? ????? ??????? ?????? ??? ??? ?????? ??????? ???????. ???? ??? ????? ????? (???????)."
-                  : "A new draft with an incremented version will be created. The current finalized record will not be modified until the new draft is finalized. Enter reason (optional)."}
-              </p>
-            ) : sustActionType === "approve" ? (
-              <p className="text-sm text-muted-foreground">
-                {lang === "ar"
-                  ? "???? ????? ????? ????? ????? ??? ??? ??????. ???? ???????? (???????)."
-                  : "A new draft will be created based on the company's request. Enter notes (optional)."}
-              </p>
-            ) : (
-              <p className="text-sm text-muted-foreground text-red-600">
-                {lang === "ar"
-                  ? "???? ??? ??? ?????. ???? ????? ?????? ?????? ???????."
-                  : "Enter the rejection reason. The company will be notified."}
-              </p>
-            )}
-            
-            <textarea
-              value={sustActionReason}
-              onChange={(e: any) => setSustActionReason(e.target.value)}
-              placeholder={lang === "ar" ? "???? ????? ???..." : "Enter reason here..."}
-              className="w-full border border-border rounded-md min-h-[100px] p-2 text-sm"
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setSustActionAlloc(null)} disabled={sustActionLoading}>
-              {lang === "ar" ? "?????" : "Cancel"}
-            </Button>
-            <Button 
-              onClick={handleSustAction} 
-              disabled={sustActionLoading || (sustActionType === "reject" && sustActionReason.trim() === "")}
-              variant={sustActionType === "reject" ? "destructive" : "default"}
-            >
-              {sustActionLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {lang === "ar" ? "?????" : "Confirm"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                {sustActionType === "reopen"
+                  ? (lang === "ar" ? "إعادة فتح كمسودة تصحيحية" : "Reopen Correction Draft")
+                  : sustActionType === "approve"
+                  ? (lang === "ar" ? "قبول طلب التصحيح" : "Approve Correction Request")
+                  : (lang === "ar" ? "رفض طلب التصحيح" : "Reject Correction Request")}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              {sustActionType === "reopen" ? (
+                <p className="text-sm text-muted-foreground">
+                  {lang === "ar"
+                    ? "سيتم إنشاء مسودة تصحيحية جديدة بنفس بيانات النسخة الحالية. تبقى النسخة المعتمدة محفوظة في السجل."
+                    : "A new draft with an incremented version will be created. The current finalized record will not be modified until the new draft is finalized."}
+                </p>
+              ) : sustActionType === "approve" ? (
+                <p className="text-sm text-muted-foreground">
+                  {lang === "ar"
+                    ? "ستؤدي الموافقة إلى إنشاء مسودة تصحيحية جديدة بنفس بيانات النسخة الحالية. تبقى النسخة المعتمدة الحالية فعّالة حتى اعتماد المسودة التصحيحية."
+                    : "A new draft will be created based on the company's request."}
+                </p>
+              ) : (
+                <p className="text-sm text-muted-foreground text-red-600">
+                  {lang === "ar"
+                    ? "يرجى توضيح سبب رفض طلب التصحيح. سيتم حفظ السبب في سجل العملية."
+                    : "Enter the rejection reason. The company will be notified."}
+                </p>
+              )}
+              
+              <textarea
+                value={sustActionReason}
+                onChange={(e: any) => setSustActionReason(e.target.value)}
+                placeholder={lang === "ar" 
+                  ? (sustActionType === "reopen" ? "ملاحظة أو سبب الإجراء..." : sustActionType === "approve" ? "ملاحظة داخلية أو سبب الموافقة" : "سبب الرفض") 
+                  : "Enter reason here..."}
+                className="w-full border border-border rounded-md min-h-[100px] p-2 text-sm"
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setSustActionAlloc(null)} disabled={sustActionLoading}>
+                {lang === "ar" ? "إلغاء" : "Cancel"}
+              </Button>
+              <Button 
+                onClick={handleSustAction} 
+                disabled={sustActionLoading || (sustActionType === "reject" && sustActionReason.trim() === "")}
+                variant={sustActionType === "reject" ? "destructive" : "default"}
+              >
+                {sustActionLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {lang === "ar" 
+                  ? (sustActionType === "reopen" ? "إعادة فتح كمسودة تصحيحية" 
+                    : sustActionType === "approve" ? "قبول وإنشاء مسودة تصحيحية" 
+                    : "رفض الطلب") 
+                  : "Confirm"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
     </div>
   );
 }
