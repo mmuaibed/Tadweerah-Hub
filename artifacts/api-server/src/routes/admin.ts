@@ -42,6 +42,7 @@ import { logAudit } from "../lib/audit";
 import { notifyDealStageChange, notifyCorrectionApproved, notifyCorrectionRejected, notifyAdminInitiatedCorrection } from "../lib/notify";
 import { createAdminNotification } from "../lib/admin-notify";
 import { dealRef } from "../lib/listing-ref";
+import { triggerDealCompletionEmails } from "../lib/deal-completion-email";
 
 const router = Router();
 
@@ -638,6 +639,7 @@ router.post("/admin/deals/:id/force-complete", requireAdminKey, async (req, res)
   ]).catch(err => req.log.error({ err, dealId: deal.id }, "Failed to send admin deal complete notifications"));
 
   void deriveReceivedLineForDeal(id);
+  void triggerDealCompletionEmails(id);
 
   res.json(updated);
 });

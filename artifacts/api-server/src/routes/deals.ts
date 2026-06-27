@@ -17,6 +17,7 @@ import { logAudit } from "../lib/audit";
 import { notifyDealStageChange } from "../lib/notify";
 import { dealRef } from "../lib/listing-ref";
 import { deriveReceivedLineForDeal } from "../services/sustainability-derivation";
+import { triggerDealCompletionEmails } from "../lib/deal-completion-email";
 
 const router: IRouter = Router();
 
@@ -649,9 +650,8 @@ router.post(
 /**
  * POST /deals/:deal_id/confirm-receipt
  * Buyer confirms goods have been received.
- * Transitions: dispatched → receipt_pending.
- * The deal will auto-complete 48 hours after receipt_pending_since
- * unless a dispute is filed via the support system.
+ * Transitions: dispatched → completed.
+ * Automatically derives the received line and sends the deal completion emails.
  */
 router.post(
   "/deals/:deal_id/confirm-receipt",
@@ -730,6 +730,7 @@ router.post(
     });
 
     void deriveReceivedLineForDeal(updated.id);
+    void triggerDealCompletionEmails(updated.id);
 
     return res.json(serializeDeal(updated, counterparty!));
   },

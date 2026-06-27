@@ -27,7 +27,7 @@ interface NotifyParams {
   actionText_en?: string;
 }
 
-async function lookupOwnerEmail(companyId: string): Promise<string | null> {
+export async function lookupOwnerEmail(companyId: string): Promise<string | null> {
   try {
     // Check if there is an overridden notification recipient
     const [company] = await db
