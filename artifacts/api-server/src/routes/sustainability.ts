@@ -411,28 +411,12 @@ router.get("/sustainability/received-lines/:id/allocation", requireAuth, require
   const { company } = req as AuthedCompanyRequest;
   const lineId = String(req.params.id);
 
-  const [receivedLine] = await db
-    .select()
-    .from(sustainabilityReceivedLinesTable)
-    .where(
-      and(
-        eq(sustainabilityReceivedLinesTable.id, lineId),
-        eq(sustainabilityReceivedLinesTable.buyer_company_id, company.id)
-      )
-    )
-    .limit(1);
+  const { receivedLine, allocation } = await resolveEditableAllocationForReceivedLine(lineId, company.id, db);
 
   if (!receivedLine) {
     res.status(404).json({ error: "NotFound", message: "Received line not found." });
     return;
   }
-
-  const [allocation] = await db
-    .select()
-    .from(sustainabilityAllocationsTable)
-    .where(eq(sustainabilityAllocationsTable.received_line_id, lineId))
-    .orderBy(desc(sustainabilityAllocationsTable.version))
-    .limit(1);
 
   await enrichReceivedLineQty(receivedLine, allocation?.status);
 
@@ -492,27 +476,12 @@ router.post("/sustainability/received-lines/:id/allocation", requireAuth, requir
     return;
   }
 
-  const [receivedLine] = await db
-    .select()
-    .from(sustainabilityReceivedLinesTable)
-    .where(
-      and(
-        eq(sustainabilityReceivedLinesTable.id, lineId),
-        eq(sustainabilityReceivedLinesTable.buyer_company_id, company.id)
-      )
-    )
-    .limit(1);
+  const { receivedLine, allocation } = await resolveEditableAllocationForReceivedLine(lineId, company.id, db);
 
   if (!receivedLine) {
     res.status(404).json({ error: "NotFound", message: "Received line not found." });
     return;
   }
-
-  const [allocation] = await db
-    .select()
-    .from(sustainabilityAllocationsTable)
-    .where(eq(sustainabilityAllocationsTable.received_line_id, lineId))
-    .limit(1);
 
   await enrichReceivedLineQty(receivedLine, allocation?.status);
 
@@ -569,11 +538,7 @@ router.post("/sustainability/received-lines/:id/allocation", requireAuth, requir
 
   try {
     const result = await db.transaction(async (tx) => {
-      let [allocation] = await tx
-        .select()
-        .from(sustainabilityAllocationsTable)
-        .where(eq(sustainabilityAllocationsTable.received_line_id, lineId))
-        .limit(1);
+      let { allocation } = await resolveEditableAllocationForReceivedLine(lineId, company.id, tx);
 
       if (!allocation) {
         try {
@@ -660,27 +625,12 @@ router.post("/sustainability/received-lines/:lineId/allocation/finalize", requir
   const { company, userId } = req as AuthedCompanyRequest;
 
   // 1. Load and check received line
-  const [receivedLine] = await db
-    .select()
-    .from(sustainabilityReceivedLinesTable)
-    .where(
-      and(
-        eq(sustainabilityReceivedLinesTable.id, lineId),
-        eq(sustainabilityReceivedLinesTable.buyer_company_id, company.id)
-      )
-    )
-    .limit(1);
+  const { receivedLine, allocation } = await resolveEditableAllocationForReceivedLine(lineId, company.id, db);
 
   if (!receivedLine) {
     res.status(404).json({ error: "NotFound", message: "Received line not found." });
     return;
   }
-
-  const [allocation] = await db
-    .select()
-    .from(sustainabilityAllocationsTable)
-    .where(eq(sustainabilityAllocationsTable.received_line_id, lineId))
-    .limit(1);
 
   await enrichReceivedLineQty(receivedLine, allocation?.status);
 
