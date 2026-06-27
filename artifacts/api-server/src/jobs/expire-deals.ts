@@ -37,7 +37,7 @@ import { db, dealsTable, companiesTable } from "@workspace/db";
 import { and, eq, gt, gte, inArray, isNotNull, isNull, lt, ne, or, sql } from "drizzle-orm";
 import { logger } from "../lib/logger";
 import { logAudit } from "../lib/audit";
-import { notifyDealStageChange } from "../lib/notify";
+import { notifyDealStageChange, createNotification } from "../lib/notify";
 import { dealRef } from "../lib/listing-ref";
 
 const MS = {
@@ -268,6 +268,16 @@ export async function expireStaleDeals(): Promise<void> {
             actorRole: "system",
             severity: "warn",
             details: { reason: "dispatched_expiry_threshold_reached", receipt_failures_count: newCount },
+          });
+          
+          void createNotification({
+            companyId: buyerCompanyId,
+            type: "company_blocked",
+            title_ar: "تم تعليق حسابك مؤقتاً",
+            title_en: "Account temporarily blocked",
+            body_ar: "تم تعليق إمكانية تقديم العروض مؤقتاً بسبب تكرار عدم استلام البضائع لصفقات تم شحنها. يرجى التواصل مع الدعم الفني.",
+            body_en: "Your ability to submit offers has been temporarily blocked due to repeated failures to receive dispatched deals. Please contact support.",
+            sendMail: true,
           });
         }
       }

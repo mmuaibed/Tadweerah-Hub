@@ -16,3 +16,12 @@ export function dealRef(id: string, createdAt?: string): string {
   const year = createdAt ? new Date(createdAt).getFullYear() : new Date().getFullYear();
   return `TDW-${year}-${id.replace(/-/g, "").slice(0, 6).toUpperCase()}`;
 }
+
+/**
+ * Returns a customer-facing transport request reference.
+ * Example: TR id "a3f2b1c4-..." created in 2026 → "TDW-TR-2026-A3F2B1"
+ */
+export function trRef(id: string, createdAt?: string): string {
+  const year = createdAt ? new Date(createdAt).getFullYear() : new Date().getFullYear();
+  return `TDW-TR-${year}-${id.replace(/-/g, "").slice(0, 6).toUpperCase()}`;
+}

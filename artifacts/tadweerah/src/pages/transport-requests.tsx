@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { AppLayout } from "@/components/app-layout";
 import { useT } from "@/i18n";
 import { fmtSAR, fmtDate } from "@/lib/format";
+import { trRef } from "@/lib/listing-ref";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -40,6 +41,7 @@ type QuoteStatus = "submitted" | "under_review" | "selected" | "rejected";
 interface TransportRequest {
   id: string;
   deal_id: string;
+  deal_reference?: string;
   created_by_company_id: string;
   transporter_company_id?: string;
   transporter_name?: string;
@@ -60,6 +62,7 @@ interface TransportRequest {
 interface TransportQuote {
   id: string;
   transport_request_id: string;
+  deal_reference?: string;
   transporter_company_id: string;
   transporter_name?: string;
   price_total: string;
@@ -330,7 +333,7 @@ function TRCard({
             <div className="min-w-0">
               <p className="text-[10px] text-muted-foreground">{t("transport.deal_ref")}</p>
               <p className="text-xs font-mono font-semibold text-foreground truncate">
-                {tr.deal_id.slice(0, 8).toUpperCase()}
+                {tr.deal_reference || (lang === "ar" ? "مرجع غير متوفر" : "Reference unavailable")}
               </p>
             </div>
           </div>
@@ -443,7 +446,7 @@ function QuoteCard({ quote }: { quote: TransportQuote }) {
             <div className="min-w-0">
               <p className="text-[10px] text-muted-foreground">{t("transport.quote.tr_ref")}</p>
               <p className="text-xs font-mono font-semibold text-foreground truncate">
-                {quote.transport_request_id.slice(0, 8).toUpperCase()}
+                {trRef(quote.transport_request_id, quote.created_at)}
               </p>
             </div>
           </div>

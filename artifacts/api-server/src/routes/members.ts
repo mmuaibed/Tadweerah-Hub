@@ -62,7 +62,7 @@ router.get(
       .orderBy(companyInvitationsTable.created_at);
 
     const userIds = members.map((m) => m.user_id);
-    const emailMap = new Map<string, string>();
+    const userMetaMap = new Map<string, { email: string; name?: string }>();
     if (userIds.length > 0) {
       try {
         const clerkUsers = await clerkClient.users.getUserList({ userId: userIds });
@@ -70,8 +70,14 @@ router.get(
           const email =
             u.emailAddresses.find((e) => e.id === u.primaryEmailAddressId)?.emailAddress ||
             u.emailAddresses[0]?.emailAddress;
-          if (email) {
-            emailMap.set(u.id, email);
+          
+          let name = undefined;
+          if (u.firstName || u.lastName) {
+            name = `${u.firstName || ""} ${u.lastName || ""}`.trim();
+          }
+
+          if (email || name) {
+            userMetaMap.set(u.id, { email: email || "", name });
           }
         }
       } catch (err) {
@@ -80,13 +86,17 @@ router.get(
     }
 
     const result = [
-      ...members.map((r) => ({
-        user_id: r.user_id,
-        email: emailMap.get(r.user_id),
-        role: r.role,
-        is_pending: false,
-        created_at: r.created_at.toISOString(),
-      })),
+      ...members.map((r) => {
+        const meta = userMetaMap.get(r.user_id);
+        return {
+          user_id: r.user_id,
+          email: meta?.email,
+          name: meta?.name,
+          role: r.role,
+          is_pending: false,
+          created_at: r.created_at.toISOString(),
+        };
+      }),
       ...invites.map((r) => ({
         user_id: undefined,
         invitation_id: r.id,

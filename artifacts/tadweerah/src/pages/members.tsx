@@ -30,6 +30,16 @@ function truncateUserId(id: string): string {
   return `${id.slice(0, 12)}…${id.slice(-6)}`;
 }
 
+interface CompanyMember {
+  user_id?: string;
+  invitation_id?: string;
+  email?: string;
+  name?: string;
+  role: "owner" | "admin" | "member";
+  is_pending: boolean;
+  created_at: string;
+}
+
 function MemberRow({
   member,
   isSelf,
@@ -81,13 +91,11 @@ function MemberRow({
         <div className="min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
             <p className="text-sm font-medium text-foreground font-mono" dir="ltr">
-              {member.email ? member.email : (member.role === "owner" ? (isRtl ? "المالك" : "Owner") : (isRtl ? "عضو" : "Member"))}
+              {member.name
+                ? (member.email ? `${member.name} (${member.email})` : member.name)
+                : (member.email ? member.email : (member.role === "owner" ? (isRtl ? "المالك" : "Owner") : (isRtl ? "عضو فريق" : "Team member")))
+              }
             </p>
-            {!member.email && !member.is_pending && member.user_id && (
-              <span className="text-xs text-muted-foreground/50 font-mono" dir="ltr">
-                ({truncateUserId(member.user_id)})
-              </span>
-            )}
             {!member.is_pending && (
               <button
                 type="button"
