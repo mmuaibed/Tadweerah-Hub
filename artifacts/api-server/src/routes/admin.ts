@@ -2268,7 +2268,7 @@ router.get("/admin/sustainability/allocations", requireAdminKey, async (req, res
         COALESCE(
           CASE WHEN ${sustainabilityReceivedLinesTable.parent_entity_type} = 'deal' THEN ${transportRequestsTable.manifest_ref} ELSE NULL END,
           CASE WHEN ${sustainabilityReceivedLinesTable.parent_entity_type} = 'contract_shipment' THEN ${contractShipmentsTable.reference} ELSE NULL END,
-          ${sustainabilityReceivedLinesTable.parent_entity_id}
+          ${sustainabilityReceivedLinesTable.parent_entity_id}::text
         )
       `,
       pending_request_id: sustainabilityCorrectionRequestsTable.id,
