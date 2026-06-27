@@ -175,6 +175,30 @@ async function enrichReceivedLineQty(receivedLine: any, allocationStatus?: strin
   }
 }
 
+async function resolveEditableAllocationForReceivedLine(lineId: string, companyId: string, dbOrTx: any = db) {
+  const [receivedLine] = await dbOrTx
+    .select()
+    .from(sustainabilityReceivedLinesTable)
+    .where(
+      and(
+        eq(sustainabilityReceivedLinesTable.id, lineId),
+        eq(sustainabilityReceivedLinesTable.buyer_company_id, companyId)
+      )
+    )
+    .limit(1);
+
+  if (!receivedLine) return { receivedLine: null, allocation: null };
+
+  const [allocation] = await dbOrTx
+    .select()
+    .from(sustainabilityAllocationsTable)
+    .where(eq(sustainabilityAllocationsTable.received_line_id, lineId))
+    .orderBy(desc(sustainabilityAllocationsTable.version))
+    .limit(1);
+
+  return { receivedLine, allocation };
+}
+
 const router = Router();
 
 /**
