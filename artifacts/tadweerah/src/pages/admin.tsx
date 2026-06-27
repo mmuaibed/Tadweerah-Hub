@@ -1064,17 +1064,46 @@ export function AdminPage() {
   async function exportReportCsv() {
     setReportExporting(true);
     try {
-      const res = await callAdmin(`/reports/deals?${buildReportParams("csv")}`);
+      let endpoint = "";
+      let filename = `admin-${reportSubTab}-${new Date().toISOString().slice(0, 10)}.csv`;
+      
+      if (reportSubTab === "deals") {
+        endpoint = `/reports/deals?${buildReportParams("csv")}`;
+      } else if (reportSubTab === "contracts") {
+        const p = new URLSearchParams();
+        p.set("format", "csv");
+        if (contractsStatusFilter) p.set("status", contractsStatusFilter);
+        endpoint = `/contracts?${p.toString()}`;
+      } else if (reportSubTab === "shipments") {
+        const p = new URLSearchParams();
+        p.set("format", "csv");
+        if (shipmentsStatusFilter) p.set("status", shipmentsStatusFilter);
+        endpoint = `/reports/contract-shipments?${p.toString()}`;
+      } else if (reportSubTab === "companies") {
+        const p = new URLSearchParams();
+        p.set("format", "csv");
+        if (licenseFilter) p.set("licenseStatus", licenseFilter);
+        endpoint = `/companies?${p.toString()}`;
+      } else if (reportSubTab === "sustainability") {
+        const p = new URLSearchParams();
+        p.set("format", "csv");
+        if (sustStatusFilter) p.set("status", sustStatusFilter);
+        endpoint = `/sustainability/allocations?${p.toString()}`;
+      } else {
+        throw new Error("Export not supported for this tab yet.");
+      }
+
+      const res = await callAdmin(endpoint);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `admin-deals-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.download = filename;
       a.click();
       URL.revokeObjectURL(url);
-    } catch {
-      /* silent */
+    } catch (e) {
+      alert(lang === "ar" ? "فشل التصدير" : "Export failed");
     } finally {
       setReportExporting(false);
     }
@@ -2397,14 +2426,7 @@ export function AdminPage() {
                         : <><RefreshCw className="h-4 w-4 me-2" />{t("admin.reports.fetch")}</>
                       }
                     </Button>
-                    {reportRows !== null && (
-                      <Button variant="outline" onClick={() => void exportReportCsv()} disabled={reportExporting}>
-                        {reportExporting
-                          ? <><Loader2 className="h-4 w-4 me-2 animate-spin" />{t("reports.action.exporting")}</>
-                          : <><Download className="h-4 w-4 me-2" />{t("admin.reports.export_csv")}</>
-                        }
-                      </Button>
-                    )}
+                    
                   </div>
                 </div>
 
