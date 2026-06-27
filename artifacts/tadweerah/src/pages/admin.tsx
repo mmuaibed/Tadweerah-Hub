@@ -2379,6 +2379,18 @@ export function AdminPage() {
               })}
             </div>
 
+            {/* Universal Export Button */}
+            {reportSubTab !== "activity" && (
+              <div className="flex justify-end px-1">
+                <Button variant="outline" size="sm" onClick={() => void exportReportCsv()} disabled={reportExporting}>
+                  {reportExporting
+                    ? <><Loader2 className="h-3 w-3 me-2 animate-spin" />{t("reports.action.exporting")}</>
+                    : <><Download className="h-3 w-3 me-2" />{lang === "ar" ? "تصدير Excel" : "Export Excel"}</>
+                  }
+                </Button>
+              </div>
+            )}
+
             {/* Sub-tab content */}
             {reportSubTab === "deals" && (
               <div className="space-y-4 animate-in fade-in duration-200">
@@ -2962,7 +2974,7 @@ export function AdminPage() {
   ? (lang === "ar" 
     ? `${rl.material_main_category_ar || ""} ${rl.material_sub_category_ar ? ' / ' + rl.material_sub_category_ar : ''}`
     : `${rl.material_main_category_en || ""} ${rl.material_sub_category_en ? ' / ' + rl.material_sub_category_en : ''}`)
-  : (rl?.material_label ? (lang === "ar" && rl.material_label === "metal" ? "معادن" : rl.material_label === "metal" ? "Metal" : rl.material_label) : "-")
+  : ((rl?.material_label ? (lang === "ar" ? `المادة: ${rl.material_label === "metal" ? "معادن" : rl.material_label}` : `Material: ${rl.material_label === "metal" ? "Metal" : rl.material_label}`) : "-"))
 }</td>
                               <td className="px-4 py-2.5" dir="ltr">{rl?.final_received_qty ? `${Number(rl.final_received_qty).toLocaleString("en-US", { maximumFractionDigits: 3 })} ${
   lang === "ar" && (rl.final_received_unit === "ton" || rl.final_received_unit === "tons") ? "طن" :
@@ -3001,15 +3013,15 @@ export function AdminPage() {
                                 )}
                                 {isPendingCorrection ? (
                                   <>
-                                    <Button size="sm" variant="outline" className="h-7 text-xs text-green-600 border-green-200 ml-2" onClick={() => { setSustActionType("approve"); setSustActionAlloc(alloc); }}>
+                                    <Button size="sm" variant="outline" className="h-7 text-xs text-green-600 border-green-200 ml-2" onClick={() => { setSustActionType("approve"); setSustActionAlloc(a); }}>
                                       {lang === "ar" ? "قبول" : "Approve"}
                                     </Button>
-                                    <Button size="sm" variant="outline" className="h-7 text-xs text-red-600 border-red-200 ml-2" onClick={() => { setSustActionType("reject"); setSustActionAlloc(alloc); }}>
+                                    <Button size="sm" variant="outline" className="h-7 text-xs text-red-600 border-red-200 ml-2" onClick={() => { setSustActionType("reject"); setSustActionAlloc(a); }}>
                                       {lang === "ar" ? "رفض" : "Reject"}
                                     </Button>
                                   </>
                                 ) : alloc.status === "finalized" ? (
-                                  <Button size="sm" variant="outline" className="h-7 text-xs ml-2" onClick={() => { setSustActionType("reopen"); setSustActionAlloc(alloc); }}>
+                                  <Button size="sm" variant="outline" className="h-7 text-xs ml-2" onClick={() => { setSustActionType("reopen"); setSustActionAlloc(a); }}>
                                     {lang === "ar" ? "تعديل (إعادة فتح)" : "Reopen Draft"}
                                   </Button>
                                 ) : null}
