@@ -2266,8 +2266,8 @@ router.get("/admin/sustainability/allocations", requireAdminKey, async (req, res
       buyer_name: sql<string | null>`buyer.name`,
       commercial_ref: sql<string | null>`
         COALESCE(
-          CASE WHEN ${sustainabilityReceivedLinesTable.parent_entity_type} = 'deal' THEN tr.manifest_ref ELSE NULL END,
-          CASE WHEN ${sustainabilityReceivedLinesTable.parent_entity_type} = 'contract_shipment' THEN shp.reference ELSE NULL END,
+          CASE WHEN ${sustainabilityReceivedLinesTable.parent_entity_type} = 'deal' THEN ${transportRequestsTable.manifest_ref} ELSE NULL END,
+          CASE WHEN ${sustainabilityReceivedLinesTable.parent_entity_type} = 'contract_shipment' THEN ${contractShipmentsTable.reference} ELSE NULL END,
           ${sustainabilityReceivedLinesTable.parent_entity_id}
         )
       `,
@@ -2280,6 +2280,20 @@ router.get("/admin/sustainability/allocations", requireAdminKey, async (req, res
       eq(sustainabilityReceivedLinesTable.id, sustainabilityAllocationsTable.received_line_id)
     )
     .leftJoin(sql`companies buyer`, sql`buyer.id = ${sustainabilityReceivedLinesTable.buyer_company_id}`)
+    .leftJoin(
+      transportRequestsTable,
+      and(
+        eq(transportRequestsTable.deal_id, sustainabilityReceivedLinesTable.parent_entity_id),
+        eq(sustainabilityReceivedLinesTable.parent_entity_type, 'deal')
+      )
+    )
+    .leftJoin(
+      contractShipmentsTable,
+      and(
+        eq(contractShipmentsTable.id, sustainabilityReceivedLinesTable.parent_entity_id),
+        eq(sustainabilityReceivedLinesTable.parent_entity_type, 'contract_shipment')
+      )
+    )
     .leftJoin(
       sustainabilityCorrectionRequestsTable,
       and(
