@@ -3008,7 +3008,9 @@ export function AdminPage() {
                               ) : rl?.material_label ? (
                                 <div>
                                   <div>{rl.material_label === "metal" ? (lang === "ar" ? "معادن" : "Metal") : rl.material_label}</div>
-                                  <span className="text-[10px] text-muted-foreground block">{lang === "ar" ? "التصنيف غير مكتمل" : "Category incomplete"}</span>
+                                  {rl.parent_entity_type !== "contract_shipment" && (
+                                    <span className="text-[10px] text-muted-foreground block">{lang === "ar" ? "التصنيف غير مكتمل" : "Category incomplete"}</span>
+                                  )}
                                 </div>
                               ) : (
                                 "-"

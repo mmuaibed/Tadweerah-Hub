@@ -407,6 +407,7 @@ router.get("/sustainability/received-lines/:id/allocation", requireAuth, require
     .select()
     .from(sustainabilityAllocationsTable)
     .where(eq(sustainabilityAllocationsTable.received_line_id, lineId))
+    .orderBy(desc(sustainabilityAllocationsTable.version))
     .limit(1);
 
   await enrichReceivedLineQty(receivedLine, allocation?.status);
