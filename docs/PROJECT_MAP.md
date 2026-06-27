@@ -1,6 +1,6 @@
 # Tadweerah Hub — PROJECT MAP
-> Last updated: 2026-06-26 | Phase CLT-1 Implemented (pending migration/deploy)
-> Status: SIR-3B Sustainability Report Print/PDF + Company Logo accepted on Staging. Active backend revision: `tadweerah-api-00121-8kk`. Frontend deployed to Firebase Staging. Company logo upload integrated into Company Profile Save Changes flow. Processor logo renders in sustainability print report. SIR-3C (multi-material consolidated report) deferred. SIR-2D (admin reopen/versioned governance) deferred. No production deploy, no DB migration beyond `companies.logo_url`.
+> Last updated: 2026-06-27 | SIR-2D Closed
+> Status: SIR-2D (Correction Governance) closed functionally and safely on staging. Admin report viewing and broader Admin Operations improvements deferred to Admin Phase 2. Backend revision: `tadweerah-api-00142-rsj`. Frontend deployed to Firebase Staging. No production deploy, no DB migration beyond `0008_add_sustainability_corrections.sql`.
 
 
 > **Legend used throughout this document:**

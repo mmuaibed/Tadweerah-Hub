@@ -772,35 +772,55 @@ Admin restore of shipments without DB migration relies on timestamps + audit log
 
 ---
 
-## SIR-2D — Admin Sustainability Governance & Versioned Corrections (Implemented)
+## SIR-2D — Admin Sustainability Governance & Versioned Corrections (Closed)
 
-> **Status:** Implemented locally. Pending staging DB migration (`0008_add_sustainability_corrections.sql`) and backend/frontend deploy.
+> **Status:** Closed functionally and safely on staging; Admin report viewing and broader Admin Operations improvements deferred to Admin Phase 2.
 
-### New tables
-| Table | Description |
-|---|---|
-| `admin_notifications` | Admin in-app notification inbox. Fields: `id`, `type`, `title_ar/en`, `body_ar/en`, `is_read`, `read_at`, `related_entity_type/id`, `created_at`. |
-| `sustainability_correction_requests` | Company correction requests. Fields: `id`, `allocation_id` (FK), `requester_company_id` (FK), `requester_user_id`, `reason`, `status` (pending/approved/rejected), `rejection_reason`, `correction_allocation_id` (FK, nullable — set on approve), `resolved_by_user_id`, `resolved_at`. Partial unique index: only one `pending` request per allocation. |
+### Final Delivery Facts
+- Correction request workflow stabilized.
+- Admin approve/reject works.
+- Existing correction draft reuse implemented.
+- Details endpoint and pathway names working.
+- Material display cleaned.
+- Contract-sourced records do not incorrectly show `Category incomplete`.
+- Raw UUID is not shown as the main reference when friendly ref is unavailable.
+- Admin `عرض التقرير` is intentionally disabled/deferred for permission safety.
+- Company-side report route remains protected.
+- Correction draft save/finalize flow now uses a canonical allocation resolver.
+- Company-side edit/save/finalize was successfully UAT-tested.
+- For `TDW-CTR-2026-0006-S010`:
+  - v1 allocation `250a30ff-8ec5-4e2e-ae19-a453e1cccf15` is `superseded`.
+  - v2 correction allocation `cbadfa71-7c4c-4ddd-9cee-4131fe984d2b` is `finalized`.
+  - No duplicate v3 draft was created.
+- Backend revision: `tadweerah-api-00142-rsj`.
+- Latest resolver commit: `225447481c387e854af1487718681a141f8ebe47`.
+- No migration after stabilization.
+- No SIR-3B print/PDF redesign.
 
-### New columns on `sustainability_allocations`
-| Column | Type | Description |
-|---|---|---|
-| `source_allocation_id` | uuid nullable FK | Points to the original finalized allocation that spawned this correction draft. |
-| `superseded_by_allocation_id` | uuid nullable FK | Points to the correction draft that replaced this allocation. Set atomically when a correction draft is approved. |
-| `superseded_at` | timestamptz nullable | When this allocation was superseded. |
+### Important Lesson Learned
+**Platform Governance Risk:**
+- Adding a new helper is not enough unless all live endpoints use it.
+- Avoid old/new dual paths.
+- Display, save, and finalize flows must share a canonical resolver/state model.
+- Future platform audit should identify and remove temporary fallback logic, duplicate resolvers, and legacy/new path ambiguity.
 
-### Versioning model
-- Only one path: **Reopen as Correction Draft** (never direct edit of finalized data).
-- Correction draft is created by admin on approval of a company correction request.
-- Draft uses existing draft → finalized lifecycle.
-- On finalization of correction draft: original is marked `superseded`, `superseded_at` written, `superseded_by_allocation_id` set.
-- Finalized originals remain retrievable and printable (detail endpoint widened to include `superseded`).
-- Partial unique index enforces at most one pending correction request per allocation at DB level.
+## Admin Phase 2 — Operations Console & Reporting Governance (Deferred)
 
-### Snapshot archival — deferred
-`sustainability_reports.report_data_snapshot` column exists in schema but is **not currently populated**. Snapshot archival at finalization time is deferred to a future phase.
+This future phase will tackle deep administrative features and holistic permissions:
+- Safe Admin report viewing.
+- Deep links/source navigation across Admin tabs.
+- Complete analytical exports.
+- Full operational reporting data model.
+- Governed admin actions such as reopen/rollback/force-complete/mark-reviewed.
+- Delayed/stuck operations dashboard.
+- Admin permission levels.
+- Short-lived admin viewing token/cookie or formal Clerk admin role.
+- Cross-tenant report access regression tests.
+- Audit log hardening for sensitive admin actions.
+- Platform cleanup audit for temporary/parallel old-new paths.
 
-### SIR-3B protected surfaces
-- Tadweerah logo, processor logo, print layout, no CO₂e/certificate/verified/certified language — all unchanged.
-- `sustainability-print.tsx` only adds a tiny `Version N — Superseded` label below the title block when `status === "superseded"`.
+## Security Follow-up
+
+- `ADMIN_API_KEY` was exposed during UAT/debug.
+- **Action Required:** Rotate `ADMIN_API_KEY` immediately after SIR-2D documentation closure as a separate security task.
 
