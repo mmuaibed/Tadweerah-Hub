@@ -19,6 +19,12 @@
 - Verify customer can complete key workflows without Tadweerah/dev intervention.
 - Ensure Arabic/English UI is clean where customers see it.
 
+**Phase 3-A1 (Closed):**
+- Transporter dashboard no longer exposes raw deal UUIDs as the main reference.
+- Company Members UI no longer exposes raw Clerk IDs.
+- Buyer blocking notification is strictly in-app only; no `sendMail: true` was used.
+
+
 ## Priority 2 — Customer Reports & Trust Outputs
 **Scope:**
 - Sustainability report polish from the customer perspective.

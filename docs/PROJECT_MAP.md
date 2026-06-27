@@ -605,6 +605,18 @@ For the comprehensive ongoing platform development roadmap (including customer s
 ### 5. Phase 3-B — Post-Pilot Workflow Configurability & Polish
 - Configurable timers, category-targeted notifications, i18n refactor, checklist wording polish, etc.
 
+### Phase 3-A1 — Customer-visible Trust Fixes
+- **Status:** ✅ Closed functionally and safely on staging.
+- **Scope:** 
+  - Transporter dashboard no longer exposes raw deal UUIDs as the main reference.
+  - Transporter dashboard shows Tadweerah commercial reference when available.
+  - Company Members UI no longer exposes raw Clerk `user_...` IDs as the main visible value.
+  - Company Members UI shows member name/email when available, with safe fallback.
+  - Buyer blocking notification is in-app only.
+- **Key Decision:** Existing Tadweerah email notifications are working well and must not be disturbed casually. Buyer blocking email was intentionally deferred. No `sendMail: true` for buyer blocking in this phase.
+- **Deployment:** Final backend revision `tadweerah-api-00149-hww`. Frontend deployed to staging. No migrations, no SIR-3B changes.
+
+
 ### Phase CLT-1 — Flexible Offer Window Foundation (فترة استقبال العروض)
 - **Status:** ✅ Implemented — pending staging migration and deploy.
 - **Customer-facing name:** Offer Window / فترة استقبال العروض

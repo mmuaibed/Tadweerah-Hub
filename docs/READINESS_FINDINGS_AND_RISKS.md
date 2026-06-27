@@ -824,3 +824,36 @@ This future phase will tackle deep administrative features and holistic permissi
 - `ADMIN_API_KEY` was exposed during UAT/debug.
 - **Action Required:** Rotate `ADMIN_API_KEY` immediately after SIR-2D documentation closure as a separate security task.
 
+---
+
+## Phase 3-A1: Customer-visible Trust Fixes (Closed)
+
+> **Status:** Closed functionally and safely on staging.
+
+### Final Delivery Facts
+- Transporter dashboard no longer exposes raw deal UUIDs as the main reference.
+- Transporter dashboard shows Tadweerah commercial reference when available.
+- Company Members UI no longer exposes raw Clerk `user_...` IDs as the main visible value.
+- Company Members UI shows member name/email when available, with safe fallback.
+- Buyer blocking notification is in-app only.
+
+### Important Governance Decision
+- Existing Tadweerah email notifications are working well and must not be disturbed casually.
+- Buyer blocking email was intentionally deferred.
+- No `sendMail: true` for buyer blocking in this phase.
+- Any future buyer-blocking email must be implemented as a separate reviewed task with approved wording, recipient logic, and idempotency.
+
+### Deployment Details
+- Main implementation commit: `ddc297c`
+- Cleanup commit: `ed03d47`
+- Final backend revision: `tadweerah-api-00149-hww` serving 100% traffic.
+- Frontend deployed to staging.
+- No migration.
+- No SIR-3B changes.
+
+### Deferred
+- Deal Completion Email.
+- Buyer Blocking Email.
+- Admin Phase 2 items.
+- Any broad notification/email refactor.
+
