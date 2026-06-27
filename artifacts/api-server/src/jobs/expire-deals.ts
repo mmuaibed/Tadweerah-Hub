@@ -277,7 +277,6 @@ export async function expireStaleDeals(): Promise<void> {
             title_en: "Account temporarily blocked",
             body_ar: "تم تعليق إمكانية تقديم العروض مؤقتاً بسبب تكرار عدم استلام البضائع لصفقات تم شحنها. يرجى التواصل مع الدعم الفني.",
             body_en: "Your ability to submit offers has been temporarily blocked due to repeated failures to receive dispatched deals. Please contact support.",
-            sendMail: true,
           });
         }
       }
