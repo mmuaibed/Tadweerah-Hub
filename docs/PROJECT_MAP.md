@@ -477,13 +477,12 @@ VITE_API_URL                   # backend API base URL
 ## 11. Known Gaps & Remaining Phase Roadmap
 
 > **Live Staging Baseline:**
-> - **Backend:** `tadweerah-api-00090-b5v`
-> - **Frontend:** `https://tadweerah-staging.web.app`
-> - **Closure commit:** `1d4562f feat(admin): configure notification recipient`
-> - **Phase 2-F:** ✅ Completed
+> - **Backend:** `tadweerah-api-00142-rsj`
+> - **Frontend:** Firebase Staging
+> - **Closure commit:** `225447481c387e854af1487718681a141f8ebe47`
 
-### 1. Phase 2-D — Readiness Risk Burn-down & Remaining Roadmap Alignment
-- Current docs-only phase.
+For the comprehensive ongoing platform development roadmap (including customer stabilization, reporting, and Admin Phase 2), please refer to:
+👉 **[Platform Development Roadmap](PLATFORM_DEVELOPMENT_ROADMAP.md)**
 
 ### 2. Phase 2-E — Contract Lite Pilot UAT & Al Qaryan Readiness
 - **Status:** Contract Detail operational UX work deployed + UAT passed. Deployed backend to `tadweerah-api-00089-jnt` and frontend to `https://tadweerah-staging.web.app`. Included commits:
