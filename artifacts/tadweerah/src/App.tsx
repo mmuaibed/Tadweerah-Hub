@@ -271,7 +271,7 @@ function ClerkProviderWithRoutes() {
               <CompanyRoute><SustainabilityAllocationDetailPage /></CompanyRoute>
             </Route>
             <Route path="/reports/sustainability/:id/print">
-              <Show when="signed-in"><SustainabilityPrintPage /></Show>
+              <CompanyRoute><SustainabilityPrintPage /></CompanyRoute>
             </Route>
             <Route path="/company/capabilities">
               <CompanyRoute><CompanyCapabilitiesPage /></CompanyRoute>

@@ -733,36 +733,21 @@ router.get(
 router.get(
   "/reports/sustainability/:id",
   requireAuth,
-  async (req, res, next) => {
-    const isAdmin = (req as any).auth?.sessionClaims?.metadata?.role === "admin";
-    if (isAdmin) {
-      return next();
-    }
-    return requireCompany()(req, res, next);
-  },
+  requireCompany(),
   async (req, res) => {
-    const isAdmin = (req as any).auth?.sessionClaims?.metadata?.role === "admin";
-    let cid: string | null = null;
-    if (!isAdmin) {
-      const { company } = req as AuthedCompanyRequest;
-      cid = company.id;
-    }
+    const { company } = req as AuthedCompanyRequest;
+    const cid = company.id;
     const allocationId = String(req.params.id);
 
     // SIR-2D: Also allow superseded allocations (version history retrievability)
-    const conditions = [
+    const where = and(
       eq(sustainabilityAllocationsTable.id, allocationId),
-      inArray(sustainabilityAllocationsTable.status, ["finalized", "superseded"])
-    ];
-    if (cid) {
-      conditions.push(
-        or(
-          eq(sustainabilityReceivedLinesTable.buyer_company_id, cid),
-          eq(sustainabilityReceivedLinesTable.seller_company_id, cid)
-        )
-      );
-    }
-    const where = and(...conditions);
+      inArray(sustainabilityAllocationsTable.status, ["finalized", "superseded"]),
+      or(
+        eq(sustainabilityReceivedLinesTable.buyer_company_id, cid),
+        eq(sustainabilityReceivedLinesTable.seller_company_id, cid)
+      )
+    );
 
     const activePathways = await db
       .select({

@@ -48,6 +48,21 @@ import { MasterDataTab } from "./MasterDataTab";
 
 function AdminRefTooltip({ value, lang }: { value: string; lang: "ar" | "en" }) {
   if (!value) return <span>-</span>;
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+  if (isUuid) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="font-mono cursor-help underline decoration-dashed decoration-gray-300 underline-offset-4 text-muted-foreground text-xs">
+            {lang === "ar" ? "مرجع غير متوفر" : "Reference unavailable"}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="top">
+          <span className="font-mono text-[10px]">{value}</span>
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -2975,10 +2990,10 @@ export function AdminPage() {
                                 {rl?.parent_entity_id ? (
                                   rl.parent_entity_type === "deal" ? (
                                     <Link href={`/deals/${rl.parent_entity_id}`} className="text-primary hover:underline">
-                                      <AdminRefTooltip value={a.commercial_ref ? a.commercial_ref : rl.parent_entity_id.slice(0, 8) + '…'} lang={lang} />
+                                      <AdminRefTooltip value={a.commercial_ref || rl.parent_entity_id} lang={lang} />
                                     </Link>
                                   ) : (
-                                    <span className="font-mono text-muted-foreground"><AdminRefTooltip value={a.commercial_ref ? a.commercial_ref : rl.parent_entity_id.slice(0, 8) + '…'} lang={lang} /></span>
+                                    <span className="font-mono text-muted-foreground"><AdminRefTooltip value={a.commercial_ref || rl.parent_entity_id} lang={lang} /></span>
                                   )
                                 ) : (
                                   "-"
@@ -3034,24 +3049,21 @@ export function AdminPage() {
                                 <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => toggleSustDetails(alloc.id)}>
                                   {sustExpandedAllocId === alloc.id ? (lang === "ar" ? "إخفاء" : "Hide") : (lang === "ar" ? "تفاصيل" : "Details")}
                                 </Button>
-                                {(alloc.status === "finalized" || alloc.status === "superseded") ? (
-                                  <Button size="sm" variant="outline" className="h-7 text-xs ml-2" onClick={() => window.open(`/reports/sustainability/${alloc.id}/print`, '_blank')}>
-                                    {lang === "ar" ? "عرض التقرير" : "View report"}
-                                  </Button>
-                                ) : (
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <span className="inline-block ml-2 cursor-not-allowed">
-                                        <Button size="sm" variant="outline" className="h-7 text-xs" disabled>
-                                          {lang === "ar" ? "عرض التقرير" : "View report"}
-                                        </Button>
-                                      </span>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="top">
-                                      {lang === "ar" ? "التقرير متاح بعد الاعتماد" : "Report is available after finalization"}
-                                    </TooltipContent>
-                                  </Tooltip>
-                                )}
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span className="inline-block ml-2 cursor-not-allowed">
+                                      <Button size="sm" variant="outline" className="h-7 text-xs" disabled>
+                                        {lang === "ar" ? "عرض التقرير" : "View report"}
+                                      </Button>
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top">
+                                    {(alloc.status === "finalized" || alloc.status === "superseded") 
+                                      ? (lang === "ar" ? "عرض التقرير من لوحة الأدمن مؤجل لمرحلة صلاحيات الأدمن" : "Admin report viewing is deferred to the Admin permissions phase")
+                                      : (lang === "ar" ? "التقرير متاح بعد الاعتماد" : "Report is available after finalization")
+                                    }
+                                  </TooltipContent>
+                                </Tooltip>
                                 {isPendingCorrection ? (
                                   <>
                                     <Button size="sm" variant="outline" className="h-7 text-xs text-green-600 border-green-200 ml-2" onClick={() => { setSustActionType("approve"); setSustActionAlloc(a); }}>
