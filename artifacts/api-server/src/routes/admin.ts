@@ -2264,6 +2264,13 @@ router.get("/admin/sustainability/allocations", requireAdminKey, async (req, res
         buyer_company_id: sustainabilityReceivedLinesTable.buyer_company_id,
       },
       buyer_name: sql<string | null>`buyer.name`,
+      commercial_ref: sql<string | null>`
+        COALESCE(
+          CASE WHEN ${sustainabilityReceivedLinesTable.parent_entity_type} = 'deal' THEN tr.manifest_ref ELSE NULL END,
+          CASE WHEN ${sustainabilityReceivedLinesTable.parent_entity_type} = 'contract_shipment' THEN shp.reference ELSE NULL END,
+          ${sustainabilityReceivedLinesTable.parent_entity_id}
+        )
+      `,
       pending_request_id: sustainabilityCorrectionRequestsTable.id,
       pending_request_reason: sustainabilityCorrectionRequestsTable.reason,
     })

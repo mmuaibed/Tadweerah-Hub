@@ -425,6 +425,9 @@ export function AdminPage() {
   const [sustActionAlloc, setSustActionAlloc] = useState<any | null>(null);
   const [sustActionType, setSustActionType] = useState<"reopen" | "approve" | "reject" | null>(null);
   const [sustActionReason, setSustActionReason] = useState("");
+  const [sustExpandedAllocId, setSustExpandedAllocId] = useState<string | null>(null);
+  const [sustDetails, setSustDetails] = useState<any>(null);
+  const [sustDetailsLoading, setSustDetailsLoading] = useState<boolean>(false);
   const [sustActionLoading, setSustActionLoading] = useState(false);
   const [sustPendingRequests, setSustPendingRequests] = useState<any[]>([]);
 
@@ -530,6 +533,26 @@ export function AdminPage() {
       setSustAllocError(e instanceof Error ? e.message : "Failed to load");
     } finally {
       setSustAllocLoading(false);
+    }
+  }
+
+  async function toggleSustDetails(id: string) {
+    if (sustExpandedAllocId === id) {
+      setSustExpandedAllocId(null);
+      return;
+    }
+    setSustExpandedAllocId(id);
+    setSustDetailsLoading(true);
+    setSustDetails(null);
+    try {
+      const res = await callAdmin(`/sustainability/allocations/${id}/details`);
+      if (res.ok) {
+        setSustDetails(await res.json());
+      }
+    } catch (e) {
+      console.error("Failed to load details", e);
+    } finally {
+      setSustDetailsLoading(false);
     }
   }
 
@@ -2897,15 +2920,16 @@ export function AdminPage() {
                           const rl = a.received_line;
                           if (!alloc) return null;
                           return (
-                            <tr key={alloc.id} className="hover:bg-muted/20 transition-colors">
+                            <Fragment key={alloc.id}>
+                              <tr className="hover:bg-muted/20 transition-colors">
                               <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground">
                                 {rl?.parent_entity_id ? (
                                   rl.parent_entity_type === "deal" ? (
                                     <Link href={`/deals/${rl.parent_entity_id}`} className="text-primary hover:underline">
-                                      {rl.parent_entity_id.slice(0, 8)}…
+                                      {a.commercial_ref ? `${a.commercial_ref}` : `${rl.parent_entity_id.slice(0, 8)}…`}
                                     </Link>
                                   ) : (
-                                    <span className="font-mono text-muted-foreground">{rl.parent_entity_id.slice(0, 8)}…</span>
+                                    <span className="font-mono text-muted-foreground">{a.commercial_ref ? `${a.commercial_ref}` : `${rl.parent_entity_id.slice(0, 8)}…`}</span>
                                   )
                                 ) : (
                                   "-"
@@ -2913,7 +2937,7 @@ export function AdminPage() {
                               </td>
                               <td className="px-4 py-2.5 font-medium">{a.buyer_name || "-"}</td>
                               <td className="px-4 py-2.5">{rl?.material_label ? (lang === "ar" && rl.material_label === "metal" ? "معادن" : rl.material_label === "metal" ? "Metal" : rl.material_label) : "-"}</td>
-                              <td className="px-4 py-2.5" dir="ltr">{rl?.final_received_qty ? `${rl.final_received_qty} ${rl.final_received_unit || ''}` : "-"}</td>
+                              <td className="px-4 py-2.5" dir="ltr">{rl?.final_received_qty ? `${Number(rl.final_received_qty).toLocaleString(undefined, { maximumFractionDigits: 3 })} ${rl.final_received_unit || ''}` : "-"}</td>
                               <td className="px-4 py-2.5">
                                 <Badge variant={alloc.status === "finalized" ? "default" : alloc.status === "superseded" ? "secondary" : "outline"} className="text-[10px]">
                                   {lang === "ar" 
@@ -2935,23 +2959,85 @@ export function AdminPage() {
                               <td className="px-4 py-2.5 text-muted-foreground text-xs whitespace-nowrap">
                                 {alloc.status === "finalized" || alloc.status === "superseded" ? new Date(alloc.finalized_at).toLocaleDateString(lang === "ar" ? "ar-SA" : "en-GB") : "-"}
                               </td>
-                              <td className="px-4 py-2.5 text-end space-x-2 space-x-reverse">
+                              <td className="px-4 py-2.5 text-end space-x-2 space-x-reverse whitespace-nowrap">
+                                <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => toggleSustDetails(alloc.id)}>
+                                  {sustExpandedAllocId === alloc.id ? (lang === "ar" ? "إخفاء" : "Hide") : (lang === "ar" ? "تفاصيل" : "Details")}
+                                </Button>
+                                {(alloc.status === "finalized" || alloc.status === "superseded") && (
+                                  <Button size="sm" variant="outline" className="h-7 text-xs ml-2" onClick={() => window.open(`/reports/sustainability/${alloc.id}/print`, '_blank')}>
+                                    {lang === "ar" ? "عرض التقرير" : "View report"}
+                                  </Button>
+                                )}
                                 {isPendingCorrection ? (
                                   <>
-                                    <Button size="sm" variant="outline" className="h-7 text-xs text-green-600" onClick={() => { setSustActionType("approve"); setSustActionAlloc(alloc); }}>
-                                      {lang === "ar" ? "قبول وتصحيح" : "Approve"}
+                                    <Button size="sm" variant="outline" className="h-7 text-xs text-green-600 border-green-200 ml-2" onClick={() => { setSustActionType("approve"); setSustActionAlloc(alloc); }}>
+                                      {lang === "ar" ? "قبول" : "Approve"}
                                     </Button>
-                                    <Button size="sm" variant="outline" className="h-7 text-xs text-red-600 ml-2" onClick={() => { setSustActionType("reject"); setSustActionAlloc(alloc); }}>
+                                    <Button size="sm" variant="outline" className="h-7 text-xs text-red-600 border-red-200 ml-2" onClick={() => { setSustActionType("reject"); setSustActionAlloc(alloc); }}>
                                       {lang === "ar" ? "رفض" : "Reject"}
                                     </Button>
                                   </>
                                 ) : alloc.status === "finalized" ? (
-                                  <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => { setSustActionType("reopen"); setSustActionAlloc(alloc); }}>
-                                    {lang === "ar" ? "إعادة فتح كمسودة" : "Reopen Draft"}
+                                  <Button size="sm" variant="outline" className="h-7 text-xs ml-2" onClick={() => { setSustActionType("reopen"); setSustActionAlloc(alloc); }}>
+                                    {lang === "ar" ? "تعديل (إعادة فتح)" : "Reopen Draft"}
                                   </Button>
                                 ) : null}
                               </td>
                             </tr>
+                            {sustExpandedAllocId === alloc.id && (
+                              <tr className="bg-muted/5 border-t-0">
+                                <td colSpan={7} className="px-4 py-4">
+                                  {sustDetailsLoading ? (
+                                    <div className="flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+                                  ) : sustDetails ? (
+                                    <div className="space-y-4 max-w-3xl mx-auto bg-white p-4 rounded-md shadow-sm border">
+                                      <h4 className="font-semibold text-sm border-b pb-2">{lang === "ar" ? "توزيع الاستدامة (مسارات إعادة التدوير)" : "Sustainability Allocation Pathways"}</h4>
+                                      <table className="w-full text-sm">
+                                        <thead>
+                                          <tr className="border-b bg-muted/50">
+                                            <th className="py-2 px-2 text-start font-medium text-muted-foreground">{lang === "ar" ? "المسار" : "Pathway"}</th>
+                                            <th className="py-2 px-2 text-end font-medium text-muted-foreground">{lang === "ar" ? "النسبة" : "Percentage"}</th>
+                                            <th className="py-2 px-2 text-end font-medium text-muted-foreground">{lang === "ar" ? "الكمية" : "Quantity"}</th>
+                                            <th className="py-2 px-2 text-start font-medium text-muted-foreground">{lang === "ar" ? "التوضيح" : "Explanation"}</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          {sustDetails.pathways?.map((p: any) => (
+                                            <tr key={p.id} className="border-b last:border-0">
+                                              <td className="py-2 px-2">{p.pathway_id}</td>
+                                              <td className="py-2 px-2 text-end font-mono" dir="ltr">{Number(p.percentage)}%</td>
+                                              <td className="py-2 px-2 text-end font-mono" dir="ltr">{Number(p.quantity).toLocaleString(undefined, { maximumFractionDigits: 3 })}</td>
+                                              <td className="py-2 px-2 text-muted-foreground">{p.explanation_text || "-"}</td>
+                                            </tr>
+                                          ))}
+                                          {(!sustDetails.pathways || sustDetails.pathways.length === 0) && (
+                                            <tr>
+                                              <td colSpan={4} className="py-4 text-center text-muted-foreground">
+                                                {lang === "ar" ? "لا توجد تفاصيل" : "No pathways defined"}
+                                              </td>
+                                            </tr>
+                                          )}
+                                        </tbody>
+                                      </table>
+                                      {(sustDetails.allocation?.revision_reason) && (
+                                        <div className="mt-4 p-3 bg-amber-50 rounded-md border border-amber-100">
+                                          <p className="text-xs font-semibold text-amber-800">{lang === "ar" ? "سبب التعديل:" : "Revision Reason:"}</p>
+                                          <p className="text-sm text-amber-900 mt-1">{sustDetails.allocation.revision_reason}</p>
+                                        </div>
+                                      )}
+                                      {(sustDetails.allocation?.source_allocation_id) && (
+                                        <div className="mt-2 text-xs text-muted-foreground">
+                                          {lang === "ar" ? "نسخة مبنية على السجل:" : "Sourced from allocation:"} <span className="font-mono">{sustDetails.allocation.source_allocation_id.slice(0,8)}...</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <div className="text-center text-red-500">{lang === "ar" ? "فشل التحميل" : "Failed to load details"}</div>
+                                  )}
+                                </td>
+                              </tr>
+                            )}
+                            </Fragment>
                           );
                         })}
                       </tbody>
