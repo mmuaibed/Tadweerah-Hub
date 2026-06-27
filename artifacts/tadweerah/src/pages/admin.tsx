@@ -1,4 +1,5 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Link } from "wouter";
 import { useState, useEffect, Fragment } from "react";
 import { useUser, useClerk } from "@clerk/react";
@@ -44,6 +45,20 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { MasterDataTab } from "./MasterDataTab";
+
+function AdminRefTooltip({ value, lang }: { value: string; lang: "ar" | "en" }) {
+  if (!value) return <span>-</span>;
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className="font-mono cursor-help underline decoration-dashed decoration-gray-300 underline-offset-4">{value}</span>
+      </TooltipTrigger>
+      <TooltipContent side="top">
+        {lang === "ar" ? "لا يوجد رابط متاح لهذا المصدر حالياً" : "No source link available yet"}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
 
 /* ─── Types ──────────────────────────────────────────────────────────────── */
 
@@ -1932,7 +1947,7 @@ export function AdminPage() {
                             return (
                               <tr key={c.id} className={`transition-colors ${isHighlighted ? "bg-amber-100/40 hover:bg-amber-100/60 border-amber-200" : "hover:bg-muted/20"}`}>
                                 <td className="px-4 py-3">
-                                  <p className="font-semibold text-foreground text-xs">{c.reference}</p>
+                                  <p className="text-foreground text-xs"><AdminRefTooltip value={c.reference} lang={lang} /></p>
                                   {c.external_reference && (
                                     <p className="text-[10px] text-muted-foreground font-mono">ext: {c.external_reference}</p>
                                   )}
@@ -2637,7 +2652,7 @@ export function AdminPage() {
                               };
                               return (
                                 <tr key={c.id} className="hover:bg-muted/10 transition-colors">
-                                  <td className="px-4 py-2.5 font-semibold font-mono">{c.reference}</td>
+                                  <td className="px-4 py-2.5 font-semibold text-sm"><AdminRefTooltip value={c.reference} lang={lang} /></td>
                                   <td className="px-4 py-2.5">{c.seller_name || "—"}</td>
                                   <td className="px-4 py-2.5">{c.buyer_name || "—"}</td>
                                   <td className="px-4 py-2.5 text-muted-foreground">{c.end_date ? fmtDate(c.end_date, lang) : "—"}</td>
@@ -2781,7 +2796,7 @@ export function AdminPage() {
                                 };
                                 return (
                                   <tr key={s.id} className="hover:bg-muted/10 transition-colors">
-                                    <td className="px-4 py-2.5 font-semibold font-mono">{s.reference}</td>
+                                    <td className="px-4 py-2.5 font-semibold text-sm"><AdminRefTooltip value={s.reference} lang={lang} /></td>
                                     <td className="px-4 py-2.5 font-mono text-muted-foreground">{s.contract_reference}</td>
                                     <td className="px-4 py-2.5">{s.material_label}</td>
                                     <td className="px-4 py-2.5">{s.seller_name || "—"}</td>
@@ -2960,22 +2975,30 @@ export function AdminPage() {
                                 {rl?.parent_entity_id ? (
                                   rl.parent_entity_type === "deal" ? (
                                     <Link href={`/deals/${rl.parent_entity_id}`} className="text-primary hover:underline">
-                                      {a.commercial_ref ? `${a.commercial_ref}` : `${rl.parent_entity_id.slice(0, 8)}…`}
+                                      <AdminRefTooltip value={a.commercial_ref ? a.commercial_ref : rl.parent_entity_id.slice(0, 8) + '…'} lang={lang} />
                                     </Link>
                                   ) : (
-                                    <span className="font-mono text-muted-foreground">{a.commercial_ref ? `${a.commercial_ref}` : `${rl.parent_entity_id.slice(0, 8)}…`}</span>
+                                    <span className="font-mono text-muted-foreground"><AdminRefTooltip value={a.commercial_ref ? a.commercial_ref : rl.parent_entity_id.slice(0, 8) + '…'} lang={lang} /></span>
                                   )
                                 ) : (
                                   "-"
                                 )}
                               </td>
                               <td className="px-4 py-2.5 font-medium">{a.buyer_name || "-"}</td>
-                              <td className="px-4 py-2.5">{rl?.material_main_category_en 
-  ? (lang === "ar" 
-    ? `${rl.material_main_category_ar || ""} ${rl.material_sub_category_ar ? ' / ' + rl.material_sub_category_ar : ''}`
-    : `${rl.material_main_category_en || ""} ${rl.material_sub_category_en ? ' / ' + rl.material_sub_category_en : ''}`)
-  : ((rl?.material_label ? (lang === "ar" ? `المادة: ${rl.material_label === "metal" ? "معادن" : rl.material_label}` : `Material: ${rl.material_label === "metal" ? "Metal" : rl.material_label}`) : "-"))
-}</td>
+                              <td className="px-4 py-2.5">
+                              {rl?.material_main_category_en ? (
+                                lang === "ar" 
+                                  ? `${rl.material_main_category_ar || ""} ${rl.material_sub_category_ar ? ' / ' + rl.material_sub_category_ar : ''}`
+                                  : `${rl.material_main_category_en || ""} ${rl.material_sub_category_en ? ' / ' + rl.material_sub_category_en : ''}`
+                              ) : rl?.material_label ? (
+                                <div>
+                                  <div>{rl.material_label === "metal" ? (lang === "ar" ? "معادن" : "Metal") : rl.material_label}</div>
+                                  <span className="text-[10px] text-muted-foreground block">{lang === "ar" ? "التصنيف غير مكتمل" : "Category incomplete"}</span>
+                                </div>
+                              ) : (
+                                "-"
+                              )}
+                            </td>
                               <td className="px-4 py-2.5" dir="ltr">{rl?.final_received_qty ? `${Number(rl.final_received_qty).toLocaleString("en-US", { maximumFractionDigits: 3 })} ${
   lang === "ar" && (rl.final_received_unit === "ton" || rl.final_received_unit === "tons") ? "طن" :
   lang === "ar" && (rl.final_received_unit === "kg" || rl.final_received_unit === "kgs") ? "كجم" :
@@ -3011,10 +3034,23 @@ export function AdminPage() {
                                 <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => toggleSustDetails(alloc.id)}>
                                   {sustExpandedAllocId === alloc.id ? (lang === "ar" ? "إخفاء" : "Hide") : (lang === "ar" ? "تفاصيل" : "Details")}
                                 </Button>
-                                {(alloc.status === "finalized" || alloc.status === "superseded") && (
+                                {(alloc.status === "finalized" || alloc.status === "superseded") ? (
                                   <Button size="sm" variant="outline" className="h-7 text-xs ml-2" onClick={() => window.open(`/reports/sustainability/${alloc.id}/print`, '_blank')}>
                                     {lang === "ar" ? "عرض التقرير" : "View report"}
                                   </Button>
+                                ) : (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <span className="inline-block ml-2 cursor-not-allowed">
+                                        <Button size="sm" variant="outline" className="h-7 text-xs" disabled>
+                                          {lang === "ar" ? "عرض التقرير" : "View report"}
+                                        </Button>
+                                      </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top">
+                                      {lang === "ar" ? "التقرير متاح بعد الاعتماد" : "Report is available after finalization"}
+                                    </TooltipContent>
+                                  </Tooltip>
                                 )}
                                 {isPendingCorrection ? (
                                   <>
@@ -3501,7 +3537,7 @@ export function AdminPage() {
                           };
                           return (
                             <tr key={s.id} className="hover:bg-muted/20 transition-colors">
-                              <td className="px-4 py-3 font-mono text-xs">{s.reference}</td>
+                              <td className="px-4 py-3 text-xs"><AdminRefTooltip value={s.reference} lang={lang} /></td>
                               <td className="px-4 py-3 text-xs text-muted-foreground">{s.contract_reference}</td>
                               <td className="px-4 py-3 text-xs">{s.material_label}</td>
                               <td className="px-4 py-3 text-xs">{s.seller_name}</td>

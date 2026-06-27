@@ -117,7 +117,7 @@ export function SustainabilityPrintPage() {
               {isAr ? `لشركة ${row.processor_name || 'المعالج'} عبر منصة تدويرة` : `For ${row.processor_name || 'Processor'} via Tadweerah`}
             </h2>
             <h3 className="text-xs font-normal text-gray-500">
-              {isAr ? `Sustainability Report for ${row.processor_name || 'Processor'} via Tadweerah` : `تقرير الاستدامة لشركة ${row.processor_name || 'المعالج'} عبر منصة تدويرة`}
+              {isAr ? `تقرير الاستدامة لشركة ${row.processor_name || 'المعالج'} عبر منصة تدويرة` : `Sustainability Report for ${row.processor_name || 'Processor'} via Tadweerah`}
             </h3>
           </div>
 
