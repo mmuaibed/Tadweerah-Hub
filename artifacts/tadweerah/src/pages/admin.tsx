@@ -2988,6 +2988,11 @@ export function AdminPage() {
                                     : (alloc.status === "finalized" ? "Finalized" : alloc.status === "superseded" ? "Superseded" : "Draft")
                                   }
                                 </Badge>
+                                {alloc.status === "draft" && alloc.version > 1 && (
+                                  <div className="mt-1 text-[10px] text-muted-foreground leading-tight max-w-[150px]">
+                                    {lang === "ar" ? "مسودة تصحيحية — النسخة المعتمدة السابقة لا تزال فعّالة" : "Correction draft — previous finalized version remains active"}
+                                  </div>
+                                )}
                               </td>
                               <td className="px-4 py-2.5 text-muted-foreground">{alloc.version ?? 1}</td>
                               <td className="px-4 py-2.5">
@@ -3047,7 +3052,12 @@ export function AdminPage() {
                                         <tbody>
                                           {sustDetails.pathways?.map((p: any) => (
                                             <tr key={p.id} className="border-b last:border-0">
-                                              <td className="py-2 px-2">{p.pathway_id}</td>
+                                              <td className="py-2 px-2">
+                                                {lang === "ar" ? p.name_ar : p.name_en}
+                                                {!(lang === "ar" ? p.name_ar : p.name_en) && (
+                                                  <span className="text-muted-foreground">{p.key || p.pathway_id || "-"}</span>
+                                                )}
+                                              </td>
                                               <td className="py-2 px-2 text-end font-mono" dir="ltr">{Number(p.percentage)}%</td>
                                               <td className="py-2 px-2 text-end font-mono" dir="ltr">{Number(p.quantity).toLocaleString(undefined, { maximumFractionDigits: 3 })}</td>
                                               <td className="py-2 px-2 text-muted-foreground">{p.explanation_text || "-"}</td>

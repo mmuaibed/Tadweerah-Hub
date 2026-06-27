@@ -2434,7 +2434,7 @@ async function createCorrectionDraft({
 }: {
   originalAllocationId: string;
   reason: string;
-}): Promise<{ newAllocationId: string; version: number }> {
+}): Promise<{ newAllocationId: string; version: number; existing_correction_draft_used?: boolean }> {
   // Load original allocation
   const [original] = await db
     .select()
@@ -2449,7 +2449,31 @@ async function createCorrectionDraft({
 
   if (!original) throw new Error("NotFound: Original finalized allocation not found");
 
-  const newVersion = (original.version ?? 1) + 1;
+  const expectedNewVersion = (original.version ?? 1) + 1;
+
+  // Check for existing draft for this received line
+  const [existingDraft] = await db
+    .select()
+    .from(sustainabilityAllocationsTable)
+    .where(
+      and(
+        eq(sustainabilityAllocationsTable.received_line_id, original.received_line_id),
+        eq(sustainabilityAllocationsTable.status, "draft"),
+        or(
+          eq(sustainabilityAllocationsTable.source_allocation_id, originalAllocationId),
+          eq(sustainabilityAllocationsTable.version, expectedNewVersion)
+        )
+      )
+    )
+    .limit(1);
+
+  if (existingDraft) {
+    return {
+      newAllocationId: existingDraft.id,
+      version: existingDraft.version,
+      existing_correction_draft_used: true
+    };
+  }
 
   // Load original lines
   const originalLines = await db
@@ -2463,7 +2487,7 @@ async function createCorrectionDraft({
     .values({
       received_line_id: original.received_line_id,
       status: "draft",
-      version: newVersion,
+      version: expectedNewVersion,
       revision_reason: reason,
       source_allocation_id: originalAllocationId,
       // Inherit tolerance from original
@@ -2484,7 +2508,7 @@ async function createCorrectionDraft({
     );
   }
 
-  return { newAllocationId: newAllocation.id, version: newVersion };
+  return { newAllocationId: newAllocation.id, version: expectedNewVersion };
 }
 
 /**
@@ -2520,11 +2544,13 @@ router.post("/admin/sustainability/correction-requests", requireAdminKey, async 
 
   let newAllocationId: string;
   let version: number;
+  let existingUsed = false;
 
   try {
     const result = await createCorrectionDraft({ originalAllocationId: allocation_id, reason: reason.trim() });
     newAllocationId = result.newAllocationId;
     version = result.version;
+    existingUsed = result.existing_correction_draft_used ?? false;
   } catch (err: any) {
     if (err?.message?.startsWith("NotFound")) {
       res.status(404).json({ error: "NotFound", message: "Finalized allocation not found." });
@@ -2556,7 +2582,7 @@ router.post("/admin/sustainability/correction-requests", requireAdminKey, async 
     entityId: newAllocationId,
     actorRole: "admin",
     userId: adminUserId,
-    details: { source_allocation_id: allocation_id, version, reason },
+    details: { source_allocation_id: allocation_id, version, reason, existing_draft_used: existingUsed },
   });
 
   // Notify company (load buyer company from received line)
@@ -2580,7 +2606,7 @@ router.post("/admin/sustainability/correction-requests", requireAdminKey, async 
     });
   }
 
-  res.status(201).json({ success: true, request_id: request.id, correction_allocation_id: newAllocationId, version });
+  res.status(201).json({ success: true, request_id: request.id, correction_allocation_id: newAllocationId, version, existing_correction_draft_used: existingUsed });
 });
 
 /**
@@ -2609,11 +2635,13 @@ router.patch("/admin/sustainability/correction-requests/:id/approve", requireAdm
 
   let newAllocationId: string;
   let version: number;
+  let existingUsed = false;
 
   try {
     const result = await createCorrectionDraft({ originalAllocationId: request.allocation_id, reason: request.reason });
     newAllocationId = result.newAllocationId;
     version = result.version;
+    existingUsed = result.existing_correction_draft_used ?? false;
   } catch (err: any) {
     if (err?.message?.startsWith("NotFound")) {
       res.status(404).json({ error: "NotFound", message: "Original finalized allocation not found." });
@@ -2646,17 +2674,20 @@ router.patch("/admin/sustainability/correction-requests/:id/approve", requireAdm
       original_allocation_id: request.allocation_id,
       new_allocation_id: newAllocationId,
       new_version: version,
+      existing_draft_used: existingUsed
     },
   });
 
-  void logAudit({
-    action: "sustainability.correction_draft_created",
-    entityType: "sustainability_allocation",
-    entityId: newAllocationId,
-    actorRole: "admin",
-    userId: adminUserId,
-    details: { source_allocation_id: request.allocation_id, version, reason: request.reason },
-  });
+  if (!existingUsed) {
+    void logAudit({
+      action: "sustainability.correction_draft_created",
+      entityType: "sustainability_allocation",
+      entityId: newAllocationId,
+      actorRole: "admin",
+      userId: adminUserId,
+      details: { source_allocation_id: request.allocation_id, version, reason: request.reason },
+    });
+  }
 
   // Notify requesting company (fire-and-forget)
   if (request.requested_by_company_id) {
@@ -2667,7 +2698,7 @@ router.patch("/admin/sustainability/correction-requests/:id/approve", requireAdm
     });
   }
 
-  res.json({ success: true, correction_allocation_id: newAllocationId, version });
+  res.json({ success: true, correction_allocation_id: newAllocationId, version, existing_correction_draft_used: existingUsed });
 });
 
 /**
