@@ -616,6 +616,16 @@ For the comprehensive ongoing platform development roadmap (including customer s
 - **Key Decision:** Existing Tadweerah email notifications are working well and must not be disturbed casually. Buyer blocking email was intentionally deferred. No `sendMail: true` for buyer blocking in this phase.
 - **Deployment:** Final backend revision `tadweerah-api-00149-hww`. Frontend deployed to staging. No migrations, no SIR-3B changes.
 
+### Phase 3-A2 — Deal Completion Email
+- **Status:** ✅ Closed functionally and safely on staging.
+- **Scope:** 
+  - Deal completion email helper created (`artifacts/api-server/src/lib/deal-completion-email.ts`).
+  - Emails triggered only after verified current completion transitions (`POST /deals/:deal_id/confirm-receipt` and `POST /admin/deals/:id/force-complete`).
+  - Strict fallback logic: missing recipient data does not fail endpoint, unmapped materials fall back to Arabic equivalents (preferring `مخلفات` over `نفايات`), skipping emails if no reliable category exists.
+- **Key Decision:** Current code behavior was verified before implementation, avoiding stale assumptions about auto-completion. No `sendMail: true` added. Existing templates and flows unchanged. Hardcoded fallback `نفايات صناعية` removed. The system does not invent customer-facing values like `مادة غير محددة`.
+- **Deferred:** Improving listing/material submission model for clearer customer-facing classification. Broad Project Docs Reality Alignment deferred to Phase 3-B.
+- **Deployment:** Commits `f9e6fb2` and `6ebf746`. Final backend revision `tadweerah-api-00152-nfr`. No migration, no frontend changes.
+
 
 ### Phase CLT-1 — Flexible Offer Window Foundation (فترة استقبال العروض)
 - **Status:** ✅ Implemented — pending staging migration and deploy.

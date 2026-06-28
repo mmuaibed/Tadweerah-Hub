@@ -75,9 +75,8 @@ The final steps to achieve full pilot launch readiness involve:
 ---
 
 ### M5 — Rich Deal Completion Email Not Wired
-**Severity: 🟡 Medium | Phase: Phase 2-F**
-- **Current:** `sendDealCompletionEmail` defined but never called.
-- **Recommended:** Should-do. Likely wire in Phase 2-F unless required earlier.
+**Status: ✅ Closed in Phase 3-A2**
+- **Implementation:** Deal completion email is now sent on verified state transitions (`POST /deals/:deal_id/confirm-receipt` and `POST /admin/deals/:id/force-complete`). Missing or ambiguous recipient/category data will log a warning and safely skip sending without failing the transaction. Hardcoded fallbacks removed.
 
 ---
 

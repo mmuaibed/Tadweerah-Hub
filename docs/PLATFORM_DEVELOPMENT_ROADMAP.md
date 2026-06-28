@@ -24,6 +24,12 @@
 - Company Members UI no longer exposes raw Clerk IDs.
 - Buyer blocking notification is strictly in-app only; no `sendMail: true` was used.
 
+**Phase 3-A2 (Closed):**
+- Deal completion email implemented successfully.
+- Derived category verification added, gracefully skipping the email if a reliable Arabic label cannot be determined. Fallback `نفايات صناعية` removed.
+- Current code transitions verified. Old assumptions about `expire-deals.ts` 48h auto-complete removed from developer memory. Existing email workflows and notification templates remain undisturbed.
+- Deferred: Improving listing/material submission model to preserve a clear, customer-facing classification for outputs.
+
 
 ## Priority 2 — Customer Reports & Trust Outputs
 **Scope:**
