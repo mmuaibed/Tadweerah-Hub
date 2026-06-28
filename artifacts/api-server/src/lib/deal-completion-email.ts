@@ -1,20 +1,28 @@
-import { db, dealsTable, wasteListingsTable, companiesTable, transportRequestsTable } from "@workspace/db";
+import { db, dealsTable, wasteListingsTable, companiesTable, transportRequestsTable, materialCategoriesTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { logger } from "./logger";
 import { sendDealCompletionEmail } from "./email";
 import { lookupOwnerEmail } from "./notify";
 import { dealRef } from "./listing-ref";
+import { aliasedTable } from "drizzle-orm";
 
 export async function triggerDealCompletionEmails(dealId: string): Promise<void> {
   try {
-    // 1. Fetch deal and listing
+    const categories = aliasedTable(materialCategoriesTable, "categories");
+    const subcategories = aliasedTable(materialCategoriesTable, "subcategories");
+
+    // 1. Fetch deal and listing with categories
     const [dealRecord] = await db
       .select({
         deal: dealsTable,
         listing: wasteListingsTable,
+        categoryRow: categories,
+        subcategoryRow: subcategories,
       })
       .from(dealsTable)
       .innerJoin(wasteListingsTable, eq(dealsTable.listing_id, wasteListingsTable.id))
+      .leftJoin(categories, eq(wasteListingsTable.material_category_id, categories.id))
+      .leftJoin(subcategories, eq(wasteListingsTable.material_subcategory_id, subcategories.id))
       .where(eq(dealsTable.id, dealId))
       .limit(1);
 
@@ -23,7 +31,7 @@ export async function triggerDealCompletionEmails(dealId: string): Promise<void>
       return;
     }
 
-    const { deal, listing } = dealRecord;
+    const { deal, listing, categoryRow, subcategoryRow } = dealRecord;
 
     // 2. Fetch companies
     const [producer, buyer] = await Promise.all([
@@ -52,7 +60,29 @@ export async function triggerDealCompletionEmails(dealId: string): Promise<void>
     // 5. Prepare common data
     const formattedDealRef = dealRef(deal.id, deal.created_at.toISOString());
     const completionDate = (deal.received_at ?? new Date()).toISOString().split('T')[0];
-    const category = listing.material ?? "نفايات صناعية";
+    
+    let categoryLabel: string | undefined;
+    if (subcategoryRow?.name_ar) {
+      categoryLabel = subcategoryRow.name_ar;
+    } else if (categoryRow?.name_ar) {
+      categoryLabel = categoryRow.name_ar;
+    } else if (listing.material && listing.material !== "other") {
+      const materialMap: Record<string, string> = {
+        paper: "مخلفات ورقية",
+        plastic: "مخلفات بلاستيكية",
+        metal: "مخلفات معدنية",
+        glass: "مخلفات زجاجية",
+        electronics: "مخلفات إلكترونية",
+        organic: "مخلفات عضوية",
+      };
+      categoryLabel = materialMap[listing.material];
+    }
+
+    if (!categoryLabel) {
+      logger.warn({ dealId, material: listing.material, categoryId: listing.material_category_id }, "[deal-completion-email] Cannot resolve safe category label, skipping email");
+      return;
+    }
+
     const quantity = deal.actual_quantity ? deal.actual_quantity : listing.quantity;
     const finalAmount = deal.final_amount ?? deal.total_amount ?? undefined;
     const manifestRef = tr?.manifest_ref ?? undefined;
@@ -66,7 +96,7 @@ export async function triggerDealCompletionEmails(dealId: string): Promise<void>
         completionDate,
         counterpartyName: buyer.name,
         counterpartyCr: buyer.commercialRegistration ?? undefined,
-        wasteCategory: category,
+        wasteCategory: categoryLabel,
         quantity: quantity ?? undefined,
         finalAmount: finalAmount ?? undefined,
         manifestRef
@@ -85,7 +115,7 @@ export async function triggerDealCompletionEmails(dealId: string): Promise<void>
         completionDate,
         counterpartyName: producer.name,
         counterpartyCr: producer.commercialRegistration ?? undefined,
-        wasteCategory: category,
+        wasteCategory: categoryLabel,
         quantity: quantity ?? undefined,
         finalAmount: finalAmount ?? undefined,
         manifestRef
