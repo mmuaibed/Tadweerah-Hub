@@ -14,6 +14,7 @@ import {
 } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requireCompany, type AuthedCompanyRequest } from "../middlewares/requireCompany";
+import { resolveSustainabilityPhysicalWeight } from "../services/sustainability-physical-weight";
 import { validateAllocationDraft } from "../services/sustainability-validation";
 import { logAudit } from "../lib/audit";
 import { notifyAdminCorrectionRequested } from "../lib/admin-notify";
@@ -84,27 +85,11 @@ async function enrichReceivedLineQty(receivedLine: any, allocationStatus?: strin
     
     if (shipment) {
       if (allocationStatus !== "finalized") {
-        let finalQty: string | null = null;
+        let finalQty: string | null = resolveSustainabilityPhysicalWeight(shipment.source_weight, shipment.destination_weight);
         let errorReason: string | null = null;
 
-        if (shipment.weight_policy === "source_weight_only") {
-          if (shipment.source_weight && Number(shipment.source_weight) > 0) {
-            finalQty = shipment.source_weight;
-          } else {
-            errorReason = "missing_source_quantity";
-          }
-        } else if (shipment.weight_policy === "destination_weight_only" || shipment.weight_policy?.startsWith("dual_")) {
-          if (shipment.destination_weight && Number(shipment.destination_weight) > 0) {
-            finalQty = shipment.destination_weight;
-          } else {
-            errorReason = "missing_buyer_quantity";
-          }
-        } else {
-          if (shipment.destination_weight && Number(shipment.destination_weight) > 0) {
-            finalQty = shipment.destination_weight;
-          } else {
-            errorReason = "missing_buyer_quantity";
-          }
+        if (!finalQty) {
+          errorReason = "missing_physical_quantity";
         }
 
         if (finalQty) {
@@ -126,21 +111,7 @@ async function enrichReceivedLineQty(receivedLine: any, allocationStatus?: strin
           receivedLine.ineligibility_reason = errorReason;
         }
       } else {
-        let expectedQty: string | null = null;
-        
-        if (shipment.weight_policy === "source_weight_only") {
-          if (shipment.source_weight && Number(shipment.source_weight) > 0) {
-            expectedQty = shipment.source_weight;
-          }
-        } else if (shipment.weight_policy === "destination_weight_only" || shipment.weight_policy?.startsWith("dual_")) {
-          if (shipment.destination_weight && Number(shipment.destination_weight) > 0) {
-            expectedQty = shipment.destination_weight;
-          }
-        } else {
-          if (shipment.destination_weight && Number(shipment.destination_weight) > 0) {
-            expectedQty = shipment.destination_weight;
-          }
-        }
+        let expectedQty: string | null = resolveSustainabilityPhysicalWeight(shipment.source_weight, shipment.destination_weight);
 
         if (expectedQty && expectedQty !== receivedLine.final_received_qty) {
           receivedLine.mismatch_warning = `Finalized quantity (${receivedLine.final_received_qty}) mismatches derived weight (${expectedQty}).`;
@@ -314,27 +285,11 @@ router.get("/sustainability/received-lines", requireAuth, requireCompany(), asyn
       }
       
       if (r.allocation_status !== "finalized") {
-        let expectedQty: string | null = null;
+        let expectedQty: string | null = resolveSustainabilityPhysicalWeight(r.shipment_source_weight, r.shipment_destination_weight);
         let errorReason: string | null = null;
 
-        if (r.shipment_weight_policy === "source_weight_only") {
-          if (r.shipment_source_weight && Number(r.shipment_source_weight) > 0) {
-            expectedQty = r.shipment_source_weight;
-          } else {
-            errorReason = "missing_source_quantity";
-          }
-        } else if (r.shipment_weight_policy === "destination_weight_only" || r.shipment_weight_policy?.startsWith("dual_")) {
-          if (r.shipment_destination_weight && Number(r.shipment_destination_weight) > 0) {
-            expectedQty = r.shipment_destination_weight;
-          } else {
-            errorReason = "missing_buyer_quantity";
-          }
-        } else {
-          if (r.shipment_destination_weight && Number(r.shipment_destination_weight) > 0) {
-            expectedQty = r.shipment_destination_weight;
-          } else {
-            errorReason = "missing_buyer_quantity";
-          }
+        if (!expectedQty) {
+          errorReason = "missing_physical_quantity";
         }
 
         if (expectedQty) {

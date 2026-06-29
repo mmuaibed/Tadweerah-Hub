@@ -1,3 +1,4 @@
+import { resolveSustainabilityPhysicalWeight } from "./sustainability-physical-weight";
 import {
   db,
   dealsTable,
@@ -124,27 +125,11 @@ export async function deriveReceivedLineForShipment(shipmentId: string): Promise
 
     if (!material) return;
 
-    let finalQty: string | null = null;
+    let finalQty: string | null = resolveSustainabilityPhysicalWeight(shipment.source_weight, shipment.destination_weight);
     let errorReason: string | null = null;
 
-    if (contract.weight_policy === "source_weight_only") {
-      if (shipment.source_weight && Number(shipment.source_weight) > 0) {
-        finalQty = shipment.source_weight;
-      } else {
-        errorReason = "missing_source_quantity";
-      }
-    } else if (contract.weight_policy === "destination_weight_only" || contract.weight_policy?.startsWith("dual_")) {
-      if (shipment.destination_weight && Number(shipment.destination_weight) > 0) {
-        finalQty = shipment.destination_weight;
-      } else {
-        errorReason = "missing_buyer_quantity";
-      }
-    } else {
-      if (shipment.destination_weight && Number(shipment.destination_weight) > 0) {
-        finalQty = shipment.destination_weight;
-      } else {
-        errorReason = "missing_buyer_quantity";
-      }
+    if (!finalQty) {
+      errorReason = "missing_physical_quantity";
     }
     
     if (!material.material_label || !material.unit_label) {
