@@ -2283,6 +2283,14 @@ router.get("/admin/sustainability/allocations", requireAdminKey, async (req, res
         `,
         pending_request_id: sustainabilityCorrectionRequestsTable.id,
         pending_request_reason: sustainabilityCorrectionRequestsTable.reason,
+        // Phase 3-B Batch 1A: correlated subquery for total allocated quantity on this allocation.
+        // Sums only the lines belonging to THIS allocation record.
+        // For finalized rows this equals reportable_qty; for draft/superseded rows it is informational only.
+        total_allocated_qty: sql<string | null>`(
+          SELECT COALESCE(SUM(sal.quantity), 0)
+          FROM sustainability_allocation_lines sal
+          WHERE sal.allocation_id = ${sustainabilityAllocationsTable.id}
+        )`,
       })
       .from(sustainabilityAllocationsTable)
       .innerJoin(
@@ -2324,6 +2332,12 @@ router.get("/admin/sustainability/allocations", requireAdminKey, async (req, res
   
     const filtered = pendingOnly ? rows.filter(r => r.pending_request_id != null) : rows;
 
+    // Phase 3-B Batch 1A: compute explicit quantity fields for each row.
+    // reportable_qty = total_allocated_qty when allocation is 'finalized' (the authoritative impact figure).
+    // For draft/superseded allocations, total_allocated_qty is shown for admin context only and must not
+    // be used as a sustainability certificate or impact quantity.
+    const ADMIN_EPSILON = 0.001;
+
     const serialized = filtered.map((r) => {
       let mat_main_en = r.main_category_en;
       let mat_sub_en = r.sub_category_en;
@@ -2337,6 +2351,47 @@ router.get("/admin/sustainability/allocations", requireAdminKey, async (req, res
         mat_sub_ar = null;
       }
 
+      const receivedNum = Number(r.received_line.final_received_qty);
+      const allocatedNum = Number(r.total_allocated_qty ?? 0);
+      const status = r.allocation.status;
+
+      // Phase 3-B Batch 1A (fixed): status-aware quantity semantics.
+      //
+      // Semantic rules:
+      //   finalized  → reportable_qty   = allocatedNum (current authoritative impact)
+      //                draft_allocated_qty      = 0
+      //                historical_reportable_qty = null
+      //
+      //   draft      → reportable_qty   = 0 (draft lines MUST NOT drive impact/certificates)
+      //                draft_allocated_qty      = allocatedNum (admin context: work-in-progress)
+      //                historical_reportable_qty = null
+      //
+      //   superseded → reportable_qty   = 0 (this record is obsolete; it has no current impact)
+      //                draft_allocated_qty      = 0
+      //                historical_reportable_qty = allocatedNum (historical audit value only)
+      //
+      // remaining_qty is always: received - reportable_qty.
+      //   For draft this means full received remains reportable.
+      //   For superseded this is informational only; historical_reportable_qty is the relevant number.
+      //
+      // @deprecated: `quantity` on received_line remains received quantity only.
+      // Do NOT use reportable_qty to drive certificates unless allocation.status === 'finalized'.
+
+      let reportableNum = 0;
+      let draftAllocatedNum = 0;
+      let historicalReportableNum: number | null = null;
+
+      if (status === "finalized") {
+        reportableNum = allocatedNum;
+      } else if (status === "draft") {
+        draftAllocatedNum = allocatedNum;
+      } else if (status === "superseded") {
+        historicalReportableNum = allocatedNum;
+      }
+
+      const rawRemaining = receivedNum - reportableNum;
+      const clampedRemaining = Math.abs(rawRemaining) <= ADMIN_EPSILON ? 0 : rawRemaining;
+
       return {
         ...r,
         allocation: r.allocation,
@@ -2346,17 +2401,35 @@ router.get("/admin/sustainability/allocations", requireAdminKey, async (req, res
           material_main_category_ar: mat_main_ar || null,
           material_sub_category_en: mat_sub_en || null,
           material_sub_category_ar: mat_sub_ar || null,
-        }
+        },
+        // Phase 3-B Batch 1A: explicit status-aware quantity fields
+        received_qty: r.received_line.final_received_qty,
+        reportable_qty: reportableNum.toFixed(4),
+        draft_allocated_qty: draftAllocatedNum.toFixed(4),
+        historical_reportable_qty: historicalReportableNum !== null ? historicalReportableNum.toFixed(4) : null,
+        remaining_qty: clampedRemaining.toFixed(4),
+        remaining_qty_data_risk: rawRemaining < -ADMIN_EPSILON,
+        allocation_coverage_pct: receivedNum > 0
+          ? ((reportableNum / receivedNum) * 100).toFixed(1)
+          : null,
       };
     });
 
     if (format === "csv") {
+      // Phase 3-B Batch 1A (fixed): CSV columns use status-aware labels.
+      // 'Reportable Sustainability Qty' is only non-zero for finalized rows.
+      // Draft and superseded sums are surfaced in dedicated columns to prevent
+      // any ambiguity about what the reportable impact figure is.
       const headers = [
         "Commercial Ref",
         "Company",
         "Material Main Category",
         "Material Subcategory",
-        "Quantity",
+        "Received Qty",
+        "Reportable Sustainability Qty (Finalized Only)",
+        "Draft Allocated Qty",
+        "Historical Reportable Qty (Superseded)",
+        "Coverage %",
         "Unit",
         "Status",
         "Version",
@@ -2375,7 +2448,11 @@ router.get("/admin/sustainability/allocations", requireAdminKey, async (req, res
           r.buyer_name || "",
           r.received_line.material_main_category_en || r.received_line.material_label,
           r.received_line.material_sub_category_en || "",
-          r.received_line.final_received_qty || "",
+          r.received_line.final_received_qty || "",              // received quantity (context)
+          r.reportable_qty || "",                               // finalized impact only (0 for draft/superseded)
+          r.draft_allocated_qty || "",                          // draft work-in-progress (admin context)
+          r.historical_reportable_qty ?? "",                    // superseded historical sum (audit only)
+          r.allocation_coverage_pct ?? "",                      // coverage % based on reportable
           unitAr || "",
           r.allocation.status,
           String(r.allocation.version),
@@ -2869,9 +2946,72 @@ router.patch("/admin/notifications/mark-all-read", requireAdminKey, async (req, 
       explanation_text: l.line.explanation_text
     }));
 
+    // Phase 3-B Batch 1A (fixed): status-aware quantity_summary for admin detail.
+    // The detail endpoint returns any allocation by ID regardless of status (admin governance).
+    //
+    // Semantic rules:
+    //   finalized  → reportable_qty   = pathway sum (current authoritative impact)
+    //                draft_allocated_qty      = 0
+    //                historical_reportable_qty = null
+    //
+    //   draft      → reportable_qty   = 0 (draft must not drive impact/certificates)
+    //                draft_allocated_qty      = pathway sum (admin context: work-in-progress)
+    //                historical_reportable_qty = null
+    //
+    //   superseded → reportable_qty   = 0 (this record is obsolete)
+    //                draft_allocated_qty      = 0
+    //                historical_reportable_qty = pathway sum (historical audit value)
+    //
+    // remaining_qty = received_qty - reportable_qty.
+    // Do NOT present historical_reportable_qty as current impact.
+
+    // Fetch the received line to resolve received_qty.
+    const [receivedLine] = await db
+      .select({ final_received_qty: sustainabilityReceivedLinesTable.final_received_qty })
+      .from(sustainabilityReceivedLinesTable)
+      .where(eq(sustainabilityReceivedLinesTable.id, allocation.received_line_id))
+      .limit(1);
+
+    const DETAIL_EPSILON = 0.001;
+    const receivedNum = Number(receivedLine?.final_received_qty ?? 0);
+    const pathwaySum = pathways.reduce((sum: number, p: any) => sum + Number(p.quantity), 0);
+    const allocationStatus = allocation.status;
+
+    let reportableNum = 0;
+    let draftAllocatedNum = 0;
+    let historicalReportableNum: number | null = null;
+
+    if (allocationStatus === "finalized") {
+      reportableNum = pathwaySum;
+    } else if (allocationStatus === "draft") {
+      draftAllocatedNum = pathwaySum;
+    } else if (allocationStatus === "superseded") {
+      historicalReportableNum = pathwaySum;
+    }
+
+    const rawRemaining = receivedNum - reportableNum;
+    const clampedRemaining = Math.abs(rawRemaining) <= DETAIL_EPSILON ? 0 : rawRemaining;
+
+    const quantitySummary = {
+      // @deprecated: `quantity` on the allocation record remains received quantity only.
+      // `reportable_qty` = current finalized non-superseded impact only.
+      // `draft_allocated_qty` = work-in-progress sum for draft allocations (admin context).
+      // `historical_reportable_qty` = superseded record sum (historical audit only).
+      received_qty: receivedLine?.final_received_qty ?? null,
+      reportable_qty: reportableNum.toFixed(4),
+      draft_allocated_qty: draftAllocatedNum.toFixed(4),
+      historical_reportable_qty: historicalReportableNum !== null ? historicalReportableNum.toFixed(4) : null,
+      remaining_qty: clampedRemaining.toFixed(4),
+      remaining_qty_data_risk: rawRemaining < -DETAIL_EPSILON,
+      allocation_coverage_pct: receivedNum > 0
+        ? ((reportableNum / receivedNum) * 100).toFixed(1)
+        : null,
+    };
+
     res.json({
       allocation,
       pathways,
+      quantity_summary: quantitySummary,
     });
   });
 

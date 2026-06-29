@@ -475,7 +475,11 @@ router.get(
       )
     );
 
-    // Finalized allocations only
+    // Phase 3-B Batch 1A: Only finalized (non-superseded, non-draft) allocations.
+    // The status enum is mutually exclusive: draft | finalized | superseded.
+    // A record transitions from 'finalized' to 'superseded' when a correction is re-approved.
+    // Therefore this filter guarantees: no draft lines, no superseded historical lines.
+    // reportable_qty derived from these rows is safe as the authoritative sustainability impact.
     conditions.push(eq(sustainabilityAllocationsTable.status, "finalized"));
 
     if (dateFrom) conditions.push(gte(sustainabilityAllocationsTable.finalized_at, dateFrom));
@@ -640,13 +644,19 @@ router.get(
           counterparty_name: row.seller_id === cid ? row.buyer_name : row.seller_name,
           material_ar: materialLabelAr,
           material_en: materialLabelEn,
+          // @deprecated: `quantity` is frozen as received quantity for backward compatibility.
+          // New consumers must read `received_qty` (received) or `reportable_qty` (sustainability impact).
           quantity: Number(row.final_received_qty).toString(),
+          // Phase 3-B Batch 1A: explicit quantity fields
+          received_qty: Number(row.final_received_qty).toString(),
           unit: u,
           pathways: []
         });
       }
 
-      // Only add pathway to the latest allocation we decided to keep
+      // Only add pathway to the latest allocation we decided to keep.
+      // The WHERE clause already filters status = 'finalized', so these pathways belong to the current
+      // effective (non-superseded, non-draft) allocation. No double-counting of historical versions.
       if (row.line_id && groupedMap.get(row.received_line_id).allocation_id === row.allocation_id) {
         groupedMap.get(row.received_line_id).pathways.push({
           pathway_id: row.pathway_id,
@@ -655,6 +665,28 @@ router.get(
           quantity: Number(row.pathway_qty).toString(),
           percentage: Number(row.pathway_pct).toString(),
         });
+      }
+    }
+
+    // Phase 3-B Batch 1A: compute reportable_qty, remaining_qty, and allocation_coverage_pct per row.
+    // reportable_qty = SUM of finalized pathway line quantities.
+    // The pathway accumulation above only includes lines from the current finalized allocation
+    // (status = 'finalized' filter at L479 + allocation_id guard), so summing them is safe.
+    const EPSILON = 0.001;
+    for (const entry of groupedMap.values()) {
+      const receivedNum = Number(entry.received_qty);
+      const reportableNum = entry.pathways.reduce((sum: number, p: any) => sum + Number(p.quantity), 0);
+      const rawRemaining = receivedNum - reportableNum;
+      // Clamp float dust to zero within epsilon; surface material negatives as data-integrity risk
+      const clampedRemaining = Math.abs(rawRemaining) <= EPSILON ? 0 : rawRemaining;
+
+      entry.reportable_qty = reportableNum.toFixed(4);
+      entry.remaining_qty = clampedRemaining.toFixed(4);
+      entry.remaining_qty_data_risk = rawRemaining < -EPSILON; // true signals an over-allocation integrity issue
+      if (receivedNum > 0) {
+        entry.allocation_coverage_pct = ((reportableNum / receivedNum) * 100).toFixed(1);
+      } else {
+        entry.allocation_coverage_pct = null;
       }
     }
 
@@ -673,9 +705,11 @@ router.get(
 
     if (format === "csv") {
       const isArabic = req.query.lang !== "en";
+      // Phase 3-B Batch 1A: CSV now includes both received_qty and reportable_qty columns.
+      // "الكمية المستلمة" = Received Qty (source); "الكمية الموزعة للاستدامة" = Allocated Sustainability Qty (impact).
       const baseHeaders = isArabic 
-        ? ["تاريخ الاعتماد", "المصدر", "المرجع التجاري", "دوري", "الطرف الآخر", "المادة", "الكمية المستلمة", "الوحدة"]
-        : ["Finalized Date", "Source", "Commercial Ref", "My Role", "Counterparty", "Material", "Received Qty", "Unit"];
+        ? ["تاريخ الاعتماد", "المصدر", "المرجع التجاري", "دوري", "الطرف الآخر", "المادة", "الكمية المستلمة", "الكمية الموزعة للاستدامة", "نسبة التوزيع", "الوحدة"]
+        : ["Finalized Date", "Source", "Commercial Ref", "My Role", "Counterparty", "Material", "Received Qty", "Allocated Sustainability Qty", "Coverage %", "Unit"];
       
       const pathwayHeaders = activePathways.map(p => isArabic ? `مسار: ${p.name_ar}` : `Pathway: ${p.name_en}`);
       const headers = [...baseHeaders, ...pathwayHeaders, isArabic ? "الحالة" : "Status"];
@@ -702,7 +736,9 @@ router.get(
           roleLabel,
           r.counterparty_name || "",
           isArabic ? r.material_ar : r.material_en,
-          formatQty(r.quantity),
+          formatQty(r.received_qty),          // received quantity (context)
+          formatQty(r.reportable_qty),         // allocated sustainability quantity (impact)
+          r.allocation_coverage_pct ?? "",     // coverage percentage
           unitLabel,
           ...pathwayCells,
           isArabic ? "معتمد" : "Finalized"
@@ -900,7 +936,11 @@ router.get(
           processor_logo_url: row.buyer_logo_url ?? null,
           material_ar: materialLabelAr,
           material_en: materialLabelEn,
+          // @deprecated: `quantity` is frozen as received quantity for backward compatibility.
+          // New consumers must read `received_qty` (received) or `reportable_qty` (sustainability impact).
           quantity: row.final_received_qty,
+          // Phase 3-B Batch 1A: explicit quantity fields
+          received_qty: row.final_received_qty,
           unit: u,
           pathways: []
         });
@@ -917,7 +957,44 @@ router.get(
       }
     }
 
+    // Phase 3-B Batch 1A (fixed): status-aware quantity semantics for print/detail.
+    // This endpoint allows both 'finalized' and 'superseded' records (SIR-2D history retrievability).
+    //
+    // Semantic rules:
+    //   finalized  → reportable_qty = pathway sum (current authoritative impact)
+    //                historical_reportable_qty = null
+    //   superseded → reportable_qty = "0.0000" (NOT current impact — this record is obsolete)
+    //                historical_reportable_qty = pathway sum (historical record for audit only)
+    //
+    // IMPORTANT: superseded records must NEVER have their pathway sum presented as current
+    // reportable impact. The frontend must display a 'Superseded — Version N' banner.
+    const PRINT_EPSILON = 0.001;
     const item = Array.from(groupedMap.values())[0];
+    if (item) {
+      const receivedNum = Number(item.received_qty);
+      const pathwaySum = item.pathways.reduce((sum: number, p: any) => sum + Number(p.quantity), 0);
+      const isSuperseded = item.status === "superseded";
+
+      // reportable_qty is the current authoritative impact — ZERO for superseded records.
+      const reportableNum = isSuperseded ? 0 : pathwaySum;
+      // historical_reportable_qty exposes the pathway sum for superseded records (audit only).
+      const historicalNum = isSuperseded ? pathwaySum : null;
+
+      const rawRemaining = receivedNum - reportableNum;
+      const clampedRemaining = Math.abs(rawRemaining) <= PRINT_EPSILON ? 0 : rawRemaining;
+
+      // @deprecated: `quantity` field on item remains received_qty for backward compat.
+      // `reportable_qty` = current finalized non-superseded impact only.
+      // `historical_reportable_qty` = null unless this record is superseded (for audit display).
+      item.reportable_qty = reportableNum.toFixed(4);
+      item.historical_reportable_qty = historicalNum !== null ? historicalNum.toFixed(4) : null;
+      item.remaining_qty = clampedRemaining.toFixed(4);
+      item.remaining_qty_data_risk = rawRemaining < -PRINT_EPSILON;
+      item.allocation_coverage_pct = receivedNum > 0
+        ? ((reportableNum / receivedNum) * 100).toFixed(1)
+        : null;
+    }
+
     res.json({ row: item, pathways: activePathways });
   }
 );
