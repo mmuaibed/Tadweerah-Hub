@@ -1,15 +1,16 @@
+%%{init: {"flowchart": {"htmlLabels": true}, "themeVariables": {"fontFamily": "Tahoma, Arial, Segoe UI, sans-serif"}}}%%
 flowchart TD
   dashboard["/dashboard"]
-  reportsEntry["Ø§Ù„ØªÙ‚Ø§Ø±ÙŠØ± ÙˆØ§Ù„Ø§Ø³ØªØ¯Ø§Ù…Ø©\ncard / count cards"]
-  reports["/reports\nØªÙ‚Ø§Ø±ÙŠØ±ÙŠ"]
-  deals["Ø§Ù„ØµÙÙ‚Ø§Øª tab"]
-  contracts["Ø§Ù„Ø¹Ù‚ÙˆØ¯ tab"]
-  sustTab["ØªÙ‚Ø§Ø±ÙŠØ± Ø§Ù„Ø§Ø³ØªØ¯Ø§Ù…Ø© tab"]
-  reportButton["Ø¹Ø±Ø¶ Ø§Ù„ØªÙ‚Ø±ÙŠØ±\nvisible button"]
+  reportsEntry["التقارير والاستدامة\ncard / count cards"]
+  reports["/reports\nتقاريري"]
+  deals["الصفقات tab"]
+  contracts["العقود tab"]
+  sustTab["تقارير الاستدامة tab"]
+  reportButton["عرض التقرير\nvisible button"]
   printRoute["/reports/sustainability/:id/print\nnot confirmed"]
   adminReports["/admin reports tab"]
-  adminSust["Admin Ø§Ù„Ø§Ø³ØªØ¯Ø§Ù…Ø© subtab\nØ³Ø¬Ù„Ø§Øª Ø§Ù„Ø§Ø³ØªØ¯Ø§Ù…Ø©"]
-  adminReportButton["Admin Ø¹Ø±Ø¶ Ø§Ù„ØªÙ‚Ø±ÙŠØ±\ndisabled in rows"]
+  adminSust["Admin الاستدامة subtab\nسجلات الاستدامة"]
+  adminReportButton["Admin عرض التقرير\ndisabled in rows"]
 
   dashboard --> reportsEntry
   reportsEntry --> reports

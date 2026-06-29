@@ -65,6 +65,29 @@ Automated SVG/PDF generation is available through Mermaid CLI.
 
 Common draw.io command names were not found locally during read-only detection, so draw.io files remain manual snapshots unless a separate draw.io workflow is approved.
 
+## Arabic Encoding Fix
+
+Root cause found:
+
+- The extracted `.mmd` files contained mojibake labels such as `Ø`, `Ù`, and `Ã` sequences.
+- Mermaid CLI correctly exported what it received, so SVG/PDF snapshots inherited the corrupted Arabic text.
+
+Fix applied:
+
+- The six `.mmd` files under `exports/mermaid/` were reconstructed with real Arabic UTF-8 text.
+- Each `.mmd` file now includes Mermaid init settings with `htmlLabels` enabled and a common Arabic-capable font fallback:
+  - `Tahoma, Arial, Segoe UI, sans-serif`
+- SVG and PDF exports were regenerated from the corrected `.mmd` files.
+
+Sanity checks:
+
+- `.mmd` files were checked for mojibake markers `Ø`, `Ù`, and `Ã`; none remain.
+- SVG files were checked for the same mojibake markers; none remain.
+- SVG files contain readable Arabic labels such as `تقارير`, `الاستدامة`, `معتمد`, `مسودة`, `عرض التقرير`, `طن`, and `الكمية`.
+- Local automated PDF text extraction was not available (`pdftotext`, `pypdf`, and `pdfplumber` were not available), so PDF visual rendering still requires manual inspection.
+
+English fallback exports were not created because the Mermaid source and SVG exports were fixed with readable Arabic.
+
 ## Source-Of-Truth Warning
 
 Mermaid Markdown remains the canonical editable visual source.

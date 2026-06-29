@@ -1,14 +1,15 @@
+%%{init: {"flowchart": {"htmlLabels": true}, "themeVariables": {"fontFamily": "Tahoma, Arial, Segoe UI, sans-serif"}}}%%
 flowchart TD
-  entry["Ø¥Ø¯Ø®Ø§Ù„ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø§Ø³ØªØ¯Ø§Ù…Ø©\nbrowser-confirmed"]
-  distributionConcept["ØªÙˆØ²ÙŠØ¹ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø§Ø³ØªØ¯Ø§Ù…Ø©\nconcept observed, exact term unconfirmed"]
-  draft["Ù…Ø³ÙˆØ¯Ø©\nÙ…Ø³ÙˆØ¯Ø© ØªÙˆØ²ÙŠØ¹ Ø§Ù„Ø§Ø³ØªØ¯Ø§Ù…Ø©"]
-  approved["Ù…Ø¹ØªÙ…Ø¯\nØªÙ‚Ø±ÙŠØ± Ø§Ù„Ø§Ø³ØªØ¯Ø§Ù…Ø©"]
-  reports["ØªÙ‚Ø§Ø±ÙŠØ± Ø§Ù„Ø§Ø³ØªØ¯Ø§Ù…Ø©\nreports tab"]
-  viewReport["Ø¹Ø±Ø¶ Ø§Ù„ØªÙ‚Ø±ÙŠØ±\nvisible, not clicked / disabled in admin rows"]
-  reopen["ØªØ¹Ø¯ÙŠÙ„ (Ø¥Ø¹Ø§Ø¯Ø© ÙØªØ­)\nmutation-risk, not clicked"]
-  received["Ø§Ù„ÙƒÙ…ÙŠØ© Ø§Ù„Ù…Ø³ØªÙ„Ù…Ø© Ø§Ù„Ø¥Ø¬Ù…Ø§Ù„ÙŠØ©"]
-  totalDistribution["Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„ØªÙˆØ²ÙŠØ¹"]
-  remaining["Ø§Ù„ÙƒÙ…ÙŠØ© Ø§Ù„Ù…ØªØ¨Ù‚ÙŠØ©"]
+  entry["إدخال بيانات الاستدامة\nbrowser-confirmed"]
+  distributionConcept["توزيع بيانات الاستدامة\nconcept observed, exact term unconfirmed"]
+  draft["مسودة\nمسودة توزيع الاستدامة"]
+  approved["معتمد\nتقرير الاستدامة"]
+  reports["تقارير الاستدامة\nreports tab"]
+  viewReport["عرض التقرير\nvisible, not clicked / disabled in admin rows"]
+  reopen["تعديل (إعادة فتح)\nmutation-risk, not clicked"]
+  received["الكمية المستلمة الإجمالية"]
+  totalDistribution["إجمالي التوزيع"]
+  remaining["الكمية المتبقية"]
 
   entry --> distributionConcept
   distributionConcept --> draft

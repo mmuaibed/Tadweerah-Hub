@@ -1,16 +1,17 @@
+%%{init: {"flowchart": {"htmlLabels": true}, "themeVariables": {"fontFamily": "Tahoma, Arial, Segoe UI, sans-serif"}}}%%
 flowchart TD
   dashboard["/dashboard"]
-  reportsCard["Ø§Ù„ØªÙ‚Ø§Ø±ÙŠØ± ÙˆØ§Ù„Ø§Ø³ØªØ¯Ø§Ù…Ø©\ncard"]
-  entryCard["Ø¥Ø¯Ø®Ø§Ù„ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø§Ø³ØªØ¯Ø§Ù…Ø©\ncard"]
+  reportsCard["التقارير والاستدامة\ncard"]
+  entryCard["إدخال بيانات الاستدامة\ncard"]
   allocations["/sustainability/allocations"]
   sellerEmpty["Seller view\nempty state"]
   buyerRows["Buyer/processor view\nallocation rows"]
-  detail["Allocation detail\nvia visible Ø¹Ø±Ø¶ Ø§Ù„ØªÙØ§ØµÙŠÙ„"]
-  notEligible["Not eligible\nØºÙŠØ± Ù…Ø¤Ù‡Ù„ Ù„Ù„ØªÙˆØ²ÙŠØ¹\n50 received / 0 distributed / 50 remaining"]
-  draft["Ù…Ø³ÙˆØ¯Ø©\n30 received / 0 distributed / 30 remaining"]
-  approved["Ù…Ø¹ØªÙ…Ø¯\n40 received / 35 distributed / 5 remaining\n87.5%"]
+  detail["Allocation detail\nvia visible عرض التفاصيل"]
+  notEligible["Not eligible\nغير مؤهل للتوزيع\n50 received / 0 distributed / 50 remaining"]
+  draft["مسودة\n30 received / 0 distributed / 30 remaining"]
+  approved["معتمد\n40 received / 35 distributed / 5 remaining\n87.5%"]
   noMutations["No mutation actions clicked"]
-  mutationActions["Mutation-risk controls\nØ·Ù„Ø¨ ØªØ¹Ø¯ÙŠÙ„ Ø§Ù„ØªÙˆØ²ÙŠØ¹\nØ¥Ø¶Ø§ÙØ© Ù…Ø³Ø§Ø±\nØ­ÙØ¸ Ø§Ù„Ù…Ø³ÙˆØ¯Ø©\nØ§Ø¹ØªÙ…Ø§Ø¯ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø§Ø³ØªØ¯Ø§Ù…Ø©"]
+  mutationActions["Mutation-risk controls\nطلب تعديل التوزيع\nإضافة مسار\nحفظ المسودة\nاعتماد بيانات الاستدامة"]
 
   dashboard --> reportsCard
   dashboard --> entryCard

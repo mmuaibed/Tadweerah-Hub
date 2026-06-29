@@ -53,6 +53,30 @@ Export support files:
 | draw.io automated export | Not available | `where.exe draw.io`, `where.exe diagrams.net`, and `where.exe drawio` did not find a local CLI during export-package setup. |
 | Manual action needed | Optional | Manual draw.io import is only needed if `.drawio` snapshots are desired. |
 
+## Arabic Encoding Status
+
+Root cause:
+
+- The previous `.mmd` export files contained mojibake Arabic labels such as `Ø`, `Ù`, and `Ã` sequences.
+- The generated SVG/PDF files reflected that corrupted source text.
+
+Fix status:
+
+| Item | Status | Notes |
+|---|---|---|
+| Mermaid `.mmd` Arabic | Fixed | The six `.mmd` files were reconstructed with real Arabic UTF-8 labels. |
+| Mermaid init/font settings | Added | Each `.mmd` includes `htmlLabels` and `Tahoma, Arial, Segoe UI, sans-serif` font fallback. |
+| SVG Arabic | Fixed by text sanity check | Regenerated SVG files contain readable Arabic and no `Ø`, `Ù`, or `Ã` mojibake markers. |
+| PDF Arabic | Regenerated; visual inspection needed | PDFs were regenerated from fixed UTF-8 `.mmd` files, but local automated PDF text extraction was unavailable. |
+| English fallback exports | Not created | Not needed because Mermaid source and SVG exports were fixed with readable Arabic. |
+
+Manual PDF inspection note:
+
+- `pdftotext` was not available locally.
+- Python was available, but `pypdf` and `pdfplumber` were not installed.
+- No new packages were installed for PDF text extraction.
+- A human should visually inspect the regenerated PDFs to confirm Arabic glyph shaping and reading order.
+
 ## Regeneration Command
 
 Run from the repository root:
