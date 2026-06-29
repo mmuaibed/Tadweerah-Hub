@@ -85,6 +85,11 @@ interface SustainabilityReportRow {
   material_en: string;
   quantity: string;
   unit: string;
+  received_qty?: string;
+  reportable_qty?: string;
+  remaining_qty?: string;
+  remaining_qty_data_risk?: boolean;
+  allocation_coverage_pct?: string | null;
   pathways: Array<{
     pathway_id: string;
     pathway_name_ar: string;
@@ -1002,7 +1007,8 @@ export function ReportsPage() {
                           <Th>{lang === "ar" ? "دوري" : "My Role"}</Th>
                           <Th>{lang === "ar" ? "الطرف الآخر" : "Counterparty"}</Th>
                           <Th>{lang === "ar" ? "المادة" : "Material"}</Th>
-                          <Th>{lang === "ar" ? "الكمية المستلمة" : "Received Qty"}</Th>
+                          <Th>{lang === "ar" ? "الكمية المستلمة" : "Received Quantity"}</Th>
+                          <Th>{lang === "ar" ? "كمية الاستدامة المعتمدة للتقرير" : "Reportable Sustainability Quantity"}</Th>
                           {sustReport.pathways?.map(pw => (
                             <Th key={pw.id}>{lang === "ar" ? pw.name_ar : pw.name_en}</Th>
                           ))}
@@ -1046,7 +1052,39 @@ export function ReportsPage() {
                               </Td>
                               <Td>{row.counterparty_name ?? "—"}</Td>
                               <Td>{lang === "ar" ? row.material_ar : row.material_en}</Td>
-                              <Td mono bold>{fmtNumber(row.quantity)} {unitLabel}</Td>
+                              <Td mono>
+                                <span className="text-muted-foreground">{fmtNumber(row.received_qty ?? row.quantity)} {unitLabel}</span>
+                              </Td>
+                              <Td mono bold>
+                                {row.reportable_qty !== undefined && row.reportable_qty !== null ? (
+                                  <div className="flex flex-col gap-1">
+                                    <div className="flex items-center gap-2">
+                                      <span>{fmtNumber(row.reportable_qty)} {unitLabel}</span>
+                                      {row.allocation_coverage_pct !== null && row.allocation_coverage_pct !== undefined && (
+                                        <span className="inline-flex rounded text-[10px] px-1.5 py-0.5 bg-green-100 text-green-800 font-medium">
+                                          {lang === "ar" ? `نسبة التوزيع ${row.allocation_coverage_pct}%` : `Coverage ${row.allocation_coverage_pct}%`}
+                                        </span>
+                                      )}
+                                    </div>
+                                    {Number(row.remaining_qty) > 0 && (
+                                      <div className="text-[10px] text-muted-foreground font-normal">
+                                        {lang === "ar" ? `الكمية المتبقية غير الموزعة: ${fmtNumber(row.remaining_qty)} ${unitLabel}` : `Remaining Unallocated Quantity: ${fmtNumber(row.remaining_qty)} ${unitLabel}`}
+                                      </div>
+                                    )}
+                                    {row.remaining_qty_data_risk === true && (
+                                      <div className="flex items-center gap-1 text-[10px] text-destructive font-normal">
+                                        <AlertCircle className="w-3 h-3" />
+                                        {lang === "ar" ? "خطأ في البيانات: توزيع يفوق الاستلام" : "Data risk: Over-allocation"}
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <span className="text-xs font-normal text-muted-foreground italic flex items-center gap-1">
+                                    <AlertCircle className="w-3 h-3" />
+                                    {lang === "ar" ? "غير متاح — يحتاج تحديث البيانات" : "Unavailable — refresh required"}
+                                  </span>
+                                )}
+                              </Td>
                               {sustReport.pathways?.map(pw => {
                                 const match = row.pathways.find(p => p.pathway_id === pw.id);
                                 return (
