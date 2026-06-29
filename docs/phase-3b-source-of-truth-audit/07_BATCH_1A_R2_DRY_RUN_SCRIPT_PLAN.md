@@ -40,6 +40,13 @@ The script leverages the physical-weight hierarchy:
 If a received line is attached to a `sustainability_allocations` record that is `finalized` or `approved`, the script marks the correction as **"NO - Requires SIR-2D/Owner Decision"**. We do not silently update finalized allocations because they are immutable and represent formally distributed impact.
 
 ## Execution
+**No-DB Preflight:**
+Before requesting or setting `DATABASE_URL`, verify local imports and file paths from the repository root:
+```bash
+pnpm exec tsx scripts/phase-3b-sustainability-received-qty-dry-run.ts --preflight
+```
+This preflight does not import the DB client, does not require `DATABASE_URL`, and does not connect to any database.
+
 **Command (To be confirmed before execution):**
 Execution should be done from the repository root, as the script uses `process.cwd()` to output the report. It should use a `pnpm` workspace command, avoiding dynamic tool downloads or DB execution until owner approval.
 Example: `pnpm exec tsx scripts/phase-3b-sustainability-received-qty-dry-run.ts`

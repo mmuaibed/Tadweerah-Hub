@@ -1,12 +1,11 @@
-import { db } from "@workspace/db/src/index";
 import { 
   sustainabilityReceivedLinesTable, 
   contractShipmentsTable, 
   contractsTable,
   sustainabilityAllocationLinesTable,
   sustainabilityAllocationsTable
-} from "@workspace/db/src/schema";
-import { eq } from "drizzle-orm";
+} from "../lib/db/src/schema/index";
+import { eq } from "../lib/db/node_modules/drizzle-orm/index.js";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -25,7 +24,27 @@ function resolvePhysicalWeight(sourceWeight: string | null, destWeight: string |
   return null;
 }
 
+function runPreflight() {
+  const requiredFiles = [
+    "lib/db/src/index.ts",
+    "lib/db/src/schema/index.ts",
+    "lib/db/node_modules/drizzle-orm/index.js",
+  ];
+
+  const missing = requiredFiles.filter((filePath) => !fs.existsSync(path.join(process.cwd(), filePath)));
+  if (missing.length > 0) {
+    console.error("Preflight failed. Missing local files:");
+    for (const filePath of missing) console.error(`- ${filePath}`);
+    process.exit(1);
+  }
+
+  console.log("Preflight OK: local imports/files resolved. No database connection attempted.");
+  process.exit(0);
+}
+
 async function run() {
+  const { db } = await import("../lib/db/src/index");
+
   console.log("Starting Phase 3-B Batch 1A-R2 Dry-Run for Contract Shipments...");
 
   // Fetch all received lines for contract shipments
@@ -163,7 +182,11 @@ async function run() {
   process.exit(0);
 }
 
-run().catch(err => {
-  console.error("Dry run script failed:", err);
-  process.exit(1);
-});
+if (process.argv.includes("--preflight")) {
+  runPreflight();
+} else {
+  run().catch(err => {
+    console.error("Dry run script failed:", err);
+    process.exit(1);
+  });
+}
