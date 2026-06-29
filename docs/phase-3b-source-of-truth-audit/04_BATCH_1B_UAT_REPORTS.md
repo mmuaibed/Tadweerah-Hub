@@ -48,5 +48,15 @@ During the Phase 3-B Batch 1B review, the following observations were made regar
 **Screenshots Status:**
 - Explicit note: No local visual screenshots were captured or attached for this test run.
 
-**Batch 1B Pass/Fail:** PASS
-**Next Step:** Batch 1C (Print Route Adjustment) can be planned next.
+**Batch 1B Pass/Fail:** BLOCKED / PENDING (Upstream Correction Required)
+- Batch 1B code structure/review remains valid.
+- Live visual UAT is blocked/pending upstream received quantity correction.
+- The previous 40/35/5 expectation was based on the wrong received quantity assumption.
+- Correct expected S010 after upstream correction is:
+  - received = 35
+  - reportable = 35
+  - remaining = 0
+  - coverage = 100%
+- `/reports` must be retested after 1A-R1 and approved data correction/recalculation path.
+
+**Next Step:** 1A-R Upstream Received Quantity Correction. Batch 1C must not start before the 1A-R retest.
