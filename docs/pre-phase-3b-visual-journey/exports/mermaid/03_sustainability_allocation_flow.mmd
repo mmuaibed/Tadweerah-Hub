@@ -1,0 +1,35 @@
+flowchart TD
+  dashboard["/dashboard"]
+  reportsCard["Ø§Ù„ØªÙ‚Ø§Ø±ÙŠØ± ÙˆØ§Ù„Ø§Ø³ØªØ¯Ø§Ù…Ø©\ncard"]
+  entryCard["Ø¥Ø¯Ø®Ø§Ù„ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø§Ø³ØªØ¯Ø§Ù…Ø©\ncard"]
+  allocations["/sustainability/allocations"]
+  sellerEmpty["Seller view\nempty state"]
+  buyerRows["Buyer/processor view\nallocation rows"]
+  detail["Allocation detail\nvia visible Ø¹Ø±Ø¶ Ø§Ù„ØªÙØ§ØµÙŠÙ„"]
+  notEligible["Not eligible\nØºÙŠØ± Ù…Ø¤Ù‡Ù„ Ù„Ù„ØªÙˆØ²ÙŠØ¹\n50 received / 0 distributed / 50 remaining"]
+  draft["Ù…Ø³ÙˆØ¯Ø©\n30 received / 0 distributed / 30 remaining"]
+  approved["Ù…Ø¹ØªÙ…Ø¯\n40 received / 35 distributed / 5 remaining\n87.5%"]
+  noMutations["No mutation actions clicked"]
+  mutationActions["Mutation-risk controls\nØ·Ù„Ø¨ ØªØ¹Ø¯ÙŠÙ„ Ø§Ù„ØªÙˆØ²ÙŠØ¹\nØ¥Ø¶Ø§ÙØ© Ù…Ø³Ø§Ø±\nØ­ÙØ¸ Ø§Ù„Ù…Ø³ÙˆØ¯Ø©\nØ§Ø¹ØªÙ…Ø§Ø¯ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø§Ø³ØªØ¯Ø§Ù…Ø©"]
+
+  dashboard --> reportsCard
+  dashboard --> entryCard
+  entryCard --> allocations
+  allocations --> sellerEmpty
+  allocations --> buyerRows
+  buyerRows --> detail
+  detail --> notEligible
+  detail --> draft
+  detail --> approved
+  detail --> mutationActions
+  mutationActions --> noMutations
+
+  classDef green fill:#d9f7df,stroke:#218a42,color:#123;
+  classDef yellow fill:#fff5c4,stroke:#b58a00,color:#241a00;
+  classDef orange fill:#ffe3c2,stroke:#c46b00,color:#2a1300;
+  classDef red fill:#ffd6d6,stroke:#b42318,color:#2a0000;
+
+  class dashboard,reportsCard,entryCard,allocations,buyerRows,detail,notEligible,draft green;
+  class sellerEmpty yellow;
+  class approved orange;
+  class mutationActions,noMutations red;

@@ -1,0 +1,62 @@
+flowchart TD
+  anon["Anonymous\nhttps://tadweerah.com/"]
+  anonHome["Public home\nRenders"]
+  anonAlloc["/sustainability/allocations\nfalls back to /"]
+  anonReports["/reports\nfalls back to /"]
+
+  seller["Seller / Producer\n[TEST] Seller Demo"]
+  sellerDash["/dashboard\ncards visible"]
+  sellerAlloc["/sustainability/allocations\nempty state"]
+  sellerReports["/reports\nØªÙ‚Ø§Ø±ÙŠØ±ÙŠ"]
+  sellerSustReports["ØªÙ‚Ø§Ø±ÙŠØ± Ø§Ù„Ø§Ø³ØªØ¯Ø§Ù…Ø© tab\nactive tab"]
+
+  buyer["Buyer / Processor / Recycler\n[TEST] Buyer Demo"]
+  buyerDash["/dashboard\ncards visible"]
+  buyerAlloc["/sustainability/allocations\nrows visible"]
+  buyerNotEligible["Allocation detail\nnot eligible\n50 / 0 / 50"]
+  buyerApproved["Allocation detail\nÙ…Ø¹ØªÙ…Ø¯\n40 / 35 / 5"]
+  buyerDraft["Allocation detail\nÙ…Ø³ÙˆØ¯Ø©\n30 / 0 / 30"]
+  buyerReports["/reports\nactive"]
+  buyerSustReports["ØªÙ‚Ø§Ø±ÙŠØ± Ø§Ù„Ø§Ø³ØªØ¯Ø§Ù…Ø© tab\nactive tab"]
+
+  admin["Admin\nÙ…Ø¯ÙŠØ± ØªØ¯ÙˆÙŠØ±Ø©"]
+  adminPanel["/admin\nÙ„ÙˆØ­Ø© Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„ØµÙÙ‚Ø§Øª"]
+  adminReports["Admin reports tab"]
+  adminSust["Admin Ø§Ù„Ø§Ø³ØªØ¯Ø§Ù…Ø© subtab\nØ³Ø¬Ù„Ø§Øª Ø§Ù„Ø§Ø³ØªØ¯Ø§Ù…Ø©"]
+  adminReview["Ø¹Ù…Ù„ÙŠØ§Øª ØªØ­ØªØ§Ø¬ Ù…Ø±Ø§Ø¬Ø¹Ø©"]
+  adminIssues["Ù…Ø´Ø§ÙƒÙ„ Ø§Ù„Ø¹Ù…Ù„Ø§Ø¡"]
+  adminLog["Ø³Ø¬Ù„ Ø§Ù„Ø¹Ù…Ù„ÙŠØ§Øª"]
+
+  anon --> anonHome
+  anon --> anonAlloc
+  anon --> anonReports
+
+  seller --> sellerDash
+  sellerDash --> sellerAlloc
+  sellerDash --> sellerReports
+  sellerReports --> sellerSustReports
+
+  buyer --> buyerDash
+  buyerDash --> buyerAlloc
+  buyerAlloc --> buyerNotEligible
+  buyerAlloc --> buyerApproved
+  buyerAlloc --> buyerDraft
+  buyerDash --> buyerReports
+  buyerReports --> buyerSustReports
+
+  admin --> adminPanel
+  adminPanel --> adminReports
+  adminReports --> adminSust
+  adminPanel --> adminReview
+  adminPanel --> adminIssues
+  adminPanel --> adminLog
+
+  classDef green fill:#d9f7df,stroke:#218a42,color:#123;
+  classDef yellow fill:#fff5c4,stroke:#b58a00,color:#241a00;
+  classDef orange fill:#ffe3c2,stroke:#c46b00,color:#2a1300;
+  classDef red fill:#ffd6d6,stroke:#b42318,color:#2a0000;
+
+  class anonHome,sellerDash,sellerReports,sellerSustReports,buyerDash,buyerAlloc,buyerNotEligible,buyerDraft,buyerReports,buyerSustReports,adminPanel,adminReports,adminSust,adminReview,adminIssues,adminLog green;
+  class sellerAlloc yellow;
+  class buyerApproved orange;
+  class anonAlloc,anonReports red;

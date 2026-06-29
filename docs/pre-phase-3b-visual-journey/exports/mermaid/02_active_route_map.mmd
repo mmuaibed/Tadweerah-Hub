@@ -1,0 +1,42 @@
+flowchart LR
+  active["Active browser-confirmed"]
+  reachable["Reachable but not journey-active"]
+  blocked["Blocked"]
+  unconfirmed["Unconfirmed"]
+  mutation["Mutation-risk / not clicked"]
+
+  active --> root["https://tadweerah.com/"]
+  active --> dash["/dashboard\nseller and buyer"]
+  active --> reports["/reports\nseller and buyer"]
+  active --> reportsTab["/reports\nØªÙ‚Ø§Ø±ÙŠØ± Ø§Ù„Ø§Ø³ØªØ¯Ø§Ù…Ø© tab"]
+  active --> allocList["/sustainability/allocations\nbuyer rows"]
+  active --> allocDetail["/sustainability/allocations/:id\nvisible buyer details"]
+  active --> admin["/admin"]
+  active --> adminTabs["/admin in-page tabs\nreports / sustainability / review / issues / log / shipments"]
+
+  reachable --> anonAlloc["Anonymous /sustainability/allocations\nfinal URL /"]
+  reachable --> anonReports["Anonymous /reports\nfinal URL /"]
+  reachable --> sellerEmpty["Seller /sustainability/allocations\nempty state"]
+
+  blocked --> webapp["tadweerah-staging.web.app\nClerk origin blocked"]
+  blocked --> print["/reports/sustainability/:id/print\nnot reached"]
+
+  unconfirmed --> reportButton["Ø¹Ø±Ø¶ Ø§Ù„ØªÙ‚Ø±ÙŠØ±\nbutton visible, not verified as safe navigation"]
+  unconfirmed --> adminDetails["Admin ØªÙØ§ØµÙŠÙ„\nbutton visible, not opened"]
+  unconfirmed --> correctionDetail["Admin correction/revision detail\nnot reached"]
+
+  mutation --> reopen["ØªØ¹Ø¯ÙŠÙ„ (Ø¥Ø¹Ø§Ø¯Ø© ÙØªØ­)"]
+  mutation --> requestCorrection["Ø·Ù„Ø¨ ØªØ¹Ø¯ÙŠÙ„ Ø§Ù„ØªÙˆØ²ÙŠØ¹"]
+  mutation --> draftControls["Ø¥Ø¶Ø§ÙØ© Ù…Ø³Ø§Ø± / Ø­ÙØ¸ Ø§Ù„Ù…Ø³ÙˆØ¯Ø© / Ø§Ø¹ØªÙ…Ø§Ø¯ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø§Ø³ØªØ¯Ø§Ù…Ø©"]
+  mutation --> loadButtons["ØªØ­Ù…ÙŠÙ„ / ØªØ­Ø¯ÙŠØ« / Ø¹Ø±Ø¶ Ø§Ù„Ø³Ø¬Ù„ buttons"]
+
+  classDef green fill:#d9f7df,stroke:#218a42,color:#123;
+  classDef yellow fill:#fff5c4,stroke:#b58a00,color:#241a00;
+  classDef red fill:#ffd6d6,stroke:#b42318,color:#2a0000;
+  classDef gray fill:#eeeeee,stroke:#777,color:#222;
+
+  class active,root,dash,reports,reportsTab,allocList,allocDetail,admin,adminTabs green;
+  class reachable,anonAlloc,anonReports,sellerEmpty yellow;
+  class blocked,webapp,print red;
+  class unconfirmed,reportButton,adminDetails,correctionDetail gray;
+  class mutation,reopen,requestCorrection,draftControls,loadButtons red;

@@ -1,0 +1,38 @@
+flowchart LR
+  ref["TDW-CTR-2026-0006-S010"]
+
+  buyerDetail["Buyer/processor allocation detail\n/sustainability/allocations/:id"]
+  received["40 Ø·Ù†\nreceived/source quantity"]
+  distributed["35 Ø·Ù†\ndistributed"]
+  remaining["5 Ø·Ù†\nremaining"]
+  ratio["87.5%\nÙ…Ø¹ØªÙ…Ø¯"]
+
+  adminView["Admin sustainability row\n/admin reports > Ø§Ù„Ø§Ø³ØªØ¯Ø§Ù…Ø©"]
+  adminQty["40 Ø·Ù†\nÙ…Ø¹ØªÙ…Ø¯\nversion 2"]
+  replaced["40 Ø·Ù†\nÙ…Ø³ØªØ¨Ø¯Ù„\nversion 1"]
+
+  risk["Source-reading risk for Phase 3-B\nreports must distinguish received vs distributed/approved quantity"]
+  noFix["No fix inferred in Pre-Phase 3-B"]
+
+  ref --> buyerDetail
+  buyerDetail --> received
+  buyerDetail --> distributed
+  buyerDetail --> remaining
+  buyerDetail --> ratio
+
+  ref --> adminView
+  adminView --> adminQty
+  adminView --> replaced
+
+  received --> risk
+  distributed --> risk
+  adminQty --> risk
+  risk --> noFix
+
+  classDef green fill:#d9f7df,stroke:#218a42,color:#123;
+  classDef orange fill:#ffe3c2,stroke:#c46b00,color:#2a1300;
+  classDef gray fill:#eeeeee,stroke:#777,color:#222;
+
+  class ref,buyerDetail,adminView green;
+  class received,distributed,remaining,ratio,adminQty,replaced,risk orange;
+  class noFix gray;

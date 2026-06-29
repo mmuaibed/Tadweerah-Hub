@@ -1,0 +1,30 @@
+flowchart TD
+  entry["Ø¥Ø¯Ø®Ø§Ù„ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø§Ø³ØªØ¯Ø§Ù…Ø©\nbrowser-confirmed"]
+  distributionConcept["ØªÙˆØ²ÙŠØ¹ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø§Ø³ØªØ¯Ø§Ù…Ø©\nconcept observed, exact term unconfirmed"]
+  draft["Ù…Ø³ÙˆØ¯Ø©\nÙ…Ø³ÙˆØ¯Ø© ØªÙˆØ²ÙŠØ¹ Ø§Ù„Ø§Ø³ØªØ¯Ø§Ù…Ø©"]
+  approved["Ù…Ø¹ØªÙ…Ø¯\nØªÙ‚Ø±ÙŠØ± Ø§Ù„Ø§Ø³ØªØ¯Ø§Ù…Ø©"]
+  reports["ØªÙ‚Ø§Ø±ÙŠØ± Ø§Ù„Ø§Ø³ØªØ¯Ø§Ù…Ø©\nreports tab"]
+  viewReport["Ø¹Ø±Ø¶ Ø§Ù„ØªÙ‚Ø±ÙŠØ±\nvisible, not clicked / disabled in admin rows"]
+  reopen["ØªØ¹Ø¯ÙŠÙ„ (Ø¥Ø¹Ø§Ø¯Ø© ÙØªØ­)\nmutation-risk, not clicked"]
+  received["Ø§Ù„ÙƒÙ…ÙŠØ© Ø§Ù„Ù…Ø³ØªÙ„Ù…Ø© Ø§Ù„Ø¥Ø¬Ù…Ø§Ù„ÙŠØ©"]
+  totalDistribution["Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„ØªÙˆØ²ÙŠØ¹"]
+  remaining["Ø§Ù„ÙƒÙ…ÙŠØ© Ø§Ù„Ù…ØªØ¨Ù‚ÙŠØ©"]
+
+  entry --> distributionConcept
+  distributionConcept --> draft
+  distributionConcept --> approved
+  approved --> reports
+  reports --> viewReport
+  approved --> received
+  approved --> totalDistribution
+  approved --> remaining
+  reports --> reopen
+
+  classDef green fill:#d9f7df,stroke:#218a42,color:#123;
+  classDef yellow fill:#fff5c4,stroke:#b58a00,color:#241a00;
+  classDef orange fill:#ffe3c2,stroke:#c46b00,color:#2a1300;
+  classDef red fill:#ffd6d6,stroke:#b42318,color:#2a0000;
+
+  class entry,draft,approved,reports,received,totalDistribution,remaining green;
+  class distributionConcept,viewReport yellow;
+  class reopen red;

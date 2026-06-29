@@ -602,6 +602,19 @@ For the comprehensive ongoing platform development roadmap (including customer s
   - Updated print page: renders a multi-material table with per-material pathway rows and totals.
   - No schema migration needed — `line_seq` is already the extension point.
 
+### Pre-Phase 3-B -- Sustainability Visual Journey Evidence Baseline
+- **Status:** Discovery-only baseline created under `docs/pre-phase-3b-visual-journey/`. This is not Phase 3-B implementation scope and does not approve fixes.
+- **Purpose:** Browser-evidence baseline for the sustainability allocation, reporting, correction/revision, role-visibility, terminology, and quantity-source review needed before Phase 3-B changes.
+- **Core artifacts:**
+  - [08_VISUAL_JOURNEY_STORYBOARD.md](pre-phase-3b-visual-journey/08_VISUAL_JOURNEY_STORYBOARD.md) -- evidence-based storyboard and confidence map.
+  - [08A_VISUAL_DIAGRAMS.md](pre-phase-3b-visual-journey/08A_VISUAL_DIAGRAMS.md) -- Mermaid visual diagrams; canonical editable visual source.
+  - [08B_VISUAL_DIAGRAMS_MAINTENANCE.md](pre-phase-3b-visual-journey/08B_VISUAL_DIAGRAMS_MAINTENANCE.md) -- diagram update triggers and closure checklist.
+  - [08C_PARTNER_REVIEW_PACKAGE.md](pre-phase-3b-visual-journey/08C_PARTNER_REVIEW_PACKAGE.md) -- executive/founder review package.
+  - [08D_PARTNER_REVIEW_INDEX.md](pre-phase-3b-visual-journey/08D_PARTNER_REVIEW_INDEX.md) -- partner/internal evidence index.
+- **Diagram export tooling:** Mermaid CLI is installed as root dev tooling for repeatable diagram exports. Puppeteer is installed only as the dev dependency required by Mermaid CLI export support. SVG snapshots are generated under `docs/pre-phase-3b-visual-journey/exports/svg/`; PDF snapshots are generated under `docs/pre-phase-3b-visual-journey/exports/pdf/`. Draw.io exports remain manual snapshots unless a separate draw.io workflow is approved.
+- **Maintenance rule:** Future changes to sustainability, reporting, correction/revision, role visibility, terminology, or received/distributed/remaining/approved quantity fields must update the Mermaid diagrams in `08A_VISUAL_DIAGRAMS.md` or explicitly mark the diagrams as not applicable in phase closure notes.
+- **Phase 3-B rule:** Phase 3-B must use these artifacts as evidence only. They are not an implementation plan and do not replace source-of-truth audit work.
+
 ### 5. Phase 3-B — Post-Pilot Workflow Configurability & Polish
 - Configurable timers, category-targeted notifications, i18n refactor, checklist wording polish, etc.
 

@@ -1,0 +1,32 @@
+flowchart TD
+  dashboard["/dashboard"]
+  reportsEntry["Ø§Ù„ØªÙ‚Ø§Ø±ÙŠØ± ÙˆØ§Ù„Ø§Ø³ØªØ¯Ø§Ù…Ø©\ncard / count cards"]
+  reports["/reports\nØªÙ‚Ø§Ø±ÙŠØ±ÙŠ"]
+  deals["Ø§Ù„ØµÙÙ‚Ø§Øª tab"]
+  contracts["Ø§Ù„Ø¹Ù‚ÙˆØ¯ tab"]
+  sustTab["ØªÙ‚Ø§Ø±ÙŠØ± Ø§Ù„Ø§Ø³ØªØ¯Ø§Ù…Ø© tab"]
+  reportButton["Ø¹Ø±Ø¶ Ø§Ù„ØªÙ‚Ø±ÙŠØ±\nvisible button"]
+  printRoute["/reports/sustainability/:id/print\nnot confirmed"]
+  adminReports["/admin reports tab"]
+  adminSust["Admin Ø§Ù„Ø§Ø³ØªØ¯Ø§Ù…Ø© subtab\nØ³Ø¬Ù„Ø§Øª Ø§Ù„Ø§Ø³ØªØ¯Ø§Ù…Ø©"]
+  adminReportButton["Admin Ø¹Ø±Ø¶ Ø§Ù„ØªÙ‚Ø±ÙŠØ±\ndisabled in rows"]
+
+  dashboard --> reportsEntry
+  reportsEntry --> reports
+  reports --> deals
+  reports --> contracts
+  reports --> sustTab
+  sustTab --> reportButton
+  reportButton -. "not clicked / read-only safety unconfirmed" .-> printRoute
+  adminReports --> adminSust
+  adminSust --> adminReportButton
+  adminReportButton -. "disabled" .-> printRoute
+
+  classDef green fill:#d9f7df,stroke:#218a42,color:#123;
+  classDef yellow fill:#fff5c4,stroke:#b58a00,color:#241a00;
+  classDef red fill:#ffd6d6,stroke:#b42318,color:#2a0000;
+  classDef gray fill:#eeeeee,stroke:#777,color:#222;
+
+  class dashboard,reportsEntry,reports,deals,contracts,sustTab,adminReports,adminSust green;
+  class reportButton yellow;
+  class adminReportButton,printRoute gray;
