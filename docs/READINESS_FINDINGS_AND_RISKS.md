@@ -856,3 +856,22 @@ This future phase will tackle deep administrative features and holistic permissi
 - Admin Phase 2 items.
 - Any broad notification/email refactor.
 
+---
+
+## Phase 3-B Batch 1B — Received-vs-Allocated Guardrail (Active)
+
+> **Status:** ✅ Deployed to staging and service-level validated. Route-level owner-authenticated test waived/deferred.
+
+### Findings
+- Received-vs-allocated guardrail service logic implemented (`assertReceivedQtyNotBelowAllocated`).
+- Raw risk fields (`raw_remaining_qty`, `over_allocated_qty`, `coverage_raw_pct`, `remaining_qty_data_risk`) are now exposed via API (buyer, admin, reports CSV/JSON).
+- Deployed to staging on real-domain environment (`tadweerah-api-00174-zs8` / `tadweerah-pilot-db`).
+- Backend typecheck passed.
+
+### Deferred / Remaining Risks
+- **Frontend warning UI:** Still deferred. No visual indication of `remaining_qty_data_risk` in UI yet.
+- **Route-level owner-authenticated test:** Explicitly waived/deferred by owner.
+- **Batch 1C:** Not approved and not started.
+
+### Future Risk / Design Item
+- **Void/Recreate Workflow:** The owner product direction for materially wrong completed/allocated shipment lines is to avoid direct post-facto weight edits. A formal cancellation/void request workflow must be designed where the admin reviews and approves, the voided line remains as a historical/audit record, and the user creates a new shipment/line to correct the operation.

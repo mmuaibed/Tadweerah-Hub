@@ -616,8 +616,14 @@ For the comprehensive ongoing platform development roadmap (including customer s
 - **Phase 3-B rule:** Phase 3-B must use these artifacts as evidence only. They are not an implementation plan and do not replace source-of-truth audit work.
 
 ### 5. Phase 3-B — Post-Pilot Workflow Configurability & Polish
-- **Status:** Batch 1A-R (Staging Historical Data Correction) ✅ Closed via commit `a9282e7`. Production correction remains a separate future gate. Batch 1C (Script Extension) is NOT approved/started.
-- Configurable timers, category-targeted notifications, i18n refactor, checklist wording polish, etc.
+- **Status:** 
+  - **Batch 1A-R (Historical Sustainability Correction):** ✅ Closed on staging via commit `76f038b`.
+  - **Batch 1A-S (Source-of-Truth Governance UAT):** ✅ Completed and documented via commit `77950fc`. Confirmed separation of physical (destination first) vs commercial (final) weight.
+  - **Batch 1B (Received-vs-Allocated Guardrail):** ✅ Deployed to staging (`tadweerah-api-00174-zs8`, commit `20296cb`). Raw fields exposed. Route-level owner-authenticated validation waived/deferred. Closure commit `aee301e`.
+  - **Environment Note:** `tadweerah.com` is currently served by Firebase `tadweerah-staging` and Cloud Run `tadweerah-api` pointing to `tadweerah-pilot-db`. This is the staging real-domain environment.
+  - **Batch 1C (Script Extension):** 🚫 NOT approved/started.
+  - **Production Correction:** 🚫 NOT approved and not needed unless a separate true production DB is introduced.
+  - **Next Recommended Gate:** Design Void/Recreate Governance Workflow (future product direction away from post-allocation weight edits).
 
 ### Phase 3-A1 — Customer-visible Trust Fixes
   - Transporter dashboard shows Tadweerah commercial reference when available.
