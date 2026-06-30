@@ -1,3 +1,7 @@
+/**
+ * Resolves the Actual Sustainability Received Weight (وزن الاستلام الفعلي للاستدامة)
+ * by evaluating source and destination weighbridge measurements.
+ */
 export function resolveSustainabilityPhysicalWeight(
   sourceWeight: string | number | null | undefined,
   destinationWeight: string | number | null | undefined

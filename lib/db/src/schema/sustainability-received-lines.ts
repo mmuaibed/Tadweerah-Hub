@@ -118,7 +118,7 @@ export const sustainabilityReceivedLinesTable = pgTable(
 
     /**
      * The final confirmed received quantity — basis for sustainability allocation.
-     * This is the physical quantity, NOT commercial value.
+     * This is the Actual Sustainability Received Weight, NOT commercial value.
      */
     final_received_qty: numeric("final_received_qty", {
       precision: 12,
@@ -142,15 +142,16 @@ export const sustainabilityReceivedLinesTable = pgTable(
     // ── Eligibility ──────────────────────────────────────────────────────
 
     /**
-     * Whether this line is eligible for sustainability reporting.
-     * False when:
-     * - final_received_qty <= 0
-     * - listing.is_processed_output = true or NULL
-     * - other disqualifying conditions
+     * @deprecated This field is a legacy cache and is NOT authoritative.
+     * It does not reliably indicate allocation or reporting eligibility.
+     * Use dynamically derived `is_ready_for_allocation` in the API instead.
      */
     is_eligible: boolean("is_eligible").notNull().default(true),
 
-    /** Human-readable reason if not eligible */
+    /** 
+     * @deprecated Legacy field.
+     * Human-readable reason if not eligible 
+     */
     ineligibility_reason: text("ineligibility_reason"),
 
     // ── Evidence metadata (future-ready) ─────────────────────────────────

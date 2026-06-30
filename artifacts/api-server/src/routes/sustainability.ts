@@ -51,7 +51,8 @@ async function enrichReceivedLineQty(receivedLine: any, allocationStatus?: strin
           const hasCat = Boolean(receivedLine.material_category_id) || Boolean(deal.material_subcategory_id);
           
           if (hasQty && hasCat) {
-            receivedLine.is_eligible = true;
+            receivedLine.is_ready_for_allocation = true;
+            receivedLine.is_eligible = true; // @deprecated legacy field
             receivedLine.ineligibility_reason = null;
           } else if (deal.is_processed_output === null) {
             receivedLine.ineligibility_reason = "unclassified";
@@ -98,16 +99,19 @@ async function enrichReceivedLineQty(receivedLine: any, allocationStatus?: strin
           if (receivedLine.ineligibility_reason === "non_positive_quantity" || receivedLine.ineligibility_reason === "missing_buyer_quantity") {
             const hasCat = Boolean(receivedLine.material_category_id) || Boolean(shipment.material_category_id) || Boolean(shipment.material_label);
             if (!hasCat) {
-              receivedLine.is_eligible = false;
+              receivedLine.is_ready_for_allocation = false;
+              receivedLine.is_eligible = false; // @deprecated
               receivedLine.ineligibility_reason = "unclassified";
             } else {
-              receivedLine.is_eligible = true;
+              receivedLine.is_ready_for_allocation = true;
+              receivedLine.is_eligible = true; // @deprecated
               receivedLine.ineligibility_reason = null;
             }
           }
         } else {
           receivedLine.final_received_qty = "0";
-          receivedLine.is_eligible = false;
+          receivedLine.is_ready_for_allocation = false;
+          receivedLine.is_eligible = false; // @deprecated
           receivedLine.ineligibility_reason = errorReason;
         }
       } else {
@@ -138,7 +142,8 @@ async function enrichReceivedLineQty(receivedLine: any, allocationStatus?: strin
         if (!hasCat) {
           receivedLine.ineligibility_reason = "unclassified";
         } else {
-          receivedLine.is_eligible = true;
+          receivedLine.is_ready_for_allocation = true;
+          receivedLine.is_eligible = true; // @deprecated
           receivedLine.ineligibility_reason = null;
         }
       }
@@ -244,7 +249,7 @@ router.get("/sustainability/received-lines", requireAuth, requireCompany(), asyn
     let derived_unit = r.received_line.final_received_unit;
     let derived_reason = r.received_line.ineligibility_reason;
     let derived_cat = r.received_line.material_category_id;
-    let derived_is_eligible = r.received_line.is_eligible;
+    let derived_is_ready = r.received_line.is_eligible; // init from legacy db field
     let derived_material_label = r.received_line.material_label;
     
     if (r.received_line.parent_entity_type === "deal" && r.received_line.parent_entity_id) {
@@ -270,7 +275,7 @@ router.get("/sustainability/received-lines", requireAuth, requireCompany(), asyn
           const hasCat = Boolean(derived_cat);
           
           if (hasQty && hasCat) {
-            derived_is_eligible = true;
+            derived_is_ready = true;
             derived_reason = null;
           } else if (r.listing_is_processed_output === null) {
             derived_reason = "unclassified";
@@ -299,15 +304,15 @@ router.get("/sustainability/received-lines", requireAuth, requireCompany(), asyn
             const hasCat = Boolean(r.shipment_material_category_id) || Boolean(r.shipment_material_label);
             if (!hasCat) {
               derived_reason = "unclassified";
-              derived_is_eligible = false;
+              derived_is_ready = false;
             } else {
-              derived_is_eligible = true;
+              derived_is_ready = true;
               derived_reason = null;
             }
           }
         } else {
           derived_qty = "0";
-          derived_is_eligible = false;
+          derived_is_ready = false;
           derived_reason = errorReason;
         }
       }
@@ -332,7 +337,7 @@ router.get("/sustainability/received-lines", requireAuth, requireCompany(), asyn
         if (!hasCat) {
           derived_reason = "unclassified";
         } else {
-          derived_is_eligible = true;
+          derived_is_ready = true;
           derived_reason = null;
         }
       }
@@ -348,7 +353,8 @@ router.get("/sustainability/received-lines", requireAuth, requireCompany(), asyn
         material_label: derived_material_label,
         ineligibility_reason: derived_reason,
         material_category_id: derived_cat,
-        is_eligible: derived_is_eligible,
+        is_ready_for_allocation: derived_is_ready,
+        is_eligible: derived_is_ready, // @deprecated for backward compat
       },
       allocation_id: r.allocation_id,
       allocation_status: r.allocation_status
@@ -440,10 +446,10 @@ router.post("/sustainability/received-lines/:id/allocation", requireAuth, requir
 
   await enrichReceivedLineQty(receivedLine, allocation?.status);
 
-  if (!receivedLine.is_eligible) {
+  if (!receivedLine.is_ready_for_allocation) {
     res.status(400).json({
       error: "Ineligible",
-      message: "This received line is not eligible for sustainability reporting.",
+      message: "This received line is not ready for sustainability allocation.",
       ineligibility_reason: receivedLine.ineligibility_reason
     });
     return;
