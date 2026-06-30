@@ -65,3 +65,24 @@ To proceed, the owner must decide the execution path:
 * **Option B (Single Guarded Script - Recommended):** Write a single script that includes strict transaction guards for both Safe Rows and S010. Since the S010 correction only touches the `final_received_qty` cache (which no longer controls the active read model) and writes an audit log, the risk is completely neutralized.
 
 **Recommended Safest Option:** Option B is recommended. The active read model is already closed, meaning the database cache is completely decoupled from active UI and reporting logic. A single guarded script reduces operational overhead while maintaining absolute data integrity.
+
+
+## 7. Advisor Conditional Approval & Safeguards
+This plan has been conditionally approved by the governance advisor pending the implementation of the following execution safeguards:
+
+* **S006 Risk Rationale:** Row S006 requires a reduction from 30.000 to 25.000. If an active allocation greater than 25.000 exists, correcting the cache downwards would break coverage logic. Therefore, an explicit invariant check is required.
+* **The Invariant:** For every row updated, the execution transaction MUST strictly assert that sum(active non-superseded allocation lines) <= proposed final_received_qty. If this invariant is violated, the entire transaction must abort.
+* **Commercial Reference in Audit:** Every `audit_log` entry must explicitly embed the related commercial reference fields (`final_weight`, `weight_policy`, `final_value`) to irrefutably prove they were left completely intact.
+
+## 8. Post-Apply Validation Requirements
+Following a successful `--apply`, the following verifications MUST pass:
+* **No Negative Remaining:** There must be zero instances of negative remaining quantities across all rows.
+* **Coverage Limits:** No coverage percentage can exceed 100% due to allocated > received.
+* **Commercial Integrity:** All commercial fields (`final_weight`, `final_value`, `weight_policy`) must remain absolutely unchanged.
+* **Allocation Integrity:** All allocation lines must remain untouched.
+* **Convergence:** Re-running the dry-run script after a successful apply must yield expected-current-value mismatch aborts (no-ops), proving absolute convergence and idempotency.
+
+## 9. Number Formatting Rules
+* Internal correction values strictly use scale-3 decimals (e.g., `25.000`) for precise DB safety and invariant guards.
+* Generated reports and terminal outputs use human-readable formatting to avoid misreading `25.000` as `25,000`.
+* Thousands use a comma separator (e.g., `25000.000` is displayed as `25,000`).
