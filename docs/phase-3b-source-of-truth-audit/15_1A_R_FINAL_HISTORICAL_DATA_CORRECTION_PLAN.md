@@ -40,7 +40,7 @@ S010 has a finalized and approved allocation dependency, requiring extreme cauti
   * Aborts if any row's `final_received_qty` has changed since the dry-run.
   * Aborts if S010's allocation dependency state is NOT exactly 35 allocated and 'finalized'.
 * **Auditing:** Writes explicit `audit_log` records for each corrected row in apply mode only.
-* **Reporting:** Produces a markdown execution report (`execution-report.md`) containing the exact transaction log.
+* **Reporting:** Produces a timestamped execution report in `docs/phase-3b-source-of-truth-audit/generated/` (e.g., `phase-3b-1a-r-final-historical-correction-apply-YYYYMMDD-HHMMSS.md`) containing the exact transaction log. Generated reports are evidence artifacts and should not be staged unless explicitly requested.
 * **Isolation:** Explicitly prevented from touching commercial tables or fields (e.g., `contract_shipments.final_weight`, `contract_shipments.final_value`, `deals.actual_quantity`, `payment_requests`, `VAT/tax`, `buyer/seller payable amounts`).
 
 ## 5. Validation After Correction
