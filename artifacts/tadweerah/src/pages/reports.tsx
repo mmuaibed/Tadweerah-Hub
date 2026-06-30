@@ -1053,7 +1053,7 @@ export function ReportsPage() {
                               <Td>{row.counterparty_name ?? "—"}</Td>
                               <Td>{lang === "ar" ? row.material_ar : row.material_en}</Td>
                               <Td mono>
-                                <span className="text-muted-foreground">{fmtNumber(row.received_qty ?? row.quantity)} {unitLabel}</span>
+                                <span className="text-muted-foreground">{fmtNumber(row.received_qty)} {unitLabel}</span>
                               </Td>
                               <Td mono bold>
                                 {row.reportable_qty !== undefined && row.reportable_qty !== null ? (

@@ -283,7 +283,7 @@ export function SustainabilityAllocationDetailPage() {
   const contractId = rl?.parent_entity_contract_id || cachedItem?.received_line?.parent_entity_contract_id;
   const isFinalized = allocation?.status === "finalized";
   const pathways = data.pathways;
-  const totalReceived = Number(rl.final_received_qty) || 0;
+  const totalReceived = Number(rl.received_qty) || 0;
 
   // Real-time UI validation
   const currentTotalAllocated = draftLines.reduce((sum, line) => sum + (Number(line.quantity) || 0), 0);
@@ -398,7 +398,7 @@ export function SustainabilityAllocationDetailPage() {
               <div>
                 <p className="text-xs text-muted-foreground">{t("sustainability.allocations.total_received")}</p>
                 <p className="text-lg font-bold font-mono text-foreground mt-0.5">
-                  {fmtNumber(rl.final_received_qty)} <span className="text-sm">{rl.final_received_unit ? (t(`unit.${rl.final_received_unit}`) === `unit.${rl.final_received_unit}` ? rl.final_received_unit : t(`unit.${rl.final_received_unit}`)) : ""}</span>
+                  {fmtNumber(rl.received_qty)} <span className="text-sm">{rl.final_received_unit ? (t(`unit.${rl.final_received_unit}`) === `unit.${rl.final_received_unit}` ? rl.final_received_unit : t(`unit.${rl.final_received_unit}`)) : ""}</span>
                 </p>
               </div>
               <div>

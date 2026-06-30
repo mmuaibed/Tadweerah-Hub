@@ -28,6 +28,13 @@ interface ReceivedLine {
   material_category_id?: string | null;
   material_label: string;
   final_received_qty: string;
+  legacy_final_received_qty?: string | null;
+  received_qty?: string | null;
+  actual_sustainability_received_qty?: string | null;
+  sustainability_weight_basis?: string;
+  reportable_qty?: string | null;
+  remaining_qty?: string | null;
+  coverage_pct?: string | null;
   final_received_unit: string;
   is_eligible: boolean;
   ineligibility_reason: string | null;
@@ -201,7 +208,9 @@ export function SustainabilityAllocationsPage() {
                   <tr className="border-b border-border bg-muted/30">
                     <th className="px-3 py-2.5 text-start text-xs font-semibold text-muted-foreground whitespace-nowrap">{t("reports.col.date")}</th>
                     <th className="px-3 py-2.5 text-start text-xs font-semibold text-muted-foreground whitespace-nowrap">{t("sustainability.allocations.col.material")}</th>
-                    <th className="px-3 py-2.5 text-start text-xs font-semibold text-muted-foreground whitespace-nowrap">{t("sustainability.allocations.col.quantity")}</th>
+                    <th className="px-3 py-2.5 text-start text-xs font-semibold text-muted-foreground whitespace-nowrap">{lang === "ar" ? "الكمية المستلمة" : "Received Qty"}</th>
+                    <th className="px-3 py-2.5 text-start text-xs font-semibold text-muted-foreground whitespace-nowrap">{lang === "ar" ? "الكمية المعتمدة" : "Reportable Qty"}</th>
+                    <th className="px-3 py-2.5 text-start text-xs font-semibold text-muted-foreground whitespace-nowrap">{lang === "ar" ? "نسبة التغطية" : "Coverage %"}</th>
                     <th className="px-3 py-2.5 text-start text-xs font-semibold text-muted-foreground whitespace-nowrap">{t("sustainability.allocations.col.source")}</th>
                     <th className="px-3 py-2.5 text-start text-xs font-semibold text-muted-foreground whitespace-nowrap">{t("sustainability.allocations.col.eligibility")}</th>
                     <th className="px-3 py-2.5 text-start text-xs font-semibold text-muted-foreground whitespace-nowrap">{t("sustainability.allocations.col.status")}</th>
@@ -233,8 +242,20 @@ export function SustainabilityAllocationsPage() {
                       <tr key={rl.id} className={`transition-colors ${isEligible ? "hover:bg-muted/20" : "bg-muted/5 opacity-80"}`}>
                         <td className="px-3 py-2.5 whitespace-nowrap font-mono text-xs">{fmtDate(rl.created_at, lang)}</td>
                         <td className="px-3 py-2.5 font-semibold text-foreground">{getCategoryPath(rl.material_category_id, rl.material_label)}</td>
+                        <td className="px-3 py-2.5 font-mono text-muted-foreground">
+                          {rl.received_qty != null && !isNaN(Number(rl.received_qty)) ? fmtNumber(rl.received_qty) : "—"} {rl.final_received_unit ? (t(`unit.${rl.final_received_unit}`) === `unit.${rl.final_received_unit}` ? rl.final_received_unit : t(`unit.${rl.final_received_unit}`)) : ""}
+                        </td>
                         <td className="px-3 py-2.5 font-mono">
-                          {fmtNumber(rl.final_received_qty)} {rl.final_received_unit ? (t(`unit.${rl.final_received_unit}`) === `unit.${rl.final_received_unit}` ? rl.final_received_unit : t(`unit.${rl.final_received_unit}`)) : ""}
+                          {rl.reportable_qty != null && !isNaN(Number(rl.reportable_qty)) ? (
+                            <span className={row.allocation_status === "finalized" ? "text-green-700 font-bold" : "text-muted-foreground italic"}>
+                              {fmtNumber(rl.reportable_qty)} {rl.final_received_unit ? (t(`unit.${rl.final_received_unit}`) === `unit.${rl.final_received_unit}` ? rl.final_received_unit : t(`unit.${rl.final_received_unit}`)) : ""}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground italic">—</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-2.5 font-mono">
+                          {rl.coverage_pct != null ? `${rl.coverage_pct}%` : "—"}
                         </td>
                         <td className="px-3 py-2.5">
                           {rl.parent_entity_type === "deal" && rl.source_line_type === "listing" && rl.source_line_id ? (

@@ -34,6 +34,7 @@ import {
 import { requireAuth } from "../middlewares/requireAuth";
 import { requireCompany, type AuthedCompanyRequest } from "../middlewares/requireCompany";
 import { buildCsv } from "../lib/csv";
+import { deriveActualSustainabilityReceivedQtyForLine, deriveSustainabilityAllocationMetrics } from "../services/sustainability-received-quantity";
 
 const router: IRouter = Router();
 
@@ -525,6 +526,17 @@ router.get(
         contract_id: contractShipmentsTable.contract_id,
         shipment_id: contractShipmentsTable.id,
         
+        // Physical Quantities for Active Resolver
+        destination_weight: contractShipmentsTable.destination_weight,
+        source_weight: contractShipmentsTable.source_weight,
+        deal_actual_quantity: dealsTable.actual_quantity,
+        listing_quantity: wasteListingsTable.quantity,
+        is_processed_output: wasteListingsTable.is_processed_output,
+        material_category_id: sustainabilityReceivedLinesTable.material_category_id,
+        shipment_material_category_id: contractMaterialsTable.material_category_id,
+        shipment_material_label: contractMaterialsTable.material_label,
+        deal_subcategory_id: wasteListingsTable.material_subcategory_id,
+        
         // Enrichment
         listing_unit: wasteListingsTable.unit,
         subcategory_name_ar: materialCategoriesTable.name_ar,
@@ -629,6 +641,28 @@ router.get(
         if (u === "طن" || u === "ton") u = "ton";
         else if (u === "كجم" || u === "kg") u = "kg";
 
+        const has_valid_material = 
+          Boolean(row.material_category_id) || 
+          Boolean(row.deal_subcategory_id) || 
+          Boolean(row.shipment_material_category_id) || 
+          Boolean(row.shipment_material_label);
+
+        // Derive active truth
+        const readModel = deriveActualSustainabilityReceivedQtyForLine(
+          { 
+            final_received_qty: row.final_received_qty, 
+            parent_entity_type: row.parent_entity_type 
+          },
+          {
+            destination_weight: row.destination_weight,
+            source_weight: row.source_weight,
+            deal_actual_quantity: row.deal_actual_quantity,
+            listing_quantity: row.listing_quantity,
+            is_processed_output: row.is_processed_output,
+            has_valid_material
+          }
+        );
+
         groupedMap.set(row.received_line_id, {
           allocation_id: row.allocation_id,
           received_line_id: row.received_line_id,
@@ -644,11 +678,19 @@ router.get(
           counterparty_name: row.seller_id === cid ? row.buyer_name : row.seller_name,
           material_ar: materialLabelAr,
           material_en: materialLabelEn,
-          // @deprecated: `quantity` is frozen as received quantity for backward compatibility.
-          // New consumers must read `received_qty` (received) or `reportable_qty` (sustainability impact).
-          quantity: Number(row.final_received_qty).toString(),
-          // Phase 3-B Batch 1A: explicit quantity fields
-          received_qty: Number(row.final_received_qty).toString(),
+          
+          // Legacy compatibility
+          quantity: readModel.actual_sustainability_received_qty,
+          
+          // Phase 3-B Batch 1A-R explicit quantities
+          actual_sustainability_received_qty: readModel.actual_sustainability_received_qty,
+          received_qty: readModel.actual_sustainability_received_qty,
+          reportable_qty: "0",
+          remaining_qty: "0",
+          coverage_pct: null,
+          sustainability_weight_basis: readModel.sustainability_weight_basis,
+          is_ready_for_allocation: readModel.is_ready_for_allocation,
+          
           unit: u,
           pathways: []
         });
@@ -674,20 +716,21 @@ router.get(
     // (status = 'finalized' filter at L479 + allocation_id guard), so summing them is safe.
     const EPSILON = 0.001;
     for (const entry of groupedMap.values()) {
-      const receivedNum = Number(entry.received_qty);
-      const reportableNum = entry.pathways.reduce((sum: number, p: any) => sum + Number(p.quantity), 0);
-      const rawRemaining = receivedNum - reportableNum;
-      // Clamp float dust to zero within epsilon; surface material negatives as data-integrity risk
-      const clampedRemaining = Math.abs(rawRemaining) <= EPSILON ? 0 : rawRemaining;
-
-      entry.reportable_qty = reportableNum.toFixed(4);
-      entry.remaining_qty = clampedRemaining.toFixed(4);
+      const allocatedQtyNum = entry.pathways.reduce((sum: number, p: any) => sum + Number(p.quantity), 0);
+      
+      const metrics = deriveSustainabilityAllocationMetrics(entry.received_qty, allocatedQtyNum);
+      
+      const rawRemaining = Number(entry.received_qty) - allocatedQtyNum;
       entry.remaining_qty_data_risk = rawRemaining < -EPSILON; // true signals an over-allocation integrity issue
-      if (receivedNum > 0) {
-        entry.allocation_coverage_pct = ((reportableNum / receivedNum) * 100).toFixed(1);
-      } else {
-        entry.allocation_coverage_pct = null;
-      }
+      
+      // Override the entry metrics with standard derived metrics
+      entry.reportable_qty = Number(metrics.reportable_qty).toFixed(4);
+      
+      // Clamp float dust
+      const clampedRemaining = Math.abs(rawRemaining) <= EPSILON ? 0 : rawRemaining;
+      entry.remaining_qty = clampedRemaining.toFixed(4);
+      
+      entry.allocation_coverage_pct = metrics.coverage_pct ? Number(metrics.coverage_pct).toFixed(1) : null;
     }
 
     const serialized = Array.from(groupedMap.values()).slice(offset, offset + (format === "csv" ? 5000 : limit));
@@ -817,6 +860,18 @@ router.get(
         shipment_ref: contractShipmentsTable.reference,
         contract_id: contractShipmentsTable.contract_id,
         shipment_id: contractShipmentsTable.id,
+        
+        // Physical Quantities for Active Resolver
+        destination_weight: contractShipmentsTable.destination_weight,
+        source_weight: contractShipmentsTable.source_weight,
+        deal_actual_quantity: dealsTable.actual_quantity,
+        listing_quantity: wasteListingsTable.quantity,
+        is_processed_output: wasteListingsTable.is_processed_output,
+        material_category_id: sustainabilityReceivedLinesTable.material_category_id,
+        shipment_material_category_id: contractMaterialsTable.material_category_id,
+        shipment_material_label: contractMaterialsTable.material_label,
+        deal_subcategory_id: wasteListingsTable.material_subcategory_id,
+        
         listing_unit: wasteListingsTable.unit,
         subcategory_name_ar: materialCategoriesTable.name_ar,
         subcategory_name_en: materialCategoriesTable.name_en,
@@ -918,6 +973,28 @@ router.get(
         if (u === "طن" || u === "ton") u = "ton";
         else if (u === "كجم" || u === "kg") u = "kg";
 
+        const has_valid_material = 
+          Boolean(row.material_category_id) || 
+          Boolean(row.deal_subcategory_id) || 
+          Boolean(row.shipment_material_category_id) || 
+          Boolean(row.shipment_material_label);
+
+        // Derive active truth
+        const readModel = deriveActualSustainabilityReceivedQtyForLine(
+          { 
+            final_received_qty: row.final_received_qty, 
+            parent_entity_type: row.parent_entity_type 
+          },
+          {
+            destination_weight: row.destination_weight,
+            source_weight: row.source_weight,
+            deal_actual_quantity: row.deal_actual_quantity,
+            listing_quantity: row.listing_quantity,
+            is_processed_output: row.is_processed_output,
+            has_valid_material
+          }
+        );
+
         groupedMap.set(row.received_line_id, {
           allocation_id: row.allocation_id,
           received_line_id: row.received_line_id,
@@ -936,11 +1013,19 @@ router.get(
           processor_logo_url: row.buyer_logo_url ?? null,
           material_ar: materialLabelAr,
           material_en: materialLabelEn,
-          // @deprecated: `quantity` is frozen as received quantity for backward compatibility.
-          // New consumers must read `received_qty` (received) or `reportable_qty` (sustainability impact).
-          quantity: row.final_received_qty,
-          // Phase 3-B Batch 1A: explicit quantity fields
-          received_qty: row.final_received_qty,
+          
+          // Legacy compatibility
+          quantity: readModel.actual_sustainability_received_qty,
+          
+          // Phase 3-B Batch 1A-R explicit quantities
+          actual_sustainability_received_qty: readModel.actual_sustainability_received_qty,
+          received_qty: readModel.actual_sustainability_received_qty,
+          reportable_qty: "0",
+          remaining_qty: "0",
+          coverage_pct: null,
+          sustainability_weight_basis: readModel.sustainability_weight_basis,
+          is_ready_for_allocation: readModel.is_ready_for_allocation,
+          
           unit: u,
           pathways: []
         });

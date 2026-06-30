@@ -177,12 +177,27 @@ export function SustainabilityPrintPage() {
                 <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">{isAr ? "المادة" : "Material"}</span>
                 <span className="text-base font-bold text-gray-900">{isAr ? row.material_ar : row.material_en}</span>
               </div>
+              <div className="flex flex-col bg-muted/20 rounded-lg p-4 border border-border items-center justify-center text-center">
+                <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1">
+                  {isAr ? "وزن الاستلام الفعلي للاستدامة" : "Actual Sustainability Received Weight"}
+                </span>
+                <span className="text-xl font-black text-gray-700 font-mono" dir="ltr" style={{ unicodeBidi: "isolate" }}>
+                  {row.received_qty != null && !isNaN(Number(row.received_qty)) ? Number(row.received_qty).toLocaleString("en-US") : "—"} {row.unit === "ton" ? (isAr ? "طن" : "ton") : row.unit === "kg" ? (isAr ? "كجم" : "kg") : row.unit}
+                </span>
+              </div>
+              
               <div className="flex flex-col bg-primary/5 rounded-lg p-4 border border-primary/20 items-center justify-center text-center">
                 <span className="text-[9px] font-bold text-primary uppercase tracking-widest mb-1">
-                  {isAr ? "الكمية المستدامة المعتمدة" : "Finalized Sustainability Qty"}
+                  {isAr ? "الكمية المعتمدة للاستدامة" : "Finalized Reportable Qty"}
                 </span>
                 <span className="text-xl font-black text-gray-900 font-mono" dir="ltr" style={{ unicodeBidi: "isolate" }}>
-                  {Number(row.quantity).toLocaleString("en-US")} {row.unit === "ton" ? (isAr ? "طن" : "ton") : row.unit === "kg" ? (isAr ? "كجم" : "kg") : row.unit}
+                  {row.reportable_qty != null && !isNaN(Number(row.reportable_qty)) ? (
+                    `${Number(row.reportable_qty).toLocaleString("en-US")} ${row.unit === "ton" ? (isAr ? "طن" : "ton") : row.unit === "kg" ? (isAr ? "كجم" : "kg") : row.unit}`
+                  ) : (
+                    <span className="text-sm font-normal text-muted-foreground italic">
+                      {isAr ? "غير متاح — يرجى التحديث" : "Unavailable — refresh required"}
+                    </span>
+                  )}
                 </span>
               </div>
             </div>

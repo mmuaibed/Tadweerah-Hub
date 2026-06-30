@@ -2969,7 +2969,9 @@ export function AdminPage() {
                           <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "المرجع التجاري" : "Commercial Ref"}</th>
                           <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "الشركة" : "Company"}</th>
                           <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "المادة" : "Material"}</th>
-                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "الكمية" : "Quantity"}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "الكمية المستلمة" : "Received Qty"}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "الكمية المعتمدة للاستدامة" : "Reportable Qty"}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "نسبة التغطية" : "Coverage %"}</th>
                           <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "الحالة" : "Status"}</th>
                           <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "النسخة" : "Version"}</th>
                           <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "حالة التصحيح" : "Correction Status"}</th>
@@ -3016,11 +3018,23 @@ export function AdminPage() {
                                 "-"
                               )}
                             </td>
-                              <td className="px-4 py-2.5" dir="ltr">{rl?.final_received_qty ? `${Number(rl.final_received_qty).toLocaleString("en-US", { maximumFractionDigits: 3 })} ${
-  lang === "ar" && (rl.final_received_unit === "ton" || rl.final_received_unit === "tons") ? "طن" :
-  lang === "ar" && (rl.final_received_unit === "kg" || rl.final_received_unit === "kgs") ? "كجم" :
-  rl.final_received_unit || ""
+                              <td className="px-4 py-2.5" dir="ltr">{a.received_qty ? `${Number(a.received_qty).toLocaleString("en-US", { maximumFractionDigits: 3 })} ${
+  lang === "ar" && (rl?.final_received_unit === "ton" || rl?.final_received_unit === "tons") ? "طن" :
+  lang === "ar" && (rl?.final_received_unit === "kg" || rl?.final_received_unit === "kgs") ? "كجم" :
+  rl?.final_received_unit || ""
 }` : "-"}</td>
+                              <td className="px-4 py-2.5 font-mono" dir="ltr">
+                                {alloc.status === "finalized" ? (
+                                  <span className="text-green-600 font-medium">{Number(a.reportable_qty).toLocaleString("en-US", { maximumFractionDigits: 3 })}</span>
+                                ) : alloc.status === "draft" ? (
+                                  <span className="text-muted-foreground italic" title={lang === "ar" ? "مسودة" : "Draft"}>{Number(a.draft_allocated_qty).toLocaleString("en-US", { maximumFractionDigits: 3 })}</span>
+                                ) : (
+                                  <span className="text-muted-foreground italic line-through" title={lang === "ar" ? "مستبدل" : "Superseded"}>{a.historical_reportable_qty ? Number(a.historical_reportable_qty).toLocaleString("en-US", { maximumFractionDigits: 3 }) : "-"}</span>
+                                )}
+                              </td>
+                              <td className="px-4 py-2.5 font-mono" dir="ltr">
+                                {a.allocation_coverage_pct ? `${a.allocation_coverage_pct}%` : "-"}
+                              </td>
                               <td className="px-4 py-2.5">
                                 <Badge variant={alloc.status === "finalized" ? "default" : alloc.status === "superseded" ? "secondary" : "outline"} className="text-[10px]">
                                   {lang === "ar" 

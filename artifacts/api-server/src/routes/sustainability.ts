@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { eq, and, desc, inArray } from "drizzle-orm";
+import { eq, and, desc, inArray, sql } from "drizzle-orm";
 import {
   db,
   sustainabilityReceivedLinesTable,
@@ -20,8 +20,11 @@ import { logAudit } from "../lib/audit";
 import { notifyAdminCorrectionRequested } from "../lib/admin-notify";
 import { notifyCorrectionApproved, notifyCorrectionRejected } from "../lib/notify";
 import { wasteListingsTable } from "@workspace/db";
+import { deriveActualSustainabilityReceivedQtyForLine, deriveSustainabilityAllocationMetrics } from "../services/sustainability-received-quantity";
 
-async function enrichReceivedLineQty(receivedLine: any, allocationStatus?: string) {
+async function enrichReceivedLineQty(receivedLine: any, allocationStatus?: string, allocated_qty: number = 0) {
+  let parentDetails: any = { has_valid_material: false };
+
   if (receivedLine.parent_entity_type === "deal" && receivedLine.parent_entity_id) {
     const [deal] = await db
       .select({
@@ -37,33 +40,16 @@ async function enrichReceivedLineQty(receivedLine: any, allocationStatus?: strin
       .limit(1);
 
     if (deal) {
-      if (deal.actual_quantity) {
-        receivedLine.final_received_qty = deal.actual_quantity;
-      } else if (deal.listing_quantity) {
-        receivedLine.final_received_qty = deal.listing_quantity;
-      }
-
-      if (receivedLine.ineligibility_reason === "processed_output_or_unclassified") {
-        if (deal.is_processed_output === true) {
-          receivedLine.ineligibility_reason = "processed_output";
-        } else {
-          const hasQty = Number(receivedLine.final_received_qty) > 0;
-          const hasCat = Boolean(receivedLine.material_category_id) || Boolean(deal.material_subcategory_id);
-          
-          if (hasQty && hasCat) {
-            receivedLine.is_ready_for_allocation = true;
-            receivedLine.is_eligible = true; // @deprecated legacy field
-            receivedLine.ineligibility_reason = null;
-          } else if (deal.is_processed_output === null) {
-            receivedLine.ineligibility_reason = "unclassified";
-          }
-        }
-      }
+      parentDetails = {
+        deal_actual_quantity: deal.actual_quantity,
+        listing_quantity: deal.listing_quantity,
+        is_processed_output: deal.is_processed_output,
+        has_valid_material: Boolean(receivedLine.material_category_id) || Boolean(deal.material_subcategory_id)
+      };
 
       if (deal.material_subcategory_id) {
         receivedLine.material_category_id = deal.material_subcategory_id;
       }
-
       const year = deal.created_at ? new Date(deal.created_at).getFullYear() : new Date().getFullYear();
       receivedLine.parent_reference = `TDW-${year}-${receivedLine.parent_entity_id.replace(/-/g, "").slice(0, 6).toUpperCase()}`;
     }
@@ -85,42 +71,19 @@ async function enrichReceivedLineQty(receivedLine: any, allocationStatus?: strin
       .limit(1);
     
     if (shipment) {
-      if (allocationStatus !== "finalized") {
-        let finalQty: string | null = resolveSustainabilityPhysicalWeight(shipment.source_weight, shipment.destination_weight);
-        let errorReason: string | null = null;
+      parentDetails = {
+        destination_weight: shipment.destination_weight,
+        source_weight: shipment.source_weight,
+        has_valid_material: Boolean(receivedLine.material_category_id) || Boolean(shipment.material_category_id) || Boolean(shipment.material_label)
+      };
 
-        if (!finalQty) {
-          errorReason = "missing_physical_quantity";
-        }
-
-        if (finalQty) {
-          receivedLine.final_received_qty = finalQty;
-          
-          if (receivedLine.ineligibility_reason === "non_positive_quantity" || receivedLine.ineligibility_reason === "missing_buyer_quantity") {
-            const hasCat = Boolean(receivedLine.material_category_id) || Boolean(shipment.material_category_id) || Boolean(shipment.material_label);
-            if (!hasCat) {
-              receivedLine.is_ready_for_allocation = false;
-              receivedLine.is_eligible = false; // @deprecated
-              receivedLine.ineligibility_reason = "unclassified";
-            } else {
-              receivedLine.is_ready_for_allocation = true;
-              receivedLine.is_eligible = true; // @deprecated
-              receivedLine.ineligibility_reason = null;
-            }
-          }
-        } else {
-          receivedLine.final_received_qty = "0";
-          receivedLine.is_ready_for_allocation = false;
-          receivedLine.is_eligible = false; // @deprecated
-          receivedLine.ineligibility_reason = errorReason;
-        }
-      } else {
+      if (allocationStatus === "finalized") {
         let expectedQty: string | null = resolveSustainabilityPhysicalWeight(shipment.source_weight, shipment.destination_weight);
-
         if (expectedQty && expectedQty !== receivedLine.final_received_qty) {
           receivedLine.mismatch_warning = `Finalized quantity (${receivedLine.final_received_qty}) mismatches derived weight (${expectedQty}).`;
         }
       }
+
       if (shipment.reference) {
         receivedLine.parent_reference = shipment.reference;
       }
@@ -136,19 +99,23 @@ async function enrichReceivedLineQty(receivedLine: any, allocationStatus?: strin
       if (shipment.material_category_id) {
         receivedLine.material_category_id = shipment.material_category_id;
       }
-      
-      if (receivedLine.ineligibility_reason === "processed_output_or_unclassified") {
-        const hasCat = Boolean(shipment.material_category_id) || Boolean(shipment.material_label);
-        if (!hasCat) {
-          receivedLine.ineligibility_reason = "unclassified";
-        } else {
-          receivedLine.is_ready_for_allocation = true;
-          receivedLine.is_eligible = true; // @deprecated
-          receivedLine.ineligibility_reason = null;
-        }
-      }
     }
   }
+
+  // Call the shared resolver
+  const readModel = deriveActualSustainabilityReceivedQtyForLine(receivedLine, parentDetails);
+  const metrics = deriveSustainabilityAllocationMetrics(readModel.actual_sustainability_received_qty, allocated_qty);
+  
+  // Inject back into the object
+  receivedLine.final_received_qty = readModel.actual_sustainability_received_qty; // For backward compatibility
+  receivedLine.actual_sustainability_received_qty = readModel.actual_sustainability_received_qty;
+  receivedLine.reportable_qty = metrics.reportable_qty;
+  receivedLine.remaining_qty = metrics.remaining_qty;
+  receivedLine.coverage_pct = metrics.coverage_pct;
+  receivedLine.sustainability_weight_basis = readModel.sustainability_weight_basis;
+  receivedLine.is_ready_for_allocation = readModel.is_ready_for_allocation;
+  receivedLine.is_eligible = readModel.is_ready_for_allocation; // @deprecated legacy field mapping
+  receivedLine.ineligibility_reason = readModel.ineligibility_reason;
 }
 
 async function resolveEditableAllocationForReceivedLine(lineId: string, companyId: string, dbOrTx: any = db) {
@@ -205,11 +172,36 @@ router.get("/sustainability/received-lines", requireAuth, requireCompany(), asyn
       shipment_material_category_id: contractMaterialsTable.material_category_id,
       shipment_material_label: contractMaterialsTable.material_label,
       shipment_unit_label: contractMaterialsTable.unit_label,
+      total_allocated_qty: sql<string | null>`(
+        SELECT COALESCE(SUM(sal.quantity), 0)
+        FROM sustainability_allocation_lines sal
+        WHERE sal.allocation_id = ${sustainabilityAllocationsTable.id}
+      )`,
+      has_draft_correction: sql<boolean>`EXISTS (
+        SELECT 1 FROM sustainability_allocations
+        WHERE received_line_id = ${sustainabilityReceivedLinesTable.id}
+          AND status IN ('draft', 'needs_review')
+          AND version > 1
+      )`,
     })
     .from(sustainabilityReceivedLinesTable)
     .leftJoin(
       sustainabilityAllocationsTable,
-      eq(sustainabilityReceivedLinesTable.id, sustainabilityAllocationsTable.received_line_id)
+      and(
+        eq(sustainabilityReceivedLinesTable.id, sustainabilityAllocationsTable.received_line_id),
+        eq(
+          sustainabilityAllocationsTable.id,
+          sql`(
+            SELECT id FROM sustainability_allocations
+            WHERE received_line_id = ${sustainabilityReceivedLinesTable.id}
+              AND status != 'superseded'
+            ORDER BY 
+              CASE WHEN status = 'finalized' THEN 1 ELSE 2 END ASC,
+              version DESC
+            LIMIT 1
+          )`
+        )
+      )
     )
     .leftJoin(
       dealsTable,
@@ -245,119 +237,70 @@ router.get("/sustainability/received-lines", requireAuth, requireCompany(), asyn
   const formattedRows = rows.map((r) => {
     let parent_reference = "مرجع غير متاح";
     let parent_entity_contract_id: string | null = null;
-    let derived_qty = r.received_line.final_received_qty;
     let derived_unit = r.received_line.final_received_unit;
-    let derived_reason = r.received_line.ineligibility_reason;
-    let derived_cat = r.received_line.material_category_id;
-    let derived_is_ready = r.received_line.is_eligible; // init from legacy db field
     let derived_material_label = r.received_line.material_label;
     
     if (r.received_line.parent_entity_type === "deal" && r.received_line.parent_entity_id) {
       const id = r.received_line.parent_entity_id;
       const year = r.deal_created_at ? new Date(r.deal_created_at).getFullYear() : new Date().getFullYear();
       parent_reference = `TDW-${year}-${id.replace(/-/g, "").slice(0, 6).toUpperCase()}`;
-
-      if (r.deal_actual_quantity) {
-        derived_qty = r.deal_actual_quantity;
-      } else if (r.listing_quantity) {
-        derived_qty = r.listing_quantity;
-      }
-
-      if (r.listing_subcategory_id) {
-        derived_cat = r.listing_subcategory_id;
-      }
-
-      if (derived_reason === "processed_output_or_unclassified") {
-        if (r.listing_is_processed_output === true) {
-          derived_reason = "processed_output";
-        } else {
-          const hasQty = Number(derived_qty) > 0;
-          const hasCat = Boolean(derived_cat);
-          
-          if (hasQty && hasCat) {
-            derived_is_ready = true;
-            derived_reason = null;
-          } else if (r.listing_is_processed_output === null) {
-            derived_reason = "unclassified";
-          }
-        }
-      }
-
     } else if (r.received_line.parent_entity_type === "contract_shipment" && r.shipment_reference) {
       parent_reference = r.shipment_reference;
       if (r.shipment_contract_id) {
         parent_entity_contract_id = r.shipment_contract_id;
       }
-      
-      if (r.allocation_status !== "finalized") {
-        let expectedQty: string | null = resolveSustainabilityPhysicalWeight(r.shipment_source_weight, r.shipment_destination_weight);
-        let errorReason: string | null = null;
-
-        if (!expectedQty) {
-          errorReason = "missing_physical_quantity";
-        }
-
-        if (expectedQty) {
-          derived_qty = expectedQty;
-          
-          if (derived_reason === "non_positive_quantity" || derived_reason === "missing_buyer_quantity") {
-            const hasCat = Boolean(r.shipment_material_category_id) || Boolean(r.shipment_material_label);
-            if (!hasCat) {
-              derived_reason = "unclassified";
-              derived_is_ready = false;
-            } else {
-              derived_is_ready = true;
-              derived_reason = null;
-            }
-          }
-        } else {
-          derived_qty = "0";
-          derived_is_ready = false;
-          derived_reason = errorReason;
-        }
-      }
-      
       if (r.shipment_material_label) {
         derived_material_label = r.shipment_material_label;
       }
-      
       if (r.shipment_unit_label) {
         let u = r.shipment_unit_label.toLowerCase().trim();
         if (u === "طن" || u === "ton") u = "ton";
         else if (u === "كجم" || u === "kg") u = "kg";
         derived_unit = u;
       }
-
-      if (r.shipment_material_category_id) {
-        derived_cat = r.shipment_material_category_id;
-      }
-
-      if (derived_reason === "processed_output_or_unclassified") {
-        const hasCat = Boolean(r.shipment_material_category_id) || Boolean(r.shipment_material_label);
-        if (!hasCat) {
-          derived_reason = "unclassified";
-        } else {
-          derived_is_ready = true;
-          derived_reason = null;
-        }
-      }
     }
+
+    const readModel = deriveActualSustainabilityReceivedQtyForLine(r.received_line, {
+      destination_weight: r.shipment_destination_weight,
+      source_weight: r.shipment_source_weight,
+      deal_actual_quantity: r.deal_actual_quantity,
+      listing_quantity: r.listing_quantity,
+      is_processed_output: r.listing_is_processed_output,
+      has_valid_material: Boolean(r.shipment_material_category_id) || Boolean(r.shipment_material_label) || Boolean(r.listing_subcategory_id) || Boolean(r.received_line.material_category_id),
+    });
+
+    // If allocation is not finalized, its sum doesn't count as reportable impact yet
+    // But since this is buyer view, we compute metrics based on current allocation state.
+    const metrics = deriveSustainabilityAllocationMetrics(
+      readModel.actual_sustainability_received_qty,
+      r.allocation_status === "finalized" ? Number(r.total_allocated_qty || 0) : 0
+    );
 
     return {
       received_line: {
         ...r.received_line,
         parent_reference,
         parent_entity_contract_id,
-        final_received_qty: derived_qty,
+        final_received_qty: readModel.actual_sustainability_received_qty,
+        legacy_final_received_qty: readModel.legacy_final_received_qty,
         final_received_unit: derived_unit,
         material_label: derived_material_label,
-        ineligibility_reason: derived_reason,
-        material_category_id: derived_cat,
-        is_ready_for_allocation: derived_is_ready,
-        is_eligible: derived_is_ready, // @deprecated for backward compat
+        ineligibility_reason: readModel.ineligibility_reason,
+        material_category_id: r.received_line.material_category_id || r.shipment_material_category_id || r.listing_subcategory_id,
+        is_ready_for_allocation: readModel.is_ready_for_allocation,
+        is_eligible: readModel.is_ready_for_allocation, // @deprecated for backward compat
+        
+        // Phase 3-B explicit quantities
+        received_qty: readModel.actual_sustainability_received_qty,
+        actual_sustainability_received_qty: readModel.actual_sustainability_received_qty,
+        sustainability_weight_basis: readModel.sustainability_weight_basis,
+        reportable_qty: metrics.reportable_qty,
+        remaining_qty: metrics.remaining_qty,
+        coverage_pct: metrics.coverage_pct,
       },
       allocation_id: r.allocation_id,
-      allocation_status: r.allocation_status
+      allocation_status: r.allocation_status,
+      has_draft_correction: r.has_draft_correction
     };
   });
 

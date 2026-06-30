@@ -43,6 +43,7 @@ import { notifyDealStageChange, notifyCorrectionApproved, notifyCorrectionReject
 import { createAdminNotification } from "../lib/admin-notify";
 import { dealRef } from "../lib/listing-ref";
 import { triggerDealCompletionEmails } from "../lib/deal-completion-email";
+import { deriveActualSustainabilityReceivedQtyForLine, deriveSustainabilityAllocationMetrics } from "../services/sustainability-received-quantity";
 
 const router = Router();
 
@@ -2291,6 +2292,17 @@ router.get("/admin/sustainability/allocations", requireAdminKey, async (req, res
           FROM sustainability_allocation_lines sal
           WHERE sal.allocation_id = ${sustainabilityAllocationsTable.id}
         )`,
+        
+        // Phase 3-B Batch A resolver physical weight context
+        destination_weight: contractShipmentsTable.destination_weight,
+        source_weight: contractShipmentsTable.source_weight,
+        deal_actual_quantity: dealsTable.actual_quantity,
+        listing_quantity: wasteListingsTable.quantity,
+        is_processed_output: wasteListingsTable.is_processed_output,
+        material_category_id: sustainabilityReceivedLinesTable.material_category_id,
+        shipment_material_category_id: contractMaterialsTable.material_category_id,
+        shipment_material_label: contractMaterialsTable.material_label,
+        deal_subcategory_id: wasteListingsTable.material_subcategory_id,
       })
       .from(sustainabilityAllocationsTable)
       .innerJoin(
@@ -2313,6 +2325,21 @@ router.get("/admin/sustainability/allocations", requireAdminKey, async (req, res
           eq(contractShipmentsTable.id, sustainabilityReceivedLinesTable.parent_entity_id),
           eq(sustainabilityReceivedLinesTable.parent_entity_type, 'contract_shipment')
         )
+      )
+      .leftJoin(
+        dealsTable,
+        and(
+          eq(dealsTable.id, sustainabilityReceivedLinesTable.parent_entity_id),
+          eq(sustainabilityReceivedLinesTable.parent_entity_type, 'deal')
+        )
+      )
+      .leftJoin(
+        wasteListingsTable,
+        eq(wasteListingsTable.id, dealsTable.listing_id)
+      )
+      .leftJoin(
+        contractMaterialsTable,
+        eq(contractMaterialsTable.id, contractShipmentsTable.material_line_id)
       )
       .leftJoin(
         sustainabilityCorrectionRequestsTable,
@@ -2351,31 +2378,31 @@ router.get("/admin/sustainability/allocations", requireAdminKey, async (req, res
         mat_sub_ar = null;
       }
 
-      const receivedNum = Number(r.received_line.final_received_qty);
+      const has_valid_material = 
+        Boolean(r.material_category_id) || 
+        Boolean(r.deal_subcategory_id) || 
+        Boolean(r.shipment_material_category_id) || 
+        Boolean(r.shipment_material_label);
+
+      // Derive active truth
+      const readModel = deriveActualSustainabilityReceivedQtyForLine(
+        { 
+          final_received_qty: r.received_line.final_received_qty, 
+          parent_entity_type: r.received_line.parent_entity_type 
+        },
+        {
+          destination_weight: r.destination_weight,
+          source_weight: r.source_weight,
+          deal_actual_quantity: r.deal_actual_quantity,
+          listing_quantity: r.listing_quantity,
+          is_processed_output: r.is_processed_output,
+          has_valid_material
+        }
+      );
+
+      const receivedNum = Number(readModel.actual_sustainability_received_qty);
       const allocatedNum = Number(r.total_allocated_qty ?? 0);
       const status = r.allocation.status;
-
-      // Phase 3-B Batch 1A (fixed): status-aware quantity semantics.
-      //
-      // Semantic rules:
-      //   finalized  → reportable_qty   = allocatedNum (current authoritative impact)
-      //                draft_allocated_qty      = 0
-      //                historical_reportable_qty = null
-      //
-      //   draft      → reportable_qty   = 0 (draft lines MUST NOT drive impact/certificates)
-      //                draft_allocated_qty      = allocatedNum (admin context: work-in-progress)
-      //                historical_reportable_qty = null
-      //
-      //   superseded → reportable_qty   = 0 (this record is obsolete; it has no current impact)
-      //                draft_allocated_qty      = 0
-      //                historical_reportable_qty = allocatedNum (historical audit value only)
-      //
-      // remaining_qty is always: received - reportable_qty.
-      //   For draft this means full received remains reportable.
-      //   For superseded this is informational only; historical_reportable_qty is the relevant number.
-      //
-      // @deprecated: `quantity` on received_line remains received quantity only.
-      // Do NOT use reportable_qty to drive certificates unless allocation.status === 'finalized'.
 
       let reportableNum = 0;
       let draftAllocatedNum = 0;
@@ -2389,6 +2416,7 @@ router.get("/admin/sustainability/allocations", requireAdminKey, async (req, res
         historicalReportableNum = allocatedNum;
       }
 
+      const metrics = deriveSustainabilityAllocationMetrics(String(receivedNum), reportableNum);
       const rawRemaining = receivedNum - reportableNum;
       const clampedRemaining = Math.abs(rawRemaining) <= ADMIN_EPSILON ? 0 : rawRemaining;
 
@@ -2403,15 +2431,14 @@ router.get("/admin/sustainability/allocations", requireAdminKey, async (req, res
           material_sub_category_ar: mat_sub_ar || null,
         },
         // Phase 3-B Batch 1A: explicit status-aware quantity fields
-        received_qty: r.received_line.final_received_qty,
+        received_qty: readModel.actual_sustainability_received_qty,
+        legacy_final_received_qty: readModel.legacy_final_received_qty,
         reportable_qty: reportableNum.toFixed(4),
         draft_allocated_qty: draftAllocatedNum.toFixed(4),
         historical_reportable_qty: historicalReportableNum !== null ? historicalReportableNum.toFixed(4) : null,
         remaining_qty: clampedRemaining.toFixed(4),
         remaining_qty_data_risk: rawRemaining < -ADMIN_EPSILON,
-        allocation_coverage_pct: receivedNum > 0
-          ? ((reportableNum / receivedNum) * 100).toFixed(1)
-          : null,
+        allocation_coverage_pct: metrics.coverage_pct,
       };
     });
 
@@ -2448,7 +2475,7 @@ router.get("/admin/sustainability/allocations", requireAdminKey, async (req, res
           r.buyer_name || "",
           r.received_line.material_main_category_en || r.received_line.material_label,
           r.received_line.material_sub_category_en || "",
-          r.received_line.final_received_qty || "",              // received quantity (context)
+          r.received_qty || "",              // received quantity (context)
           r.reportable_qty || "",                               // finalized impact only (0 for draft/superseded)
           r.draft_allocated_qty || "",                          // draft work-in-progress (admin context)
           r.historical_reportable_qty ?? "",                    // superseded historical sum (audit only)
@@ -2946,34 +2973,73 @@ router.patch("/admin/notifications/mark-all-read", requireAdminKey, async (req, 
       explanation_text: l.line.explanation_text
     }));
 
-    // Phase 3-B Batch 1A (fixed): status-aware quantity_summary for admin detail.
-    // The detail endpoint returns any allocation by ID regardless of status (admin governance).
-    //
-    // Semantic rules:
-    //   finalized  → reportable_qty   = pathway sum (current authoritative impact)
-    //                draft_allocated_qty      = 0
-    //                historical_reportable_qty = null
-    //
-    //   draft      → reportable_qty   = 0 (draft must not drive impact/certificates)
-    //                draft_allocated_qty      = pathway sum (admin context: work-in-progress)
-    //                historical_reportable_qty = null
-    //
-    //   superseded → reportable_qty   = 0 (this record is obsolete)
-    //                draft_allocated_qty      = 0
-    //                historical_reportable_qty = pathway sum (historical audit value)
-    //
-    // remaining_qty = received_qty - reportable_qty.
-    // Do NOT present historical_reportable_qty as current impact.
-
-    // Fetch the received line to resolve received_qty.
+    // Fetch the received line to resolve received_qty with physical weights.
     const [receivedLine] = await db
-      .select({ final_received_qty: sustainabilityReceivedLinesTable.final_received_qty })
+      .select({ 
+        final_received_qty: sustainabilityReceivedLinesTable.final_received_qty,
+        parent_entity_type: sustainabilityReceivedLinesTable.parent_entity_type,
+        
+        destination_weight: contractShipmentsTable.destination_weight,
+        source_weight: contractShipmentsTable.source_weight,
+        deal_actual_quantity: dealsTable.actual_quantity,
+        listing_quantity: wasteListingsTable.quantity,
+        is_processed_output: wasteListingsTable.is_processed_output,
+        material_category_id: sustainabilityReceivedLinesTable.material_category_id,
+        shipment_material_category_id: contractMaterialsTable.material_category_id,
+        shipment_material_label: contractMaterialsTable.material_label,
+        deal_subcategory_id: wasteListingsTable.material_subcategory_id,
+      })
       .from(sustainabilityReceivedLinesTable)
+      .leftJoin(
+        contractShipmentsTable,
+        and(
+          eq(contractShipmentsTable.id, sustainabilityReceivedLinesTable.parent_entity_id),
+          eq(sustainabilityReceivedLinesTable.parent_entity_type, 'contract_shipment')
+        )
+      )
+      .leftJoin(
+        dealsTable,
+        and(
+          eq(dealsTable.id, sustainabilityReceivedLinesTable.parent_entity_id),
+          eq(sustainabilityReceivedLinesTable.parent_entity_type, 'deal')
+        )
+      )
+      .leftJoin(
+        wasteListingsTable,
+        eq(wasteListingsTable.id, dealsTable.listing_id)
+      )
+      .leftJoin(
+        contractMaterialsTable,
+        eq(contractMaterialsTable.id, contractShipmentsTable.material_line_id)
+      )
       .where(eq(sustainabilityReceivedLinesTable.id, allocation.received_line_id))
       .limit(1);
 
+    const has_valid_material = receivedLine ? (
+      Boolean(receivedLine.material_category_id) || 
+      Boolean(receivedLine.deal_subcategory_id) || 
+      Boolean(receivedLine.shipment_material_category_id) || 
+      Boolean(receivedLine.shipment_material_label)
+    ) : false;
+
+    // Derive active truth
+    const readModel = receivedLine ? deriveActualSustainabilityReceivedQtyForLine(
+      { 
+        final_received_qty: receivedLine.final_received_qty, 
+        parent_entity_type: receivedLine.parent_entity_type 
+      },
+      {
+        destination_weight: receivedLine.destination_weight,
+        source_weight: receivedLine.source_weight,
+        deal_actual_quantity: receivedLine.deal_actual_quantity,
+        listing_quantity: receivedLine.listing_quantity,
+        is_processed_output: receivedLine.is_processed_output,
+        has_valid_material
+      }
+    ) : null;
+
     const DETAIL_EPSILON = 0.001;
-    const receivedNum = Number(receivedLine?.final_received_qty ?? 0);
+    const receivedNum = readModel ? Number(readModel.actual_sustainability_received_qty) : 0;
     const pathwaySum = pathways.reduce((sum: number, p: any) => sum + Number(p.quantity), 0);
     const allocationStatus = allocation.status;
 
@@ -2989,23 +3055,21 @@ router.patch("/admin/notifications/mark-all-read", requireAdminKey, async (req, 
       historicalReportableNum = pathwaySum;
     }
 
+    const metrics = deriveSustainabilityAllocationMetrics(String(receivedNum), reportableNum);
     const rawRemaining = receivedNum - reportableNum;
     const clampedRemaining = Math.abs(rawRemaining) <= DETAIL_EPSILON ? 0 : rawRemaining;
 
     const quantitySummary = {
-      // @deprecated: `quantity` on the allocation record remains received quantity only.
-      // `reportable_qty` = current finalized non-superseded impact only.
       // `draft_allocated_qty` = work-in-progress sum for draft allocations (admin context).
       // `historical_reportable_qty` = superseded record sum (historical audit only).
-      received_qty: receivedLine?.final_received_qty ?? null,
+      received_qty: readModel ? readModel.actual_sustainability_received_qty : null,
+      legacy_final_received_qty: receivedLine?.final_received_qty ?? null,
       reportable_qty: reportableNum.toFixed(4),
       draft_allocated_qty: draftAllocatedNum.toFixed(4),
       historical_reportable_qty: historicalReportableNum !== null ? historicalReportableNum.toFixed(4) : null,
       remaining_qty: clampedRemaining.toFixed(4),
       remaining_qty_data_risk: rawRemaining < -DETAIL_EPSILON,
-      allocation_coverage_pct: receivedNum > 0
-        ? ((reportableNum / receivedNum) * 100).toFixed(1)
-        : null,
+      allocation_coverage_pct: metrics.coverage_pct,
     };
 
     res.json({
