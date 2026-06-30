@@ -1,6 +1,6 @@
 # Tadweerah Hub — PROJECT MAP
-> Last updated: 2026-06-27 | SIR-2D Closed
-> Status: SIR-2D (Correction Governance) closed functionally and safely on staging. Admin report viewing and broader Admin Operations improvements deferred to Admin Phase 2. Backend revision: `tadweerah-api-00142-rsj`. Frontend deployed to Firebase Staging. No production deploy, no DB migration beyond `0008_add_sustainability_corrections.sql`.
+> Last updated: 2026-06-30 | Phase 3-B Batch 1A-R Staging Apply Closed
+> Status: Phase 3-B Batch 1A-R (Historical Sustainability Correction) successfully closed functionally and safely on staging. Target data aligned via `audit_log` with no commercial side-effects. Production correction remains a separate gate. Batch 1C remains unapproved. SIR-2D Closed functionally and safely on staging. Admin report viewing and broader Admin Operations improvements deferred to Admin Phase 2. Backend revision: `tadweerah-api-00142-rsj`. Frontend deployed to Firebase Staging. No production deploy, no DB migration beyond `0008_add_sustainability_corrections.sql`.
 
 
 > **Legend used throughout this document:**
@@ -616,12 +616,10 @@ For the comprehensive ongoing platform development roadmap (including customer s
 - **Phase 3-B rule:** Phase 3-B must use these artifacts as evidence only. They are not an implementation plan and do not replace source-of-truth audit work.
 
 ### 5. Phase 3-B — Post-Pilot Workflow Configurability & Polish
+- **Status:** Batch 1A-R (Staging Historical Data Correction) ✅ Closed via commit `a9282e7`. Production correction remains a separate future gate. Batch 1C (Script Extension) is NOT approved/started.
 - Configurable timers, category-targeted notifications, i18n refactor, checklist wording polish, etc.
 
 ### Phase 3-A1 — Customer-visible Trust Fixes
-- **Status:** ✅ Closed functionally and safely on staging.
-- **Scope:** 
-  - Transporter dashboard no longer exposes raw deal UUIDs as the main reference.
   - Transporter dashboard shows Tadweerah commercial reference when available.
   - Company Members UI no longer exposes raw Clerk `user_...` IDs as the main visible value.
   - Company Members UI shows member name/email when available, with safe fallback.

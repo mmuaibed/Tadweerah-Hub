@@ -1,6 +1,6 @@
 # Tadweerah – Readiness Findings & Risks
-> Last updated: 2026-06-26 | Phase CLT-1 Implemented (pending migration/deploy)
-> Status: CLT-1 code complete — migration + deploy pending explicit approval
+> Last updated: 2026-06-30 | Phase 3-B Batch 1A-R Staging Apply Closed
+> Status: Phase 3-B Batch 1A-R (Historical Sustainability Correction) successfully closed functionally and safely on staging. Target data aligned via `audit_log` with no commercial side-effects. Production correction remains a separate gate. Batch 1C remains unapproved. CLT-1 code complete — migration + deploy pending explicit approval
 
 > **Legend:**
 > - 🟢 Current behavior | 🎯 Target behavior | ⚠️ Gap
