@@ -42,10 +42,18 @@ For contract shipments:
 ### 1A-R3 — Owner Review of Dry-Run
 - Owner reviews current/proposed values and references.
 
+### 1A-R4A — Weight Correction & Recalculation Governance Review
+- Create authoritative governance on physical vs. commercial weight correction.
+- Address missing correction/revision flow for `closed` shipments.
+- Establish strict recalculation and source-of-truth rules for sustainability vs. commercial values.
+- Document relation to Batch 1A-R2 dry-run findings (e.g., S010 `is_eligible=false` dependency).
+
 ### 1A-R4 — Data Correction (Only if Explicitly Approved)
 - Idempotent script.
 - Rollback values captured.
-- Handles finalized/immutable allocation issue safely.
+- **Must enforce newly documented governance rules** from `09_WEIGHT_CORRECTION_AND_RECALCULATION_GOVERNANCE.md`.
+- Handles finalized/immutable allocation issue safely by preventing silent mutation.
+- Explicitly resolve any `is_eligible=false` data anomalies prior to applying new calculated physical weights.
 
 ### 1A-R5 — Retest 1A/1B
 - Retest `/reports`, allocation detail, admin list/detail, and later print/detail.
