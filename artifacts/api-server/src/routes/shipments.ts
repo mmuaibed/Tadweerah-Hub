@@ -24,6 +24,8 @@ import {
   notifyContractShipmentCancelled,
 } from "../lib/notify";
 import { deriveReceivedLineForShipment } from "../services/sustainability-derivation";
+import { resolveSustainabilityPhysicalWeight } from "../services/sustainability-physical-weight";
+import { assertReceivedQtyNotBelowAllocated } from "../services/sustainability-received-allocation-guard";
 
 import multer from "multer";
 import { Storage } from "@google-cloud/storage";
@@ -519,6 +521,17 @@ router.post(
         );
       }
 
+      // Guardrail for physical quantity changes
+      const proposedReceivedQty = resolveSustainabilityPhysicalWeight(
+        sourceWeightVal,
+        shipment.destination_weight
+      );
+      await assertReceivedQtyNotBelowAllocated(db, {
+        parentEntityType: "contract_shipment",
+        parentEntityId: shipment.id,
+        proposedReceivedQty,
+      });
+
       const updates: Partial<typeof contractShipmentsTable.$inferInsert> = {
         status: "dispatched",
         dispatched_at: new Date(),
@@ -614,6 +627,17 @@ router.post(
           `destination_weight is required for weight policy: ${contract.weight_policy}`,
         );
       }
+
+      // Guardrail for physical quantity changes
+      const proposedReceivedQty = resolveSustainabilityPhysicalWeight(
+        shipment.source_weight,
+        destWeightVal
+      );
+      await assertReceivedQtyNotBelowAllocated(db, {
+        parentEntityType: "contract_shipment",
+        parentEntityId: shipment.id,
+        proposedReceivedQty,
+      });
 
       const updates: Partial<typeof contractShipmentsTable.$inferInsert> = {
         status: "received",

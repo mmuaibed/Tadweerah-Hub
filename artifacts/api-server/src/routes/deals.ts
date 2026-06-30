@@ -17,6 +17,7 @@ import { logAudit } from "../lib/audit";
 import { notifyDealStageChange } from "../lib/notify";
 import { dealRef } from "../lib/listing-ref";
 import { deriveReceivedLineForDeal } from "../services/sustainability-derivation";
+import { assertReceivedQtyNotBelowAllocated } from "../services/sustainability-received-allocation-guard";
 import { triggerDealCompletionEmails } from "../lib/deal-completion-email";
 
 const router: IRouter = Router();
@@ -609,6 +610,18 @@ router.post(
         "actual_quantity must not be sent for fixed-price deals",
       );
     }
+
+    // Guardrail for physical quantity changes
+    const proposedReceivedQty = dispatchUpdate.actual_quantity 
+      ?? deal.actual_quantity 
+      ?? listing.quantity 
+      ?? null;
+
+    await assertReceivedQtyNotBelowAllocated(db, {
+      parentEntityType: "deal",
+      parentEntityId: dealId,
+      proposedReceivedQty,
+    });
 
     const [updated] = await db
       .update(dealsTable)

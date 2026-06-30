@@ -731,6 +731,9 @@ router.get(
       entry.remaining_qty = clampedRemaining.toFixed(4);
       
       entry.allocation_coverage_pct = metrics.coverage_pct ? Number(metrics.coverage_pct).toFixed(1) : null;
+      entry.raw_remaining_qty = metrics.raw_remaining_qty;
+      entry.over_allocated_qty = metrics.over_allocated_qty;
+      entry.coverage_raw_pct = metrics.coverage_raw_pct;
     }
 
     const serialized = Array.from(groupedMap.values()).slice(offset, offset + (format === "csv" ? 5000 : limit));
@@ -755,7 +758,10 @@ router.get(
         : ["Finalized Date", "Source", "Commercial Ref", "My Role", "Counterparty", "Material", "Received Qty", "Allocated Sustainability Qty", "Coverage %", "Unit"];
       
       const pathwayHeaders = activePathways.map(p => isArabic ? `مسار: ${p.name_ar}` : `Pathway: ${p.name_en}`);
-      const headers = [...baseHeaders, ...pathwayHeaders, isArabic ? "الحالة" : "Status"];
+      const rawRiskHeaders = isArabic
+        ? ["الكمية المتبقية (خام)", "كمية التجاوز", "نسبة التوزيع (خام)", "خطر بيانات"]
+        : ["Raw Remaining Qty", "Over Allocated Qty", "Raw Coverage %", "Remaining Qty Data Risk"];
+      const headers = [...baseHeaders, ...pathwayHeaders, isArabic ? "الحالة" : "Status", ...rawRiskHeaders];
 
       const formatQty = (v: any) => {
         const n = parseFloat(v);
@@ -784,7 +790,11 @@ router.get(
           r.allocation_coverage_pct ?? "",     // coverage percentage
           unitLabel,
           ...pathwayCells,
-          isArabic ? "معتمد" : "Finalized"
+          isArabic ? "معتمد" : "Finalized",
+          r.raw_remaining_qty != null ? formatQty(r.raw_remaining_qty) : "",
+          r.over_allocated_qty != null ? formatQty(r.over_allocated_qty) : "",
+          r.coverage_raw_pct ?? "",
+          r.remaining_qty_data_risk ? (isArabic ? "نعم" : "Yes") : (isArabic ? "لا" : "No")
         ];
       });
 
@@ -1078,6 +1088,11 @@ router.get(
       item.allocation_coverage_pct = receivedNum > 0
         ? ((reportableNum / receivedNum) * 100).toFixed(1)
         : null;
+        
+      const metrics = deriveSustainabilityAllocationMetrics(String(receivedNum), reportableNum);
+      item.raw_remaining_qty = metrics.raw_remaining_qty;
+      item.over_allocated_qty = metrics.over_allocated_qty;
+      item.coverage_raw_pct = metrics.coverage_raw_pct;
     }
 
     res.json({ row: item, pathways: activePathways });

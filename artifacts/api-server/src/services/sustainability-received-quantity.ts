@@ -16,6 +16,10 @@ export interface SustainabilityAllocationMetrics {
   reportable_qty: string | null;
   remaining_qty: string | null;
   coverage_pct: string | null;
+  raw_remaining_qty: string | null;
+  over_allocated_qty: string | null;
+  coverage_raw_pct: string | null;
+  remaining_qty_data_risk: boolean;
 }
 
 /**
@@ -136,17 +140,34 @@ export function deriveSustainabilityAllocationMetrics(
   const isValidReceived = !isNaN(receivedNum) && receivedNum > 0;
   
   const reportableNum = allocatedQtyNum > 0 ? allocatedQtyNum : 0;
-  const remainingNum = isValidReceived ? Math.max(0, receivedNum - reportableNum) : 0;
   
+  let remainingNum = 0;
+  let rawRemainingNum = 0;
+  let overAllocatedNum = 0;
+  let dataRisk = false;
   let coveragePct: string | null = null;
+  let rawCoveragePct: string | null = null;
+
   if (isValidReceived) {
+    rawRemainingNum = receivedNum - reportableNum;
+    remainingNum = Math.max(0, rawRemainingNum);
+    if (rawRemainingNum < 0) {
+      overAllocatedNum = Math.abs(rawRemainingNum);
+      dataRisk = true;
+    }
+    
     const pct = (reportableNum / receivedNum) * 100;
     coveragePct = Math.min(100, pct).toFixed(2);
+    rawCoveragePct = pct.toFixed(2);
   }
 
   return {
     reportable_qty: String(reportableNum),
     remaining_qty: String(remainingNum),
     coverage_pct: coveragePct,
+    raw_remaining_qty: String(rawRemainingNum),
+    over_allocated_qty: String(overAllocatedNum),
+    coverage_raw_pct: rawCoveragePct,
+    remaining_qty_data_risk: dataRisk,
   };
 }

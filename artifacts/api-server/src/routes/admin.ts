@@ -2193,19 +2193,66 @@ router.get("/admin/sustainability/received-lines", requireAdminKey, async (req, 
   const rows = await db
     .select({
       received_line: sustainabilityReceivedLinesTable,
-      allocation_id: sustainabilityAllocationsTable.id,
-      allocation_status: sustainabilityAllocationsTable.status,
+      reportable_qty: sql<string | null>`(
+        SELECT COALESCE(SUM(sal.quantity), 0)
+        FROM sustainability_allocation_lines sal
+        INNER JOIN sustainability_allocations sa ON sal.allocation_id = sa.id
+        WHERE sa.received_line_id = ${sustainabilityReceivedLinesTable.id}
+          AND sa.status = 'finalized'
+      )`,
+      destination_weight: contractShipmentsTable.destination_weight,
+      source_weight: contractShipmentsTable.source_weight,
+      deal_actual_quantity: dealsTable.actual_quantity,
+      listing_quantity: wasteListingsTable.quantity,
     })
     .from(sustainabilityReceivedLinesTable)
     .leftJoin(
-      sustainabilityAllocationsTable,
-      eq(sustainabilityReceivedLinesTable.id, sustainabilityAllocationsTable.received_line_id)
+      contractShipmentsTable,
+      and(
+        eq(sustainabilityReceivedLinesTable.parent_entity_id, contractShipmentsTable.id),
+        eq(sustainabilityReceivedLinesTable.parent_entity_type, "contract_shipment")
+      )
     )
+    .leftJoin(
+      dealsTable,
+      and(
+        eq(sustainabilityReceivedLinesTable.parent_entity_id, dealsTable.id),
+        eq(sustainabilityReceivedLinesTable.parent_entity_type, "deal")
+      )
+    )
+    .leftJoin(wasteListingsTable, eq(dealsTable.listing_id, wasteListingsTable.id))
     .orderBy(desc(sustainabilityReceivedLinesTable.created_at))
     .limit(limit)
     .offset(offset);
 
-  res.json(rows);
+  const formattedRows = rows.map((r) => {
+    const readModel = deriveActualSustainabilityReceivedQtyForLine(r.received_line, {
+      destination_weight: r.destination_weight,
+      source_weight: r.source_weight,
+      deal_actual_quantity: r.deal_actual_quantity,
+      listing_quantity: r.listing_quantity,
+    });
+
+    const receivedNum = Number(readModel.actual_sustainability_received_qty);
+    const reportableNum = Number(r.reportable_qty ?? 0);
+    
+    const metrics = deriveSustainabilityAllocationMetrics(String(receivedNum), reportableNum);
+
+    return {
+      received_line: {
+        ...r.received_line,
+        reportable_qty: metrics.reportable_qty,
+        remaining_qty: metrics.remaining_qty,
+        coverage_pct: metrics.coverage_pct,
+        raw_remaining_qty: metrics.raw_remaining_qty,
+        over_allocated_qty: metrics.over_allocated_qty,
+        coverage_raw_pct: metrics.coverage_raw_pct,
+        remaining_qty_data_risk: metrics.remaining_qty_data_risk,
+      }
+    };
+  });
+
+  res.json(formattedRows);
 });
 
 /**
@@ -2439,6 +2486,9 @@ router.get("/admin/sustainability/allocations", requireAdminKey, async (req, res
         remaining_qty: clampedRemaining.toFixed(4),
         remaining_qty_data_risk: rawRemaining < -ADMIN_EPSILON,
         allocation_coverage_pct: metrics.coverage_pct,
+        raw_remaining_qty: metrics.raw_remaining_qty,
+        over_allocated_qty: metrics.over_allocated_qty,
+        coverage_raw_pct: metrics.coverage_raw_pct,
       };
     });
 
@@ -3070,6 +3120,9 @@ router.patch("/admin/notifications/mark-all-read", requireAdminKey, async (req, 
       remaining_qty: clampedRemaining.toFixed(4),
       remaining_qty_data_risk: rawRemaining < -DETAIL_EPSILON,
       allocation_coverage_pct: metrics.coverage_pct,
+      raw_remaining_qty: metrics.raw_remaining_qty,
+      over_allocated_qty: metrics.over_allocated_qty,
+      coverage_raw_pct: metrics.coverage_raw_pct,
     };
 
     res.json({
