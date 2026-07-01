@@ -240,8 +240,8 @@
 .public-homepage h1 {
   max-width: 14.25ch;
   margin: 0;
-  font-size: clamp(1.78rem, 1.05rem + 2.32vw, 2.56rem);
-  line-height: 1.34;
+  font-size: clamp(1.68rem, 1.05rem + 2vw, 2.30rem);
+  line-height: 1.38;
 }
 
 .public-homepage .ph-hero-line {
@@ -256,8 +256,8 @@
 .public-homepage[dir="ltr"] h1,
 [dir="ltr"] .public-homepage h1 {
   max-width: 16ch;
-  font-size: clamp(1.78rem, 1.02rem + 2.12vw, 2.52rem);
-  line-height: 1.3;
+  font-size: clamp(1.68rem, 1.02rem + 2vw, 2.25rem);
+  line-height: 1.36;
 }
 
 .public-homepage .ph-lead,
@@ -1197,8 +1197,8 @@
 
   .public-homepage h1 {
     max-width: 13.5ch;
-    font-size: clamp(1.8rem, 7.5vw, 2.2rem);
-    line-height: 1.36;
+    font-size: clamp(1.7rem, 7.5vw, 2.05rem);
+    line-height: 1.38;
   }
 
   .public-homepage .ph-hero-actions,
