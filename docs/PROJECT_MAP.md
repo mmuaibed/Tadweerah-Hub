@@ -144,7 +144,7 @@ dispatched_at         timestamp nullable
 dispatched_by         → companies.id nullable
 received_at           timestamp nullable      ← set when buyer calls confirm-receipt
 received_by           → companies.id nullable
-receipt_pending_since timestamp nullable      ← set when buyer confirms receipt (starts 48h window)
+receipt_pending_since timestamp nullable      ← NOT written by the current confirm-receipt handler; residual/admin-monitoring field only (see §4 correction note)
 cancelled_at          timestamp nullable
 extended_until        timestamp nullable      ← overrides base deadline (max 1 extension)
 extension_count       int default 0
@@ -180,8 +180,8 @@ created_at / updated_at
 
 ## 4. Deal Lifecycle — Current vs Target Behavior
 
-> ⚠️ **The current receipt confirmation flow does NOT match the target pilot behavior.**
-> See `READINESS_FINDINGS_AND_RISKS.md` §H1 for full risk classification.
+> ✅ **Corrected 2026-07-04:** the current marketplace buyer-receipt flow matches target pilot behavior — buyer receipt confirmation completes the deal immediately (`dispatched → completed`). The warning previously shown here was stale; it referred to a `receipt_pending`/48h-auto-complete path that is not the active flow. See the correction note at the end of this section.
+> `receipt_pending` remains in the `status` enum as a residual/admin-monitoring/legacy state (see field reference above) — it is not the active buyer-receipt path.
 
 ### 🟢 Current Deal Status Transitions
 
@@ -223,11 +223,13 @@ active → payment_submitted → payment_confirmed → dispatched
 | `POST /deals/:id/submit-payment` | Buyer | active → payment_submitted | `payment_reference` required |
 | `POST /deals/:id/confirm-payment` | Producer | payment_submitted → payment_confirmed | — |
 | `POST /deals/:id/confirm-dispatch` | Producer | payment_confirmed → dispatched | `vehicle_plate` + `transporter_name` required; `actual_quantity` required for by_weight |
-| `POST /deals/:id/confirm-receipt` | Buyer | dispatched → receipt_pending | Sets `received_at` + `receipt_pending_since` |
+| `POST /deals/:id/confirm-receipt` | Buyer | dispatched → completed | Sets `received_at`; completes the deal immediately. Does not write `receipt_pending_since` |
 | `POST /deals/:id/cancel` | Producer only | active/payment_submitted/payment_confirmed → cancelled | Not allowed post-dispatch |
 | `POST /deals/:id/extend` | Producer | any pre-dispatch → same status (deadline extended) | Max 1 extension; resets `pre_expiry_notified` |
 
-> **Confirmed:** There is no `producer-confirm-receipt` endpoint in `deals.ts`. The 48h auto-complete in `expire-deals.ts` is the **only** current path from `receipt_pending → completed`.
+> **Confirmed:** There is no `producer-confirm-receipt` endpoint in `deals.ts`. `RECEIPT_PENDING_MS` in `expire-deals.ts` is **not used in any executable logic that changes deal state** — it is used only for stuck `receipt_pending` monitoring / admin overdue display. Any prior claim that a 48h `receipt_pending → completed` auto-complete is the current active flow is stale.
+>
+> **Documentation correction note (2026-07-04):** this section was corrected based on the Founder-approved PROJECT_MAP Lifecycle Gate Closure Record. The correction only aligns active lifecycle documentation with current marketplace behavior and does not close `TDW-TRANS-001` or change Contract Lite's lifecycle (see §5, unaffected).
 
 ### Admin Overrides (`routes/admin.ts`)
 | Endpoint | Allowed from | Notes |
