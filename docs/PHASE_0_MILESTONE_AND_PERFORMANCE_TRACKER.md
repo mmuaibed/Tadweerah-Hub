@@ -2,7 +2,11 @@
 
 **Date created:** 2026-07-03
 **Governed by:** `docs/PHASE_0_CR001_DECISION_LOG.md`, `docs/PHASE_0_PLAN_ADDENDUM_V1_1_CR_001_CONTROLLED_REFINEMENT.md`
-**Purpose:** Single source of truth for milestone/performance reporting for the remainder of Phase 0.
+**Purpose:** Single source of truth for milestone/performance reporting for Phase 0 and its closure.
+
+## PHASE 0 — CLOSED BY FOUNDER APPROVAL (2026-07-03)
+
+**WS11 — Founder-reviewed final.** Full acknowledgment recorded in `docs/PHASE_0_WS11_FINAL_DECISION_PACK.md` §13. Closure authorizes no implementation, deletion, DB action, deploy, migration, or auth/payment change. Remaining gates before Phase 1: human accountable technical owner (not yet assigned) and the standing human/domain/legal/regulatory validations (terminology, MWAN, ZATCA, PDPL, payment/legal, e-Manifest indicator, TDW-TRANS-001 mechanism confirmation). **Next workstream: Documentation Consolidation, followed by Master Platform Reference, Methodology Evaluation, and the Path A/B Decision Gate.**
 
 ---
 
@@ -50,6 +54,8 @@
 - **`PH0-OPEN-EXT-AG-SCHEDULE-001` — Resolved, 2026-07-03.** Founder reviewed the full Antigravity session log directly; "Used tool: schedule" was an internal execution/status indicator (immediately followed by Antigravity locating repo files to begin its review), not a recurring/scheduled task. Not treated as a boundary breach. Minor process note (broad file search under `C:\Users\user` rather than the repo path) carried into the specialist prompt as a tightened scope requirement.
 
 **Current active work:**
+- **WS3 Post-Payment Transport Continuation Addendum — updated 2026-07-03** (`docs/PHASE_0_WS3_POST_PAYMENT_TRANSPORT_CONTINUATION_ADDENDUM.md`). Founder copied 9 screenshots into `docs/phase-0-audit/evidence/screenshots/ounder-ws3-post-payment/` (folder name kept exactly as provided); **all 9 directly viewed by Claude Code.** WS3 reclassified from Option A to **Option B — substantially evidenced through completion, but not independently re-run end-to-end by Claude Code.** TDW-TRANS-001 **remains open, not downgraded** — the evidence is structurally incapable of proving the fix, since the bug's default behavior is visually indistinguishable from correct "buyer responsibility" behavior. New backlog items added: WS9 item 17 (Platform Fee proof flow), 18 (raw i18n key leak), 19 (carrier-assignment "Coming soon" gap), 20 (transport-request reference-numbering investigation), 21 (e-Manifest completion counter investigation), 22 (extend موثّق fix to deal-level language), 23 (platform notifications terminology review, per separate Founder note — Phase 1 cleanup item, not a WS11 blocker).
+- **WS11 — FOUNDER-REVIEWED FINAL. PHASE 0 CLOSURE APPROVED (2026-07-03).** `docs/PHASE_0_WS11_FINAL_DECISION_PACK.md`, §13 records the Founder's full 14-point acknowledgment verbatim. PMO required 4 edits before founder-reviewed-final status, all applied: (E1) downgraded "fundamentally sound" language, explicitly separated scoped/fixable issues from architecture-class/resolution-depth-unconfirmed items (admin shared-key model, payment-proof storage, bilingual schema); (E2) added an explicit read-only-audit-boundary paragraph; (E3) elevated the admin shared-key model to a first-class, architecture-class security finding; (E4) added the PMO-required evidence-boundary paragraph for the WS3 screenshot review, reinforcing that TDW-TRANS-001 remains a **hard fix-first item and partner-demo blocker** until a human technical owner confirms the mechanism, not just UI appearance. **Closure authorizes no implementation, deletion, DB action, deploy, migration, or auth/payment change.**
 - **WS9 — draft, Codex-reconciled, founder terminology direction recorded, pending human/domain/legal validation and Phase 1 human technical owner gate.** `docs/PHASE_0_WS9_BACKLOG_SKELETON.md` consolidates 34 backlog items. Codex gate cleared (Pass 3); Founder Terminology Direction recorded 2026-07-03 (5 items, approved in principle — see below). Only remaining gates are human/domain/legal validation and the Phase 1 technical-owner assignment, neither of which blocks WS9 as a Phase 0 planning artifact.
 
 **Founder Terminology Direction (recorded 2026-07-03 — approved in principle, NOT regulatory/legal/MWAN/ZATCA/accounting validation):**
@@ -61,12 +67,14 @@
 
 Full record: `docs/PHASE_0_EXTERNAL_AI_REVIEW_RECONCILIATION_LOG.md` ("Founder Terminology Direction — Ratification Record"). Reflected in `docs/PHASE_0_WS9_BACKLOG_SKELETON.md` and `docs/PHASE_0_DRAFT_RECONCILED_TERMINOLOGY_REGISTER.md`.
 
-**Deferred / approval-gated:**
-- Buyer-responsibility transport exception execution.
-- WS9.
-- WS11.
-- Codex activation.
-- Founder ratification of Verified-badge wording and Generator/Receiver role-naming standardization (Saudi B2B/domain validation also required for the latter two).
+**Deferred / approval-gated (post-Phase-0, pre-Phase-1):**
+- Buyer-responsibility transport exception execution — still deferred, plan-only.
+- Further Codex or Antigravity activation — not precluded, but no active brief pending.
+- Saudi B2B/domain validation for the Generator/Seller and Receiver/Buyer contextual terminology models.
+- Human accountable technical owner assignment — required before Phase 1 implementation, not yet assigned.
+- TDW-TRANS-001 mechanism confirmation by a human technical owner (not just UI appearance).
+- e-Manifest/MWAN indicator human/regulatory validation.
+- All standing PDPL/ZATCA/legal/tax/commission-عمولة/Contract-enforceability validations.
 - Any design/prototype work.
 - Any code/config/DB/admin/deploy action.
 - Any document deletion.
@@ -102,9 +110,9 @@ Full record: `docs/PHASE_0_EXTERNAL_AI_REVIEW_RECONCILIATION_LOG.md` ("Founder T
 | External AI Reviewer Control Sheet (CR-001) | Ad hoc | 2026-07-03 | Created / Ready | N/A (governance doc) | `PHASE_0_EXTERNAL_AI_REVIEWER_CONTROL_SHEET_CR001.md`, `PHASE_0_EXTERNAL_AI_REVIEW_RECONCILIATION_LOG.md` | Both Antigravity lanes (general + specialist) reconciled; Codex deferred |
 | Antigravity Specialist Terminology Review | Ad hoc | 2026-07-03 | Completed and reconciled | Yes (39/39 template-compliant) | `PHASE_0_EXTERNAL_REVIEW_ANTIGRAVITY_SPECIALIST_TERMINOLOGY_UX_REPORT.md`, `PHASE_0_DRAFT_RECONCILED_TERMINOLOGY_REGISTER.md` | 4 items need Founder ratification; 2 need human validation; rest duplicate existing findings |
 | Multi-Agent/External Review Checkpoint | Ad hoc | 2026-07-03 | Closed / checkpoint created | N/A (governance doc) | `PHASE_0_MULTI_AGENT_AND_EXTERNAL_REVIEW_CHECKPOINT.md`, `PHASE_0_AI_AUTHORITY_CEILING.md` | Closes setup package before Codex/WS9 |
-| WS9 — Backlog | Day 8-9 | 2026-07-03 | **Draft, Codex-reconciled, founder terminology direction recorded** | Codex gate cleared; terminology direction recorded; only Phase 1-adjacent gates (human/domain/legal validation, technical owner) remain | `PHASE_0_WS9_BACKLOG_SKELETON.md` | 34 items consolidated; Codex reconciliation and Founder terminology direction both complete |
+| WS9 — Backlog | Day 8-9 | 2026-07-03 | **Draft, Codex-reconciled, founder terminology direction recorded** | Codex gate cleared; terminology direction recorded; only Phase 1-adjacent gates (human/domain/legal validation, technical owner) remain | `PHASE_0_WS9_BACKLOG_SKELETON.md` | 41 items consolidated — added items 17 (platform fee flow), 18 (raw i18n key leak), 19 (carrier-assignment gap), 20 (transport-ref numbering investigation), 21 (e-Manifest counter investigation), 22 (deal-level موثّق fix), 23 (notifications terminology review) |
 | **Milestone 2** — Proposed New Version Requirements | Day 9–10 | — | On Track | — | — | Requirements only, no designs |
-| **Milestone 3** — Final WS11 Two-Path Decision Pack | Day 11–12 | — | On Track | — | — | Path 1 vs Path 2 |
+| **Milestone 3** — Final WS11 Two-Path Decision Pack | Day 11–12 | 2026-07-03 | **Founder-reviewed final — Phase 0 CLOSED** | Founder sign-off given (§13) | `PHASE_0_WS11_FINAL_DECISION_PACK.md`, `PHASE_0_WS3_POST_PAYMENT_TRANSPORT_CONTINUATION_ADDENDUM.md` | Closure authorizes no implementation/state-change; TDW-TRANS-001 remains open — hard fix-first, partner-demo blocker; human technical owner still not assigned |
 | Escalation trigger | Day 15 | — | — | — | — | Not approached |
 
 ---
