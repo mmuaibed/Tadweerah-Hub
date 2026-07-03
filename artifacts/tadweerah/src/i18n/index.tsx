@@ -223,9 +223,9 @@ const translations: Record<string, Record<Language, string>> = {
   "publicHome.trust.reporting": { ar: "دعم للتوثيق وتقارير الاستدامة", en: "Documentation & sustainability reporting" },
 
   "publicHome.how.eyebrow": { ar: "كيف تعمل تدويرة", en: "How Tadweerah works" },
-  "publicHome.how.title": { ar: "من فرصة مادة إلى تقرير استدامة — في مسار واحد", en: "From a material opportunity to a sustainability report — in one workflow" },
+  "publicHome.how.title": { ar: "من عرض المواد إلى تقرير استدامة موثّق — في مسار واحد", en: "From a material opportunity to a sustainability report — in one workflow" },
   "publicHome.how.lead": {
-    ar: "أربع خطوات واضحة تجعل تدفّق موادك قابلاً للتتبّع من البداية حتى الإغلاق.",
+    ar: "أربع خطوات واضحة تجعل المواد القابلة للاسترداد قابلة للتتبّع من البداية حتى التقرير.",
     en: "Four clear steps that make your material flow traceable from start to close.",
   },
   "publicHome.how.step1.title": { ar: "أنشئ فرصة أو استكشف المواد", en: "Post an opportunity or explore materials" },
