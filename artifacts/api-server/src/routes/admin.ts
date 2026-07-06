@@ -41,7 +41,7 @@ import { buildCsv } from "../lib/csv";
 import { logAudit } from "../lib/audit";
 import { notifyDealStageChange, notifyCorrectionApproved, notifyCorrectionRejected, notifyAdminInitiatedCorrection } from "../lib/notify";
 import { createAdminNotification } from "../lib/admin-notify";
-import { dealRef } from "../lib/listing-ref";
+import { dealRef, listingRef } from "../lib/listing-ref";
 import { triggerDealCompletionEmails } from "../lib/deal-completion-email";
 import { deriveActualSustainabilityReceivedQtyForLine, deriveSustainabilityAllocationMetrics } from "../services/sustainability-received-quantity";
 
@@ -927,6 +927,18 @@ router.get("/admin/deals", requireAdminKey, async (req, res) => {
   const limit = Math.min(Number(req.query.limit) || 100, 200);
   const offset = Number(req.query.offset) || 0;
 
+  // Hotfix: this list was previously capped at `limit` with no way for the
+  // admin UI to know whether more rows existed beyond the page — older
+  // completed deals could silently disappear. `total` lets the UI show an
+  // honest "X of Y" count and offer a real "load more" action.
+  const dealsStatusCondition = statusFilter
+    ? eq(dealsTable.status, statusFilter as typeof dealsTable.$inferSelect["status"])
+    : undefined;
+  const [{ total }] = await db
+    .select({ total: count() })
+    .from(dealsTable)
+    .where(dealsStatusCondition);
+
   const rows = await db
     .select({
       deal: {
@@ -939,6 +951,11 @@ router.get("/admin/deals", requireAdminKey, async (req, res) => {
         listing_id: dealsTable.listing_id,
         producer_company_id: dealsTable.producer_company_id,
         buyer_company_id: dealsTable.buyer_company_id,
+        // Table methodology refinement: real business amounts, already on
+        // dealsTable, previously never exposed by this endpoint.
+        estimated_amount: dealsTable.estimated_amount,
+        vat_amount: dealsTable.vat_amount,
+        total_amount: dealsTable.total_amount,
       },
       tr_id: transportRequestsTable.id,
       manifest_ref: transportRequestsTable.manifest_ref,
@@ -968,7 +985,7 @@ router.get("/admin/deals", requireAdminKey, async (req, res) => {
       sql`companies recv`,
       sql`recv.id = ${dealsTable.buyer_company_id}`,
     )
-    .where(statusFilter ? eq(dealsTable.status, statusFilter as typeof dealsTable.$inferSelect["status"]) : undefined)
+    .where(dealsStatusCondition)
     .orderBy(desc(dealsTable.created_at))
     .limit(limit)
     .offset(offset);
@@ -999,6 +1016,16 @@ router.get("/admin/deals", requireAdminKey, async (req, res) => {
       deal_id: r.deal.id,
       status: r.deal.status,
       manifest_ref: r.manifest_ref ?? null,
+      // Phase 1B: expose the already-queried listing_id so the admin UI can build
+      // a real "View Deal" link (/listings/:id?deal=...) instead of a raw UUID.
+      listing_id: r.deal.listing_id,
+      // Table methodology refinement: the real, canonical business references —
+      // both are pure functions of already-selected fields, no new query needed.
+      commercial_ref: dealRef(r.deal.id, r.deal.created_at.toISOString()),
+      listing_ref: r.deal.listing_id ? listingRef(r.deal.listing_id) : null,
+      estimated_amount: r.deal.estimated_amount,
+      vat_amount: r.deal.vat_amount,
+      total_amount: r.deal.total_amount,
       mwan_score: `${readyCount}/${totalCount}`,
       missing_count: totalCount - readyCount,
       is_mwan_ready: readyCount === totalCount,
@@ -1006,7 +1033,7 @@ router.get("/admin/deals", requireAdminKey, async (req, res) => {
     };
   });
 
-  res.json(result);
+  res.json({ deals: result, total, limit, offset });
 });
 
 /**
@@ -2322,6 +2349,9 @@ router.get("/admin/sustainability/allocations", requireAdminKey, async (req, res
         sub_category_en: subcat.name_en,
         sub_category_ar: subcat.name_ar,
         buyer_name: sql<string | null>`buyer.name`,
+        // Raw fallback only — for 'deal' rows this is the transport manifest ref, NOT the
+        // deal's own commercial reference. Overridden below in the .map() with dealRef()
+        // for deal rows, matching what the real user-facing sustainability endpoint already does.
         commercial_ref: sql<string | null>`
           COALESCE(
             CASE WHEN ${sustainabilityReceivedLinesTable.parent_entity_type} = 'deal' THEN ${transportRequestsTable.manifest_ref} ELSE NULL END,
@@ -2329,6 +2359,11 @@ router.get("/admin/sustainability/allocations", requireAdminKey, async (req, res
             ${sustainabilityReceivedLinesTable.parent_entity_id}::text
           )
         `,
+        // Phase 1B: both already joined (dealsTable, contractShipmentsTable) — just exposing
+        // existing data needed to compute the real deal reference and to link contract_shipment
+        // sources to their parent contract.
+        deal_created_at: dealsTable.created_at,
+        parent_entity_contract_id: contractShipmentsTable.contract_id,
         pending_request_id: sustainabilityCorrectionRequestsTable.id,
         pending_request_reason: sustainabilityCorrectionRequestsTable.reason,
         // Phase 3-B Batch 1A: correlated subquery for total allocated quantity on this allocation.
@@ -2467,15 +2502,29 @@ router.get("/admin/sustainability/allocations", requireAdminKey, async (req, res
       const rawRemaining = receivedNum - reportableNum;
       const clampedRemaining = Math.abs(rawRemaining) <= ADMIN_EPSILON ? 0 : rawRemaining;
 
+      // Phase 1B: for deal-sourced rows, use the deal's real commercial reference
+      // (same formula as dealRef(), already used platform-wide for real deal notifications)
+      // instead of the raw SQL fallback, which for 'deal' rows is actually a transport
+      // manifest ref, not the deal's own reference.
+      const commercialRef =
+        r.received_line.parent_entity_type === "deal" && r.received_line.parent_entity_id
+          ? dealRef(r.received_line.parent_entity_id, r.deal_created_at?.toISOString())
+          : r.commercial_ref;
+
       return {
         ...r,
         allocation: r.allocation,
+        commercial_ref: commercialRef,
         received_line: {
           ...r.received_line,
           material_main_category_en: mat_main_en || null,
           material_main_category_ar: mat_main_ar || null,
           material_sub_category_en: mat_sub_en || null,
           material_sub_category_ar: mat_sub_ar || null,
+          // Phase 1B: lets the admin UI build a source-aware "View Contract" link for
+          // contract_shipment-sourced sustainability rows (mirrors the real, non-admin
+          // sustainability endpoint's received_line.parent_entity_contract_id field).
+          parent_entity_contract_id: r.parent_entity_contract_id ?? null,
         },
         // Phase 3-B Batch 1A: explicit status-aware quantity fields
         received_qty: readModel.actual_sustainability_received_qty,

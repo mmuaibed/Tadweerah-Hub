@@ -1,7 +1,7 @@
 import React from "react";
 import { useGetMe } from "@workspace/api-client-react";
 import { useUser } from "@clerk/react";
-import { Redirect, Link } from "wouter";
+import { Redirect, Link, useSearch } from "wouter";
 import { Loader2, ShieldAlert } from "lucide-react";
 import { AppLayout } from "@/components/app-layout";
 import { Button } from "@/components/ui/button";
@@ -19,10 +19,19 @@ function getAdminAllowlist(): string[] {
 export function RouteGuard({ requireCompany, children }: RouteGuardProps) {
   const { data: me, isLoading, isError } = useGetMe();
   const { user, isLoaded } = useUser();
+  const search = useSearch();
 
   const adminAllowlist = getAdminAllowlist();
   const userEmail = user?.primaryEmailAddress?.emailAddress?.toLowerCase() ?? "";
   const isAdmin = adminAllowlist.length > 0 && adminAllowlist.includes(userEmail);
+
+  // Read-only admin inspection: an allowlisted admin with NO company of their
+  // own may still open a specific page (e.g. a deal) when the link explicitly
+  // opts in via ?adminView=1. This is a UI-only hint — the actual read access
+  // is independently re-verified server-side (see isAllowlistedAdmin() in the
+  // API), so this flag alone grants nothing if the backend disagrees. It never
+  // affects mutation endpoints, which don't consult this flag at all.
+  const isAdminInspection = isAdmin && new URLSearchParams(search).get("adminView") === "1";
 
   // Show spinner while loading OR on API error (don't make routing decisions on stale/failed data)
   if (isLoading || isError || !isLoaded) {
@@ -39,6 +48,12 @@ export function RouteGuard({ requireCompany, children }: RouteGuardProps) {
   }
 
   if (requireCompany && !me?.company) {
+    // Explicit read-only admin inspection link — let it through. The API
+    // independently re-checks the admin allowlist itself; this is not the
+    // only gate.
+    if (isAdminInspection) {
+      return <>{children}</>;
+    }
     // Admin users have no company — show them a friendly context message instead of forcing onboarding
     if (isAdmin) {
       return (

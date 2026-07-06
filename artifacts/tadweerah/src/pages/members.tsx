@@ -5,7 +5,7 @@ import {
   useRemoveCompanyMember,
   getGetCompanyMembersQueryKey,
   useGetMe,
-  type CompanyMember,
+  type CompanyMember as ApiCompanyMember,
 } from "@workspace/api-client-react";
 import {
   Loader2,
@@ -30,14 +30,13 @@ function truncateUserId(id: string): string {
   return `${id.slice(0, 12)}…${id.slice(-6)}`;
 }
 
-interface CompanyMember {
-  user_id?: string;
-  invitation_id?: string;
-  email?: string;
+// Extends the generated API type rather than redeclaring it (which previously
+// collided with the import as TS2440). The API's CompanyMember never actually
+// includes `name`, and `role` is only ever "owner" | "member" — the render
+// logic below only ever branches on "owner" vs everything else, so dropping
+// the unused "admin" value here matches real behavior, not just the API type.
+interface CompanyMemberDisplay extends ApiCompanyMember {
   name?: string;
-  role: "owner" | "admin" | "member";
-  is_pending: boolean;
-  created_at: string;
 }
 
 function MemberRow({
@@ -47,7 +46,7 @@ function MemberRow({
   onRemove,
   removing,
 }: {
-  member: CompanyMember;
+  member: CompanyMemberDisplay;
   isSelf: boolean;
   canRemove: boolean;
   onRemove: () => void;
@@ -163,11 +162,11 @@ export function MembersPage() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [inviteSuccess, setInviteSuccess] = useState(false);
-  const [pendingRemove, setPendingRemove] = useState<CompanyMember | null>(null);
+  const [pendingRemove, setPendingRemove] = useState<CompanyMemberDisplay | null>(null);
   const [removeError, setRemoveError] = useState<string | null>(null);
 
   const myUserId = me?.userId ?? "";
-  const allMembers = members as CompanyMember[];
+  const allMembers = members as CompanyMemberDisplay[];
   const isOwner = allMembers.some((m) => m.user_id === myUserId && m.role === "owner");
 
   const ownerRow = allMembers.find((m) => m.role === "owner");

@@ -3,13 +3,14 @@ import { and, eq, or, sql } from "drizzle-orm";
 import {
   db,
   companiesTable,
+  companyMembersTable,
   contractsTable,
   contractMaterialsTable,
   contractShipmentsTable,
   type Contract,
   type ContractMaterial,
 } from "@workspace/db";
-import { requireAuth } from "../middlewares/requireAuth";
+import { requireAuth, type AuthedRequest } from "../middlewares/requireAuth";
 import {
   requireCompany,
   type AuthedCompanyRequest,
@@ -17,6 +18,7 @@ import {
 import { HttpError, assertUuid } from "../middlewares/errorHandler";
 import { logAudit } from "../lib/audit";
 import { nextContractReference } from "../lib/contract-ref";
+import { isAllowlistedAdmin } from "../lib/adminAllowlist";
 import {
   notifyContractSubmitted,
   notifyContractConfirmed,
@@ -108,6 +110,23 @@ async function fetchContractForParty(contractId: string, companyId: string) {
       : isSeller;
 
   return { contract, isSeller, isBuyer, isCreator };
+}
+
+/**
+ * Read-only counterpart to fetchContractForParty for allowlisted admins —
+ * loads the contract by ID with no seller/buyer ownership check. Used ONLY
+ * by GET /contracts/:id. Never used by any mutation route in this file.
+ */
+async function fetchContractForAdminBypass(contractId: string) {
+  const [contract] = await db
+    .select()
+    .from(contractsTable)
+    .where(eq(contractsTable.id, contractId))
+    .limit(1);
+
+  if (!contract) throw new HttpError(404, "NotFound", "Contract not found");
+
+  return { contract };
 }
 
 async function fetchPartyNames(sellerId: string, buyerId: string) {
@@ -326,18 +345,56 @@ router.post(
 
 // ---------------------------------------------------------------------------
 // GET /contracts/:id — contract detail with materials and shipment summary
+//
+// Allowlisted admins (TADWEERAH_ADMIN_EMAILS) may additionally view ANY
+// contract — read-only, for inspection from the Admin Panel. This bypass
+// exists ONLY on this GET handler. fetchContractForParty (used by every
+// mutation route below) is completely untouched, so real party membership
+// is still required everywhere else.
 // ---------------------------------------------------------------------------
+
+interface AdminReadBypassRequest {
+  isAdminReadBypass: boolean;
+}
 
 router.get(
   "/contracts/:id",
   requireAuth,
-  requireCompany(),
+  async (req, res, next) => {
+    const { userId } = req as AuthedRequest;
+
+    const rows = await db
+      .select({
+        company: companiesTable,
+        role: companyMembersTable.role,
+      })
+      .from(companyMembersTable)
+      .innerJoin(companiesTable, eq(companiesTable.id, companyMembersTable.company_id))
+      .where(eq(companyMembersTable.user_id, userId))
+      .limit(1);
+
+    const found = rows[0];
+    const isAdminReadBypass = await isAllowlistedAdmin(userId);
+
+    if (!found && !isAdminReadBypass) {
+      res.status(403).json({ error: "Company profile required" });
+      return;
+    }
+    if (found) {
+      (req as AuthedCompanyRequest).company = found.company;
+      (req as AuthedCompanyRequest).memberRole = found.role as "owner" | "member";
+    }
+    (req as unknown as AdminReadBypassRequest).isAdminReadBypass = isAdminReadBypass;
+    next();
+  },
   async (req, res, next) => {
     try {
-      const companyId = (req as AuthedCompanyRequest).company.id;
       const contractId = assertUuid(req.params.id, "id");
+      const { isAdminReadBypass } = req as unknown as AdminReadBypassRequest;
 
-      const { contract } = await fetchContractForParty(contractId, companyId);
+      const { contract } = isAdminReadBypass
+        ? await fetchContractForAdminBypass(contractId)
+        : await fetchContractForParty(contractId, (req as AuthedCompanyRequest).company.id);
       const { seller, buyer } = await fetchPartyNames(
         contract.seller_company_id,
         contract.buyer_company_id,

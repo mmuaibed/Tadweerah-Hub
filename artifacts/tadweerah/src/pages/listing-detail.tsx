@@ -15,7 +15,10 @@ import {
   getListMyListingsQueryKey,
   getGetListingOffersQueryKey,
   getGetOffersSummaryQueryKey,
+  getGetWasteListingQueryKey,
+  customFetch,
   type ListingOffer,
+  type WasteListing,
 } from "@workspace/api-client-react";
 import {
   Loader2,
@@ -1252,13 +1255,44 @@ export function ListingDetailPage() {
 
   const isValidId = UUID_RE.test(wasteListingId);
 
+  // Admin read-bypass: the URL may carry ?deal=<id>&adminView=1 (built by the
+  // admin panel's "View Deal" links). The generated useGetWasteListing hook's
+  // fetch URL is fixed to /api/listings/:id with no way to attach extra query
+  // params, so without this override the backend never receives ?deal= and
+  // silently returns no deal — the page then falls back to its plain listing
+  // view instead of the completed-deal view. Only takes effect when ?deal= is
+  // actually present, so the normal (non-admin) fetch path is unaffected.
+  const adminSearchParams = new URLSearchParams(search);
+  const adminDealParam = adminSearchParams.get("deal");
+  const adminViewParam = adminSearchParams.get("adminView") === "1";
+
   const { data: me } = useGetMe();
   const {
     data: listing,
     isLoading,
     isError,
     queryKey,
-  } = useGetWasteListing(wasteListingId);
+  } = useGetWasteListing(
+    wasteListingId,
+    adminDealParam
+      ? {
+          query: {
+            queryKey: [
+              ...getGetWasteListingQueryKey(wasteListingId),
+              adminDealParam,
+              adminViewParam,
+            ],
+            queryFn: () =>
+              customFetch<WasteListing>(
+                `/api/listings/${wasteListingId}?deal=${encodeURIComponent(adminDealParam)}${
+                  adminViewParam ? "&adminView=1" : ""
+                }`,
+              ),
+            enabled: !!wasteListingId,
+          },
+        }
+      : undefined,
+  );
 
   const myCompanyId = me?.company?.id;
   const isOwner = !!myCompanyId && listing?.company_id === myCompanyId;

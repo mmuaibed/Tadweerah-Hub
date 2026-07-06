@@ -44,6 +44,34 @@ function toLegacyUnit(key: string): string {
   return LEGACY_UNIT_KEYS.has(key) ? key : "kg";
 }
 
+/**
+ * Real Google Maps URL check (host + path), not a naive "starts with
+ * https://" string test. Kept in sync with the equivalent backend check
+ * in api-server/src/routes/listings.ts — see that file if the accepted
+ * patterns change.
+ *
+ * Accepted: https://www.google.com/maps/... , https://google.com/maps/... ,
+ * https://maps.google.com/... , https://maps.app.goo.gl/... ,
+ * https://goo.gl/maps/...
+ */
+function isValidGoogleMapsUrl(value: string): boolean {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return false;
+  }
+  if (url.protocol !== "https:") return false;
+
+  const host = url.hostname.toLowerCase();
+  if (host === "google.com" || host === "www.google.com") {
+    return url.pathname.startsWith("/maps");
+  }
+  if (host === "maps.google.com" || host === "maps.app.goo.gl") return true;
+  if (host === "goo.gl") return url.pathname.startsWith("/maps");
+  return false;
+}
+
 const TOTAL_STEPS = 3;
 
 function StepIndicator({ current, labels }: { current: number; labels: string[] }) {
@@ -227,6 +255,7 @@ export function ListingNewPage() {
     e.preventDefault();
     setError(null);
 
+    if (mapsUrlError) { setError(t("listing.form.google_maps_url.invalid")); return; }
     if (!materialCategoryId) { setError(t("listing.form.error")); return; }
     const selectedCategory = (allCategories as MaterialCategory[]).find((c) => c.id === materialCategoryId);
     const selectedUnit = (unitOptions as UnitOption[]).find((u) => u.id === resolvedUnitId);
@@ -305,7 +334,7 @@ export function ListingNewPage() {
             : {}),
           ...(materialLocationAddress.trim() ? { material_location_address: materialLocationAddress.trim() } : {}),
           ...(materialLocationNotes.trim() ? { material_location_notes: materialLocationNotes.trim() } : {}),
-          ...(googleMapsUrl.trim() && googleMapsUrl.trim().startsWith("https://")
+          ...(googleMapsUrl.trim() && isValidGoogleMapsUrl(googleMapsUrl.trim())
             ? { google_maps_url: googleMapsUrl.trim() }
             : {}),
           offer_deadline: offerDeadlineISO,
@@ -510,6 +539,32 @@ export function ListingNewPage() {
                   value={materialLocationNotes}
                   onChange={(e) => setMaterialLocationNotes(e.target.value)}
                 />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="google_maps_url">{t("listing.form.google_maps_url")}</Label>
+                <Input
+                  id="google_maps_url"
+                  type="url"
+                  dir="ltr"
+                  maxLength={500}
+                  placeholder={t("listing.form.google_maps_url.placeholder")}
+                  value={googleMapsUrl}
+                  aria-invalid={mapsUrlError}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setGoogleMapsUrl(value);
+                    setMapsUrlError(value.trim() !== "" && !isValidGoogleMapsUrl(value.trim()));
+                  }}
+                  onBlur={(e) => {
+                    const value = e.target.value.trim();
+                    setMapsUrlError(value !== "" && !isValidGoogleMapsUrl(value));
+                  }}
+                  className={mapsUrlError ? "border-destructive focus-visible:ring-destructive" : undefined}
+                />
+                {mapsUrlError && (
+                  <p className="text-xs text-destructive">{t("listing.form.google_maps_url.invalid")}</p>
+                )}
               </div>
 
             </CardContent>

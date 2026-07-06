@@ -46,7 +46,22 @@ import {
 } from "@/components/ui/alert-dialog";
 import { MasterDataTab } from "./MasterDataTab";
 
-function AdminRefTooltip({ value, lang }: { value: string; lang: "ar" | "en" }) {
+/**
+ * linkState tells this component what's actually around it, so its tooltip
+ * never contradicts a real action the caller has already rendered:
+ *  - "self":     the value itself is wrapped in a working <Link> by the caller
+ *                (e.g. Sustainability's deal-type commercial ref) — no "no
+ *                link" tooltip is added here since that would contradict the
+ *                link this text is literally sitting inside.
+ *  - "external": a separate "View X" button/link exists next to this value
+ *                — the tooltip points at that button instead of claiming
+ *                there's no way to open the source.
+ *  - "none"      (default): no link or action exists anywhere for this row —
+ *                the original, genuinely-accurate "no link available" tooltip.
+ */
+type AdminRefLinkState = "self" | "external" | "none";
+
+function AdminRefTooltip({ value, lang, linkState = "none" }: { value: string; lang: "ar" | "en"; linkState?: AdminRefLinkState }) {
   if (!value) return <span>-</span>;
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
   if (isUuid) {
@@ -54,11 +69,26 @@ function AdminRefTooltip({ value, lang }: { value: string; lang: "ar" | "en" }) 
       <Tooltip>
         <TooltipTrigger asChild>
           <span className="font-mono cursor-help underline decoration-dashed decoration-gray-300 underline-offset-4 text-muted-foreground text-xs">
-            {lang === "ar" ? "مرجع غير متوفر" : "Reference unavailable"}
+            {lang === "ar" ? "معرّف داخلي" : "Internal ID"}
           </span>
         </TooltipTrigger>
         <TooltipContent side="top">
           <span className="font-mono text-[10px]">{value}</span>
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+  if (linkState === "self") {
+    return <span className="font-mono">{value}</span>;
+  }
+  if (linkState === "external") {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="font-mono cursor-default">{value}</span>
+        </TooltipTrigger>
+        <TooltipContent side="top">
+          {lang === "ar" ? "استخدم زر العرض لفتح المصدر" : "Use the View button to open this source"}
         </TooltipContent>
       </Tooltip>
     );
@@ -69,7 +99,7 @@ function AdminRefTooltip({ value, lang }: { value: string; lang: "ar" | "en" }) 
         <span className="font-mono cursor-help underline decoration-dashed decoration-gray-300 underline-offset-4">{value}</span>
       </TooltipTrigger>
       <TooltipContent side="top">
-        {lang === "ar" ? "لا يوجد رابط متاح لهذا المصدر حالياً" : "No source link available yet"}
+        {lang === "ar" ? "لا يوجد رابط متاح لهذا المصدر حالياً" : "No link is available for this source"}
       </TooltipContent>
     </Tooltip>
   );
@@ -127,6 +157,12 @@ interface AdminDeal {
   deal_id: string;
   status: string;
   manifest_ref: string | null;
+  listing_id: string | null;
+  commercial_ref: string;
+  listing_ref: string | null;
+  estimated_amount: string | null;
+  vat_amount: string | null;
+  total_amount: string | null;
   mwan_score: string;
   missing_count: number;
   is_mwan_ready: boolean;
@@ -280,6 +316,40 @@ const DEAL_STATUS_VARIANTS: Record<string, "default" | "secondary" | "outline" |
   active: "secondary",
 };
 
+/**
+ * Short, normalized status badge for the main business tables — collapses the
+ * granular workflow status (shown separately as "المرحلة الحالية") into the
+ * small set of states a founder needs at a glance.
+ *
+ * Mapping policy (deal statuses only — dealsTable.$inferSelect["status"] is
+ * exactly: active, payment_submitted, payment_confirmed, dispatched,
+ * receipt_pending, completed, expired, cancelled):
+ *   - completed          -> مكتملة (terminal, success)
+ *   - cancelled          -> ملغاة (terminal)
+ *   - expired            -> منتهية الصلاحية (terminal)
+ *   - active             -> بانتظار إجراء — buyer must submit payment
+ *   - payment_submitted  -> بانتظار إجراء — seller/admin must confirm payment
+ *   - payment_confirmed  -> بانتظار إجراء — seller must dispatch next
+ *   - receipt_pending    -> بانتظار إجراء — buyer must confirm receipt
+ *   - dispatched         -> نشطة — goods are physically in transit; no single
+ *                           party is blocked waiting to act right now
+ *
+ * There is no "مغلقة" (closed-but-not-completed) deal status today — expired/
+ * cancelled already cover every non-completed terminal case, so that bucket
+ * is intentionally unused here rather than invented.
+ */
+function simplifiedDealStatus(status: string, lang: "ar" | "en"): { label: string; variant: "default" | "secondary" | "outline" | "destructive" } {
+  if (status === "completed") return { label: lang === "ar" ? "مكتملة" : "Completed", variant: "default" };
+  if (status === "cancelled") return { label: lang === "ar" ? "ملغاة" : "Cancelled", variant: "destructive" };
+  if (status === "expired") return { label: lang === "ar" ? "منتهية الصلاحية" : "Expired", variant: "outline" };
+  if (status === "dispatched") return { label: lang === "ar" ? "نشطة" : "Active", variant: "outline" };
+  if (["active", "payment_submitted", "payment_confirmed", "receipt_pending"].includes(status)) {
+    return { label: lang === "ar" ? "بانتظار إجراء" : "Action Needed", variant: "secondary" };
+  }
+  // Unrecognized/future status — conservative fallback, not a silent "نشطة".
+  return { label: lang === "ar" ? "بانتظار إجراء" : "Action Needed", variant: "secondary" };
+}
+
 function licenseLabel(status: string | null, lang: string): { label: string; cls: string } {
   if (!status) return {
     label: lang === "ar" ? "غير مكتمل" : "Incomplete",
@@ -364,7 +434,9 @@ export function AdminPage() {
   /* Deals state */
   const [deals, setDeals] = useState<AdminDeal[] | null>(null);
   const [dealsLoading, setDealsLoading] = useState(false);
+  const [dealsLoadingMore, setDealsLoadingMore] = useState(false);
   const [dealsError, setDealsError] = useState<string | null>(null);
+  const [dealsTotal, setDealsTotal] = useState(0);
   const [statusFilter, setStatusFilter] = useState("");
   const [expandedDealId, setExpandedDealId] = useState<string | null>(null);
   const [expandedTrId, setExpandedTrId] = useState<string | null>(null);
@@ -542,13 +614,18 @@ export function AdminPage() {
   }, [adminKey]);
 
 
-  async function fetchSustAllocations() {
+  async function fetchSustAllocations(overrides?: { status?: string; pendingOnly?: boolean }) {
     setSustAllocLoading(true);
     setSustAllocError(null);
     try {
+      // Overrides let a filter's onChange pass the just-selected value directly,
+      // since sustStatusFilter/sustPendingOnly won't have committed yet in the
+      // same event handler (React state updates are asynchronous).
+      const status = overrides?.status ?? sustStatusFilter;
+      const pendingOnly = overrides?.pendingOnly ?? sustPendingOnly;
       const params = new URLSearchParams();
-      if (sustStatusFilter) params.set("status", sustStatusFilter);
-      if (sustPendingOnly) params.set("pending_only", "true");
+      if (status) params.set("status", status);
+      if (pendingOnly) params.set("pending_only", "true");
       params.set("limit", "100");
       const res = await callAdmin(`/sustainability/allocations?${params}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -892,20 +969,25 @@ export function AdminPage() {
     return res;
   }
 
-  async function fetchDeals() {
-    setDealsLoading(true);
+  const DEALS_PAGE_SIZE = 100;
+
+  async function fetchDeals(opts?: { append?: boolean }) {
+    const append = opts?.append ?? false;
+    if (append) setDealsLoadingMore(true); else setDealsLoading(true);
     setDealsError(null);
     try {
-      const params = statusFilter ? `?status=${encodeURIComponent(statusFilter)}` : "";
-      const res = await callAdmin(`/deals${params}`);
+      const offset = append ? (deals?.length ?? 0) : 0;
+      const statusParam = statusFilter ? `status=${encodeURIComponent(statusFilter)}&` : "";
+      const res = await callAdmin(`/deals?${statusParam}limit=${DEALS_PAGE_SIZE}&offset=${offset}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json() as AdminDeal[];
+      const data = await res.json() as { deals: AdminDeal[]; total: number };
       sessionStorage.setItem("tdw_admin_key", adminKey.trim());
-      setDeals(data);
+      setDeals((prev) => (append ? [...(prev ?? []), ...data.deals] : data.deals));
+      setDealsTotal(data.total);
     } catch (e) {
       setDealsError(e instanceof Error ? e.message : t("admin.error.generic"));
     } finally {
-      setDealsLoading(false);
+      if (append) setDealsLoadingMore(false); else setDealsLoading(false);
     }
   }
 
@@ -1683,7 +1765,9 @@ export function AdminPage() {
               <div className="rounded-xl border border-border bg-white overflow-hidden">
                 <div className="px-4 py-3 border-b border-border flex items-center justify-between">
                   <p className="text-sm font-semibold text-foreground">
-                    {t("admin.deal.count").replace("{n}", String(deals.length))}
+                    {dealsTotal > deals.length
+                      ? t("admin.deal.count_of_total").replace("{shown}", String(deals.length)).replace("{total}", String(dealsTotal))
+                      : t("admin.deal.count").replace("{n}", String(deals.length))}
                   </p>
               <div className="flex items-center gap-3 text-xs text-muted-foreground">
                     <span className="flex items-center gap-1">
@@ -1703,19 +1787,10 @@ export function AdminPage() {
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-border bg-muted/30">
-                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{t("admin.deal.id")}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{t("admin.deal.reference_col")}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{t("admin.deal.total_amount_col")}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{t("admin.deal.current_stage_col")}</th>
                           <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{t("admin.deal.status")}</th>
-                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{t("admin.deal.manifest_ref")}</th>
-                          <th 
-                            className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground cursor-help"
-                            title={lang === "ar" ? "يوضح عدد المتطلبات المكتملة من إجمالي متطلبات المتابعة التشغيلية." : "Shows the number of completed requirements out of total requirements required for operational monitoring."}
-                          >
-                            {lang === "ar" ? "اكتمال متطلبات الصفقة" : "Deal Requirements Completion"} <span className="text-[10px] text-primary/70">ⓘ</span>
-                          </th>
-                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">
-                            {lang === "ar" ? "متطلبات متبقية" : "Remaining Requirements"}
-                          </th>
-                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{t("admin.deal.created_at")}</th>
                           <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground"></th>
                         </tr>
                       </thead>
@@ -1724,38 +1799,84 @@ export function AdminPage() {
                           <Fragment key={d.deal_id}>
                             <tr className={`hover:bg-muted/20 transition-colors ${d.is_mwan_ready ? "" : "bg-amber-50/20"}`}>
                               <td className="px-4 py-2.5">
-                                <span className="font-mono text-xs text-muted-foreground" dir="ltr">{d.deal_id.slice(0, 8)}…</span>
-                              </td>
-                              <td className="px-4 py-2.5">
-                                <Badge variant={DEAL_STATUS_VARIANTS[d.status] ?? "outline"} className="text-[10px]">
-                                  {t(`deal.status.${d.status}`)}
-                                </Badge>
-                              </td>
-                              <td className="px-4 py-2.5">
-                                {d.manifest_ref
-                                  ? <span className="font-mono text-xs font-semibold text-primary" dir="ltr">{d.manifest_ref}</span>
-                                  : <span className="text-[11px] text-muted-foreground/60">—</span>
-                                }
-                              </td>
-                              <td className="px-4 py-2.5">
-                                <div className="flex items-center gap-1.5">
-                                  {d.is_mwan_ready
-                                    ? <CheckCircle2 className="h-3.5 w-3.5 text-green-600 shrink-0" />
-                                    : <AlertCircle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
-                                  }
-                                  <span className={`text-xs font-mono font-semibold ${d.is_mwan_ready ? "text-green-700" : "text-amber-700"}`} dir="ltr">
-                                    {d.mwan_score} {lang === "ar" ? "متطلب مكتمل" : "requirements completed"}
-                                  </span>
+                                <div className="flex flex-col gap-0.5">
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <span className="font-mono text-xs font-semibold text-foreground cursor-help" dir="ltr">
+                                        {d.commercial_ref || d.listing_ref || t("admin.ref.no_deal_number")}
+                                      </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top">
+                                      <span className="text-[10px]">{t("admin.ref.internal_id")}: </span>
+                                      <span className="font-mono text-[10px]" dir="ltr">{d.deal_id}</span>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                  {/* TDW is always primary when present — LIST is secondary/muted, never a competing main number. */}
+                                  {d.commercial_ref && d.listing_ref && (
+                                    <span className="text-[10px] text-muted-foreground/70 font-mono" dir="ltr">
+                                      {t("admin.ref.listing_reference")}: {d.listing_ref}
+                                    </span>
+                                  )}
+                                  <span className="text-[10px] text-muted-foreground">{fmtDate(d.created_at, lang)}</span>
+                                  {d.manifest_ref && (
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <span className="text-[10px] text-muted-foreground/70 cursor-help underline decoration-dashed decoration-gray-300 underline-offset-2 w-fit">
+                                          {t("admin.ref.transport_ref")}
+                                        </span>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="top">
+                                        <span className="font-mono text-[10px]" dir="ltr">{d.manifest_ref}</span>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  )}
                                 </div>
                               </td>
-                              <td className="px-4 py-2.5">
-                                {d.missing_count > 0
-                                  ? <span className="inline-flex items-center rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5">{d.missing_count} {lang === "ar" ? "متطلبات متبقية" : "remaining requirements"}</span>
-                                  : <span className="text-[11px] text-green-700 font-semibold">✓</span>
+                              <td className="px-4 py-2.5 font-mono text-sm" dir="ltr">
+                                {d.total_amount
+                                  ? fmtSAR(d.total_amount, lang)
+                                  : d.estimated_amount
+                                    ? (
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <span className="cursor-help underline decoration-dashed decoration-gray-300 underline-offset-2">
+                                            {fmtSAR(d.estimated_amount, lang)}
+                                          </span>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top">{t("admin.deal.subtotal_label")}</TooltipContent>
+                                      </Tooltip>
+                                    )
+                                    : <span className="text-muted-foreground text-xs italic" dir="rtl">{t("admin.deal.amount_not_available")}</span>
                                 }
                               </td>
-                              <td className="px-4 py-2.5 text-xs text-muted-foreground">{fmtDate(d.created_at, lang)}</td>
-                              <td className="px-4 py-2.5 text-end">
+                              <td className="px-4 py-2.5 text-xs text-foreground">
+                                {t(`deal.status.${d.status}`)}
+                              </td>
+                              <td className="px-4 py-2.5">
+                                <Badge variant={simplifiedDealStatus(d.status, lang).variant} className="text-[10px]">
+                                  {simplifiedDealStatus(d.status, lang).label}
+                                </Badge>
+                              </td>
+                              <td className="px-4 py-2.5 text-end space-x-2 space-x-reverse whitespace-nowrap">
+                                {d.listing_id ? (
+                                  <Link href={`/listings/${d.listing_id}?deal=${d.deal_id}&adminView=1`}>
+                                    <Button variant="outline" size="sm" className="h-7 text-xs">
+                                      {t("admin.ref.view_deal")}
+                                    </Button>
+                                  </Link>
+                                ) : (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <span className="inline-block">
+                                        <Button variant="outline" size="sm" className="h-7 text-xs" disabled>
+                                          {t("admin.ref.view_deal")}
+                                        </Button>
+                                      </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top">{t("admin.ref.no_listing_in_report")}</TooltipContent>
+                                  </Tooltip>
+                                )}
+                                {/* Unchanged — inline MWAN-readiness details expansion, not deal navigation. */}
                                 <Button variant="ghost" size="sm" onClick={() => void toggleDealDetails(d.deal_id)}>
                                   {expandedDealId === d.deal_id ? (lang === "ar" ? "إخفاء" : "Hide") : (lang === "ar" ? "عرض التفاصيل" : "Details")}
                                 </Button>
@@ -1763,7 +1884,7 @@ export function AdminPage() {
                             </tr>
                             {expandedDealId === d.deal_id && (
                               <tr className="bg-muted/5 border-t-0">
-                                <td colSpan={7} className="px-4 py-4">
+                                <td colSpan={5} className="px-4 py-4">
                                   {dealDetailsLoading ? (
                                     <div className="flex items-center justify-center p-4 text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /></div>
                                   ) : dealDetailsError ? (
@@ -1776,6 +1897,23 @@ export function AdminPage() {
                                           <p className="text-muted-foreground text-xs"><span className="text-foreground">{lang === "ar" ? "البائع:" : "Seller:"}</span> {expandedDealDetails.seller_name || "—"}</p>
                                           <p className="text-muted-foreground text-xs"><span className="text-foreground">{lang === "ar" ? "المشتري:" : "Buyer:"}</span> {expandedDealDetails.buyer_name || "—"}</p>
                                           <p className="text-muted-foreground text-xs"><span className="text-foreground">{lang === "ar" ? "حالة الصفقة:" : "Deal Status:"}</span> {t(`deal.status.${expandedDealDetails.status}`)}</p>
+                                        </div>
+                                        <div>
+                                          <p className="font-semibold text-foreground border-b pb-1 mb-2">{lang === "ar" ? "جاهزية متطلبات المتابعة التشغيلية" : "Operational Readiness"}</p>
+                                          <div className="flex items-center gap-1.5">
+                                            {d.is_mwan_ready
+                                              ? <CheckCircle2 className="h-3.5 w-3.5 text-green-600 shrink-0" />
+                                              : <AlertCircle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                                            }
+                                            <span className={`text-xs font-mono font-semibold ${d.is_mwan_ready ? "text-green-700" : "text-amber-700"}`} dir="ltr">
+                                              {d.mwan_score} {lang === "ar" ? "متطلب مكتمل" : "requirements completed"}
+                                            </span>
+                                          </div>
+                                          {d.missing_count > 0 && (
+                                            <span className="inline-flex items-center rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 mt-1.5">
+                                              {d.missing_count} {lang === "ar" ? "متطلبات متبقية" : "remaining requirements"}
+                                            </span>
+                                          )}
                                         </div>
                                       </div>
                                       <div className="space-y-3">
@@ -1843,6 +1981,21 @@ export function AdminPage() {
                         ))}
                       </tbody>
                     </table>
+                  </div>
+                )}
+                {dealsTotal > deals.length && (
+                  <div className="px-4 py-3 border-t border-border flex justify-center">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => void fetchDeals({ append: true })}
+                      disabled={dealsLoadingMore}
+                    >
+                      {dealsLoadingMore
+                        ? <><Loader2 className="h-4 w-4 me-2 animate-spin" />{t("admin.loading")}</>
+                        : t("admin.deal.load_more")
+                      }
+                    </Button>
                   </div>
                 )}
               </div>
@@ -2549,8 +2702,35 @@ export function AdminPage() {
                               return (
                                 <tr key={row.deal_id} className="hover:bg-muted/20 transition-colors">
                                   <td className="px-3 py-2.5 whitespace-nowrap text-muted-foreground">{fmtDate(row.created_at, lang)}</td>
-                                  <td className="px-3 py-2.5 whitespace-nowrap font-mono text-muted-foreground" dir="ltr">
-                                    {row.tr_manifest_ref ?? `${row.deal_id.slice(0, 8)}…`}
+                                  <td className="px-3 py-2.5 whitespace-nowrap" dir="ltr">
+                                    <div className="flex flex-col gap-1 items-start">
+                                      {row.tr_manifest_ref ? (
+                                        <span className="font-mono text-muted-foreground text-[11px]">
+                                          <span className="text-muted-foreground/70">{t("admin.ref.transport_ref")}: </span>
+                                          {row.tr_manifest_ref}
+                                        </span>
+                                      ) : (
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <span className="font-mono cursor-help underline decoration-dashed decoration-gray-300 underline-offset-4 text-muted-foreground text-[11px]">
+                                              {t("admin.ref.internal_id")}
+                                            </span>
+                                          </TooltipTrigger>
+                                          <TooltipContent side="top">
+                                            <span className="font-mono text-[10px]">{row.deal_id}</span>
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      )}
+                                      {/* No listing_id in this report's data — a deal link can't be safely built here (Phase 2/backend). */}
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <span className="text-[10px] text-muted-foreground/50 underline decoration-dotted cursor-not-allowed">
+                                            {t("admin.ref.view_deal")}
+                                          </span>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top">{t("admin.ref.no_deal_link")}</TooltipContent>
+                                      </Tooltip>
+                                    </div>
                                   </td>
                                   <td className="px-3 py-2.5 whitespace-nowrap">{row.seller_name ?? "—"}<br/><span className="text-muted-foreground">{row.seller_city ?? ""}</span></td>
                                   <td className="px-3 py-2.5 whitespace-nowrap">{row.buyer_name ?? "—"}<br/><span className="text-muted-foreground">{row.buyer_city ?? ""}</span></td>
@@ -2650,9 +2830,9 @@ export function AdminPage() {
                           <thead>
                             <tr className="border-b border-border bg-muted/30">
                               <th className="px-4 py-2.5 text-start font-semibold text-muted-foreground">{lang === "ar" ? "رقم العقد" : "Contract Ref"}</th>
-                              <th className="px-4 py-2.5 text-start font-semibold text-muted-foreground">{lang === "ar" ? "البائع" : "Seller"}</th>
-                              <th className="px-4 py-2.5 text-start font-semibold text-muted-foreground">{lang === "ar" ? "المشتري" : "Buyer"}</th>
-                              <th className="px-4 py-2.5 text-start font-semibold text-muted-foreground">{lang === "ar" ? "تاريخ النهاية الإرشادي" : "End Date"}</th>
+                              <th className="px-4 py-2.5 text-start font-semibold text-muted-foreground">{t("admin.contract.parties_col")}</th>
+                              <th className="px-4 py-2.5 text-start font-semibold text-muted-foreground">{t("contract.field.weight_policy")}</th>
+                              <th className="px-4 py-2.5 text-start font-semibold text-muted-foreground">{t("admin.contract.stage_col")}</th>
                               <th className="px-4 py-2.5 text-start font-semibold text-muted-foreground">{lang === "ar" ? "الحالة" : "Status"}</th>
                             </tr>
                           </thead>
@@ -2667,10 +2847,31 @@ export function AdminPage() {
                               };
                               return (
                                 <tr key={c.id} className="hover:bg-muted/10 transition-colors">
-                                  <td className="px-4 py-2.5 font-semibold text-sm"><AdminRefTooltip value={c.reference} lang={lang} /></td>
-                                  <td className="px-4 py-2.5">{c.seller_name || "—"}</td>
-                                  <td className="px-4 py-2.5">{c.buyer_name || "—"}</td>
-                                  <td className="px-4 py-2.5 text-muted-foreground">{c.end_date ? fmtDate(c.end_date, lang) : "—"}</td>
+                                  <td className="px-4 py-2.5 font-semibold text-sm">
+                                    <div className="flex flex-col gap-1">
+                                      <div className="flex items-center gap-2">
+                                        <AdminRefTooltip value={c.reference} lang={lang} linkState="external" />
+                                        <Link href={`/contracts/${c.id}`}>
+                                          <Button size="sm" variant="outline" className="h-6 text-[11px] px-2">
+                                            {t("admin.ref.view_contract")}
+                                          </Button>
+                                        </Link>
+                                      </div>
+                                      <span className="text-[10px] text-muted-foreground font-normal">
+                                        {c.end_date ? fmtDate(c.end_date, lang) : "—"}
+                                      </span>
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-2.5">
+                                    <div className="text-xs">{c.seller_name || "—"}</div>
+                                    <div className="text-[10px] text-muted-foreground">→ {c.buyer_name || "—"}</div>
+                                  </td>
+                                  <td className="px-4 py-2.5 text-xs text-muted-foreground">
+                                    {t(`contract.weight_policy.${c.weight_policy}`) || c.weight_policy}
+                                  </td>
+                                  <td className="px-4 py-2.5 text-xs text-foreground">
+                                    {t(`contract.status.${c.status}`) || c.status}
+                                  </td>
                                   <td className="px-4 py-2.5">
                                     <span className={`inline-flex items-center rounded-full text-[10px] font-bold px-2 py-0.5 ${statusStyle[c.status] ?? "bg-gray-100"}`}>
                                       {t(`contract.status.${c.status}`) || c.status}
@@ -2794,9 +2995,8 @@ export function AdminPage() {
                                 <th className="px-4 py-2.5 text-start font-semibold text-muted-foreground">{lang === "ar" ? "رقم الشحنة" : "Shipment Ref"}</th>
                                 <th className="px-4 py-2.5 text-start font-semibold text-muted-foreground">{lang === "ar" ? "رقم العقد" : "Contract Ref"}</th>
                                 <th className="px-4 py-2.5 text-start font-semibold text-muted-foreground">{lang === "ar" ? "المادة" : "Material"}</th>
-                                <th className="px-4 py-2.5 text-start font-semibold text-muted-foreground">{lang === "ar" ? "البائع" : "Seller"}</th>
-                                <th className="px-4 py-2.5 text-start font-semibold text-muted-foreground">{lang === "ar" ? "المشتري" : "Buyer"}</th>
-                                <th className="px-4 py-2.5 text-start font-semibold text-muted-foreground">{lang === "ar" ? "الوزن النهائي" : "Final Weight"}</th>
+                                <th className="px-4 py-2.5 text-start font-semibold text-muted-foreground">{lang === "ar" ? "الكمية" : "Quantity"}</th>
+                                <th className="px-4 py-2.5 text-start font-semibold text-muted-foreground">{t("admin.contract.stage_col")}</th>
                                 <th className="px-4 py-2.5 text-start font-semibold text-muted-foreground">{lang === "ar" ? "الحالة" : "Status"}</th>
                               </tr>
                             </thead>
@@ -2811,13 +3011,36 @@ export function AdminPage() {
                                 };
                                 return (
                                   <tr key={s.id} className="hover:bg-muted/10 transition-colors">
-                                    <td className="px-4 py-2.5 font-semibold text-sm"><AdminRefTooltip value={s.reference} lang={lang} /></td>
-                                    <td className="px-4 py-2.5 font-mono text-muted-foreground">{s.contract_reference}</td>
+                                    <td className="px-4 py-2.5 font-semibold text-sm">
+                                      <div className="flex items-center gap-2">
+                                        <AdminRefTooltip value={s.reference} lang={lang} linkState={s.contract_id ? "external" : "none"} />
+                                        {s.contract_id ? (
+                                          <Link href={`/contracts/${s.contract_id}?shipment=${s.id}#shipment-${s.id}`}>
+                                            <Button size="sm" variant="outline" className="h-6 text-[11px] px-2">
+                                              {t("admin.ref.view_shipment")}
+                                            </Button>
+                                          </Link>
+                                        ) : null}
+                                      </div>
+                                    </td>
+                                    <td className="px-4 py-2.5 font-mono text-muted-foreground">
+                                      <div className="flex items-center gap-2">
+                                        {s.contract_reference}
+                                        {s.contract_id ? (
+                                          <Link href={`/contracts/${s.contract_id}`}>
+                                            <Button size="sm" variant="outline" className="h-6 text-[11px] px-2">
+                                              {t("admin.ref.view_contract")}
+                                            </Button>
+                                          </Link>
+                                        ) : null}
+                                      </div>
+                                    </td>
                                     <td className="px-4 py-2.5">{s.material_label}</td>
-                                    <td className="px-4 py-2.5">{s.seller_name || "—"}</td>
-                                    <td className="px-4 py-2.5">{s.buyer_name || "—"}</td>
                                     <td className="px-4 py-2.5 font-mono">
                                       {s.final_weight !== null ? `${s.final_weight} ${s.unit_label}` : "—"}
+                                    </td>
+                                    <td className="px-4 py-2.5 text-xs text-foreground">
+                                      {t(`contract.shipment.status.${s.status}`) || s.status}
                                     </td>
                                     <td className="px-4 py-2.5">
                                       <span className={`inline-flex items-center rounded-full text-[10px] font-bold px-2 py-0.5 ${statusStyle[s.status] ?? "bg-gray-100"}`}>
@@ -2943,10 +3166,36 @@ export function AdminPage() {
 
             {reportSubTab === "sustainability" && (
               <div className="space-y-4 animate-in fade-in duration-200">
-                <div className="flex items-center justify-between px-1">
+                <div className="flex items-center justify-between px-1 flex-wrap gap-2">
                   <h3 className="text-sm font-semibold text-foreground">
                     {lang === "ar" ? "سجلات الاستدامة" : "Sustainability Records"}
                   </h3>
+                  <div className="flex items-center gap-3">
+                    <select
+                      value={sustStatusFilter}
+                      onChange={(e) => {
+                        setSustStatusFilter(e.target.value);
+                        void fetchSustAllocations({ status: e.target.value });
+                      }}
+                      className="h-8 rounded-md border border-input bg-background px-2 text-xs text-foreground"
+                    >
+                      <option value="">{lang === "ar" ? "كل الحالات" : "All statuses"}</option>
+                      <option value="draft">{lang === "ar" ? "مسوّدة" : "Draft"}</option>
+                      <option value="finalized">{lang === "ar" ? "معتمد" : "Finalized"}</option>
+                    </select>
+                    <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={sustPendingOnly}
+                        onChange={(e) => {
+                          setSustPendingOnly(e.target.checked);
+                          void fetchSustAllocations({ pendingOnly: e.target.checked });
+                        }}
+                        className="h-3.5 w-3.5"
+                      />
+                      {lang === "ar" ? "طلبات التصحيح المعلّقة فقط" : "Pending corrections only"}
+                    </label>
+                  </div>
                 </div>
 
                 {sustAllocLoading ? (
@@ -2967,6 +3216,7 @@ export function AdminPage() {
                       <thead>
                         <tr className="border-b border-border bg-muted/30">
                           <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "المرجع التجاري" : "Commercial Ref"}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "المصدر" : "Source"}</th>
                           <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "الشركة" : "Company"}</th>
                           <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "المادة" : "Material"}</th>
                           <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "الكمية المستلمة" : "Received Qty"}</th>
@@ -2990,16 +3240,29 @@ export function AdminPage() {
                               <tr className="hover:bg-muted/20 transition-colors">
                               <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground">
                                 {rl?.parent_entity_id ? (
-                                  rl.parent_entity_type === "deal" ? (
-                                    <Link href={`/deals/${rl.parent_entity_id}`} className="text-primary hover:underline">
-                                      <AdminRefTooltip value={a.commercial_ref || rl.parent_entity_id} lang={lang} />
+                                  rl.parent_entity_type === "deal" && rl.source_line_type === "listing" && rl.source_line_id ? (
+                                    <Link href={`/listings/${rl.source_line_id}?deal=${rl.parent_entity_id}&adminView=1`} className="text-primary hover:underline">
+                                      <AdminRefTooltip value={a.commercial_ref || rl.parent_entity_id} lang={lang} linkState="self" />
                                     </Link>
                                   ) : (
-                                    <span className="font-mono text-muted-foreground"><AdminRefTooltip value={a.commercial_ref || rl.parent_entity_id} lang={lang} /></span>
+                                    <span className="font-mono text-muted-foreground">
+                                      <AdminRefTooltip
+                                        value={a.commercial_ref || rl.parent_entity_id}
+                                        lang={lang}
+                                        linkState={rl.parent_entity_type === "contract_shipment" && rl.parent_entity_contract_id && rl.parent_entity_id ? "external" : "none"}
+                                      />
+                                    </span>
                                   )
                                 ) : (
                                   "-"
                                 )}
+                              </td>
+                              <td className="px-4 py-2.5 text-xs text-muted-foreground">
+                                {rl?.parent_entity_type === "deal"
+                                  ? (lang === "ar" ? "صفقة" : "Deal")
+                                  : rl?.parent_entity_type === "contract_shipment"
+                                    ? (lang === "ar" ? "شحنة عقد" : "Contract Shipment")
+                                    : "-"}
                               </td>
                               <td className="px-4 py-2.5 font-medium">{a.buyer_name || "-"}</td>
                               <td className="px-4 py-2.5">
@@ -3062,6 +3325,31 @@ export function AdminPage() {
                                 {alloc.status === "finalized" || alloc.status === "superseded" ? new Date(alloc.finalized_at).toLocaleDateString(lang === "ar" ? "ar-SA" : "en-GB") : "-"}
                               </td>
                               <td className="px-4 py-2.5 text-end space-x-2 space-x-reverse whitespace-nowrap">
+                                {rl?.parent_entity_type === "deal" && rl.source_line_type === "listing" && rl.source_line_id && rl.parent_entity_id ? (
+                                  <Link href={`/listings/${rl.source_line_id}?deal=${rl.parent_entity_id}&adminView=1`}>
+                                    <Button size="sm" variant="outline" className="h-7 text-xs">
+                                      {t("admin.ref.view_deal")}
+                                    </Button>
+                                  </Link>
+                                ) : rl?.parent_entity_type === "contract_shipment" && rl.parent_entity_contract_id && rl.parent_entity_id ? (
+                                  <Link href={`/contracts/${rl.parent_entity_contract_id}?shipment=${rl.parent_entity_id}#shipment-${rl.parent_entity_id}`}>
+                                    <Button size="sm" variant="outline" className="h-7 text-xs">
+                                      {t("admin.ref.view_contract")}
+                                    </Button>
+                                  </Link>
+                                ) : (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <span className="inline-block">
+                                        <Button size="sm" variant="outline" className="h-7 text-xs" disabled>
+                                          {t("admin.ref.view_source")}
+                                        </Button>
+                                      </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top">{t("admin.ref.no_source_link")}</TooltipContent>
+                                  </Tooltip>
+                                )}
+                                {/* Unchanged — opens inline sustainability pathway breakdown, not the deal itself. */}
                                 <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => toggleSustDetails(alloc.id)}>
                                   {sustExpandedAllocId === alloc.id ? (lang === "ar" ? "إخفاء" : "Hide") : (lang === "ar" ? "تفاصيل" : "Details")}
                                 </Button>
@@ -3550,6 +3838,7 @@ export function AdminPage() {
                           <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "البائع" : "Seller"}</th>
                           <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "المشتري" : "Buyer"}</th>
                           <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "الأوزان (البائع / المشتري / النهائي)" : "Weights (Src / Dst / Final)"}</th>
+                          <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{t("admin.contract.stage_col")}</th>
                           <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "الحالة" : "Status"}</th>
                           <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground">{lang === "ar" ? "إجراءات" : "Actions"}</th>
                         </tr>
@@ -3565,13 +3854,38 @@ export function AdminPage() {
                           };
                           return (
                             <tr key={s.id} className="hover:bg-muted/20 transition-colors">
-                              <td className="px-4 py-3 text-xs"><AdminRefTooltip value={s.reference} lang={lang} /></td>
-                              <td className="px-4 py-3 text-xs text-muted-foreground">{s.contract_reference}</td>
+                              <td className="px-4 py-3 text-xs">
+                                <div className="flex items-center gap-1.5">
+                                  <AdminRefTooltip value={s.reference} lang={lang} linkState={s.contract_id ? "external" : "none"} />
+                                  {s.contract_id ? (
+                                    <Link href={`/contracts/${s.contract_id}?shipment=${s.id}#shipment-${s.id}`}>
+                                      <Button size="sm" variant="outline" className="h-6 text-[10px] px-1.5">
+                                        {t("admin.ref.view_shipment")}
+                                      </Button>
+                                    </Link>
+                                  ) : null}
+                                </div>
+                              </td>
+                              <td className="px-4 py-3 text-xs text-muted-foreground">
+                                <div className="flex items-center gap-1.5">
+                                  {s.contract_reference}
+                                  {s.contract_id ? (
+                                    <Link href={`/contracts/${s.contract_id}`}>
+                                      <Button size="sm" variant="outline" className="h-6 text-[10px] px-1.5">
+                                        {t("admin.ref.view_contract")}
+                                      </Button>
+                                    </Link>
+                                  ) : null}
+                                </div>
+                              </td>
                               <td className="px-4 py-3 text-xs">{s.material_label}</td>
                               <td className="px-4 py-3 text-xs">{s.seller_name}</td>
                               <td className="px-4 py-3 text-xs">{s.buyer_name}</td>
                               <td className="px-4 py-3 text-xs font-mono" dir="ltr">
                                 {s.source_weight ?? "—"} / {s.destination_weight ?? "—"} / <span className="font-semibold text-primary">{s.final_weight ?? "—"}</span> {s.unit_label}
+                              </td>
+                              <td className="px-4 py-3 text-xs text-foreground">
+                                {t(`contract.shipment.status.${s.status}`) || s.status}
                               </td>
                               <td className="px-4 py-3">
                                 <span className={`inline-flex items-center rounded-full text-[10px] font-bold px-2 py-0.5 ${statusStyle[s.status] ?? "bg-gray-100"}`}>

@@ -1014,7 +1014,7 @@ function printDealReport(
     <div class="ref-box">
       <div class="ref-label">${lang === "ar" ? "رقم مرجع الصفقة" : "Deal Reference"}</div>
       <span class="ref-value">${ref}</span>
-      ${opts.listingRef ? `<div class="ref-label" style="margin-top:3px">${opts.listingRef}</div>` : ""}
+      ${opts.listingRef ? `<div class="ref-label" style="margin-top:3px">${lang === "ar" ? "مرجع الإعلان" : "Listing Reference"}: ${opts.listingRef}</div>` : ""}
     </div>
   </div>
 
@@ -1855,7 +1855,16 @@ export function DealPanel({ deal, role, unit, onUpdate, pricingModel, revenueSha
               <div>
                 <p className="font-bold text-green-800 text-base">{t("deal.compliance.badge")}</p>
                 <p className="text-xs text-green-700 mt-0.5">{t("deal.compliance.tagline")}</p>
-                {listingRef && <p className="text-[10px] text-green-600 font-mono mt-1">{listingRef}</p>}
+                <p className="text-[11px] text-green-800 font-mono mt-1.5" dir="ltr">
+                  <span className="text-green-700/70 font-sans">{t("deal.compliance.deal_number")}: </span>
+                  {dealRef(deal.id, deal.created_at)}
+                </p>
+                {listingRef && (
+                  <p className="text-[10px] text-green-600/80 font-mono mt-0.5" dir="ltr">
+                    <span className="text-green-600/60 font-sans">{t("deal.compliance.listing_ref_label")}: </span>
+                    {listingRef}
+                  </p>
+                )}
               </div>
               {(() => {
                 const subtotal = deal.final_amount ?? deal.estimated_amount ?? 0;

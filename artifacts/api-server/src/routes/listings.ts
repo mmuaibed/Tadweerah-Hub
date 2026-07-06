@@ -6,6 +6,7 @@ import multer from "multer";
 import {
   db,
   companiesTable,
+  companyMembersTable,
   companyRolesTable,
   wasteListingsTable,
   listingOffersTable,
@@ -16,9 +17,10 @@ import {
   dealsTable,
   unitOptionsTable,
   type WasteListing,
+  type Company,
 } from "@workspace/db";
 import { CreateWasteListingBody } from "@workspace/api-zod";
-import { requireAuth } from "../middlewares/requireAuth";
+import { requireAuth, type AuthedRequest } from "../middlewares/requireAuth";
 import {
   requireCompany,
   type AuthedCompanyRequest,
@@ -31,6 +33,7 @@ import {
 import { logAudit } from "../lib/audit";
 import { notifyPrivateDealInvitation, notifyOfferRejected, notifyNewListingPublished, notifyListingPublishedSuccess } from "../lib/notify";
 import { listingRef as makeListingRef } from "../lib/listing-ref";
+import { isAllowlistedAdmin } from "../lib/adminAllowlist";
 
 import { Storage } from "@google-cloud/storage";
 
@@ -50,6 +53,33 @@ const upload = multer({
     cb(null, true);
   },
 });
+
+/**
+ * Real Google Maps URL check (host + path), not a naive "starts with
+ * https://" string test. Kept in sync with the equivalent frontend check
+ * in listing-new.tsx — see that file if the accepted patterns change.
+ *
+ * Accepted: https://www.google.com/maps/... , https://google.com/maps/... ,
+ * https://maps.google.com/... , https://maps.app.goo.gl/... ,
+ * https://goo.gl/maps/...
+ */
+function isValidGoogleMapsUrl(value: string): boolean {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return false;
+  }
+  if (url.protocol !== "https:") return false;
+
+  const host = url.hostname.toLowerCase();
+  if (host === "google.com" || host === "www.google.com") {
+    return url.pathname.startsWith("/maps");
+  }
+  if (host === "maps.google.com" || host === "maps.app.goo.gl") return true;
+  if (host === "goo.gl") return url.pathname.startsWith("/maps");
+  return false;
+}
 
 const ALLOWED_MATERIALS = [
   "paper",
@@ -662,12 +692,15 @@ router.post(
         ? req.body.material_location_address.trim().slice(0, 500)
         : null;
 
-    // google_maps_url: optional Maps link — must start with https:// to be stored
+    // google_maps_url: optional — but if provided, must be a real Google Maps
+    // URL. Invalid values are rejected (400), not silently dropped, so the
+    // caller finds out immediately rather than the link quietly disappearing.
     const rawMapsUrl: unknown = req.body.google_maps_url;
-    const googleMapsUrl: string | null =
-      typeof rawMapsUrl === "string" && rawMapsUrl.trim().startsWith("https://")
-        ? rawMapsUrl.trim().slice(0, 500)
-        : null;
+    const trimmedMapsUrl = typeof rawMapsUrl === "string" ? rawMapsUrl.trim() : "";
+    if (trimmedMapsUrl && !isValidGoogleMapsUrl(trimmedMapsUrl)) {
+      throw new HttpError(400, "ValidationError", "google_maps_url must be a valid Google Maps link");
+    }
+    const googleMapsUrl: string | null = trimmedMapsUrl ? trimmedMapsUrl.slice(0, 500) : null;
 
     // material_location_notes: operational site details — gate number, loading point, etc.
     const materialLocationNotes: string | null =
@@ -1020,17 +1053,55 @@ router.delete(
   },
 );
 
+interface AdminReadBypassRequest {
+  isAdminReadBypass: boolean;
+}
+
 /**
  * GET /listings/:waste_listing_id — single listing detail.
- * Any authenticated user with a company can view.
+ * Any authenticated user with a company can view their own / eligible listings.
+ *
+ * Allowlisted admins (TADWEERAH_ADMIN_EMAILS) may additionally view ANY
+ * listing and, via ?deal=<id>, the specific deal on it — read-only, for
+ * inspection from the Admin Panel. This bypass exists ONLY on this GET
+ * handler. It does not touch requireCompany() itself, so every mutation
+ * route (offers, accept/reject, payment, etc.) is completely unaffected
+ * and still requires real company membership exactly as before.
  */
 router.get(
   "/listings/:waste_listing_id",
   requireAuth,
-  requireCompany(),
+  async (req, res, next) => {
+    const { userId } = req as AuthedRequest;
+
+    const rows = await db
+      .select({
+        company: companiesTable,
+        role: companyMembersTable.role,
+      })
+      .from(companyMembersTable)
+      .innerJoin(companiesTable, eq(companiesTable.id, companyMembersTable.company_id))
+      .where(eq(companyMembersTable.user_id, userId))
+      .limit(1);
+
+    const found = rows[0];
+    const isAdminReadBypass = await isAllowlistedAdmin(userId);
+
+    if (!found && !isAdminReadBypass) {
+      res.status(403).json({ error: "Company profile required" });
+      return;
+    }
+    if (found) {
+      (req as AuthedCompanyRequest).company = found.company;
+      (req as AuthedCompanyRequest).memberRole = found.role as "owner" | "member";
+    }
+    (req as unknown as AdminReadBypassRequest).isAdminReadBypass = isAdminReadBypass;
+    next();
+  },
   async (req, res) => {
     const id = assertUuid(req.params.waste_listing_id, "waste_listing_id");
-    const { company } = req as AuthedCompanyRequest;
+    const { company } = req as Partial<AuthedCompanyRequest> as { company?: Company };
+    const { isAdminReadBypass } = req as unknown as AdminReadBypassRequest;
 
     const rows = await db
       .select(baseSelect)
@@ -1048,9 +1119,10 @@ router.get(
 
     // ── Targeting visibility enforcement ──────────────────────────────────────
     // Owners always see their own listing. Others must pass the targeting gate.
-    if (listing.company_id !== company.id) {
+    // Allowlisted admins bypass this entirely — read-only inspection only.
+    if (!isAdminReadBypass && listing.company_id !== company!.id) {
       if (listing.targeting_type === "specific_company") {
-        if (listing.target_company_id !== company.id) {
+        if (listing.target_company_id !== company!.id) {
           throw new HttpError(404, "NotFound", "Listing not found");
         }
       } else if (listing.targeting_type === "category") {
@@ -1061,8 +1133,8 @@ router.get(
           .where(
             and(
               eq(listingTargetCategoriesTable.listing_id, id),
-              company.company_category_id
-                ? eq(listingTargetCategoriesTable.company_category_id, company.company_category_id)
+              company!.company_category_id
+                ? eq(listingTargetCategoriesTable.company_category_id, company!.company_category_id)
                 : sql`false`,
             ),
           )
@@ -1075,55 +1147,100 @@ router.get(
     }
     // ── End targeting enforcement ──────────────────────────────────────────────
 
-    // Attach deal info if the current user is a party (producer or accepted buyer)
     let deal = null;
-    const dealRows = await db
-      .select()
-      .from(dealsTable)
-      .where(
-        and(
-          eq(dealsTable.listing_id, id),
-          or(
-            eq(dealsTable.producer_company_id, company.id),
-            eq(dealsTable.buyer_company_id, company.id),
-          ),
-        ),
-      )
-      .limit(1);
 
-    if (dealRows[0]) {
-      const d = dealRows[0];
-      const isProducer = d.producer_company_id === company.id;
-      const counterpartyId = isProducer ? d.buyer_company_id : d.producer_company_id;
-      const [counterparty] = await db
-        .select({ name: companiesTable.name, contactPhone: companiesTable.contactPhone })
-        .from(companiesTable)
-        .where(eq(companiesTable.id, counterpartyId))
+    if (isAdminReadBypass) {
+      // Admin inspection path: resolve the specific deal named by ?deal=<id>,
+      // regardless of company membership. Read-only — no write path uses this.
+      const dealIdParam = typeof req.query.deal === "string" ? req.query.deal : null;
+      if (dealIdParam) {
+        const [d] = await db
+          .select()
+          .from(dealsTable)
+          .where(and(eq(dealsTable.id, dealIdParam), eq(dealsTable.listing_id, id)))
+          .limit(1);
+
+        if (d) {
+          const [[producer], [buyer]] = await Promise.all([
+            db.select({ name: companiesTable.name, contactPhone: companiesTable.contactPhone }).from(companiesTable).where(eq(companiesTable.id, d.producer_company_id)).limit(1),
+            db.select({ name: companiesTable.name, contactPhone: companiesTable.contactPhone }).from(companiesTable).where(eq(companiesTable.id, d.buyer_company_id)).limit(1),
+          ]);
+
+          deal = {
+            id: d.id,
+            offer_id: d.offer_id,
+            settlement_type: d.settlement_type,
+            price_per_unit: Number(d.price_per_unit),
+            estimated_amount: Number(d.estimated_amount),
+            actual_quantity: d.actual_quantity != null ? Number(d.actual_quantity) : null,
+            final_amount: d.final_amount != null ? Number(d.final_amount) : null,
+            status: d.status,
+            transport_decision: d.transport_decision ?? null,
+            transport_responsibility: listing.transport_responsibility,
+            counterparty: producer
+              ? { name: `${producer.name} → ${buyer?.name ?? "?"}`, contact_phone: producer.contactPhone }
+              : null,
+            payment_reference: d.payment_reference ?? null,
+            payment_proof_url: d.payment_proof_url ?? null,
+            payment_submitted_at: d.payment_submitted_at?.toISOString() ?? null,
+            payment_confirmed_at: d.payment_confirmed_at?.toISOString() ?? null,
+            dispatched_at: d.dispatched_at?.toISOString() ?? null,
+            received_at: d.received_at?.toISOString() ?? null,
+            created_at: d.created_at.toISOString(),
+            updated_at: d.updated_at.toISOString(),
+          };
+        }
+      }
+    } else if (company) {
+      // Normal path, unchanged: attach deal info only if this company is a party.
+      const dealRows = await db
+        .select()
+        .from(dealsTable)
+        .where(
+          and(
+            eq(dealsTable.listing_id, id),
+            or(
+              eq(dealsTable.producer_company_id, company.id),
+              eq(dealsTable.buyer_company_id, company.id),
+            ),
+          ),
+        )
         .limit(1);
 
-      deal = {
-        id: d.id,
-        offer_id: d.offer_id,
-        settlement_type: d.settlement_type,
-        price_per_unit: Number(d.price_per_unit),
-        estimated_amount: Number(d.estimated_amount),
-        actual_quantity: d.actual_quantity != null ? Number(d.actual_quantity) : null,
-        final_amount: d.final_amount != null ? Number(d.final_amount) : null,
-        status: d.status,
-        transport_decision: d.transport_decision ?? null,
-        transport_responsibility: listing.transport_responsibility,
-        counterparty: counterparty
-          ? { name: counterparty.name, contact_phone: counterparty.contactPhone }
-          : null,
-        payment_reference: d.payment_reference ?? null,
-        payment_proof_url: d.payment_proof_url ?? null,
-        payment_submitted_at: d.payment_submitted_at?.toISOString() ?? null,
-        payment_confirmed_at: d.payment_confirmed_at?.toISOString() ?? null,
-        dispatched_at: d.dispatched_at?.toISOString() ?? null,
-        received_at: d.received_at?.toISOString() ?? null,
-        created_at: d.created_at.toISOString(),
-        updated_at: d.updated_at.toISOString(),
-      };
+      if (dealRows[0]) {
+        const d = dealRows[0];
+        const isProducer = d.producer_company_id === company.id;
+        const counterpartyId = isProducer ? d.buyer_company_id : d.producer_company_id;
+        const [counterparty] = await db
+          .select({ name: companiesTable.name, contactPhone: companiesTable.contactPhone })
+          .from(companiesTable)
+          .where(eq(companiesTable.id, counterpartyId))
+          .limit(1);
+
+        deal = {
+          id: d.id,
+          offer_id: d.offer_id,
+          settlement_type: d.settlement_type,
+          price_per_unit: Number(d.price_per_unit),
+          estimated_amount: Number(d.estimated_amount),
+          actual_quantity: d.actual_quantity != null ? Number(d.actual_quantity) : null,
+          final_amount: d.final_amount != null ? Number(d.final_amount) : null,
+          status: d.status,
+          transport_decision: d.transport_decision ?? null,
+          transport_responsibility: listing.transport_responsibility,
+          counterparty: counterparty
+            ? { name: counterparty.name, contact_phone: counterparty.contactPhone }
+            : null,
+          payment_reference: d.payment_reference ?? null,
+          payment_proof_url: d.payment_proof_url ?? null,
+          payment_submitted_at: d.payment_submitted_at?.toISOString() ?? null,
+          payment_confirmed_at: d.payment_confirmed_at?.toISOString() ?? null,
+          dispatched_at: d.dispatched_at?.toISOString() ?? null,
+          received_at: d.received_at?.toISOString() ?? null,
+          created_at: d.created_at.toISOString(),
+          updated_at: d.updated_at.toISOString(),
+        };
+      }
     }
 
     const [reqSvcMap, targetCatMap] = await Promise.all([
